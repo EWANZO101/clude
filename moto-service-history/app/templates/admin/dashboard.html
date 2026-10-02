@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Admin — {{ site_name|default('Moto Service History') }}{% endblock %}
+{% block content %}
+<h1 class="font-bold text-2xl mb-6">Admin</h1>
+
+<div class="grid sm:grid-cols-2 gap-4 mb-8">
+  <div class="card p-5">
+    <p class="text-xs text-ink-faint uppercase tracking-wide mb-1">Users</p>
+    <p class="font-bold text-3xl">{{ user_count }}</p>
+  </div>
+  <div class="card p-5">
+    <p class="text-xs text-ink-faint uppercase tracking-wide mb-1">Motorcycles</p>
+    <p class="font-bold text-3xl">{{ moto_count }}</p>
+  </div>
+</div>
+
+<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
+  {% for label, endpoint in [
+    ('Manage users','admin.users'), ('Motorcycles','admin.motorcycles'),
+    ('MOT API settings','admin.mot_settings'), ('App settings','admin.app_settings'),
+  ] %}
+  <a href="{{ url_for(endpoint) }}" class="card p-4 text-sm font-medium text-ink hover:border-gauge/50 transition text-center">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<div class="flex items-center justify-between mb-4">
+  <h2 class="font-semibold text-lg">Recent API errors</h2>
+  <a href="{{ url_for('admin.logs') }}" class="text-sm text-gauge hover:underline">View all logs</a>
+</div>
+{% if recent_errors %}
+<div class="card border-danger/40 divide-y divide-asphalt-border">
+  {% for log in recent_errors %}
+  <div class="p-4 text-sm">
+    <div class="flex items-center justify-between gap-3">
+      <span class="font-mono text-xs text-danger uppercase">{{ log.source }}</span>
+      <span class="text-xs text-ink-faint font-mono">{{ log.created_at.strftime('%d %b %Y %H:%M') }}</span>
+    </div>
+    <p class="text-ink-muted mt-1">{{ log.message }}</p>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-sm text-ink-muted">No API errors logged.</p>
+{% endif %}
+{% endblock %}

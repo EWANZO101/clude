@@ -1,0 +1,25 @@
+<nav class="bg-gray-900 border-b border-gray-700 sticky top-0 z-40">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <div class="flex items-center justify-between h-16">
+      <a href="{{ url_for('main.index') }}" class="flex items-center gap-2.5 text-lg font-semibold text-white">
+        <span class="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-mono text-xs font-bold">SB</span>
+        <span class="hidden sm:inline">{{ site_name|default('Moto Service History') }}</span>
+      </a>
+      <div class="flex items-center gap-1 sm:gap-2 text-sm">
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('main.dashboard') }}" class="px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition {% if request_path == url_for('main.dashboard') %}text-white bg-gray-800{% endif %}">Garage</a>
+          <a href="{{ url_for('auth.account') }}" class="px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition">Account</a>
+          {% if current_user.is_admin %}
+          <a href="{{ url_for('admin.dashboard') }}" class="px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition">Admin</a>
+          {% endif %}
+          <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
+            <button class="ml-1 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition">Log out</button>
+          </form>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition">Log in</a>
+          <a href="{{ url_for('auth.register') }}" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-800 font-medium rounded-lg text-sm px-4 py-2 transition">Sign up</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>

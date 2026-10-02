@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Sidebar Order — {{ tenant_name }}{% endblock %}
+{% block content %}
+<style>
+  .drag-list { list-style:none; margin:0; padding:0; }
+  .drag-item {
+    display:flex; align-items:center; gap:10px; padding:12px 14px; margin-bottom:6px;
+    background:var(--bg); border:1px solid var(--panel-border); border-radius:8px;
+    cursor:grab; user-select:none;
+  }
+  .drag-item.dragging { opacity:.4; }
+  .drag-item .handle { color:var(--muted); font-size:16px; }
+  .drag-item .section-tag { margin-left:auto; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .drag-item .builtin-tag { font-size:11px; padding:2px 7px; border-radius:20px; background:rgba(139,147,168,.15); color:var(--muted); }
+</style>
+
+<p><a href="{{ url_for('admin.index') }}">← Admin Panel</a></p>
+<h1>Sidebar Order</h1>
+<p class="muted">
+  Drag to rearrange the sidebar's nav entries — no code, no template edits. This changes the ORDER only;
+  who can see each item is still controlled per-role on the <a href="{{ url_for('admin.list_roles') }}">Roles</a> page.
+  A custom item type's own entry appears here automatically as soon as you create it.
+</p>
+
+<div class="panel">
+  <ul class="drag-list" id="drag-list">
+    {% for e in nav_entries %}
+      <li class="drag-item" draggable="true" data-key="{{ e.key }}">
+        <span class="handle">⠿</span>
+        <span>{{ e.label }}</span>
+        {% if e.is_builtin %}<span class="builtin-tag">built-in</span>{% endif %}
+        <span class="section-tag">{{ e.section }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+  <form method="post" action="{{ url_for('admin.reorder_sidebar') }}" id="reorder-form" style="margin-top:16px;">
+    <input type="hidden" name="order" id="order-input">
+    <button type="submit">Save Order</button>
+  </form>
+</div>
+
+<script>
+(function () {
+  var list = document.getElementById('drag-list');
+  var dragging = null;
+
+  list.querySelectorAll('.drag-item').forEach(function (item) {
+    item.addEventListener('dragstart', function () {
+      dragging = item;
+      item.classList.add('dragging');
+    });
+    item.addEventListener('dragend', function () {
+      item.classList.remove('dragging');
+      dragging = null;
+    });
+    item.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      if (!dragging || dragging === item) return;
+      var rect = item.getBoundingClientRect();
+      var before = (e.clientY - rect.top) < (rect.height / 2);
+      list.insertBefore(dragging, before ? item : item.nextSibling);
+    });
+  });
+
+  document.getElementById('reorder-form').addEventListener('submit', function () {
+    var keys = Array.prototype.map.call(list.querySelectorAll('.drag-item'), function (el) {
+      return el.dataset.key;
+    });
+    document.getElementById('order-input').value = keys.join(',');
+  });
+})();
+</script>
+{% endblock %}

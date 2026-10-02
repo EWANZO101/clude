@@ -1,0 +1,133 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Transactions{% endblock %}
+{% block content %}
+<div class="space-y-5">
+  {% call ui.page_header("Transactions", "Everything in and out, across every account.") %}
+    <form method="POST" action="{{ url_for('finance.dedupe_transactions') }}" onsubmit="return confirm('Scan every account for duplicate transactions and remove them? Rows involved in a split are left alone for manual review.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {{ ui.button("Remove duplicates", type="submit", variant="secondary", icon_name="sparkles") }}
+    </form>
+    <form method="POST" action="{{ url_for('finance.auto_categorize_transactions') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {{ ui.button("Auto-categorize", type="submit", variant="secondary", icon_name="check") }}
+    </form>
+    {{ ui.button("Import statement", href=url_for('finance.import_statement'), variant="primary", icon_name="plus") }}
+  {% endcall %}
+
+  <!-- Summary for the current filtered set -->
+  <div class="grid grid-cols-3 gap-3">
+    {{ ui.stat_tile("In", in_minor | money) }}
+    {{ ui.stat_tile("Out", out_minor | money) }}
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-4 hover:border-slate-700 transition-colors">
+      <p class="text-xs text-slate-500 mb-1.5">Net</p>
+      <p class="text-lg font-semibold tabular-nums {{ 'text-red-400' if net_minor < 0 else 'text-emerald-400' }}">{{ net_minor | money }}</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <form method="GET" class="bg-surface-card border border-surface-border rounded-2xl p-3 flex flex-wrap items-center gap-2 text-sm">
+    <div class="relative flex-1 min-w-[10rem]">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">{{ ui.icon('search', 'w-3.5 h-3.5') }}</span>
+      <input name="q" value="{{ search }}" placeholder="Search descriptions…" class="w-full bg-surface border border-surface-border rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    </div>
+    <select name="account_id" onchange="this.form.submit()" class="bg-surface border border-surface-border rounded-lg px-3 py-1.5 text-sm">
+      <option value="">All accounts</option>
+      {% for a in accounts %}<option value="{{ a.id }}" {{ 'selected' if request.args.get('account_id') == a.id }}>{{ a.name }}</option>{% endfor %}
+    </select>
+    <select name="category_id" onchange="this.form.submit()" class="bg-surface border border-surface-border rounded-lg px-3 py-1.5 text-sm">
+      <option value="">All categories</option>
+      {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if request.args.get('category_id')|string == c.id|string }}>{{ c.name }}</option>{% endfor %}
+    </select>
+    <label class="flex items-center gap-1.5 text-xs text-slate-400 px-1">
+      <input type="checkbox" name="show_ignored" value="1" onchange="this.form.submit()" {{ 'checked' if show_ignored }} class="rounded border-surface-border bg-surface text-accent focus:ring-accent">
+      Show ignored
+    </label>
+    {{ ui.button("Filter", type="submit", size="sm") }}
+    {% if search or request.args.get('account_id') or request.args.get('category_id') or show_ignored %}
+      <a href="{{ url_for('finance.transactions') }}" class="text-xs text-slate-500 hover:text-slate-300 hover:underline">Clear filters</a>
+    {% endif %}
+  </form>
+
+  <!-- Bulk categorize bar: checkboxes on each row below are wired to this form
+       via the form="bulk-categorize" attribute, so no per-row form nesting. -->
+  <form id="bulk-categorize" method="POST" action="{{ url_for('finance.bulk_categorize_transactions') }}"></form>
+  <div class="flex items-center gap-2 text-xs text-slate-500">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" form="bulk-categorize">
+    <span>Select rows below, then:</span>
+    <select name="category_id" form="bulk-categorize" class="bg-surface-card border border-surface-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+      <option value="">Category…</option>
+      {% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+    </select>
+    <button form="bulk-categorize" class="bg-surface-card hover:bg-surface-hover border border-surface-border rounded-lg px-3 py-1 text-xs text-slate-300 transition-colors">Apply to selected</button>
+  </div>
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border overflow-x-auto">
+    {% for t in transactions %}
+      <div class="p-4 flex items-center gap-3 text-sm hover:bg-surface-hover/40 transition-colors {{ 'opacity-50' if t.ignored }}">
+        <input type="checkbox" name="txn_ids" value="{{ t.id }}" form="bulk-categorize" class="shrink-0 rounded border-surface-border bg-surface text-accent focus:ring-accent">
+        <div class="min-w-0 flex-1">
+          <p class="text-slate-100 truncate font-medium">{{ t.clean_description or t.raw_description }}</p>
+          <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
+            <span>{{ t.date.strftime('%d %b %Y') }}</span>
+            <span>·</span>
+            <span>{{ t.category.name if t.category else 'Uncategorised' }}</span>
+            {% if t.reviewed %}{{ ui.badge('Reviewed', 'success') }}{% endif %}
+            {% if t.ignored %}{{ ui.badge('Ignored', 'warning') }}{% endif %}
+            {% if t.import_source == 'bank_sync' %}{{ ui.badge('Bank sync', 'info') }}{% endif %}
+          </p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="{{ 'text-emerald-400' if t.amount_minor >= 0 else 'text-slate-200' }} font-semibold tabular-nums">{{ t.amount_minor | money(t.currency) }}</span>
+          <details class="relative">
+            <summary class="cursor-pointer text-slate-500 hover:text-slate-300 text-xs px-2 py-1 rounded-md hover:bg-surface list-none">⋯</summary>
+            <div class="absolute right-0 mt-1 w-64 bg-surface border border-surface-border rounded-xl p-3 space-y-2 z-10 shadow-xl">
+              <form method="POST" action="{{ url_for('finance.edit_transaction', txn_id=t.id) }}" class="space-y-1"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select name="category_id" onchange="this.form.submit()" class="w-full bg-surface-card border border-surface-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+                  <option value="">Category…</option>
+                  {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if t.category_id == c.id }}>{{ c.name }}</option>{% endfor %}
+                </select>
+              </form>
+              <form method="POST" action="{{ url_for('finance.toggle_ignore', txn_id=t.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="w-full text-xs text-slate-400 hover:text-slate-200 text-left py-0.5">{{ 'Unignore' if t.ignored else 'Ignore' }}</button></form>
+              <form method="POST" action="{{ url_for('finance.toggle_review', txn_id=t.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="w-full text-xs text-slate-400 hover:text-slate-200 text-left py-0.5">{{ 'Unreview' if t.reviewed else 'Mark reviewed' }}</button></form>
+              <details>
+                <summary class="cursor-pointer text-xs text-slate-400 hover:text-slate-200 py-0.5">Split into parts…</summary>
+                <form method="POST" action="{{ url_for('finance.split_transaction', txn_id=t.id) }}" class="space-y-1 mt-1">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <p class="text-[11px] text-slate-600">Fill in as many parts as you need; blank rows are skipped. Amounts should add up to {{ t.amount_minor | abs | money(t.currency) }}.</p>
+                  {% for i in range(4) %}
+                    <div class="flex gap-1">
+                      <input name="split_label" placeholder="Label" class="flex-1 bg-surface-card border border-surface-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+                      <input name="split_amount" placeholder="Amount" class="w-20 bg-surface-card border border-surface-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+                    </div>
+                  {% endfor %}
+                  <button class="w-full bg-accent hover:bg-accent-hover text-white text-xs py-1.5 rounded-lg transition-colors">Split</button>
+                </form>
+              </details>
+              <form method="POST" action="{{ url_for('finance.delete_transaction', txn_id=t.id) }}" onsubmit="return confirm('Delete this transaction?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="w-full text-xs text-red-400 hover:text-red-300 text-left py-0.5">Delete</button></form>
+            </div>
+          </details>
+        </div>
+      </div>
+    {% else %}
+      {% call ui.empty_state("No transactions yet", "Import a statement or connect a bank to get started.", "inbox") %}
+        {{ ui.button("Import statement", href=url_for('finance.import_statement'), variant="primary", icon_name="plus") }}
+      {% endcall %}
+    {% endfor %}
+  </div>
+
+  {% if pagination and pagination.pages > 1 %}
+    <div class="flex items-center justify-between text-xs text-slate-500">
+      <span>Page {{ pagination.page }} of {{ pagination.pages }} · {{ pagination.total }} transactions</span>
+      <div class="flex gap-2">
+        {% if pagination.has_prev %}
+          <a href="{{ url_for('finance.transactions', page=pagination.prev_num, q=search, account_id=request.args.get('account_id',''), category_id=request.args.get('category_id',''), show_ignored=request.args.get('show_ignored','')) }}" class="px-3 py-1.5 rounded-lg bg-surface-card hover:bg-surface-hover border border-surface-border transition-colors">Previous</a>
+        {% endif %}
+        {% if pagination.has_next %}
+          <a href="{{ url_for('finance.transactions', page=pagination.next_num, q=search, account_id=request.args.get('account_id',''), category_id=request.args.get('category_id',''), show_ignored=request.args.get('show_ignored','')) }}" class="px-3 py-1.5 rounded-lg bg-surface-card hover:bg-surface-hover border border-surface-border transition-colors">Next</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

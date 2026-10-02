@@ -1,0 +1,17 @@
+[Unit]
+Description=ServiceHub (OpsLab service manager)
+After=network.target
+
+[Service]
+Type=simple
+User=svchub
+WorkingDirectory=/var/www/servicehub
+EnvironmentFile=/var/www/servicehub/.env
+ExecStart=/var/www/servicehub/venv/bin/gunicorn -w 2 -b 127.0.0.1:9500 app:app
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

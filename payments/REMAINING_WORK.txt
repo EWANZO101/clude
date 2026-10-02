@@ -1,0 +1,231 @@
+PERSONAL MANAGEMENT PLATFORM — BUILD PLAN
+==========================================
+DONE — PART 1: Core skeleton
+  - App factory, config, extensions
+  - User/session/settings/dashboard-widget/nav-item models
+  - Auth: signup, login, logout, forgot/reset password, change password,
+    email verification token, session list/revoke, login history, delete account
+  - First-time setup wizard
+  - Dashboard shell + widget placeholders
+  - Settings pages (general/appearance/finance-stub/notifications-stub/security)
+  - Responsive dark Tailwind UI (desktop sidebar, tablet, mobile bottom nav+drawer)
+  - Error pages, PWA manifest stub
+
+DONE — PART 2: Core systems
+  - Permissions (roles/capabilities + decorator; single-user mode allows all
+    until roles are configured — full role management UI still needed)
+  - Event bus (in-process pub/sub + persisted EventLog)
+  - Notifications (in-app + email-stub backend, per-kind preferences model —
+    a settings UI to edit per-kind preferences is still needed)
+  - Background jobs (DB-backed BackgroundJob model, runs synchronously
+    in-request — needs a real worker/queue e.g. RQ/Celery for production)
+  - Scheduler (ScheduledJob model + run_due_scheduled_jobs() — needs a
+    cron/beat process calling it periodically)
+  - Global search (registry + page — merchant module registers a provider;
+    finance/checklist don't yet)
+  - Central file storage service (type-validated, UUID-named, purpose-scoped)
+  - Audit log (writer + paginated viewer — not yet wired into every
+    sensitive action across all modules, only a few core ones)
+  - System health page
+
+DONE — PART 3: Module system
+  - Manifest-driven install/enable/disable/uninstall pipeline
+  - Zip-slip-safe extraction, structural + compatibility validation
+  - Dynamic blueprint + nav + dashboard-widget-manifest registration
+  - Per-module log viewer, Modules management page
+  - Module dev template + package_module.py CLI
+  - Known limitation: disabling doesn't unload the blueprint from a running
+    process (Flask can't hot-unregister) — needs restart for a full unload
+  - Known limitation: no per-module dependency isolation (shared venv)
+  - Not yet done: signature/publisher verification, rollback-on-failed-install,
+    module update flow (currently uninstall+reinstall in practice)
+
+DONE — PART 4: Checklist module
+  - Lists (create/rename/delete/archive/duplicate), tasks/subtasks, notes,
+    tags model (defined, not yet exposed in the UI for tagging tasks),
+    priority, due date, estimated time, complete/reopen, search/filter/sort,
+    progress tracking, CSV export
+  - Rule-based checklist generator (paste text/rough ideas -> structured tasks)
+  - Not yet done: drag-and-drop reordering, checklist templates, tag UI
+
+DONE — PART 5: Finance module (core)
+  - Decimal-safe money (integer minor units throughout)
+  - Accounts (multi-account, types, default account, opening balance)
+  - Bank provider abstraction + structural Monzo provider (no live OAuth
+    wired to real credentials — deployment-time integration step)
+  - CSV statement import: column auto-detection, preview, duplicate
+    detection (DB + within-batch collision handling), confirm/import
+  - Transactions: edit, categorise, split, tag (field exists; no tag-picker
+    UI yet), notes, ignore, review, delete
+  - Rule-based auto-categorisation with default UK merchant keywords +
+    remembered corrections
+  - Not yet done: OFX/QFX/PDF import, transfer-between-own-accounts detection,
+    refund/reversal handling
+
+DONE — PART 6: Finance module (extended)
+  - Budgets: per-category monthly amount, spent/remaining/%-used, warning
+    threshold, linear forecast-to-month-end
+  - Bills: due-day/frequency, mark-paid rolls due date forward, pause/delete
+  - Subscriptions: monthly/annual, cancel, monthly/annual cost totals
+  - Recurring payment detection: normalised-description + exact-amount
+    grouping across 2+ distinct months; confirm/ignore/mark-cancelled
+  - Planned purchases with exact safe-balance formula (current money minus
+    upcoming bills, upcoming subscriptions, planned purchases, minimum
+    safe balance)
+  - Savings goals with progress + add-funds; money-saving suggestions
+    (clearly labelled as suggestions)
+  - Financial calendar (month agenda view), financial forecast (projected
+    month-end with plain-English basis), 12-month history with bar chart
+  - Finance settings page
+  - Not yet done: day/week/year calendar grid views; budget periods other
+    than monthly; recurring detection as a scheduled background job rather
+    than running on page load
+
+DONE — PART 7: Merchant module
+  - Company/Brand/Merchant/Location data model (Companies-House-shaped)
+  - Companies House sync interface (companies_house.py) — structural only,
+    documented no-op without a real API key, matching the Monzo-provider
+    pattern from Part 5; local search works against seed/synced data either way
+  - UK retailer/merchant seed directory: 33 common merchants across
+    groceries, online shopping, fast food/restaurants, delivery, fuel,
+    streaming, utilities, transport, pharmacy — each with realistic
+    statement-description aliases (e.g. Tesco -> "TESCO STORES 2931")
+  - Merchant matching pipeline in spec order (exact -> alias -> normalised ->
+    identifier -> MCC -> fuzzy -> user mapping -> AI). Identifier/MCC stages
+    are structural pass-throughs since CSV import doesn't supply either —
+    they activate automatically once a richer data source (bank API sync)
+    provides them. AI stage intentionally not implemented (Part 9 territory).
+  - Cross-module integration via the event bus: merchant module subscribes
+    to finance's transaction.imported event and auto-matches new
+    transactions without the two modules importing each other directly;
+    verified end-to-end (CSV import -> automatic Tesco/Netflix alias matches,
+    salary correctly left unmatched)
+  - User corrections ("always map this description to merchant") remembered
+    and verified to auto-match identical future descriptions
+  - Merchant spending stats (today/week/month/year/all-time), top merchants
+    by period, 12-month per-merchant history with bar chart, merchant search
+    (registered with the Part 2 global search registry)
+  - Degrades gracefully to a standalone merchant directory (no crash, no
+    stats) if the Finance module isn't installed — verified
+  - Not yet done: merchant logos beyond fallback initials (real logo
+    sourcing needs licensing-aware image hosting); fuzzy-matching tuning
+    beyond difflib's default cutoff; live Companies House sync
+
+DONE — PART 8: Fuel module
+  - Ships as a real installed module (`module_packages/fuel/`)
+  - Vehicles (multi-vehicle: make/model/year/registration/fuel type,
+    active/archived), fuel entries (date, odometer, litres, cost,
+    full-tank flag, notes)
+  - MPG and cost-per-mile via the standard fill-to-full method
+    (`calculations.py`): distance and litres/cost are summed across every
+    entry between two full-tank fills (so partial top-ups between full
+    tanks are correctly folded into the interval rather than ignored or
+    treated as their own fill), then converted through the UK gallon
+    (4.54609 L) — verified end-to-end (40L/38L/39L across 3 dated fill-ups
+    at increasing odometer readings produced 35.9 MPG and 37.3 MPG for the
+    two intervals, cost-per-mile matched by hand-calculation)
+  - Fuel transaction recognition + spending stats (today/week/month/year/
+    all-time) reuse the merchant module's fuel-station-brand merchants
+    (Shell/BP/Esso, already seeded with merchant_type='fuel_station' —
+    see Part 7) rather than re-implementing matching: `stats.py` joins
+    FinanceTransaction -> MerchantTransactionLink -> Merchant filtered to
+    merchant_type='fuel_station'. Verified end-to-end: CSV-imported a
+    "SHELL A1 SERVICE STATION" transaction, confirmed the merchant module's
+    transaction.imported handler auto-matched it, confirmed it appeared in
+    fuel spending stats without any fuel-module-specific matching code
+  - Degrades gracefully (vehicle/MPG tracking still fully works; spending
+    stats show an explanatory message instead of numbers) if Finance
+    and/or Merchant aren't installed — same loose-coupling pattern as
+    Part 7's merchant-into-finance reach
+  - Global search provider registered (search by vehicle name)
+  - Not yet done: UK fuel station background sync / live price data (no
+    such public API is assumed available — spec's "not hardcoded into app
+    code" is satisfied by reusing the merchant seed/sync interface rather
+    than a fuel-specific one); a fuel entry can optionally reference a
+    matched transaction/merchant but there's no UI yet to link an existing
+    bank transaction directly to a fuel log entry (they're tracked
+    separately: bank-derived spending stats vs self-logged MPG entries)
+
+DONE — PART 10 (partial): backups, export, PWA, security/perf polish
+  - Real email delivery (app/core/email/service.py): SMTP-backed, replaces
+    the Part 2 console-log stub, wired into signup verification and
+    password reset, and into the notifications module's email backend.
+    Falls back to the console-log stub when SMTP_HOST/SMTP_FROM_ADDRESS
+    aren't set — same documented-no-op pattern as the Monzo/Companies
+    House integrations, not a silent failure
+  - Rate limiting on auth endpoints (Flask-Limiter, in-memory storage):
+    signup 10/hour, login 15/5min, forgot-password 5/hour, reset-password
+    10/hour, custom 429 page. Verified it actually trips under a
+    hammering test. In-memory storage is single-process only — a
+    multi-worker deployment needs Redis (documented in extensions.py)
+  - Backups (app/core/backup/): manual "create backup now" + a daily
+    scheduled-backup toggle wired into the existing Part 2 scheduler.
+    Zips the SQLite DB, module manifest snapshot, a non-secret config
+    snapshot, and all uploaded files. Download/delete/history all work.
+    Restore extracts to app.db.restored rather than swapping the live DB
+    file — found during testing that overwriting a SQLite file out from
+    under an actively-connected process crashes the running server, so
+    restore deliberately requires a manual stop/swap/restart instead of
+    doing anything unsafe automatically. Also found and fixed a path bug:
+    Flask-SQLAlchemy resolves relative sqlite:/// URIs against
+    instance_path, not the process cwd — the default .env.example uses a
+    relative DATABASE_URL, so the original backup path lookup silently
+    missed the real database file. Postgres deployments get a documented
+    NOTE.txt placeholder instead of an incomplete/wrong dump
+  - Data export (app/core/export/): a registry (same pattern as Part 2's
+    search registry) that checklist, finance, merchant, and fuel each
+    register an exporter into. Per-module CSV/JSON download plus a
+    full-system ZIP bundling every module's export + core account data
+    under one manifest.json. Verified all four module exports and the
+    combined bundle produce correct, properly namespaced output. PDF
+    export is not implemented (CSV/JSON only)
+  - PWA: real PNG icons (192/512) referenced from the manifest and as
+    favicon/apple-touch-icon, an install-to-home-screen prompt
+    (beforeinstallprompt), and a service worker that caches static assets
+    plus a narrow whitelist of "safe" pages (dashboard, checklist,
+    notifications) for offline viewing. The service worker explicitly
+    excludes /finance, /merchant, /fuel, /backups, and /export from any
+    caching — per spec, banking data must never be cached or synced
+    offline. A scoped offline queue (checklist task-completion toggles
+    only, replayed on reconnect) — not a general "queue any safe-module
+    change" system; see REMAINING
+  - Performance pass: the finance transactions list now uses real
+    pagination (Flask-SQLAlchemy paginate()) instead of a hard 300-row
+    cap; the merchant module's alias/merchant lookups (queried on every
+    single transaction match) are now cached in-process with a 5-minute
+    TTL and explicit invalidation when an alias is added, rather than
+    re-querying the full table on every match attempt
+  - Nav wiring: Backups and Export both appear in the core nav and the
+    settings sub-nav
+
+REMAINING:
+
+PART 9 — Reports, insights, forecasting
+  - Spending insights (highest-spending merchant/category, month-on-month
+    changes, three-month averages) + anomaly detection with
+    dismiss/expected/sensitivity controls
+  - Weekly/monthly/annual/merchant/category/budget/subscription/fuel/
+    savings/income/cash-flow reports
+  - AI service integration layer: provider config, enable/disable,
+    data-sharing controls; used for checklist generation (as an optional
+    upgrade over the rule-based generator), categorisation, merchant
+    matching (final pipeline stage), spending summaries, saving suggestions,
+    recurring-payment detection, financial explanations. Hard guardrail: AI
+    must never initiate transfers, make purchases, or move money autonomously.
+  - Global search providers for checklist/finance (merchant's and fuel's
+    are already registered — see Part 7 and Part 8)
+
+PART 10 — remaining after this pass (see DONE section below for what shipped)
+  - Splash/loading screen beyond the manifest's background/theme colour
+  - Offline queueing only covers checklist task-completion toggles — no
+    other safe-module mutation is queued while offline yet
+  - Postgres backup/restore (pg_dump) — only SQLite is handled today,
+    with a documented NOTE.txt placeholder for Postgres backups
+  - Cross-device sync verification pass (the underlying storage is already
+    per-user/server-side across every module — this is QA, not new plumbing)
+  - Final end-to-end pass against the spec's Definition of Done checklist
+    (section 84 of the original requirements)
+  - A couple of things intentionally deferred: PDF export (CSV/JSON only
+    today), and per-worker-shared storage (Redis) for the rate limiter and
+    merchant cache in a real multi-process deployment (both are documented
+    single-process limitations, not silent gaps)

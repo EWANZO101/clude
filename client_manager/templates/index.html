@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · ClientHub{% endblock %}
+{% block content %}
+
+<div class="pt-6 pb-4">
+  <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
+  <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">An overview of all your clients, files and projects.</p>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+    <p class="text-xs text-slate-400 font-medium">Clients</p>
+    <p class="text-2xl font-bold text-slate-900 dark:text-white mt-1">{{ stats.total_clients }}</p>
+  </div>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+    <p class="text-xs text-slate-400 font-medium">Files stored</p>
+    <p class="text-2xl font-bold text-slate-900 dark:text-white mt-1">{{ stats.total_files }}</p>
+  </div>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+    <p class="text-xs text-slate-400 font-medium">Active projects</p>
+    <p class="text-2xl font-bold text-slate-900 dark:text-white mt-1">{{ stats.active_projects }}</p>
+  </div>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+    <p class="text-xs text-slate-400 font-medium">Notes</p>
+    <p class="text-2xl font-bold text-slate-900 dark:text-white mt-1">{{ stats.total_notes }}</p>
+  </div>
+</div>
+
+<!-- Filter bar -->
+<form method="get" class="flex flex-wrap items-center gap-2 mb-4">
+  <input type="text" name="q" value="{{ q }}" placeholder="Filter by client or company name…"
+         class="px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-brand-500 w-64">
+  <select name="status" class="px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-brand-500">
+    <option value="">All statuses</option>
+    {% for s in CLIENT_STATUSES %}
+    <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <button class="px-3 py-2 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm font-medium">Filter</button>
+  {% if q or status %}
+  <a href="{{ url_for('dashboard') }}" class="text-sm text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">Clear</a>
+  {% endif %}
+</form>
+
+<!-- Client grid -->
+{% if clients %}
+<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for c in clients %}
+  <a href="{{ url_for('client_detail', client_id=c.id) }}"
+     class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 hover:border-brand-400 hover:shadow-md transition">
+    <div class="flex items-start gap-3">
+      <div class="w-11 h-11 shrink-0 rounded-lg bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 font-bold flex items-center justify-center">
+        {{ c.initials }}
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="font-semibold text-slate-900 dark:text-white truncate group-hover:text-brand-600">{{ c.name }}</p>
+        {% if c.company %}<p class="text-sm text-slate-500 dark:text-slate-400 truncate">{{ c.company }}</p>{% endif %}
+      </div>
+      <span class="text-xs px-2 py-1 rounded-full font-medium
+        {% if c.status == 'Active' %} bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
+        {% elif c.status == 'Inactive' %} bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
+        {% else %} bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 {% endif %}">
+        {{ c.status }}
+      </span>
+    </div>
+    <div class="mt-4 flex items-center gap-4 text-xs text-slate-400">
+      <span>📁 {{ c.file_count }} files</span>
+      <span>🗂️ {{ c.projects.count() }} projects</span>
+      <span>📝 {{ c.notes.count() }} notes</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-20 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">
+  <p class="text-4xl mb-3">📂</p>
+  <p class="font-semibold text-slate-700 dark:text-slate-200">No clients yet</p>
+  <p class="text-sm text-slate-400 mt-1">Create your first client to start organising files and projects.</p>
+  <a href="{{ url_for('client_new') }}" class="inline-block mt-4 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium">+ New Client</a>
+</div>
+{% endif %}
+
+{% endblock %}

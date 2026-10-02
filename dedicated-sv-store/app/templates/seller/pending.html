@@ -1,0 +1,25 @@
+{% extends "layouts/public.html" %}
+{% block title %}Application Status — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto px-4 py-16 text-center">
+  <div class="card p-8">
+    {% if profile.status.value == "rejected" %}
+      <span class="badge-danger mb-4">Rejected</span>
+      <h1 class="text-xl font-semibold text-text-primary mb-2">Your application was not approved</h1>
+      {% if profile.rejection_reason %}<p class="text-text-secondary">{{ profile.rejection_reason }}</p>{% endif %}
+    {% elif profile.status.value == "information_required" %}
+      <span class="badge-warning mb-4">Information required</span>
+      <h1 class="text-xl font-semibold text-text-primary mb-2">We need more information</h1>
+      {% if profile.information_requested %}<p class="text-text-secondary">{{ profile.information_requested }}</p>{% endif %}
+    {% elif profile.status.value == "suspended" %}
+      <span class="badge-danger mb-4">Suspended</span>
+      <h1 class="text-xl font-semibold text-text-primary mb-2">Your seller account is suspended</h1>
+      <p class="text-text-secondary">Contact support for more details.</p>
+    {% else %}
+      <span class="badge-info mb-4">Under review</span>
+      <h1 class="text-xl font-semibold text-text-primary mb-2">Your application is under review</h1>
+      <p class="text-text-secondary">We'll email you as soon as a decision has been made.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

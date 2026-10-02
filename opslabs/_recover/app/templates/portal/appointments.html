@@ -1,0 +1,46 @@
+{% extends "portal/_base.html" %}
+{% set active_page = 'appointments' %}
+{% block portal_title %}Appointments{% endblock %}
+{% block portal_actions %}
+  <a href="{{ url_for('portal.appointment_book') }}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-lg shadow-glow-sm hover:shadow-glow transition">Book a time</a>
+{% endblock %}
+{% block portal_content %}
+<div class="pcard p-6 mb-6">
+  <h2 class="font-bold text-lg mb-4">Upcoming</h2>
+  {% if upcoming %}
+  <div class="space-y-3">
+    {% for a in upcoming %}
+    <div class="flex items-center gap-4 p-4 rounded-xl bg-ink-900/50 border border-ink-600">
+      <div class="text-center shrink-0 w-14">
+        <div class="text-xs text-gray-500 uppercase">{{ a.starts_at|dtdate }}</div>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold truncate">{{ a.subject }}</div>
+        <div class="text-xs text-gray-500">{{ a.starts_at|dt }} (Europe/London)</div>
+      </div>
+      <span class="pbadge" style="background:{{ a.status_meta.color }}1f;color:{{ a.status_meta.color }};">{{ a.status_meta.label }}</span>
+      <form method="post" action="{{ url_for('portal.appointment_cancel', aid=a.id) }}">
+        <button class="text-xs text-gray-400 hover:text-red-300 px-2 py-1">Cancel</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-sm text-gray-500 py-4">Nothing booked. <a href="{{ url_for('portal.appointment_book') }}" class="text-ops-400">Book a time →</a></div>
+  {% endif %}
+</div>
+
+{% if past %}
+<div class="pcard p-6">
+  <h2 class="font-bold text-lg mb-4">Past</h2>
+  <div class="space-y-2">
+    {% for a in past %}
+    <div class="flex items-center justify-between gap-3 text-sm py-2 border-b border-ink-600/40 last:border-0">
+      <span class="truncate">{{ a.subject }}</span>
+      <span class="text-gray-500 shrink-0">{{ a.starts_at|dt }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

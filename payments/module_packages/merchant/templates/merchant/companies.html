@@ -1,0 +1,26 @@
+{% extends "layout/base.html" %}
+{% block title %}UK companies{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-semibold">UK companies</h1>
+    <form method="POST" action="{{ url_for('merchant.sync_companies_route') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="text-xs bg-surface-card border border-surface-border px-3 py-1.5 rounded-lg">{{ 'Sync now' if live_configured else 'Sync (not configured)' }}</button>
+    </form>
+  </div>
+  <form method="GET" class="flex gap-2">
+    <input name="q" value="{{ search }}" placeholder="Search company name…" class="flex-1 bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm">
+    <button class="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 rounded-lg">Search</button>
+  </form>
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    {% for c in companies %}
+      <div class="p-4 text-sm">
+        <p class="text-slate-100">{{ c.company_name }}</p>
+        <p class="text-xs text-slate-500">{{ c.company_number or 'no number on file' }} · {{ c.company_status or '' }} · source: {{ c.data_source }}</p>
+      </div>
+    {% else %}
+      <p class="p-4 text-sm text-slate-500">No company data yet — this ships without live Companies House sync (see README).</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

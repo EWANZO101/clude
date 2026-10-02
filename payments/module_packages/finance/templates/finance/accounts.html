@@ -1,0 +1,70 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Accounts{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  {% call ui.page_header("Accounts") %}
+    {{ ui.button("Add account", href=url_for('finance.new_account'), variant="primary", icon_name="plus") }}
+  {% endcall %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    {% for c in pending_connections %}
+      <div class="bg-surface-card border border-amber-800/60 rounded-2xl p-5 space-y-2">
+        <p class="font-medium text-slate-100">{{ c.provider|capitalize }} connected — no accounts yet</p>
+        <p class="text-xs text-slate-500">
+          Open the Monzo app and approve the access request, then fetch accounts below.
+        </p>
+        {% if c.last_error %}<p class="text-xs text-red-400">{{ c.last_error }}</p>{% endif %}
+        <form method="POST" action="{{ url_for('finance.fetch_connection_accounts', connection_id=c.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          {{ ui.button("Fetch accounts", type="submit", variant="primary", size="sm") }}
+        </form>
+      </div>
+    {% endfor %}
+    {% for a in accounts %}
+      <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-2 hover:border-slate-700 transition-colors">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="font-medium text-slate-100">{{ a.name }}</p>
+            <p class="text-xs text-slate-500">{{ a.institution_name or '' }} · {{ a.account_type }}</p>
+            {% if a.sort_code or a.account_number %}
+              <p class="text-xs text-slate-600 font-mono mt-0.5">{{ a.sort_code or '··-··-··' }} · {{ a.account_number or '········' }}</p>
+            {% endif %}
+          </div>
+          {% if a.is_default %}{{ ui.badge('Default', 'success') }}{% endif %}
+        </div>
+        <p class="text-lg font-semibold tabular-nums text-white">{{ a.balance_minor | money(a.currency) }}</p>
+        {% if a.bank_connection %}
+          <p class="text-xs {{ 'text-emerald-400' if a.bank_connection.status == 'connected' else 'text-amber-400' }}">
+            {{ a.bank_connection.provider|capitalize }} · {{ a.bank_connection.status }}
+            {% if a.bank_connection.last_synced_at %} · synced {{ a.bank_connection.last_synced_at.strftime('%d %b %H:%M') }}{% endif %}
+          </p>
+          {% if a.bank_connection.last_error %}<p class="text-xs text-red-400">{{ a.bank_connection.last_error }}</p>{% endif %}
+        {% endif %}
+        <div class="flex gap-2 text-xs pt-1 flex-wrap">
+          {% if not a.is_default %}
+            <form method="POST" action="{{ url_for('finance.set_default_account', account_id=a.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{{ ui.button("Set default", type="submit", size="sm") }}</form>
+          {% endif %}
+          {% if a.bank_connection and a.bank_connection.status != 'disconnected' %}
+            <form method="POST" action="{{ url_for('finance.sync_account', account_id=a.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{{ ui.button("Sync now", type="submit", size="sm") }}</form>
+            <form method="POST" action="{{ url_for('finance.disconnect_account', account_id=a.id) }}" onsubmit="return confirm('Disconnect this bank feed? The account and its transaction history stay — you can reconnect any time.');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="px-3 py-1.5 rounded-lg bg-surface-card hover:bg-surface-hover border border-surface-border text-amber-400 transition-colors">Disconnect</button>
+            </form>
+          {% endif %}
+          <form method="POST" action="{{ url_for('finance.deactivate_account', account_id=a.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{{ ui.button('Reactivate' if not a.active else 'Deactivate', type="submit", size="sm") }}</form>
+          <form method="POST" action="{{ url_for('finance.delete_account', account_id=a.id) }}" onsubmit="return confirm('Permanently delete \'{{ a.name }}\' and all its transaction history? This cannot be undone.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {{ ui.button("Remove", type="submit", variant="danger", size="sm") }}
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <div class="sm:col-span-2">
+        {% call ui.empty_state("No accounts yet", "Add one manually or connect a bank to get started.", "landmark") %}
+          {{ ui.button("Add account", href=url_for('finance.new_account'), variant="primary", icon_name="plus") }}
+        {% endcall %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

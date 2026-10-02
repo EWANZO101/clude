@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Networking — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">Interfaces</p>
+    <h1 class="page-title">Networking</h1>
+    <p class="page-sub">Interfaces, DNS, and static IP configuration</p>
+  </div>
+</div>
+
+<div class="grid">
+  {% for iface in interfaces %}
+  <div class="card stat">
+    <div class="card-label">{{ iface.name }}</div>
+    <div class="card-value line">
+      <span class="status-dot {{ 'ok' if iface.is_up else '' }}"></span>
+      {{ 'up' if iface.is_up else 'down' }}
+    </div>
+    <div class="card-meta">
+      {% for ip in iface.ipv4 %}{{ ip.address }}<br>{% endfor %}
+      {% if iface.mac %}MAC {{ iface.mac }}{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="card">
+    <div class="card-label">Gateway / DNS</div>
+    <div class="card-meta">
+      Gateway: {{ gateway or '—' }}<br>
+      DNS: {{ dns_servers | join(', ') if dns_servers else '—' }}
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-top:16px;">
+  <div class="card">
+    <div class="card-label">Hostname</div>
+    <p class="page-sub" style="margin: 6px 0 12px;">Current: <span class="mono">{{ hostname }}</span></p>
+    <form method="POST" action="{{ url_for('networking.change_hostname') }}">
+      {{ hostname_form.hidden_tag() }}
+      <div class="field">{{ hostname_form.hostname.label }} {{ hostname_form.hostname(placeholder="swift1") }}</div>
+      <button class="btn btn-primary" type="submit">Change hostname</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Static IP setup</div>
+    {% if not netplan_available %}
+      <div class="empty-state">netplan isn't available on this host — static IP setup is disabled.</div>
+    {% else %}
+    <form method="POST" action="{{ url_for('networking.static_ip') }}" style="margin-top:6px;">
+      {{ static_ip_form.hidden_tag() }}
+      <div class="field">{{ static_ip_form.interface.label }} {{ static_ip_form.interface(placeholder="eth0") }}</div>
+      <div class="field">{{ static_ip_form.address_cidr.label }} {{ static_ip_form.address_cidr(placeholder="192.168.1.50/24") }}</div>
+      <div class="field">{{ static_ip_form.gateway.label }} {{ static_ip_form.gateway(placeholder="192.168.1.1") }}</div>
+      <div class="field">{{ static_ip_form.dns_servers.label }} {{ static_ip_form.dns_servers(placeholder="1.1.1.1, 8.8.8.8") }}</div>
+      <button class="btn btn-primary" type="submit">Apply static IP</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

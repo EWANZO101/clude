@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Invoices{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Invoices</h1>
+  <a href="{{ url_for('invoices.new_invoice') }}" class="btn btn-primary btn-sm">+ New invoice</a>
+</div>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">Number</th><th class="p-3">Customer</th><th class="p-3">Status</th><th class="p-3 text-right">Total</th><th class="p-3 text-right">Balance due</th></tr></thead>
+    <tbody>
+      {% for inv in invoices %}
+      <tr class="row-border">
+        <td class="p-3"><a class="link" href="{{ url_for('invoices.view_invoice', invoice_id=inv.id) }}">{{ inv.invoice_number }}</a></td>
+        <td class="p-3">{{ inv.customer.name }}</td>
+        <td class="p-3 capitalize">{{ inv.status.replace('_',' ') }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(inv.total()) }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(inv.balance_due()) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="empty-state">No invoices yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

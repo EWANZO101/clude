@@ -1,0 +1,30 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% block title %}Payments — {{ app_name }}{% endblock %}
+{% block page_title %}Payments{% endblock %}
+{% block content %}
+{% if payments %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Invoice</th><th>Amount</th><th>Provider</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for payment in payments %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ payment.invoice.invoice_number }}</td>
+        <td class="text-text-primary">£{{ payment.amount }}</td>
+        <td class="text-text-secondary capitalize">{{ payment.provider }}</td>
+        <td>
+          {% if payment.status.value == "completed" %}<span class="badge-success">Completed</span>
+          {% elif payment.status.value == "failed" %}<span class="badge-danger">Failed</span>
+          {% elif payment.status.value == "refunded" %}<span class="badge-neutral">Refunded</span>
+          {% else %}<span class="badge-warning">Pending</span>{% endif %}
+        </td>
+        <td class="text-text-muted">{{ payment.created_at.strftime("%d %b %Y %H:%M") }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card p-10 text-center text-text-secondary">No payments yet.</div>
+{% endif %}
+{% endblock %}

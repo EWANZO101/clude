@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}{{ tool.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{{ url_for('tools.index') }}" style="color:#6b7280;font-size:13px;text-decoration:none;
+     display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;">
+    <i class="fas fa-arrow-left"></i> Tools
+  </a>
+  <div class="page-header-row">
+    <div>
+      <h1 class="page-title">{{ tool.name }}</h1>
+      {% if tool.tool_number %}<p class="page-subtitle">Asset #{{ tool.tool_number }}</p>{% endif %}
+    </div>
+    {% if current_user.is_admin %}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="{{ url_for('tools.edit', tool_id=tool.id) }}" class="btn btn-secondary btn-sm">
+        <i class="fas fa-pen"></i> Edit
+      </a>
+      <form id="del-{{ tool.id }}" method="POST"
+            action="{{ url_for('tools.delete', tool_id=tool.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="button" class="btn btn-danger btn-sm"
+                onclick="confirmDelete('del-{{ tool.id }}','{{ tool.name }}')">
+          <i class="fas fa-trash"></i> Remove
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Status badge — always top -->
+<div class="card" style="padding:16px 20px;margin-bottom:14px;
+     display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+  <div>
+    <div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;
+                letter-spacing:.05em;margin-bottom:6px;">Status</div>
+    <span class="badge {{ tool.status_badge }}" style="font-size:14px;padding:6px 16px;">
+      {{ tool.status_label }}
+    </span>
+    {% if tool.is_overdue %}
+    <span class="badge bg-red-900 text-red-300" style="font-size:14px;padding:6px 16px;margin-left:6px;">
+      <i class="fas fa-triangle-exclamation"></i> Overdue ({{ tool.hours_checked_out }}h)
+    </span>
+    {% endif %}
+  </div>
+  {% if tool.checked_out_by %}
+  <div style="text-align:right;">
+    <div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">With</div>
+    <div style="font-size:15px;font-weight:600;color:#f3f4f6;">{{ tool.checked_out_by }}</div>
+    {% if tool.checked_out_at %}
+    <div style="font-size:12px;color:#6b7280;">since {{ tool.checked_out_at.strftime('%d %b %H:%M') }}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Checkout -->
+{% if tool.status == ToolStatus.AVAILABLE %}
+<div class="card" style="padding:18px;margin-bottom:14px;">
+  <div style="font-size:14px;font-weight:600;color:#f9fafb;margin-bottom:14px;">
+    <i class="fas fa-arrow-up-from-bracket" style="color:#818cf8;"></i> Check Out
+  </div>
+  <form method="POST" action="{{ url_for('tools.checkout', tool_id=tool.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">Notes (optional)</label>
+      <input type="text" name="notes" class="form-input" placeholder="What job is this for?" />
+    </div>
+    <button type="submit" class="btn btn-success btn-block">
+      <i class="fas fa-arrow-up-from-bracket"></i> Check Out This Tool
+    </button>
+  </form>
+</div>
+
+{% elif tool.status == ToolStatus.CHECKED_OUT %}
+<div class="card" style="padding:18px;margin-bottom:14px;">
+  <div style="font-size:14px;font-weight:600;color:#f9fafb;margin-bottom:14px;">
+    <i class="fas fa-arrow-down-to-bracket" style="color:#34d399;"></i> Return Tool
+  </div>
+  <form method="POST" action="{{ url_for('tools.checkin', tool_id=tool.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">Return Condition</label>
+      <select name="condition" class="form-select">
+        {% for s in ToolStatus.ALL %}
+          {% if s != ToolStatus.CHECKED_OUT %}
+          <option value="{{ s }}" {% if s == ToolStatus.AVAILABLE %}selected{% endif %}>
+            {{ ToolStatus.LABELS[s] }}
+          </option>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="form-label">Notes</label>
+      <input type="text" name="notes" class="form-input" placeholder="Any issues to report?" />
+    </div>
+    <button type="submit" class="btn btn-success btn-block">
+      <i class="fas fa-arrow-down-to-bracket"></i> Check In
+    </button>
+  </form>
+</div>
+{% endif %}
+
+<!-- Admin: change status -->
+{% if current_user.is_admin and tool.status != ToolStatus.CHECKED_OUT %}
+<div class="card" style="padding:18px;margin-bottom:14px;">
+  <div style="font-size:14px;font-weight:600;color:#f9fafb;margin-bottom:14px;">
+    <i class="fas fa-tags" style="color:#fbbf24;"></i> Change Status
+  </div>
+  <form method="POST" action="{{ url_for('tools.change_status', tool_id=tool.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <label class="form-label">New Status</label>
+        <select name="status" class="form-select">
+          {% for s in ToolStatus.ALL %}
+          <option value="{{ s }}" {% if s == tool.status %}selected{% endif %}>{{ ToolStatus.LABELS[s] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Notes</label>
+        <input type="text" name="notes" class="form-input" placeholder="Reason…" />
+      </div>
+    </div>
+    <button type="submit" class="btn btn-warning">
+      <i class="fas fa-tags"></i> Update Status
+    </button>
+  </form>
+</div>
+{% endif %}
+
+<!-- Details -->
+<div class="card" style="padding:18px;margin-bottom:14px;">
+  <div style="font-size:14px;font-weight:600;color:#f9fafb;margin-bottom:14px;">Details</div>
+  <div class="detail-grid">
+    <div class="detail-item">
+      <div class="detail-label">Brand</div>
+      <div class="detail-value">{{ tool.brand or '—' }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Model</div>
+      <div class="detail-value">{{ tool.model or '—' }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Serial</div>
+      <div class="detail-value" style="font-size:13px;font-family:monospace;">{{ tool.serial_number or '—' }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Category</div>
+      <div class="detail-value">{{ tool.category or '—' }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Location</div>
+      <div class="detail-value">{{ tool.location or '—' }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Purchase Date</div>
+      <div class="detail-value">{{ tool.purchase_date.strftime('%d %b %Y') if tool.purchase_date else '—' }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Purchase Price</div>
+      <div class="detail-value">{{ '£%.2f' % tool.purchase_price if tool.purchase_price else '—' }}</div>
+    </div>
+    {% if tool.description %}
+    <div class="detail-item detail-span2">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">{{ tool.description }}</div>
+    </div>
+    {% endif %}
+    {% if tool.condition_notes %}
+    <div class="detail-item detail-span2">
+      <div class="detail-label">Condition Notes</div>
+      <div class="detail-value">{{ tool.condition_notes }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Usage history -->
+<div class="card" style="margin-bottom:14px;">
+  <div style="padding:14px 18px;border-bottom:1px solid #374151;display:flex;
+              justify-content:space-between;align-items:center;">
+    <div style="font-size:14px;font-weight:600;color:#f9fafb;">
+      <i class="fas fa-clock-rotate-left" style="color:#818cf8;"></i> Usage History
+    </div>
+    <a href="{{ url_for('logs.tool_history') }}" style="font-size:12px;color:#60a5fa;">All →</a>
+  </div>
+  {% if history %}
+    {% for h in history %}
+    <div style="padding:12px 18px;border-bottom:1px solid #1f2937;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span class="badge {% if h.action == 'checked_out' %}bg-blue-900 text-blue-300
+              {% elif h.action == 'checked_in' %}bg-green-900 text-green-300
+              {% else %}bg-gray-700 text-gray-300{% endif %}">
+              {{ h.action_label }}
+            </span>
+            <span style="font-size:13px;color:#9ca3af;">{{ h.username or '—' }}</span>
+          </div>
+          {% if h.notes %}
+          <div style="font-size:12px;color:#6b7280;margin-top:4px;">{{ h.notes }}</div>
+          {% endif %}
+          {% if h.duration_hours %}
+          <div style="font-size:12px;color:#4b5563;margin-top:2px;">{{ h.duration_hours }}h</div>
+          {% endif %}
+        </div>
+        <div style="font-size:12px;color:#4b5563;white-space:nowrap;flex-shrink:0;text-align:right;">
+          {{ h.created_at.strftime('%d %b %H:%M') if h.created_at else '' }}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="padding:24px;text-align:center;color:#4b5563;font-size:14px;">No history yet</div>
+  {% endif %}
+</div>
+
+<!-- Barcode -->
+{% if tool.barcode_code %}
+<div class="card" style="padding:20px;text-align:center;">
+  <div style="font-size:13px;font-weight:600;color:#9ca3af;margin-bottom:12px;">Barcode</div>
+  <img src="{{ api_public_url }}/api/barcodes/image/{{ tool.barcode_code }}"
+       alt="Barcode" style="max-width:220px;width:100%;border-radius:8px;background:#fff;padding:8px;image-rendering:crisp-edges;image-rendering:pixelated;" />
+  <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+    <a href="{{ url_for('barcode.view', code=tool.barcode_code) }}" class="btn btn-secondary btn-sm">
+      <i class="fas fa-barcode"></i> View
+    </a>
+    <a href="{{ api_public_url }}/api/barcodes/image/{{ tool.barcode_code }}" download
+       class="btn btn-secondary btn-sm">
+      <i class="fas fa-download"></i> Download
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

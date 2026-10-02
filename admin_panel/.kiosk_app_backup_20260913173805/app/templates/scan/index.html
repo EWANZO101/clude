@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Scan — {{ tenant_name }}{% endblock %}
+{% block content %}
+<h1>Scan Barcode</h1>
+
+{% if active_project %}
+  <div class="panel" style="border-color:var(--accent); display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <div class="muted" style="font-size:11.5px; text-transform:uppercase; letter-spacing:.05em;">Active project</div>
+      <div style="font-size:18px; font-weight:700; color:var(--accent);">{{ active_project.name }}</div>
+    </div>
+    <form method="post" action="{{ url_for('scan.clear_project') }}">
+      <button type="submit" style="background:transparent; border:1px solid var(--panel-border); color:var(--text);">Clear</button>
+    </form>
+  </div>
+{% else %}
+  <div class="panel muted">
+    No active project set. Scan a project barcode first to attribute item issues and tool checkouts to it,
+    or continue scanning items/tools without one.
+  </div>
+{% endif %}
+
+<div class="panel" style="max-width:480px;">
+  <form method="post" action="{{ url_for('scan.submit') }}">
+    <label>Scan or type a barcode</label>
+    <input type="text" name="code" id="scan-input" autofocus autocomplete="off"
+           style="font-size:20px; letter-spacing:2px; text-align:center;">
+    <button type="submit" style="margin-top:18px; width:100%;">Submit</button>
+  </form>
+</div>
+
+<script>
+  // Kiosk hardware scanners type the code then send Enter — the form
+  // submits natively on Enter from within the text input, no extra JS
+  // needed for that. This just keeps focus on the field between scans so
+  // staff never have to click back into it.
+  var input = document.getElementById('scan-input');
+  if (input) { input.focus(); }
+</script>
+{% endblock %}

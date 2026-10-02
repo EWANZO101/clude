@@ -1,0 +1,75 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Commission Requests — Admin{% endblock %}
+{% block admin_content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+  <div>
+    <h1 class="font-display" style="font-size:1.7rem;">Commission Requests</h1>
+    <p style="color:var(--text-muted);font-size:0.9rem;font-style:italic;">Review incoming requests, then accept, decline, or convert to an order.</p>
+  </div>
+</div>
+
+{% if requests %}
+<div style="display:grid;gap:1rem;">
+  {% for req in requests %}
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1rem;">
+      <div>
+        <div class="font-mono" style="font-size:0.82rem;color:var(--accent);">{{ req.request_id }}</div>
+        <div style="font-size:1.1rem;font-weight:600;">{{ req.customer_name }}</div>
+        <div style="font-size:0.9rem;color:var(--text-secondary);">{{ req.commission_type or 'No type specified' }}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem;">
+        <span class="badge {{ 'badge-pending' if req.status=='Pending' else 'badge-accepted' if req.status=='Accepted' else 'badge-declined' }}">
+          {{ req.status }}
+        </span>
+        <span style="font-size:0.8rem;color:var(--text-muted);">{{ req.created_at.strftime('%b %d, %Y %H:%M') }}</span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:1rem;font-size:0.9rem;">
+      {% if req.customer_email %}
+      <div><span style="color:var(--text-muted);">Email:</span> {{ req.customer_email }}</div>
+      {% endif %}
+      {% if req.customer_discord %}
+      <div><span style="color:var(--text-muted);">Discord:</span> {{ req.customer_discord }}</div>
+      {% endif %}
+    </div>
+
+    {% if req.description %}
+    <div style="background:var(--bg-elevated);padding:0.75rem;border-radius:8px;font-size:0.9rem;
+                color:var(--text-secondary);white-space:pre-wrap;margin-bottom:1rem;max-height:120px;overflow-y:auto;">{{ req.description }}</div>
+    {% endif %}
+
+    {% if req.status == 'Pending' %}
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;">
+      <!-- Accept -->
+      <form method="POST" action="/admin/requests/{{ req.request_id }}/action" style="display:inline;">
+        <input type="hidden" name="action" value="accept">
+        <button type="submit" class="btn btn-success btn-sm">✓ Accept</button>
+      </form>
+      <!-- Decline -->
+      <form method="POST" action="/admin/requests/{{ req.request_id }}/action" style="display:inline;">
+        <input type="hidden" name="action" value="decline">
+        <button type="submit" class="btn btn-danger btn-sm">✕ Decline</button>
+      </form>
+      <!-- Convert to Order -->
+      <form method="POST" action="/admin/requests/{{ req.request_id }}/action"
+            style="display:inline-flex;align-items:center;gap:0.5rem;">
+        <input type="hidden" name="action" value="convert">
+        <input type="number" name="price" class="input" placeholder="Price $"
+               step="0.01" min="0" style="width:110px;padding:0.35rem 0.65rem;font-size:0.9rem;">
+        <button type="submit" class="btn btn-primary btn-sm">→ Convert to Order</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:3rem;color:var(--text-muted);font-style:italic;">
+  No commission requests yet. They'll appear here when customers submit the form.
+</div>
+{% endif %}
+
+{% endblock %}

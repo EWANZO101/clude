@@ -1,0 +1,31 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% block title %}Manifest — {{ req.request_number }}{% endblock %}
+{% block page_title %}Equipment manifest{% endblock %}
+{% block header_actions %}
+<button onclick="window.print()" class="btn-secondary">Print</button>
+{% endblock %}
+{% block content %}
+<div class="card p-6 max-w-3xl">
+  <h1 class="text-lg font-semibold text-text-primary mb-1">Equipment Manifest</h1>
+  <p class="text-text-secondary mb-6">Request {{ req.request_number }}</p>
+
+  <table class="table-base mb-6">
+    <thead><tr><th>Item</th><th>Serial</th><th>Qty</th><th>Declared value</th></tr></thead>
+    <tbody>
+      {% for item in req.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ item.manufacturer }} {{ item.model }}</td>
+        <td class="text-text-secondary font-mono text-xs">{{ item.serial_number or "—" }}</td>
+        <td>{{ item.quantity }}</td>
+        <td class="text-text-secondary">{{ ("£" ~ item.declared_value) if item.declared_value else "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="border-t border-border pt-4 flex justify-between max-w-xs ml-auto">
+    <span class="text-text-primary font-medium">Total declared value</span>
+    <span class="text-text-primary font-semibold">£{{ req.declared_value_total }}</span>
+  </div>
+</div>
+{% endblock %}

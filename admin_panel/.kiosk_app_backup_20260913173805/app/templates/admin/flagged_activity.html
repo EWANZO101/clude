@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Flagged Activity — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.index') }}">← Admin Panel</a></p>
+<h1>Flagged Activity</h1>
+<p class="muted">"Wasn't me" reports from the login-time activity check — someone confirmed the account they
+were logged into, but flagged a specific recorded action as not actually theirs.</p>
+
+<div class="panel" style="padding:0; margin-top:16px;">
+  <h2 style="padding:16px 16px 0; font-size:15px;">Unresolved ({{ unresolved|length }})</h2>
+  {% if unresolved %}
+    <table style="width:100%; border-collapse:collapse;">
+      <tbody>
+        {% for f in unresolved %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:12px 16px; font-size:13px;">
+              {% if f.activity_event %}
+                <strong>{{ f.activity_event.entity_name }}</strong> — {{ f.activity_event.event_type.replace('_', ' ') }}
+                {% if f.activity_event.actor %}<div class="muted" style="font-size:12px;">Recorded actor: {{ f.activity_event.actor }}</div>{% endif %}
+                <div class="muted" style="font-size:12px;">{{ f.activity_event.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+              {% else %}
+                <span class="muted">(original activity record no longer exists)</span>
+              {% endif %}
+              <div style="margin-top:4px;">Reported by <strong>{{ f.reported_by.username if f.reported_by else 'unknown' }}</strong>
+                <span class="muted">{{ f.created_at.strftime('%Y-%m-%d %H:%M') }}</span></div>
+              {% if f.note %}<div class="muted" style="font-size:12.5px; margin-top:4px;">"{{ f.note }}"</div>{% endif %}
+            </td>
+            <td style="padding:12px 16px; text-align:right; white-space:nowrap;">
+              <form method="post" action="{{ url_for('admin.resolve_flag', flag_id=f.id) }}">
+                <button type="submit">Mark resolved</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted" style="padding:16px;">Nothing unresolved.</p>
+  {% endif %}
+</div>
+
+<div class="panel" style="padding:0; margin-top:16px;">
+  <h2 style="padding:16px 16px 0; font-size:15px;">Recently resolved</h2>
+  {% if resolved %}
+    <table style="width:100%; border-collapse:collapse;">
+      <tbody>
+        {% for f in resolved %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:10px 16px; font-size:12.5px;" class="muted">
+              {{ f.activity_event.entity_name if f.activity_event else '(deleted)' }} — reported by {{ f.reported_by.username if f.reported_by else 'unknown' }},
+              resolved by {{ f.resolved_by.username if f.resolved_by else 'unknown' }} on {{ f.resolved_at.strftime('%Y-%m-%d %H:%M') }}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted" style="padding:16px;">Nothing resolved yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

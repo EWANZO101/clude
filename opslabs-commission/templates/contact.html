@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+{% block title %}Contact — Cioda's Commissions{% endblock %}
+
+{% block head %}
+<style>
+  /* ── Floating label inputs ── */
+  .field-group { position: relative; margin-bottom: 1.35rem; }
+  .field-group .input { padding-top: 1.4rem; padding-bottom: 0.45rem; }
+  .field-group label.float-label {
+    position: absolute; top: 50%; left: 0.9rem;
+    transform: translateY(-50%);
+    font-family: 'Cinzel', serif; font-size: 0.78rem; font-weight: 600;
+    color: var(--text-muted); pointer-events: none;
+    transition: all 0.18s ease; letter-spacing: 0.05em;
+  }
+  .field-group textarea ~ label.float-label { top: 1rem; transform: none; }
+  .field-group .input:focus ~ label.float-label,
+  .field-group .input:not(:placeholder-shown) ~ label.float-label {
+    top: 0.45rem; transform: translateY(0);
+    font-size: 0.68rem; color: var(--accent);
+  }
+  .field-group textarea:focus ~ label.float-label,
+  .field-group textarea:not(:placeholder-shown) ~ label.float-label {
+    top: 0.3rem; font-size: 0.68rem; color: var(--accent);
+  }
+
+  /* ── Orb decorations ── */
+  .orb {
+    position: absolute; border-radius: 50%; filter: blur(80px);
+    pointer-events: none; opacity: 0.18;
+  }
+  .orb-purple { background: #a855f7; width: 420px; height: 420px; }
+  .orb-gold   { background: #f59e0b; width: 280px; height: 280px; }
+
+  /* ── Contact info card ── */
+  .contact-item {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 0.9rem 1rem; border-radius: 10px;
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    margin-bottom: 0.75rem; text-decoration: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .contact-item:hover { border-color: var(--accent); background: var(--accent-glow); }
+  .contact-icon {
+    width: 38px; height: 38px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.15rem; flex-shrink: 0;
+  }
+  .contact-item-label {
+    font-family: 'Cinzel', serif; font-size: 0.7rem;
+    color: var(--text-muted); letter-spacing: 0.06em;
+    text-transform: uppercase; margin-bottom: 0.1rem;
+  }
+  .contact-item-value { color: var(--text-primary); font-size: 0.97rem; }
+
+  /* ── Success state ── */
+  .success-panel {
+    text-align: center; padding: 3rem 2rem;
+    animation: fadeIn 0.5s ease both;
+  }
+  .success-ring {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: rgba(34,197,94,.12); border: 2px solid var(--success);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; margin: 0 auto 1.25rem;
+  }
+
+  /* ── Character counter ── */
+  .char-counter { font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 0.25rem; }
+  .char-counter.warn { color: var(--warning); }
+  .char-counter.over { color: var(--danger); }
+
+  /* ── Submit button loading ── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+</style>
+{% endblock %}
+
+{% block drawer_title %}<span class="nav-logo" style="font-size:1rem;">Cioda's <span>Commissions</span></span>{% endblock %}
+{% block drawer_nav %}
+<div style="padding:1rem;display:flex;flex-direction:column;gap:0.65rem;">
+  <a href="/queue/waiting" class="btn btn-primary" style="justify-content:center;">✦ Commission Me</a>
+  <a href="/contact" class="btn btn-ghost" style="justify-content:center;border-color:var(--accent);color:var(--accent);">Contact</a>
+  <a href="/admin" class="btn btn-ghost" style="justify-content:center;">Admin</a>
+</div>
+{% endblock %}
+
+{% block body %}
+<!-- ── Nav ── -->
+<nav class="nav-bar">
+  <a class="nav-logo" href="/">Cioda's <span>Commissions</span></a>
+  <div class="public-nav-links">
+    <a href="/queue/waiting" class="btn btn-primary btn-sm">✦ Commission Me</a>
+    <a href="/contact" class="btn btn-ghost btn-sm" style="border-color:var(--accent);color:var(--accent);">Contact</a>
+    <a href="/admin" class="btn btn-ghost btn-sm">Admin</a>
+  </div>
+  <button class="hamburger-btn public-nav-hamburger" onclick="openDrawer()" aria-label="Open menu">☰</button>
+</nav>
+
+<!-- ── Page ── -->
+<div style="position:relative;overflow:hidden;min-height:calc(100vh - 60px);">
+  <!-- Orbs -->
+  <div class="orb orb-purple" style="top:-100px;left:-120px;"></div>
+  <div class="orb orb-gold"   style="bottom:-60px;right:-80px;"></div>
+
+  <main style="max-width:980px;margin:0 auto;padding:3rem 1.5rem;position:relative;z-index:1;">
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <!-- Header -->
+    <div style="text-align:center;margin-bottom:3rem;">
+      <div class="glow-gold font-display" style="font-size:1.1rem;letter-spacing:0.2em;margin-bottom:0.75rem;">✦ ✉ ✦</div>
+      <h1 class="font-display" style="font-size:clamp(2rem,5vw,3.2rem);margin-bottom:0.75rem;line-height:1.2;">
+        <span style="background:linear-gradient(135deg,#e8e6f0,#c084fc,#f59e0b);
+                     -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+          Get in Touch
+        </span>
+      </h1>
+      <p style="color:var(--text-secondary);font-style:italic;font-size:1.1rem;max-width:460px;margin:0 auto;">
+        Questions, enquiries, or just want to say hello — I'd love to hear from you.
+      </p>
+    </div>
+
+    <!-- Two-column layout -->
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:2rem;align-items:start;">
+
+      <!-- ── LEFT — Form ── -->
+      <div class="card fade-in" style="padding:2rem;">
+
+        {% if sent %}
+        <!-- Success state -->
+        <div class="success-panel">
+          <div class="success-ring">✓</div>
+          <h2 class="font-display" style="color:var(--success);font-size:1.5rem;margin-bottom:0.5rem;">Message Sent!</h2>
+          <p style="color:var(--text-secondary);margin-bottom:1.5rem;">
+            Thanks for reaching out, <strong style="color:var(--text-primary);">{{ sent_name }}</strong>!
+            I'll get back to you as soon as possible.
+          </p>
+          <a href="/" class="btn btn-ghost">← Back to Home</a>
+        </div>
+
+        {% else %}
+        <h2 class="font-display" style="font-size:1.25rem;color:var(--accent);margin-bottom:0.25rem;">Send a Message</h2>
+        <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:1.75rem;">
+          Fields marked <span style="color:var(--danger);">*</span> are required.
+        </p>
+
+        <form method="POST" action="/contact" id="contactForm" novalidate>
+          <!-- Honeypot -->
+          <input type="text" name="website_url"  style="display:none;" tabindex="-1" autocomplete="off">
+          <input type="text" name="phone_number" style="display:none;" tabindex="-1" autocomplete="off">
+
+          <!-- Name + Email row -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="field-group">
+              <input class="input" type="text" name="contact_name"
+                     id="contact_name" placeholder=" " required maxlength="100"
+                     value="{{ form.contact_name or '' }}">
+              <label class="float-label" for="contact_name">Your Name <span style="color:var(--danger)">*</span></label>
+            </div>
+            <div class="field-group">
+              <input class="input" type="email" name="contact_email"
+                     id="contact_email" placeholder=" " required maxlength="200"
+                     value="{{ form.contact_email or '' }}">
+              <label class="float-label" for="contact_email">Email Address <span style="color:var(--danger)">*</span></label>
+            </div>
+          </div>
+
+          <!-- Discord (optional) -->
+          <div class="field-group">
+            <input class="input" type="text" name="contact_discord"
+                   id="contact_discord" placeholder=" " maxlength="100"
+                   value="{{ form.contact_discord or '' }}">
+            <label class="float-label" for="contact_discord">Discord Username <span style="color:var(--text-muted);font-size:0.65rem;">(optional)</span></label>
+          </div>
+
+          <!-- Subject -->
+          <div class="field-group">
+            <input class="input" type="text" name="contact_subject"
+                   id="contact_subject" placeholder=" " required maxlength="200"
+                   value="{{ form.contact_subject or '' }}">
+            <label class="float-label" for="contact_subject">Subject <span style="color:var(--danger)">*</span></label>
+          </div>
+
+          <!-- Message type -->
+          <div style="margin-bottom:1.35rem;">
+            <label class="form-label">Message Type</label>
+            <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+              {% set types = ['General Enquiry','Commission Question','Order Issue','Feedback','Other'] %}
+              {% for t in types %}
+              <label style="cursor:pointer;">
+                <input type="radio" name="contact_type" value="{{ t }}"
+                       {% if form.contact_type == t or (not form.contact_type and t == 'General Enquiry') %}checked{% endif %}
+                       style="display:none;" class="type-radio">
+                <span class="type-chip">{{ t }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Message -->
+          <div class="field-group">
+            <textarea class="input" name="contact_message" id="contact_message"
+                      placeholder=" " required maxlength="2000"
+                      style="min-height:140px;padding-top:1.6rem;">{{ form.contact_message or '' }}</textarea>
+            <label class="float-label" for="contact_message">Message <span style="color:var(--danger)">*</span></label>
+            <div class="char-counter" id="charCounter">0 / 2000</div>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" class="btn btn-primary" id="submitBtn"
+                  style="width:100%;justify-content:center;padding:0.75rem;font-size:0.95rem;">
+            <span id="submitLabel">✦ Send Message</span>
+          </button>
+        </form>
+        {% endif %}
+      </div>
+
+      <!-- ── RIGHT — Info panel ── -->
+      <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+        <!-- Contact details -->
+        <div class="card fade-in" style="padding:1.5rem;">
+          <h3 class="font-display" style="font-size:1rem;color:var(--gold);margin-bottom:1rem;letter-spacing:0.05em;">Contact Details</h3>
+
+          <a href="mailto:cioda@ciodrawz.space" class="contact-item">
+            <div class="contact-icon" style="background:rgba(192,132,252,.12);color:var(--accent);">✉</div>
+            <div>
+              <div class="contact-item-label">Email</div>
+              <div class="contact-item-value" style="font-size:0.88rem;">cioda@ciodrawz.space</div>
+            </div>
+          </a>
+
+          <a href="https://discord.com/users/totallynotcioda" target="_blank" class="contact-item">
+            <div class="contact-icon" style="background:rgba(88,101,242,.15);color:#818cf8;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="contact-item-label">Discord</div>
+              <div class="contact-item-value">totallynotcioda</div>
+            </div>
+          </a>
+
+          <a href="https://order.ciodrawz.space/" target="_blank" class="contact-item">
+            <div class="contact-icon" style="background:rgba(245,158,11,.12);color:var(--gold);">🔗</div>
+            <div>
+              <div class="contact-item-label">Order Portal</div>
+              <div class="contact-item-value" style="font-size:0.88rem;">order.ciodrawz.space</div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Response time notice -->
+        <div class="card fade-in" style="padding:1.25rem;border-color:rgba(192,132,252,.2);background:var(--accent-glow);">
+          <div style="font-family:'Cinzel',serif;font-size:0.75rem;color:var(--accent);
+                      letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.5rem;">
+            ⏱ Response Time
+          </div>
+          <p style="color:var(--text-secondary);font-size:0.9rem;margin:0;line-height:1.6;">
+            I typically reply within <strong style="color:var(--text-primary);">24–48 hours</strong>.
+            For urgent enquiries, Discord is the fastest way to reach me.
+          </p>
+        </div>
+
+        <!-- Commission CTA -->
+        <div class="card fade-in" style="padding:1.25rem;text-align:center;">
+          <div style="font-size:1.5rem;margin-bottom:0.5rem;">🎨</div>
+          <div class="font-display" style="font-size:0.9rem;color:var(--gold);margin-bottom:0.4rem;">
+            Ready to Commission?
+          </div>
+          <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:0.85rem;">
+            Skip the form and go straight to the request page.
+          </p>
+          <a href="/queue/waiting" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;">
+            ✦ Request a Commission
+          </a>
+        </div>
+
+      </div>
+    </div><!-- end grid -->
+  </main>
+</div>
+
+<style>
+  /* ── Chip radio buttons ── */
+  .type-chip {
+    display: inline-block; padding: 0.3rem 0.85rem; border-radius: 999px;
+    font-family: 'Cinzel', serif; font-size: 0.72rem; font-weight: 600;
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+    user-select: none; letter-spacing: 0.03em;
+  }
+  .type-radio:checked + .type-chip {
+    background: var(--accent-glow); border-color: var(--accent); color: var(--accent);
+  }
+  .type-chip:hover { border-color: var(--accent-dim); color: var(--accent-dim); }
+
+  /* ── Responsive ── */
+  @media (max-width: 700px) {
+    .contact-grid { grid-template-columns: 1fr !important; }
+    .name-email-row { grid-template-columns: 1fr !important; }
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ── Character counter ──────────────────────────────────────────
+  const msgEl  = document.getElementById('contact_message');
+  const cntEl  = document.getElementById('charCounter');
+  if (msgEl && cntEl) {
+    function updateCounter() {
+      const len = msgEl.value.length;
+      cntEl.textContent = `${len} / 2000`;
+      cntEl.className = 'char-counter' + (len > 1800 ? (len >= 2000 ? ' over' : ' warn') : '');
+    }
+    msgEl.addEventListener('input', updateCounter);
+    updateCounter();
+  }
+
+  // ── Submit loading state ───────────────────────────────────────
+  const form      = document.getElementById('contactForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const submitLbl = document.getElementById('submitLabel');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      // Basic client-side validation
+      const name    = document.getElementById('contact_name').value.trim();
+      const email   = document.getElementById('contact_email').value.trim();
+      const subject = document.getElementById('contact_subject').value.trim();
+      const message = document.getElementById('contact_message').value.trim();
+      if (!name || !email || !subject || !message) return; // let HTML5 handle it
+      // Show spinner
+      submitBtn.disabled = true;
+      submitLbl.innerHTML = '<span class="spinner"></span> Sending…';
+    });
+  }
+
+  // ── Make responsive grid ───────────────────────────────────────
+  const mainGrid = document.querySelector('div[style*="grid-template-columns:1fr 340px"]');
+  const nameRow  = document.querySelector('div[style*="grid-template-columns:1fr 1fr"]');
+  function handleResize() {
+    if (window.innerWidth <= 700) {
+      if (mainGrid) mainGrid.style.gridTemplateColumns = '1fr';
+      if (nameRow)  nameRow.style.gridTemplateColumns  = '1fr';
+    } else {
+      if (mainGrid) mainGrid.style.gridTemplateColumns = '1fr 340px';
+      if (nameRow)  nameRow.style.gridTemplateColumns  = '1fr 1fr';
+    }
+  }
+  handleResize();
+  window.addEventListener('resize', handleResize);
+</script>
+{% endblock %}

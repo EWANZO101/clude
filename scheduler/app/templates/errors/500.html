@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Something went wrong · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="flex min-h-screen flex-col items-center justify-center text-center px-4">
+  <p class="status-dot bg-status-busy h-3 w-3 mb-4"></p>
+  <h1 class="font-display text-xl font-semibold text-ink">Something went wrong</h1>
+  <p class="mt-2 max-w-sm text-sm text-ink-muted">An unexpected error occurred. It's been logged — please try again.</p>
+  <a href="{{ url_for('admin.dashboard') if current_user.is_authenticated else url_for('auth.login') }}" class="btn-primary mt-6">Back to safety</a>
+</div>
+{% endblock %}

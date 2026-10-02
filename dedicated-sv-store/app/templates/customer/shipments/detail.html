@@ -1,0 +1,26 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_shipment_badge.html" import shipment_status_badge with context %}
+{% block title %}{{ shipment.shipment_number }} — {{ app_name }}{% endblock %}
+{% block page_title %}{{ shipment.shipment_number }}{% endblock %}
+{% block header_actions %}{{ shipment_status_badge(shipment.status) }}{% endblock %}
+{% block content %}
+<div class="card p-5 mb-6">
+  <dl class="grid sm:grid-cols-2 gap-3 text-sm">
+    <div><dt class="text-text-muted">Carrier</dt><dd class="text-text-primary">{{ shipment.carrier }}</dd></div>
+    <div><dt class="text-text-muted">Tracking number</dt><dd class="text-text-primary font-mono">{{ shipment.tracking_number or "—" }}</dd></div>
+  </dl>
+</div>
+<div class="card p-5">
+  <h2 class="font-semibold text-text-primary mb-4">Tracking history</h2>
+  <div class="space-y-3">
+    {% for event in shipment.events %}
+    <div class="flex gap-3 text-sm">
+      <span class="text-text-muted whitespace-nowrap">{{ event.occurred_at.strftime("%d %b %Y %H:%M") }}</span>
+      <span class="text-text-secondary">{{ event.status|hwval }}{{ " — " ~ event.description if event.description }}{{ " (" ~ event.location ~ ")" if event.location }}</span>
+    </div>
+    {% else %}
+    <p class="text-text-muted text-sm">No tracking events yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

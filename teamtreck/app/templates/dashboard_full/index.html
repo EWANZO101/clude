@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - TeamTreck{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold">Welcome, {{ current_user.name }}</h1>
+    <p class="text-gray-500 dark:text-gray-400">Role: {{ current_user.role }} · Team: {{ current_user.team.name if current_user.team else '—' }}</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+        <h2 class="font-semibold mb-1 text-sm text-gray-500 dark:text-gray-400">My Status</h2>
+        {% if my_active %}
+        <div class="text-lg font-mono font-bold {{ 'text-yellow-500' if my_active.status == 'paused' else 'text-brand-600 dark:text-brand-400' }}">
+            {{ my_active.duration_hms() }}
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ 'Paused' if my_active.status == 'paused' else 'Running' }}{% if my_active.project %} · {{ my_active.project.name }}{% endif %}</p>
+        {% else %}
+        <p class="text-sm text-gray-400">No active timer</p>
+        {% endif %}
+        <a href="{{ url_for('time.index') }}" class="text-xs text-brand-600 dark:text-brand-400 hover:underline mt-2 inline-block">Go to timer →</a>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+        <h2 class="font-semibold mb-1 text-sm text-gray-500 dark:text-gray-400">Tracked Today</h2>
+        <div class="text-lg font-mono font-bold">{{ my_today_seconds|hms }}</div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+        <h2 class="font-semibold mb-1 text-sm text-gray-500 dark:text-gray-400">My Open Tasks</h2>
+        {% if my_open_tasks %}
+        <ul class="text-sm space-y-1 mt-1">
+            {% for t in my_open_tasks %}
+            <li class="truncate">{{ t.name }} <span class="text-xs text-gray-400">({{ t.project.name if t.project else 'no project' }})</span></li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-sm text-gray-400">Nothing assigned</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if active_projects %}
+<h2 class="text-lg font-semibold mb-3">Active Projects — Today</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    {% for p in active_projects %}
+    <a href="{{ url_for('projects.detail', project_id=p.id) }}" class="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800 hover:border-brand-400 dark:hover:border-brand-500">
+        <div class="font-medium text-sm">{{ p.name }}</div>
+        <div class="font-mono text-brand-600 dark:text-brand-400 mt-1">{{ project_today[p.id]|hms }}</div>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if current_user.is_manager %}
+<h2 class="text-lg font-semibold mb-3">Team Snapshot</h2>
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-800 text-left text-gray-500 dark:text-gray-400">
+                <th class="px-4 py-3">Employee</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3">Currently Working On</th>
+                <th class="px-4 py-3">Tracked Today</th>
+                <th class="px-4 py-3">Online</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in team_snapshot %}
+            <tr class="border-b border-gray-100 dark:border-gray-800/50">
+                <td class="px-4 py-3">{{ row.user.name }}</td>
+                <td class="px-4 py-3">
+                    {% if row.active %}
+                    <span class="text-xs px-2 py-1 rounded-full {{ 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' if row.active.status == 'paused' else 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' }}">
+                        {{ 'Paused' if row.active.status == 'paused' else 'Tracking' }}
+                    </span>
+                    {% else %}
+                    <span class="text-xs text-gray-400">Idle</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
+                    {% if row.active and row.active.project %}{{ row.active.project.name }}{% else %}—{% endif %}
+                </td>
+                <td class="px-4 py-3 font-mono">{{ row.today_seconds|hms }}</td>
+                <td class="px-4 py-3">
+                    {% if row.online %}
+                    <span class="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-xs"><span class="w-2 h-2 bg-green-500 rounded-full"></span>Online</span>
+                    {% else %}
+                    <span class="text-xs text-gray-400">Offline</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

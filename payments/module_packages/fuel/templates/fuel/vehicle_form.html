@@ -1,0 +1,44 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}{{ 'Edit vehicle' if vehicle else 'Add vehicle' }}{% endblock %}
+{% block content %}
+<div class="max-w-md">
+  {{ ui.page_header('Edit vehicle' if vehicle else 'Add a vehicle') }}
+  <form method="POST" class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="space-y-1">
+      <label class="text-sm text-slate-400">Name</label>
+      <input name="name" required value="{{ vehicle.name if vehicle else '' }}" placeholder="e.g. My car" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="space-y-1">
+        <label class="text-sm text-slate-400">Make</label>
+        <input name="make" value="{{ vehicle.make if vehicle else '' }}" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      </div>
+      <div class="space-y-1">
+        <label class="text-sm text-slate-400">Model</label>
+        <input name="model" value="{{ vehicle.model if vehicle else '' }}" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="space-y-1">
+        <label class="text-sm text-slate-400">Year</label>
+        <input name="year" value="{{ vehicle.year if vehicle else '' }}" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      </div>
+      <div class="space-y-1">
+        <label class="text-sm text-slate-400">Registration</label>
+        <input name="registration" value="{{ vehicle.registration if vehicle else '' }}" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      </div>
+    </div>
+    <div class="space-y-1">
+      <label class="text-sm text-slate-400">Fuel type</label>
+      <select name="fuel_type" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+        {% for ft in ['petrol', 'diesel', 'electric', 'hybrid', 'lpg'] %}
+          <option value="{{ ft }}" {{ 'selected' if vehicle and vehicle.fuel_type == ft }}>{{ ft|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {{ ui.button('Save changes' if vehicle else 'Add vehicle', type="submit", variant="primary", extra="w-full justify-center") }}
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "layout/base.html" %}
+{% block title %}Modules{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-semibold">Modules</h1>
+    <a href="{{ url_for('modules.install') }}" class="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 rounded-lg">Install module</a>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {% for m in modules %}
+      <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-3">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="font-medium">{{ m.name }}</p>
+            <p class="text-xs text-slate-500">v{{ m.version }} · {{ m.author or 'unknown author' }}</p>
+          </div>
+          <span class="text-xs px-2 py-1 rounded-full {{ 'bg-emerald-950 text-emerald-300 border border-emerald-800' if m.status == 'enabled' else 'bg-surface border border-surface-border text-slate-400' }}">{{ m.status }}</span>
+        </div>
+        {% if m.description %}<p class="text-sm text-slate-400">{{ m.description }}</p>{% endif %}
+        <div class="flex flex-wrap gap-2 pt-1">
+          {% if m.status == 'enabled' %}
+            <form method="POST" action="{{ url_for('modules.disable_module', module_id=m.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-xs px-3 py-1.5 rounded-lg bg-surface border border-surface-border text-slate-300">Disable</button></form>
+          {% else %}
+            <form method="POST" action="{{ url_for('modules.enable_module', module_id=m.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-xs px-3 py-1.5 rounded-lg bg-accent text-white">Enable</button></form>
+          {% endif %}
+          <a href="{{ url_for('modules.module_logs', module_id=m.id) }}" class="text-xs px-3 py-1.5 rounded-lg bg-surface border border-surface-border text-slate-300">Logs</a>
+          <form method="POST" action="{{ url_for('modules.uninstall_module', module_id=m.id) }}" onsubmit="return confirm('Uninstall {{ m.name }}? Module data is kept unless you check delete-data.');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="delete_data" value="no">
+            <button class="text-xs px-3 py-1.5 rounded-lg bg-red-950 border border-red-800 text-red-300">Uninstall</button>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <p class="text-sm text-slate-500 col-span-full">No modules installed yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Bills{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Bills</h1>
+  <a href="{{ url_for('bills.new_bill') }}" class="btn btn-primary btn-sm">+ New bill</a>
+</div>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">Bill</th><th class="p-3">Supplier</th><th class="p-3">Status</th><th class="p-3 text-right">Total</th><th class="p-3 text-right">Balance due</th></tr></thead>
+    <tbody>
+      {% for b in bills %}
+      <tr class="row-border">
+        <td class="p-3"><a class="link" href="{{ url_for('bills.view_bill', bill_id=b.id) }}">{{ b.bill_number or b.id[:8] }}</a></td>
+        <td class="p-3">{{ b.supplier.name }}</td>
+        <td class="p-3 capitalize">{{ b.status.replace('_',' ') }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(b.total()) }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(b.balance_due()) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="empty-state">No bills yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

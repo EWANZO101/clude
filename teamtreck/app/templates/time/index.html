@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Time Tracking - TeamTreck{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Time Tracking</h1>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 mb-6">
+    {% if active %}
+    <div class="flex items-center justify-between flex-wrap gap-4">
+        <div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                {% if active.status == 'paused' %}Paused{% else %}Running{% endif %}
+                {% if active.project %} · {{ active.project.name }}{% endif %}
+            </div>
+            <div id="timer-display" class="text-4xl font-mono font-bold {{ 'text-yellow-500' if active.status == 'paused' else 'text-brand-600 dark:text-brand-400' }}"
+                 data-seconds="{{ active.duration_seconds() }}" data-status="{{ active.status }}">
+                {{ active.duration_hms() }}
+            </div>
+        </div>
+        <div class="flex gap-2">
+            {% if active.status == 'running' %}
+            <form method="POST" action="{{ url_for('time.pause', entry_id=active.id) }}">
+                <button class="px-4 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white font-medium">Pause</button>
+            </form>
+            {% else %}
+            <form method="POST" action="{{ url_for('time.resume', entry_id=active.id) }}">
+                <button class="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium">Resume</button>
+            </form>
+            {% endif %}
+            <form method="POST" action="{{ url_for('time.stop', entry_id=active.id) }}">
+                <button class="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium">Stop</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <form method="POST" action="{{ url_for('time.start') }}" class="flex items-end gap-3 flex-wrap">
+        <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Project</label>
+            <select name="project_id" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+                <option value="">— No project —</option>
+                {% for p in projects %}
+                <option value="{{ p.id }}">{{ p.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Note</label>
+            <input type="text" name="note" placeholder="What are you working on?"
+                class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+        </div>
+        <button type="submit" class="px-6 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-medium">
+            Start Timer
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+<h2 class="text-lg font-semibold mb-3">Recent Sessions</h2>
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-800 text-left text-gray-500 dark:text-gray-400">
+                <th class="px-4 py-3">Started</th>
+                <th class="px-4 py-3">Project</th>
+                <th class="px-4 py-3">Note</th>
+                <th class="px-4 py-3">Duration</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in recent %}
+            <tr class="border-b border-gray-100 dark:border-gray-800/50">
+                <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ e.started_at.strftime('%d %b %H:%M') }}</td>
+                <td class="px-4 py-3">{{ e.project.name if e.project else '—' }}</td>
+                <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ e.note or '—' }}</td>
+                <td class="px-4 py-3 font-mono">{{ e.duration_hms() }}</td>
+                <td class="px-4 py-3">
+                    <span class="text-xs px-2 py-1 rounded-full {{ 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' if e.status == 'stopped' else 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' }}">
+                        {{ e.status }}
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-right">
+                    {% if e.status == 'stopped' %}
+                    <form method="POST" action="{{ url_for('time.delete_entry', entry_id=e.id) }}" onsubmit="return confirm('Delete this entry?')" class="inline">
+                        <button class="text-red-500 hover:text-red-600 text-xs">Delete</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/timer.js') }}"></script>
+{% endblock %}

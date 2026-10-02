@@ -1,0 +1,11 @@
+[Unit]
+Description=SnailyCAD Migration Platform — cleanup (expired temp accounts + export retention)
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/snailycad-migrate
+EnvironmentFile=/root/snailycad-migrate/.env
+Environment=FLASK_APP=run.py
+ExecStart=/root/snailycad-migrate/venv/bin/flask cleanup

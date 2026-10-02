@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Payment schedule · {{ contract.title }}{% endblock %}
+{% block content %}
+{% set cur = contract.currency_code %}
+<p class="text-gold text-xs tracking-[0.2em] uppercase mb-1">Step 2 of 2</p>
+<h1 class="font-display text-4xl tracking-tight mb-1">Build the payment schedule</h1>
+<p class="text-muted text-sm mb-8">{{ contract.title }} &middot; {{ contract.total_amount|money(cur) }} total {{ '(outstanding balance allowed)' if contract.allow_outstanding_balance else '' }}</p>
+
+<form id="schedule-form" method="post"
+      data-preview-url="{{ url_for('schedule_preview', contract_id=contract.id) }}"
+      data-currency-symbol="{{ contract.total_amount|money(cur)|first }}"
+      data-contract-total="{{ contract.total_amount }}"
+      data-allow-outstanding="{{ 'true' if contract.allow_outstanding_balance else 'false' }}"
+      class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+
+  <div class="lg:col-span-2 card p-6 space-y-5 h-fit">
+    <div>
+      <label class="block text-xs text-muted mb-1.5">Payment frequency</label>
+      <select name="frequency" class="w-full input-field px-3 py-2 text-sm">
+        <option value="one_time">One-time</option>
+        <option value="weekly">Weekly</option>
+        <option value="biweekly">Every 2 weeks</option>
+        <option value="monthly" selected>Monthly</option>
+        <option value="bimonthly">Every 2 months</option>
+        <option value="quarterly">Quarterly</option>
+        <option value="custom">Custom dates</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-xs text-muted mb-1.5">Payment start date</label>
+      <input type="date" name="start_date" required value="{{ (contract.created_at.date()).isoformat() }}" class="w-full input-field px-3 py-2 text-sm num">
+    </div>
+
+    <div id="monthly-fields">
+      <label class="block text-xs text-muted mb-1.5">Day of month</label>
+      <input type="number" name="day_of_month" min="1" max="31" placeholder="e.g. 5" class="w-full input-field px-3 py-2 text-sm num">
+    </div>
+
+    <div id="num-instalments-field">
+      <label class="block text-xs text-muted mb-1.5">Number of instalments</label>
+      <input type="number" name="num_instalments" min="1" value="6" class="w-full input-field px-3 py-2 text-sm num">
+    </div>
+
+    <div id="custom-date-fields" class="hidden">
+      <label class="block text-xs text-muted mb-1.5">Custom dates (comma separated, YYYY-MM-DD)</label>
+      <textarea name="custom_dates" rows="2" placeholder="2026-09-05, 2026-10-20, 2026-12-01" class="w-full input-field px-3 py-2 text-sm num"></textarea>
+    </div>
+
+    <label class="flex items-center gap-2 text-sm text-muted">
+      <input type="checkbox" name="auto_end" checked class="rounded border-ink-line bg-ink-raised">
+      Automatically end after the final instalment
+    </label>
+
+    <hr class="border-ink-line">
+
+    <div>
+      <label class="block text-xs text-muted mb-1.5">Payment amount</label>
+      <select name="amount_mode" class="w-full input-field px-3 py-2 text-sm">
+        <option value="fixed" selected>Fixed amount (split evenly)</option>
+        <option value="percentage">Percentage of contract total</option>
+        <option value="custom">Custom amount per instalment</option>
+      </select>
+    </div>
+
+    <div id="fixed-amount-field">
+      <label class="block text-xs text-muted mb-1.5">Fixed amount per instalment (optional — leave blank to split evenly)</label>
+      <input type="number" step="0.01" name="fixed_amount" placeholder="Auto-split" class="w-full input-field px-3 py-2 text-sm num">
+    </div>
+
+    <div id="percentage-field" class="hidden">
+      <label class="block text-xs text-muted mb-1.5">Percentage per instalment</label>
+      <input type="number" step="0.1" name="percentage" placeholder="e.g. 16.67" class="w-full input-field px-3 py-2 text-sm num">
+    </div>
+
+    <div id="custom-amounts-field" class="hidden">
+      <label class="block text-xs text-muted mb-1.5">Custom amounts (comma separated)</label>
+      <textarea name="custom_amounts" rows="2" placeholder="800, 400, 400, 400, 400" class="w-full input-field px-3 py-2 text-sm num"></textarea>
+    </div>
+
+    <button type="button" id="preview-btn" class="w-full border border-gold text-gold font-semibold rounded-md py-2 text-sm hover:bg-gold hover:text-ink transition">Generate preview</button>
+
+    <input type="hidden" name="rows_json">
+    <input type="hidden" name="meta_json">
+  </div>
+
+  <div class="lg:col-span-3">
+    <div id="preview-section" class="hidden card p-6">
+      <p class="font-display text-lg mb-4">Schedule preview</p>
+
+      <div class="grid grid-cols-4 gap-4 mb-5 text-sm">
+        <div><p class="text-xs text-muted">Total scheduled</p><p id="sum-scheduled" class="num">—</p></div>
+        <div><p class="text-xs text-muted">Remaining balance</p><p id="sum-remaining" class="num">—</p></div>
+        <div><p class="text-xs text-muted">First payment</p><p id="sum-first" class="num">—</p></div>
+        <div><p class="text-xs text-muted">Final payment</p><p id="sum-final" class="num">—</p></div>
+      </div>
+
+      <div id="balance-warning" class="hidden text-xs text-brick bg-brick/10 border border-brick/40 rounded-md px-3 py-2 mb-4"></div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs text-muted uppercase tracking-wide">
+              <th class="pb-2 pr-3">#</th>
+              <th class="pb-2 pr-3">Date</th>
+              <th class="pb-2 pr-3">Description</th>
+              <th class="pb-2 pr-3 text-right">Amount</th>
+              <th class="pb-2">Status</th>
+            </tr>
+          </thead>
+          <tbody id="preview-body"></tbody>
+        </table>
+      </div>
+
+      <p class="text-xs text-muted mt-4">Edit any date, label, or amount above before confirming — totals update automatically.</p>
+
+      <button id="confirm-btn" type="submit" class="mt-5 btn-primary px-5 py-2.5 text-sm">Confirm schedule</button>
+    </div>
+
+    {% if not contract.schedule %}
+    <div class="text-sm text-muted mt-4">Fill in the schedule options on the left, then click <span class="text-gold">Generate preview</span> to see and edit exact instalments before saving.</div>
+    {% endif %}
+  </div>
+</form>
+
+<script src="{{ url_for('static', filename='js/schedule-builder.js') }}"></script>
+{% endblock %}

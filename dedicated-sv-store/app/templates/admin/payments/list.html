@@ -1,0 +1,39 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Payments — Admin{% endblock %}
+{% block page_title %}Payments{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Provider</th><th>Status</th><th>Date</th><th></th></tr></thead>
+    <tbody>
+      {% for payment in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ payment.invoice.invoice_number }}</td>
+        <td class="text-text-secondary">{{ payment.user.email }}</td>
+        <td class="text-text-primary">£{{ payment.amount }}</td>
+        <td class="text-text-secondary capitalize">{{ payment.provider }}</td>
+        <td>
+          {% if payment.status.value == "completed" %}<span class="badge-success">Completed</span>
+          {% elif payment.status.value == "failed" %}<span class="badge-danger">Failed</span>
+          {% elif payment.status.value == "refunded" %}<span class="badge-neutral">Refunded</span>
+          {% else %}<span class="badge-warning">Pending</span>{% endif %}
+        </td>
+        <td class="text-text-muted">{{ payment.created_at.strftime("%d %b %Y") }}</td>
+        <td>
+          {% if payment.status.value == "completed" %}
+          <form method="POST" action="{{ url_for('admin.payment_refund', payment_id=payment.id) }}" onsubmit="return confirm('Refund this payment?');">
+            {% include "components/_csrf.html" %}
+            <button type="submit" class="text-status-danger hover:opacity-80 text-sm">Refund</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center text-text-muted py-8">No payments yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.payments") }}
+</div>
+{% endblock %}

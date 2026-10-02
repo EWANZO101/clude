@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% block title %}New Service — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">systemd</p>
+    <h1 class="page-title">New system service</h1>
+    <p class="page-sub">Pick a runtime, point it at the app, and the panel figures out the start command.</p>
+  </div>
+</div>
+
+<div class="card" style="max-width:580px;">
+  <form method="POST" id="service-form">
+    {{ form.hidden_tag() }}
+
+    <div class="field">
+      {{ form.app_name.label }}
+      {{ form.app_name(placeholder="myapp") }}
+      {% for e in form.app_name.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.working_dir.label }}
+      {{ form.working_dir(placeholder="/home/myapp", id="working_dir") }}
+      {% for e in form.working_dir.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.runtime.label }}
+      {{ form.runtime(id="runtime") }}
+    </div>
+
+    <div class="field">
+      {{ form.port.label }}
+      {{ form.port(placeholder="3000 (optional)", id="port") }}
+    </div>
+
+    <div class="detect-row">
+      <button type="button" class="btn btn-secondary" id="detect-btn">Detect start file</button>
+      <button type="button" class="btn btn-secondary" id="browse-btn">Browse files…</button>
+      <button type="button" class="btn btn-secondary" id="edit-btn" style="display:none;">Open in editor</button>
+    </div>
+    <div class="detect-hint" id="detect-hint"></div>
+
+    <div class="field" style="margin-top:16px;">
+      {{ form.exec_start.label }}
+      {{ form.exec_start(placeholder="/home/myapp/venv/bin/python app.py", id="exec_start") }}
+      {% for e in form.exec_start.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.run_user.label }}
+      {{ form.run_user() }}
+    </div>
+
+    <div class="field">
+      {{ form.description.label }}
+      {{ form.description(placeholder="Optional description") }}
+    </div>
+
+    <button class="btn btn-primary" type="submit">Create, enable &amp; start</button>
+  </form>
+</div>
+
+<!-- File browser modal -->
+<div class="modal-overlay" id="browse-modal">
+  <div class="modal-box modal-browse">
+    <div class="modal-header">
+      <h3 id="browse-path">/home</h3>
+      <button class="modal-close" type="button" id="browse-close">&times;</button>
+    </div>
+    <div class="browse-list" id="browse-list"></div>
+  </div>
+</div>
+
+<!-- Code editor modal (Monaco) -->
+<div class="modal-overlay" id="editor-modal">
+  <div class="modal-box modal-editor">
+    <div class="modal-header">
+      <h3 id="editor-path">/path/to/file</h3>
+      <button class="modal-close" type="button" id="editor-close">&times;</button>
+    </div>
+    <div id="monaco-container"></div>
+    <div class="editor-footer">
+      <span class="editor-save-status" id="editor-status"></span>
+      <button class="btn btn-secondary" type="button" id="editor-cancel">Close</button>
+      <button class="btn btn-primary" type="button" id="editor-save">Save file</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+<script>
+(function () {
+  const workingDirEl = document.getElementById('working_dir');
+  const runtimeEl = document.getElementById('runtime');
+  const portEl = document.getElementById('port');
+  const execStartEl = document.getElementById('exec_start');
+  const detectHint = document.getElementById('detect-hint');
+  const editBtn = document.getElementById('edit-btn');
+
+  let currentEntryFile = null;
+
+  function csrfToken() {
+    return document.querySelector('input[name="csrf_token"]').value;
+  }
+
+  async function callJson(url, payload) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+      body: JSON.stringify(payload || {}),
+    });
+    return res.json();
+  }
+
+  // ---- Detect start file ----
+  document.getElementById('detect-btn').addEventListener('click', async () => {
+    detectHint.textContent = 'Scanning…';
+    detectHint.className = 'detect-hint';
+    const data = await callJson('{{ url_for("systemctl.api_detect_entry") }}', {
+      working_dir: workingDirEl.value.trim(),
+      runtime: runtimeEl.value,
+      port: portEl.value.trim(),
+    });
+    if (!data.ok) {
+      detectHint.textContent = data.error || 'Could not scan that directory.';
+      return;
+    }
+    if (data.best_match) {
+      currentEntryFile = data.best_match;
+      execStartEl.value = data.suggested_exec_start || '';
+      detectHint.textContent = `Found ${data.best_match === 'npm-start' ? 'a "start" script in package.json' : data.best_match}. Review the start command below.`;
+      detectHint.className = 'detect-hint found';
+      editBtn.style.display = data.best_match === 'npm-start' ? 'none' : 'inline-block';
+    } else {
+      detectHint.textContent = 'No obvious entry file found for that runtime — enter the start command manually, or browse for the file.';
+      editBtn.style.display = 'none';
+    }
+  });
+
+  // ---- File browser modal ----
+  const browseModal = document.getElementById('browse-modal');
+  const browseList = document.getElementById('browse-list');
+  const browsePathEl = document.getElementById('browse-path');
+
+  async function loadBrowse(path) {
+    const res = await fetch('{{ url_for("systemctl.api_browse") }}?path=' + encodeURIComponent(path));
+    const data = await res.json();
+    if (!data.ok) {
+      browseList.innerHTML = `<div class="browse-item">${data.error}</div>`;
+      return;
+    }
+    browsePathEl.textContent = data.path;
+    let html = '';
+    if (data.parent) {
+      html += `<div class="browse-item" data-dir="${data.parent}"><span class="icon">↰</span> ..</div>`;
+    }
+    for (const entry of data.entries) {
+      if (entry.is_dir) {
+        html += `<div class="browse-item" data-dir="${entry.path}"><span class="icon">📁</span> ${entry.name}</div>`;
+      } else {
+        html += `<div class="browse-item" data-file="${entry.path}"><span class="icon">📄</span> ${entry.name}</div>`;
+      }
+    }
+    browseList.innerHTML = html || '<div class="browse-item">Empty directory</div>';
+
+    browseList.querySelectorAll('[data-dir]').forEach((el) => {
+      el.addEventListener('click', () => loadBrowse(el.getAttribute('data-dir')));
+    });
+    browseList.querySelectorAll('[data-file]').forEach((el) => {
+      el.addEventListener('click', () => selectFile(el.getAttribute('data-file')));
+    });
+  }
+
+  function selectFile(path) {
+    currentEntryFile = path;
+    browseModal.classList.remove('open');
+    editBtn.style.display = 'inline-block';
+    callJson('{{ url_for("systemctl.api_detect_entry") }}', {
+      working_dir: workingDirEl.value.trim() || path.split('/').slice(0, -1).join('/'),
+      runtime: runtimeEl.value,
+      port: portEl.value.trim(),
+      entry_file: path,
+    }).then((data) => {
+      if (data.ok) {
+        execStartEl.value = data.suggested_exec_start || execStartEl.value;
+        detectHint.textContent = `Selected ${path}.`;
+        detectHint.className = 'detect-hint found';
+      }
+    });
+  }
+
+  document.getElementById('browse-btn').addEventListener('click', () => {
+    browseModal.classList.add('open');
+    loadBrowse(workingDirEl.value.trim() || '/home');
+  });
+  document.getElementById('browse-close').addEventListener('click', () => browseModal.classList.remove('open'));
+  browseModal.addEventListener('click', (e) => { if (e.target === browseModal) browseModal.classList.remove('open'); });
+
+  // ---- Monaco editor modal ----
+  const editorModal = document.getElementById('editor-modal');
+  const editorPathEl = document.getElementById('editor-path');
+  const editorStatus = document.getElementById('editor-status');
+  let monacoEditor = null;
+  let monacoLoaded = false;
+
+  function langFromPath(path) {
+    const ext = (path.split('.').pop() || '').toLowerCase();
+    const map = {
+      py: 'python', js: 'javascript', mjs: 'javascript', ts: 'typescript',
+      php: 'php', rb: 'ruby', go: 'go', cs: 'csharp', java: 'java',
+      json: 'json', yaml: 'yaml', yml: 'yaml', html: 'html', css: 'css',
+      sh: 'shell', md: 'markdown', sql: 'sql', env: 'ini', txt: 'plaintext',
+    };
+    return map[ext] || 'plaintext';
+  }
+
+  function ensureMonaco(callback) {
+    if (monacoLoaded) { callback(); return; }
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    require(['vs/editor/editor.main'], () => {
+      monacoLoaded = true;
+      callback();
+    });
+  }
+
+  function openEditor(path) {
+    editorPathEl.textContent = path;
+    editorStatus.textContent = 'Loading…';
+    editorModal.classList.add('open');
+
+    fetch('{{ url_for("systemctl.api_read_file") }}?path=' + encodeURIComponent(path))
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.ok) {
+          editorStatus.textContent = data.error || 'Failed to load file.';
+          return;
+        }
+        editorStatus.textContent = '';
+        ensureMonaco(() => {
+          if (monacoEditor) {
+            monacoEditor.dispose();
+          }
+          monacoEditor = monaco.editor.create(document.getElementById('monaco-container'), {
+            value: data.content,
+            language: langFromPath(path),
+            theme: 'vs-dark',
+            automaticLayout: true,
+            minimap: { enabled: true },
+            fontSize: 13,
+            fontFamily: "'JetBrains Mono', monospace",
+          });
+        });
+      });
+  }
+
+  editBtn.addEventListener('click', () => {
+    if (currentEntryFile && currentEntryFile !== 'npm-start') openEditor(currentEntryFile);
+  });
+
+  document.getElementById('editor-save').addEventListener('click', async () => {
+    if (!monacoEditor) return;
+    editorStatus.textContent = 'Saving…';
+    const data = await callJson('{{ url_for("systemctl.api_write_file") }}', {
+      path: editorPathEl.textContent,
+      content: monacoEditor.getValue(),
+    });
+    editorStatus.textContent = data.ok ? 'Saved.' : (data.error || 'Save failed.');
+  });
+
+  function closeEditor() {
+    editorModal.classList.remove('open');
+  }
+  document.getElementById('editor-close').addEventListener('click', closeEditor);
+  document.getElementById('editor-cancel').addEventListener('click', closeEditor);
+  editorModal.addEventListener('click', (e) => { if (e.target === editorModal) closeEditor(); });
+})();
+</script>
+{% endblock %}

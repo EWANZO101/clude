@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Ledgerly{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: { DEFAULT: '#0E1210', surface: '#161B18', raised: '#1E2420', line: '#2B322C' },
+          gold: { DEFAULT: '#B08D3E', soft: '#8F7434', bright: '#D4B364' },
+          parchment: '#F3EFE4',
+          muted: '#95907F',
+          sage: '#5C8367',
+          brick: '#B9584C',
+        },
+        fontFamily: {
+          display: ['Fraunces', 'serif'],
+          sans: ['Inter', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+      }
+    }
+  }
+</script>
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<style>
+  body {
+    background-color: #0A0D0C;
+    background-image:
+      radial-gradient(ellipse 900px 500px at 12% -8%, rgba(176,141,62,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(92,131,103,0.05), transparent 55%);
+    background-attachment: fixed;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/></svg>");
+  }
+  #app-root { position: relative; z-index: 1; }
+
+  ::selection { background: #B08D3E; color: #0E1210; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2B322C; border-radius: 999px; border: 2px solid #0A0D0C; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4239; }
+
+  .num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---- Cards ---- */
+  .card {
+    background: linear-gradient(180deg, rgba(32,38,34,0.62), rgba(19,23,20,0.85));
+    border: 1px solid rgba(243,239,228,0.065);
+    border-radius: 16px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.035) inset, 0 16px 32px -20px rgba(0,0,0,0.65);
+  }
+  .card-raised {
+    background: linear-gradient(180deg, rgba(40,47,41,0.85), rgba(24,29,26,0.92));
+    border-color: rgba(176,141,62,0.16);
+  }
+  .card-interactive { transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease; }
+  .card-interactive:hover {
+    border-color: rgba(176,141,62,0.28);
+    transform: translateY(-1px);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 20px 36px -18px rgba(0,0,0,0.7);
+  }
+
+  /* ---- Buttons ---- */
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+    background: linear-gradient(180deg, #D9BC72, #B08D3E 65%, #9c7c34);
+    color: #171308;
+    font-weight: 600;
+    border-radius: 10px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset, 0 1px 2px rgba(0,0,0,0.2), 0 10px 20px -10px rgba(176,141,62,0.55);
+    transition: filter .15s ease, transform .12s ease, box-shadow .15s ease;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 14px 26px -10px rgba(176,141,62,0.65); }
+  .btn-primary:active { transform: translateY(0); filter: brightness(0.98); }
+  .btn-primary:disabled { opacity: .4; filter: none; transform: none; cursor: not-allowed; }
+
+  .btn-secondary {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+    background: rgba(243,239,228,0.025);
+    border: 1px solid rgba(243,239,228,0.12);
+    color: #F3EFE4;
+    border-radius: 10px;
+    transition: border-color .15s ease, background .15s ease, color .15s ease, transform .12s ease;
+    white-space: nowrap;
+  }
+  .btn-secondary:hover { border-color: rgba(176,141,62,0.55); background: rgba(176,141,62,0.07); color: #D4B364; }
+
+  .btn-danger-outline {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+    background: rgba(243,239,228,0.025);
+    border: 1px solid rgba(243,239,228,0.12);
+    color: #F3EFE4;
+    border-radius: 10px;
+    transition: border-color .15s ease, background .15s ease, color .15s ease;
+  }
+  .btn-danger-outline:hover { border-color: rgba(185,88,76,0.6); background: rgba(185,88,76,0.08); color: #d98177; }
+
+  /* ---- Inputs ---- */
+  .input-field {
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(243,239,228,0.1);
+    border-radius: 10px;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .input-field:focus { outline: none; border-color: #B08D3E; box-shadow: 0 0 0 3px rgba(176,141,62,0.14); background: rgba(0,0,0,0.3); }
+  .input-field::placeholder { color: #6b6559; }
+
+  /* ---- Status pill (was a gimmicky rotated "stamp"; now a clean, quiet pill) ---- */
+  .stamp {
+    display: inline-flex; align-items: center; gap: .4rem;
+    border-radius: 999px;
+    padding: .28rem .7rem;
+    font-size: .66rem; letter-spacing: .09em; text-transform: uppercase; font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1;
+    background: color-mix(in oklab, currentColor 13%, transparent);
+    border: 1px solid color-mix(in oklab, currentColor 30%, transparent);
+  }
+  .stamp::before { content: ''; width: 5px; height: 5px; border-radius: 999px; background: currentColor; flex-shrink: 0; }
+
+  /* ---- Nav ---- */
+  .nav-blur { background: rgba(10,13,12,0.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+
+  /* ---- Quill dark-theme overrides ---- */
+  .ql-toolbar.ql-snow { border-color: rgba(243,239,228,0.1); background: rgba(255,255,255,0.02); border-radius: 10px 10px 0 0; }
+  .ql-container.ql-snow { border-color: rgba(243,239,228,0.1); border-radius: 0 0 10px 10px; background: rgba(0,0,0,0.18); font-family: 'Inter', sans-serif; font-size: 14px; }
+  .ql-snow .ql-stroke { stroke: #95907F; }
+  .ql-snow .ql-fill { fill: #95907F; }
+  .ql-snow .ql-picker { color: #95907F; }
+  .ql-toolbar.ql-snow .ql-formats button:hover .ql-stroke,
+  .ql-toolbar.ql-snow .ql-formats button.ql-active .ql-stroke { stroke: #B08D3E; }
+  .ql-toolbar.ql-snow .ql-formats button:hover .ql-fill,
+  .ql-toolbar.ql-snow .ql-formats button.ql-active .ql-fill { fill: #B08D3E; }
+  .ql-toolbar.ql-snow .ql-formats button.ql-active,
+  .ql-toolbar.ql-snow .ql-formats button:hover { color: #B08D3E; }
+  .ql-snow .ql-picker-options { background: #1E2420; border-color: rgba(243,239,228,0.1) !important; }
+  .ql-editor { color: #F3EFE4; min-height: 260px; }
+  .ql-editor.ql-blank::before { color: #6b6559; font-style: normal; }
+  .ql-editor h2 { font-family: 'Fraunces', serif; font-size: 1.25rem; margin-top: .6em; }
+  .ql-editor h3 { font-family: 'Fraunces', serif; font-size: 1.1rem; margin-top: .6em; }
+  .ql-editor blockquote { border-left: 3px solid #B08D3E; color: #95907F; padding-left: .75rem; }
+  .ql-editor a { color: #D4B364; }
+</style>
+</head>
+<body class="min-h-screen text-parchment font-sans antialiased">
+<div id="app-root">
+
+{% if current_user.is_authenticated %}
+<header class="sticky top-0 z-20 nav-blur border-b border-white/[0.06]">
+  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-9">
+      <a href="{{ url_for('dashboard') }}" class="font-display text-xl tracking-tight text-parchment">
+        Ledger<span class="text-gold">ly</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-7 text-sm text-muted">
+        <a href="{{ url_for('dashboard') }}" class="hover:text-parchment transition">Dashboard</a>
+        <a href="{{ url_for('contracts_list') }}" class="hover:text-parchment transition">Contracts</a>
+        <a href="{{ url_for('clients') }}" class="hover:text-parchment transition">Clients</a>
+        <a href="{{ url_for('reminders') }}" class="hover:text-parchment transition">Reminders</a>
+        <a href="{{ url_for('branding') }}" class="hover:text-parchment transition">Branding</a>
+      </nav>
+    </div>
+    <div class="flex items-center gap-5">
+      <a href="{{ url_for('contract_new') }}" class="btn-primary text-sm px-4 py-2">+ New contract</a>
+      <span class="text-xs text-muted hidden sm:inline">{{ current_user.company.name }}</span>
+      <a href="{{ url_for('logout') }}" class="text-xs text-muted hover:text-brick transition">Sign out</a>
+    </div>
+  </div>
+</header>
+{% endif %}
+
+<main class="max-w-6xl mx-auto px-6 py-10">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-6 space-y-2">
+      {% for category, message in messages %}
+        <div class="text-sm px-4 py-3 rounded-xl border {{ 'border-brick/40 bg-brick/[0.08] text-brick' if category=='error' else 'border-sage/40 bg-sage/[0.08] text-sage' }}">
+          {{ message }}
+        </div>
+      {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+</div>
+</body>
+</html>

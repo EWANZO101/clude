@@ -1,0 +1,20 @@
+<div class="flex items-center gap-1 mb-6 border-b border-border text-sm overflow-x-auto">
+  <a href="{{ url_for('admin.overview') }}"
+     class="px-3 py-2 whitespace-nowrap {{ 'text-blue-400 border-b-2 border-blue-500' if request.endpoint == 'admin.overview' else 'text-gray-400 hover:text-gray-200' }}">Overview</a>
+  <a href="{{ url_for('admin.users') }}"
+     class="px-3 py-2 whitespace-nowrap {{ 'text-blue-400 border-b-2 border-blue-500' if request.endpoint in ('admin.users', 'admin.user_detail') else 'text-gray-400 hover:text-gray-200' }}">Users</a>
+  <a href="{{ url_for('admin.exports') }}"
+     class="px-3 py-2 whitespace-nowrap {{ 'text-blue-400 border-b-2 border-blue-500' if request.endpoint == 'admin.exports' else 'text-gray-400 hover:text-gray-200' }}">Exports</a>
+  <a href="{{ url_for('admin.imports') }}"
+     class="px-3 py-2 whitespace-nowrap {{ 'text-blue-400 border-b-2 border-blue-500' if request.endpoint == 'admin.imports' else 'text-gray-400 hover:text-gray-200' }}">Imports</a>
+  <a href="{{ url_for('admin.audit_logs') }}"
+     class="px-3 py-2 whitespace-nowrap {{ 'text-blue-400 border-b-2 border-blue-500' if request.endpoint == 'admin.audit_logs' else 'text-gray-400 hover:text-gray-200' }}">Audit log</a>
+  <a href="{{ url_for('admin.share_links') }}"
+     class="px-3 py-2 whitespace-nowrap {{ 'text-blue-400 border-b-2 border-blue-500' if request.endpoint == 'admin.share_links' else 'text-gray-400 hover:text-gray-200' }}">Share links</a>
+  <a href="{{ url_for('admin.extension_requests') }}"
+     class="px-3 py-2 whitespace-nowrap {{ 'text-blue-400 border-b-2 border-blue-500' if request.endpoint == 'admin.extension_requests' else 'text-gray-400 hover:text-gray-200' }}">Extensions</a>
+  <a href="{{ url_for('admin.support_tickets') }}"
+     class="px-3 py-2 whitespace-nowrap {{ 'text-blue-400 border-b-2 border-blue-500' if request.endpoint in ('admin.support_tickets', 'admin.support_ticket_detail') else 'text-gray-400 hover:text-gray-200' }}">Support</a>
+  <a href="{{ url_for('admin.settings') }}"
+     class="px-3 py-2 whitespace-nowrap {{ 'text-blue-400 border-b-2 border-blue-500' if request.endpoint == 'admin.settings' else 'text-gray-400 hover:text-gray-200' }}">Settings</a>
+</div>

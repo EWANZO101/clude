@@ -1,0 +1,15 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_server_card.html" import server_card with context %}
+{% block title %}Favourites — {{ app_name }}{% endblock %}
+{% block page_title %}Favourites{% endblock %}
+{% block content %}
+{% if favourites %}
+<div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+  {% for fav in favourites %}{{ server_card(fav.server, is_favourited=True) }}{% endfor %}
+</div>
+{% else %}
+<div class="card p-10 text-center text-text-secondary">
+  You haven't favourited any servers yet. <a href="{{ url_for('marketplace.servers') }}" class="text-brand-400 hover:text-brand-300">Browse the marketplace</a>.
+</div>
+{% endif %}
+{% endblock %}

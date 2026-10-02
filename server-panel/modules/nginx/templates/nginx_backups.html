@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Backups: {{ filename }} — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">Nginx</p>
+    <h1 class="page-title mono">{{ filename }}</h1>
+    <p class="page-sub">Config backups (auto-saved every time this site is edited)</p>
+  </div>
+</div>
+
+{% if backups %}
+<div class="card flush">
+  <div class="table-wrap">
+    <table class="data-table">
+      <tbody>
+        {% for b in backups %}
+        <tr>
+          <td class="mono primary">{{ b.filename }}</td>
+          <td style="text-align:right;">
+            <form method="POST" action="{{ url_for('nginx.restore_site', filename=filename) }}" onsubmit="return confirm('Restore this backup? The current config will be overwritten.');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="backup_path" value="{{ b.path }}">
+              <button type="submit" class="btn btn-secondary btn-sm">Restore</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+  <div class="card"><div class="empty-state">No backups yet for this site — one is taken automatically the next time it's edited.</div></div>
+{% endif %}
+{% endblock %}

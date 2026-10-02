@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Open Ticket — Order {{ order.order_id }}{% endblock %}
+{% block body %}
+<nav class="nav-bar">
+  <a class="nav-logo" href="/">Cioda's <span>Commissions</span></a>
+  <a href="/order/{{ order.unique_link }}" class="btn btn-ghost btn-sm">← Back to Order</a>
+</nav>
+<main style="max-width:600px;margin:0 auto;padding:2rem 1.5rem;" class="fade-in">
+  <h1 class="font-display" style="font-size:1.7rem;margin-bottom:0.5rem;">Open a Support Ticket</h1>
+  <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:2rem;font-style:italic;">Ticket sessions expire after 24 hours.</p>
+
+  <form method="POST" class="card">
+    <div style="margin-bottom:1rem;">
+      <label class="form-label">Your Name</label>
+      <input type="text" name="name" class="input" value="{{ order.customer_name }}" placeholder="{{ order.customer_name }}">
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label class="form-label">Subject *</label>
+      <input type="text" name="subject" class="input" required placeholder="Brief description of your issue">
+    </div>
+    <div style="margin-bottom:1.5rem;">
+      <label class="form-label">Message *</label>
+      <textarea name="message" class="input" required placeholder="Describe your issue in detail..." style="min-height:140px;"></textarea>
+    </div>
+    <div style="display:flex;gap:1rem;">
+      <button type="submit" class="btn btn-primary">Submit Ticket</button>
+      <a href="/order/{{ order.unique_link }}" class="btn btn-ghost">Cancel</a>
+    </div>
+  </form>
+</main>
+{% endblock %}

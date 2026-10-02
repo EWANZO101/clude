@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Delete account — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-6">Delete account</h1>
+
+  {% if owns_products or owns_team %}
+    <div class="bg-red-950/40 border border-red-800 rounded-lg p-5 text-sm text-red-300">
+      <p class="mb-3">
+        You can't delete your account yet — you own a developer workspace
+        {% if owns_products %}with products customers depend on{% endif %}
+        {% if owns_products and owns_team %} and{% endif %}
+        {% if owns_team %}with team members{% endif %}.
+        Deleting it would break things for people who aren't you.
+      </p>
+      <p>Contact support to transfer or wind down your workspace first, then come back here.</p>
+    </div>
+  {% else %}
+    <div class="bg-red-950/40 border border-red-800 rounded-lg p-5 mb-6 text-sm text-red-300">
+      <p class="mb-2">This permanently deletes your account. This cannot be undone.</p>
+      <p>Any licenses you've purchased stay valid under the developer's records, but will no longer show in a "My Licenses" page you can access.</p>
+    </div>
+
+    <form method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Password</label>
+        <input type="password" name="password" required
+          class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+      </div>
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Type DELETE to confirm</label>
+        <input type="text" name="confirm_text" required placeholder="DELETE"
+          class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand">
+      </div>
+      <button type="submit" class="w-full bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 rounded-md py-2 text-sm font-medium transition">
+        Permanently delete my account
+      </button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

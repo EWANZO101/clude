@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Unmatched bank transactions{% endblock %}
+{% block content %}
+<h1 class="page-title mb-6">Unmatched bank transactions</h1>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">Date</th><th class="p-3">Description</th><th class="p-3 text-right">Amount</th><th class="p-3">Categorise as</th><th class="p-3"></th></tr></thead>
+    <tbody>
+      {% for t in transactions %}
+      <tr class="row-border">
+        <td class="p-3">{{ t.transaction_date }}</td>
+        <td class="p-3">{{ t.description }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(t.amount) }}</td>
+        <td class="p-3" colspan="2">
+          <form method="POST" action="{{ url_for('integrations.match_bank_transaction', transaction_id=t.id) }}" class="flex gap-2">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select name="category_account_id" class="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
+              {% for c in categories %}<option value="{{ c.id }}">{{ c.code }} {{ c.name }}</option>{% endfor %}
+            </select>
+            <button class="bg-blue-600 text-white px-3 py-1 rounded text-sm">Match &amp; post</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="empty-state">No unmatched transactions.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

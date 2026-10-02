@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Licence Required — stocktool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body{background:#0f0f14;font-family:system-ui,sans-serif}</style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6">
+  <div class="w-full max-w-md">
+    <!-- Logo / branding -->
+    <div class="text-center mb-8">
+      <div class="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-white">Licence Required</h1>
+      <p class="text-sm text-gray-500 mt-1">stocktool needs a valid licence key to run</p>
+    </div>
+    <!-- Error message if present -->
+    {% if error %}
+    <div class="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-5">
+      <p class="text-sm text-red-300">{{ error }}</p>
+    </div>
+    {% endif %}
+    <!-- Activation form -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-2">Licence Key</label>
+        <input type="text" id="licenceKey" placeholder="XXXX-XXXX-XXXX-XXXX"
+               class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white font-mono text-sm placeholder-gray-600 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition uppercase"
+               oninput="this.value=this.value.toUpperCase()">
+        <p class="text-xs text-gray-600 mt-1">Contact your administrator if you don't have a key</p>
+      </div>
+      <button onclick="activateLicence()"
+              class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-xl transition-colors text-sm">
+        Activate Licence
+      </button>
+      <div id="activateMsg" class="hidden text-center text-sm py-2 rounded-xl"></div>
+    </div>
+    <p class="text-center text-xs text-gray-600 mt-6">
+      Powered by stocktool
+    </p>
+  </div>
+<script>
+async function activateLicence() {
+  const key = document.getElementById('licenceKey').value.trim();
+  const msg = document.getElementById('activateMsg');
+  if (!key || key.length < 10) {
+    showMsg('Please enter a valid licence key', false);
+    return;
+  }
+  showMsg('Validating...', null);
+  try {
+    const r = await fetch('/licence-activate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({license_key: key})
+    });
+    const data = await r.json();
+    if (data.success) {
+      showMsg('✓ ' + data.message + ' — reloading...', true);
+      setTimeout(() => location.href = '/ui/', 1500);
+    } else {
+      showMsg('✗ ' + (data.error || 'Invalid licence key'), false);
+    }
+  } catch(e) {
+    showMsg('✗ Could not reach server: ' + e.message, false);
+  }
+}
+function showMsg(text, ok) {
+  const el = document.getElementById('activateMsg');
+  el.classList.remove('hidden','bg-emerald-500/10','bg-red-500/10','bg-dark-700','text-emerald-300','text-red-300','text-gray-400');
+  if (ok === true)  el.classList.add('bg-emerald-500/10','text-emerald-300');
+  if (ok === false) el.classList.add('bg-red-500/10','text-red-300');
+  if (ok === null)  el.classList.add('bg-dark-700','text-gray-400');
+  el.textContent = text;
+}
+document.getElementById('licenceKey').addEventListener('keydown', e => { if(e.key==='Enter') activateLicence(); });
+</script>
+</body>
+</html>

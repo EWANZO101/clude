@@ -1,0 +1,116 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}New Order — Admin{% endblock %}
+{% block admin_content %}
+
+<div style="max-width:700px;">
+  <div style="margin-bottom:1.5rem;">
+    <a href="/admin/orders" style="color:var(--text-muted);font-size:0.9rem;text-decoration:none;">← Orders</a>
+    <h1 class="font-display" style="font-size:1.7rem;margin-top:0.5rem;">Create New Order</h1>
+  </div>
+
+  <form method="POST" class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+      <div>
+        <label class="form-label">Customer Name *</label>
+        <input type="text" name="customer_name" class="input" required placeholder="Jane Doe">
+      </div>
+      <div>
+        <label class="form-label">Email</label>
+        <input type="email" name="customer_email" class="input" placeholder="jane@example.com">
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+      <div>
+        <label class="form-label">Discord Handle</label>
+        <input type="text" name="customer_discord" class="input" placeholder="@username">
+      </div>
+      <div>
+        <label class="form-label">Instagram Handle</label>
+        <input type="text" name="customer_instagram" class="input" placeholder="@handle">
+      </div>
+    </div>
+
+    <div style="margin-bottom:1rem;">
+      <label class="form-label">Commission Type</label>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <select name="commission_type" class="input" id="typeSelect" style="flex:1;">
+          <option value="">— Choose preset or enter custom —</option>
+          {% set last_cat = namespace(val='') %}
+          {% for p in presets %}
+            {% if p.category != last_cat.val %}
+              {% set last_cat.val = p.category %}
+              <optgroup label="{{ p.category }}">
+            {% endif %}
+            <option value="{{ p.type }}" data-price="{{ p.price }}">{{ p.type }} — ${{ p.price }}</option>
+          {% endfor %}
+          <option value="custom">Custom / Other</option>
+        </select>
+      </div>
+      <input type="text" id="customType" class="input" placeholder="Custom commission type..." style="display:none;margin-top:0.5rem;">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+      <div>
+        <label class="form-label">Price ($)</label>
+        <input type="number" name="price" id="priceInput" class="input" placeholder="0.00" step="0.01" min="0">
+      </div>
+      <div>
+        <label class="form-label">ETA</label>
+        <input type="text" name="eta" class="input" placeholder="e.g. 1-2 weeks, March 30">
+      </div>
+    </div>
+
+    <div style="margin-bottom:1rem;">
+      <label class="form-label">Description / Notes for Customer</label>
+      <textarea name="description" class="input" placeholder="Order details..."></textarea>
+    </div>
+
+    <div style="margin-bottom:1.5rem;">
+      <label class="form-label">Internal Admin Notes</label>
+      <textarea name="notes" class="input" placeholder="Internal notes (not visible to customer)..." style="min-height:80px;"></textarea>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem;
+                padding:0.75rem 1rem;background:var(--bg-elevated);border-radius:10px;
+                border:1px solid var(--border-accent);">
+      <label class="toggle">
+        <input type="checkbox" name="is_test">
+        <span class="toggle-slider"></span>
+      </label>
+      <div>
+        <div style="font-weight:600;font-size:0.9rem;">🧪 Test Order</div>
+        <div style="font-size:0.8rem;color:var(--text-muted);">
+          Skips the Discord notification. Use for testing — the order itself is still created normally.
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:1rem;">
+      <button type="submit" class="btn btn-primary">Create Order & Generate Link</button>
+      <a href="/admin/orders" class="btn btn-ghost">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  const typeSelect = document.getElementById('typeSelect');
+  const customType = document.getElementById('customType');
+  const priceInput = document.getElementById('priceInput');
+
+  typeSelect.addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    if (this.value === 'custom') {
+      customType.style.display = 'block';
+      customType.name = 'commission_type';
+      typeSelect.name = '_commission_type_select';
+    } else {
+      customType.style.display = 'none';
+      customType.name = '';
+      typeSelect.name = 'commission_type';
+      const price = opt.dataset.price;
+      if (price) priceInput.value = price;
+    }
+  });
+</script>
+{% endblock %}

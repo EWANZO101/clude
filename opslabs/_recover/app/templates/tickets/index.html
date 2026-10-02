@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+{% block title %}{% if scope == 'staff' %}All Tickets{% else %}My Tickets{% endif %} · OpsLab Systems{% endblock %}
+
+{% block head_extra %}
+<style>
+  .stat-card {
+    background: linear-gradient(180deg, rgba(11,18,36,.6), rgba(7,11,22,.5));
+    border: 1px solid rgba(27,42,74,.7);
+    border-radius: 16px;
+    transition: border-color .25s ease, transform .25s ease;
+  }
+  .stat-card:hover { border-color: rgba(33,150,243,.3); transform: translateY(-1px); }
+
+  .row-link { transition: background-color .15s ease; }
+  .row-link:hover { background: rgba(33,150,243,.06); }
+  .row-link:hover .row-arrow { opacity: 1; transform: translateX(2px); }
+  .row-arrow { opacity: 0; transition: all .2s ease; }
+
+  .kbd {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    background: rgba(27,42,74,.6); border: 1px solid rgba(27,42,74,1);
+    border-bottom-width: 2px; padding: 1px 5px; border-radius: 4px;
+    color: #93c5fd;
+  }
+
+  /* Discord link banner */
+  .discord-banner {
+    background:
+      linear-gradient(90deg, rgba(88,101,242,.08) 0%, rgba(88,101,242,.02) 100%);
+    border: 1px solid rgba(88,101,242,.3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set total       = tickets|length %}
+{% set open_count  = tickets|selectattr('status', 'eq', 'open')|list|length %}
+{% set pend_count  = tickets|selectattr('status', 'eq', 'pending')|list|length %}
+{% set close_count = tickets|selectattr('status', 'eq', 'closed')|list|length %}
+{% set urgent_cnt  = tickets|selectattr('priority', 'eq', 'urgent')|list|length %}
+
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+  <!-- ─── Discord link banner (shows for users without Discord linked) ── -->
+  {% if not current_user.discord_id and not current_user.is_staff %}
+  <div class="discord-banner rounded-2xl p-4 mb-6 flex items-center gap-4" id="discord-link-banner">
+    <div class="w-10 h-10 rounded-lg bg-[#5865f2]/20 flex items-center justify-center shrink-0">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#a5b4fc">
+        <path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028 14.09 14.09 0 001.226-1.994.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+      </svg>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="text-sm font-semibold text-white">Connect Discord</div>
+      <div class="text-xs text-gray-400 mt-0.5">
+        Open tickets straight from our Discord — and they'll appear here too.
+        Run <span class="kbd">/link-account {{ current_user.username or current_user.name or current_user.email or 'User' }}</span> in our server.
+      </div>
+    </div>
+    <button onclick="this.parentElement.style.display='none'; localStorage.setItem('opslab.discord_banner_dismissed','1');"
+            class="text-gray-500 hover:text-white p-1 shrink-0" aria-label="Dismiss">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+  <script>
+    if (localStorage.getItem('opslab.discord_banner_dismissed') === '1') {
+      const b = document.getElementById('discord-link-banner');
+      if (b) b.style.display = 'none';
+    }
+  </script>
+  {% endif %}
+
+  <!-- ─── Header ───────────────────────────────────────────────────── -->
+  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-7">
+    <div>
+      <div class="text-[11px] font-bold uppercase tracking-[.25em] text-ops-400 mb-1.5">
+        {% if scope == 'staff' %}Staff View{% else %}Your Account{% endif %}
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
+        {% if scope == 'staff' %}All Tickets{% else %}My Tickets{% endif %}
+      </h1>
+      <p class="text-sm text-gray-400 mt-1.5">
+        {% if scope == 'staff' %}
+          Every conversation across all clients and services.
+        {% else %}
+          Track every conversation with the OpsLab Systems team.
+        {% endif %}
+      </p>
+    </div>
+    <a href="{{ url_for('tickets.new') }}"
+       class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow hover:scale-[1.02] transition self-start sm:self-auto">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      New Ticket
+    </a>
+  </div>
+
+  <!-- ─── Summary stat strip ───────────────────────────────────────── -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+    <div class="stat-card p-4">
+      <div class="flex items-center justify-between">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Total</div>
+        <svg class="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      </div>
+      <div class="text-2xl font-extrabold mt-1">{{ total }}</div>
+    </div>
+
+    <div class="stat-card p-4">
+      <div class="flex items-center justify-between">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Open</div>
+        <span class="live-dot" style="width:7px;height:7px"></span>
+      </div>
+      <div class="text-2xl font-extrabold mt-1 text-green-300">{{ open_count }}</div>
+    </div>
+
+    <div class="stat-card p-4">
+      <div class="flex items-center justify-between">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Pending</div>
+        <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+      </div>
+      <div class="text-2xl font-extrabold mt-1 text-yellow-300">{{ pend_count }}</div>
+    </div>
+
+    <div class="stat-card p-4">
+      <div class="flex items-center justify-between">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+          {% if urgent_cnt %}🔴 Urgent{% else %}Closed{% endif %}
+        </div>
+      </div>
+      <div class="text-2xl font-extrabold mt-1 {% if urgent_cnt %}text-red-300{% else %}text-gray-400{% endif %}">
+        {% if urgent_cnt %}{{ urgent_cnt }}{% else %}{{ close_count }}{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Filter + search bar ──────────────────────────────────────── -->
+  <div class="flex flex-col lg:flex-row gap-3 mb-5">
+    <div class="flex flex-wrap gap-2 flex-1">
+      {% set filters = [('', 'All', total), ('open', 'Open', open_count), ('pending', 'Pending', pend_count), ('closed', 'Closed', close_count)] %}
+      {% for val, label, count in filters %}
+        {% set is_active = (current_status == val) or (not current_status and not val) %}
+        <a href="{{ url_for('tickets.index') }}{% if val %}?status={{ val }}{% endif %}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition
+                  {% if is_active %}bg-gradient-to-r from-ops-500 to-ops-700 text-white shadow-glow-sm
+                  {% else %}bg-white/5 border border-ink-600 text-gray-300 hover:bg-white/10 hover:text-white{% endif %}">
+          {% if val == 'open' %}<span class="w-2 h-2 rounded-full bg-green-400"></span>
+          {% elif val == 'pending' %}<span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+          {% elif val == 'closed' %}<span class="w-2 h-2 rounded-full bg-gray-400"></span>
+          {% endif %}
+          {{ label }}
+          {% if count is not none %}
+          <span class="text-[10px] px-1.5 py-0.5 rounded-md
+                       {% if is_active %}bg-white/15{% else %}bg-ink-900/80 text-gray-400{% endif %}">
+            {{ count }}
+          </span>
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
+
+    <div class="relative lg:w-72">
+      <svg class="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input type="text" id="search" placeholder="Filter by subject, user, ID…"
+             class="form-input w-full pl-9 pr-12 py-2.5 text-sm">
+      <span class="absolute right-3 top-1/2 -translate-y-1/2 kbd">/</span>
+    </div>
+  </div>
+
+  <!-- ─── Tickets table card ───────────────────────────────────────── -->
+  <div class="bg-ink-800/40 border border-ink-600 rounded-2xl overflow-hidden">
+    {% if tickets %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm" id="tickets-table">
+        <thead class="bg-ink-900/60 border-b border-ink-600">
+          <tr class="text-[10px] uppercase tracking-widest text-gray-400">
+            <th class="px-5 py-3.5 text-left font-bold">ID</th>
+            <th class="px-5 py-3.5 text-left font-bold">Subject</th>
+            <th class="px-5 py-3.5 text-left font-bold hidden md:table-cell">Category</th>
+            <th class="px-5 py-3.5 text-left font-bold">Status</th>
+            <th class="px-5 py-3.5 text-left font-bold hidden md:table-cell">Priority</th>
+            {% if scope == 'staff' %}
+              <th class="px-5 py-3.5 text-left font-bold hidden lg:table-cell">Owner</th>
+              <th class="px-5 py-3.5 text-left font-bold hidden lg:table-cell">Assignee</th>
+            {% endif %}
+            <th class="px-5 py-3.5 text-left font-bold hidden md:table-cell">Updated</th>
+            <th class="px-5 py-3.5 hidden md:table-cell"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-ink-600/40">
+          {% for t in tickets %}
+          <tr onclick="location='{{ url_for('tickets.view', tid=t.id) }}'"
+              class="row-link cursor-pointer group"
+              data-search="{{ ('%04d' % t.id) }} {{ t.subject|lower }} {{ (t.owner.username or '')|lower }} {{ (t.company.name or '')|lower }} {{ (t.category.name if t.category else '')|lower }}">
+            <td class="px-5 py-4 font-mono text-xs text-gray-400 group-hover:text-ops-400 whitespace-nowrap">
+              #{{ '%04d' % t.id }}
+            </td>
+            <td class="px-5 py-4 max-w-[20rem]">
+              <div class="font-semibold text-white group-hover:text-ops-300 transition truncate flex items-center gap-2">
+                {{ t.subject }}
+                {% if t.discord_channel_id %}
+                  <span title="Synced to Discord" class="text-[#a5b4fc] shrink-0">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028 14.09 14.09 0 001.226-1.994.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                  </span>
+                {% endif %}
+              </div>
+              <div class="text-xs text-gray-500 mt-0.5 md:hidden">
+                {{ (t.category.name if t.category else t.company.name) or '—' }} · {{ t.updated_at.strftime('%b %d') }}
+              </div>
+            </td>
+            <td class="px-5 py-4 text-gray-300 hidden md:table-cell">
+              <span class="text-xs">{{ t.category.name if t.category else (t.company.name or '—') }}</span>
+            </td>
+            <td class="px-5 py-4">
+              <span class="pill pill-{{ t.status }}">
+                {% if t.status == 'open' %}🔓{% elif t.status == 'pending' %}⏳{% else %}🔒{% endif %}
+                {{ t.status }}
+              </span>
+            </td>
+            <td class="px-5 py-4 hidden md:table-cell">
+              <span class="pill pill-{{ t.priority }}">{{ t.priority }}</span>
+            </td>
+            {% if scope == 'staff' %}
+              <td class="px-5 py-4 text-gray-300 hidden lg:table-cell">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center text-[10px] font-bold">
+                    {{ (t.owner.username[0]|upper) if t.owner else '?' }}
+                  </div>
+                  <span class="text-xs">{{ t.owner.username if t.owner else '—' }}</span>
+                </div>
+              </td>
+              <td class="px-5 py-4 text-gray-300 hidden lg:table-cell">
+                {% if t.assigned_to %}
+                  <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-gradient-to-br from-ops-400 to-ops-700 flex items-center justify-center text-[10px] font-bold">
+                      {{ t.assigned_to.username[0]|upper }}
+                    </div>
+                    <span class="text-xs">{{ t.assigned_to.username }}</span>
+                  </div>
+                {% else %}
+                  <span class="text-gray-600 text-xs italic">unassigned</span>
+                {% endif %}
+              </td>
+            {% endif %}
+            <td class="px-5 py-4 text-gray-400 text-xs hidden md:table-cell whitespace-nowrap">
+              {{ t.updated_at.strftime('%b %d · %H:%M') }}
+            </td>
+            <td class="px-3 py-4 hidden md:table-cell">
+              <svg class="row-arrow w-4 h-4 text-ops-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+              </svg>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div id="no-match" class="hidden text-center py-12 px-6 border-t border-ink-600/40">
+        <p class="text-sm text-gray-500">No tickets match your search.</p>
+      </div>
+    </div>
+    {% else %}
+    <div class="text-center py-20 px-6">
+      <div class="w-20 h-20 mx-auto rounded-2xl bg-ops-500/10 border border-ops-500/30 flex items-center justify-center mb-5">
+        <svg class="w-9 h-9 text-ops-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold mb-2">
+        {% if current_status %}No {{ current_status }} tickets{% else %}No tickets yet{% endif %}
+      </h3>
+      <p class="text-sm text-gray-400 mb-7 max-w-md mx-auto">
+        Open your first ticket and we'll spin up a private Discord channel automatically. Live sync between web and chat.
+      </p>
+      <a href="{{ url_for('tickets.new') }}"
+         class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow hover:scale-[1.02] transition">
+        Open a ticket
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if tickets %}
+  <p class="text-xs text-gray-500 mt-3 text-center">
+    Showing {{ tickets|length }} ticket{{ '' if tickets|length == 1 else 's' }} ·
+    Press <span class="kbd">/</span> to search · click any row to open
+  </p>
+  {% endif %}
+</section>
+
+<script>
+  const search = document.getElementById('search');
+  if (search) {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement !== search &&
+          !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
+        e.preventDefault();
+        search.focus();
+      }
+      if (e.key === 'Escape' && document.activeElement === search) {
+        search.value = ''; search.dispatchEvent(new Event('input')); search.blur();
+      }
+    });
+
+    const rows = document.querySelectorAll('#tickets-table tbody tr');
+    const noMatch = document.getElementById('no-match');
+    search.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      let shown = 0;
+      rows.forEach(r => {
+        const ok = !q || (r.dataset.search || '').includes(q);
+        r.style.display = ok ? '' : 'none';
+        if (ok) shown++;
+      });
+      if (noMatch) noMatch.classList.toggle('hidden', shown > 0 || !q);
+    });
+  }
+</script>
+{% endblock %}

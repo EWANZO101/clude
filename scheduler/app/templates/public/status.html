@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}{{ owner.name }} · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="relative min-h-screen overflow-hidden">
+  <div class="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-accent-muted/50 to-transparent"></div>
+
+  <div class="relative mx-auto max-w-lg px-4 py-12 sm:py-16">
+
+    <!-- Header -->
+    <div class="flex flex-col items-center text-center">
+      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-surface-raised border border-border font-display text-xl font-semibold text-ink shadow-card">
+        {{ owner.name[:1]|upper }}
+      </div>
+      <h1 class="mt-4 font-display text-2xl font-semibold text-ink">{{ owner.name }}</h1>
+
+      <p class="mt-1.5 flex items-center gap-1.5 text-xs text-ink-faint">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span data-local-clock data-timezone="{{ owner.timezone }}">{{ local_time_display }}</span>
+        local time
+      </p>
+
+      <span class="status-pill mt-5 border-status-{{ status.status }}/30 bg-status-{{ status.status }}/10 text-status-{{ status.status }}">
+        <span class="status-dot bg-status-{{ status.status }} {{ 'animate-pulse-soft' if status.status == 'available' }}"></span>
+        {{ status.status|capitalize }}
+      </span>
+
+      <p class="mt-3 max-w-xs text-sm text-ink-muted">
+        {% if status.message %}
+          {{ status.message }}
+        {% elif status.status == 'available' %}
+          Available now — book a time below.
+        {% elif status.next_available %}
+          Back {{ status.next_available|lower }}.
+        {% else %}
+          Not available right now.
+        {% endif %}
+      </p>
+
+      {% if has_bookable_types %}
+        <a href="{{ url_for('public.booking_types') }}" class="btn-primary mt-6">Book a meeting</a>
+      {% endif %}
+    </div>
+
+    <!-- Next 7 days -->
+    <div class="card mt-10 p-5 sm:p-6">
+      <p class="mb-4 text-xs font-semibold uppercase tracking-wide text-ink-muted">Next 7 days</p>
+      <div class="grid grid-cols-7 gap-1.5 sm:gap-2">
+        {% for day in week_overview %}
+        {% set state_color = {
+          'available': 'status-available',
+          'limited': 'status-busy',
+          'unavailable': 'status-away',
+          'off': 'status-offline',
+        }[day.state] %}
+        <div class="flex flex-col items-center gap-1.5 rounded-lg border py-2.5
+          {{ 'border-accent/50 bg-accent-muted/40' if day.date == today else 'border-border bg-surface-raised' }}">
+          <span class="text-[10px] font-medium uppercase tracking-wide text-ink-faint">{{ day.date.strftime('%a') }}</span>
+          <span class="text-sm font-semibold {{ 'text-accent' if day.date == today else 'text-ink' }}">{{ day.date.day }}</span>
+          <span class="status-dot bg-{{ state_color }}"></span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] text-ink-faint">
+        <span class="flex items-center gap-1.5"><span class="status-dot bg-status-available"></span>Available</span>
+        <span class="flex items-center gap-1.5"><span class="status-dot bg-status-busy"></span>Limited</span>
+        <span class="flex items-center gap-1.5"><span class="status-dot bg-status-away"></span>Unavailable</span>
+        <span class="flex items-center gap-1.5"><span class="status-dot bg-status-offline"></span>Off</span>
+      </div>
+    </div>
+
+    <!-- Weekly hours -->
+    <div class="card mt-4 p-5 sm:p-6">
+      <p class="mb-4 text-xs font-semibold uppercase tracking-wide text-ink-muted">Weekly hours</p>
+      <div class="divide-y divide-border">
+        {% for wh in working_hours %}
+        <div class="flex items-center justify-between py-2.5 text-sm {{ 'opacity-50' if not wh.enabled }}">
+          <span class="font-medium text-ink">{{ wh.day_name }}</span>
+          {% if wh.enabled and wh.start_time and wh.end_time %}
+            <span class="text-ink-muted">
+              {{ wh.start_time.strftime('%H:%M') }}–{{ wh.end_time.strftime('%H:%M') }}
+              {% if wh.breaks %}
+                <span class="text-ink-faint">
+                  ({% for b in wh.breaks %}{{ b.label }} {{ b.start_time.strftime('%H:%M') }}–{{ b.end_time.strftime('%H:%M') }}{% if not loop.last %}, {% endif %}{% endfor %})
+                </span>
+              {% endif %}
+            </span>
+          {% else %}
+            <span class="text-ink-faint">Off</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <p class="mt-3 text-[11px] text-ink-faint">All times shown in {{ owner.timezone }}.</p>
+    </div>
+
+    <!-- Upcoming time off -->
+    {% if upcoming_time_off %}
+    <div class="card mt-4 p-5 sm:p-6">
+      <p class="mb-4 text-xs font-semibold uppercase tracking-wide text-ink-muted">Upcoming days: My services are not available onsite</p>
+      <div class="space-y-2.5">
+        {% for t in upcoming_time_off %}
+        <div class="flex items-center gap-2.5 text-sm text-ink-muted">
+          <span class="status-dot bg-status-away shrink-0"></span>
+          {% if t.start_datetime.date() == t.end_datetime.date() %}
+            {{ t.start_datetime.strftime('%a %d %b') }}{% if not t.all_day %} · {{ t.start_datetime.strftime('%H:%M') }}–{{ t.end_datetime.strftime('%H:%M') }}{% endif %}
+          {% else %}
+            {{ t.start_datetime.strftime('%d %b') }} – {{ t.end_datetime.strftime('%d %b') }}
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <p class="mt-8 text-center text-xs text-ink-faint">Powered by {{ app_name }}</p>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var el = document.querySelector('[data-local-clock]');
+    if (!el) return;
+    var tz = el.getAttribute('data-timezone') || 'UTC';
+    function tick() {
+      try {
+        el.textContent = new Date().toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        el.parentElement.style.display = 'none';
+      }
+    }
+    tick();
+    setInterval(tick, 30000);
+  })();
+</script>
+{% endblock %}

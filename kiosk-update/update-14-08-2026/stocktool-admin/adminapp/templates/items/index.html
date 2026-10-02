@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Items{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <div>
+      <h1 class="page-title"><i class="fas fa-boxes-stacked" style="color:#60a5fa;"></i> Items</h1>
+      <p class="page-subtitle">{{ items|length }} item{{ 's' if items|length != 1 }}</p>
+    </div>
+    {% if current_user.is_admin %}
+    <a href="{{ url_for('items.add') }}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Add Item
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="padding:14px;margin-bottom:16px;">
+  <form method="GET">
+    <div class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label" style="margin-bottom:4px;">Search</label>
+        <input type="text" name="q" class="form-input" placeholder="Name or SKU…" value="{{ search }}" />
+      </div>
+      <div class="filter-field" style="min-width:140px;max-width:200px;">
+        <label class="form-label" style="margin-bottom:4px;">Category</label>
+        <select name="category" class="form-select">
+          <option value="">All</option>
+          {% for cat in categories %}
+          <option value="{{ cat }}" {% if cat == category %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field" style="min-width:120px;max-width:160px;">
+        <label class="form-label" style="margin-bottom:4px;">Stock</label>
+        <select name="stock" class="form-select">
+          <option value="">All</option>
+          <option value="low" {% if stock_filter=='low' %}selected{% endif %}>Low</option>
+          <option value="out" {% if stock_filter=='out' %}selected{% endif %}>Out</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
+        <a href="{{ url_for('items.index') }}" class="btn btn-secondary">Clear</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Desktop table -->
+<div class="card desktop-table">
+  <div class="table-wrap">
+    <table style="width:100%;border-collapse:collapse;min-width:600px;">
+      <thead>
+        <tr class="table-header">
+          <th style="padding:11px 16px;text-align:left;">Name</th>
+          <th style="padding:11px 16px;text-align:left;" class="hide-tablet">SKU</th>
+          <th style="padding:11px 16px;text-align:left;" class="hide-tablet">Category</th>
+          <th style="padding:11px 16px;text-align:left;">Location</th>
+          <th style="padding:11px 16px;text-align:center;">Qty</th>
+          <th style="padding:11px 16px;text-align:center;">Status</th>
+          <th style="padding:11px 16px;text-align:center;">View</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if items %}
+          {% for item in items %}
+          <tr class="table-row">
+            <td style="padding:11px 16px;">
+              <a href="{{ url_for('items.view', item_id=item.id) }}"
+                 style="font-weight:500;color:#60a5fa;text-decoration:none;">{{ item.name }}</a>
+            </td>
+            <td style="padding:11px 16px;color:#9ca3af;font-size:13px;" class="hide-tablet">{{ item.sku or '—' }}</td>
+            <td style="padding:11px 16px;color:#9ca3af;font-size:13px;" class="hide-tablet">{{ item.category or '—' }}</td>
+            <td style="padding:11px 16px;color:#9ca3af;font-size:13px;">{{ item.location or '—' }}</td>
+            <td style="padding:11px 16px;text-align:center;font-weight:600;color:#f3f4f6;">
+              {{ item.quantity }}{% if item.unit %} <span style="color:#6b7280;font-size:12px;">{{ item.unit }}</span>{% endif %}
+            </td>
+            <td style="padding:11px 16px;text-align:center;">
+              {% if item.quantity == 0 %}
+                <span class="badge" style="background:#450a0a;color:#fca5a5;">Out</span>
+              {% elif item.is_low_stock %}
+                <span class="badge" style="background:#451a03;color:#fcd34d;">Low</span>
+              {% else %}
+                <span class="badge" style="background:#064e3b;color:#6ee7b7;">OK</span>
+              {% endif %}
+            </td>
+            <td style="padding:11px 16px;text-align:center;">
+              <a href="{{ url_for('items.view', item_id=item.id) }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="7" style="padding:40px;text-align:center;color:#4b5563;">
+            <i class="fas fa-boxes-stacked" style="font-size:28px;display:block;margin-bottom:10px;"></i>
+            No items found.
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('items.add') }}" style="color:#60a5fa;margin-left:4px;">Add one →</a>
+            {% endif %}
+          </td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Mobile card list -->
+<div class="mobile-card-list">
+  {% if items %}
+    {% for item in items %}
+    <a href="{{ url_for('items.view', item_id=item.id) }}"
+       style="text-decoration:none;display:block;">
+      <div class="m-card">
+        <div class="m-card-row">
+          <div>
+            <div style="font-size:15px;font-weight:600;color:#60a5fa;">{{ item.name }}</div>
+            {% if item.sku %}<div style="font-size:12px;color:#6b7280;">{{ item.sku }}</div>{% endif %}
+          </div>
+          {% if item.quantity == 0 %}
+            <span class="badge" style="background:#450a0a;color:#fca5a5;">Out</span>
+          {% elif item.is_low_stock %}
+            <span class="badge" style="background:#451a03;color:#fcd34d;">Low</span>
+          {% else %}
+            <span class="badge" style="background:#064e3b;color:#6ee7b7;">OK</span>
+          {% endif %}
+        </div>
+        <div class="m-card-row" style="margin-bottom:0;">
+          <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            {% if item.category %}<span style="font-size:12px;color:#6b7280;">{{ item.category }}</span>{% endif %}
+            {% if item.location %}<span style="font-size:12px;color:#6b7280;"><i class="fas fa-location-dot"></i> {{ item.location }}</span>{% endif %}
+          </div>
+          <div style="font-size:15px;font-weight:700;color:#f9fafb;">
+            {{ item.quantity }}{% if item.unit %} <span style="font-size:12px;color:#6b7280;">{{ item.unit }}</span>{% endif %}
+          </div>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  {% else %}
+    <div style="text-align:center;padding:40px;color:#4b5563;">
+      <i class="fas fa-boxes-stacked" style="font-size:32px;display:block;margin-bottom:12px;"></i>
+      No items found.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

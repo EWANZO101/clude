@@ -1,0 +1,39 @@
+{% extends "layouts/seller_dashboard.html" %}
+{% from "components/_order_badges.html" import status_badge with context %}
+{% block title %}{{ order.order_number }} — Seller Portal{% endblock %}
+{% block page_title %}{{ order.order_number }}{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Item</th><th>Qty</th><th>Monthly</th></tr></thead>
+      <tbody>
+        {% for item in order.items %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ item.title_snapshot }}</td>
+          <td>{{ item.quantity }}</td>
+          <td class="text-text-secondary">£{{ item.line_total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5 space-y-4">
+    <dl class="space-y-2 text-sm">
+      <div class="flex justify-between"><dt class="text-text-muted">Customer</dt><dd class="text-text-primary">{{ order.user.email }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Status</dt><dd>{{ status_badge(order.status) }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Payment</dt><dd class="text-text-primary">{{ order.payment_status|hwval }}</dd></div>
+      <div class="flex justify-between border-t border-border pt-2"><dt class="text-text-primary font-medium">Total</dt><dd class="text-text-primary font-semibold">£{{ order.total }}</dd></div>
+    </dl>
+    <form method="POST" class="flex gap-2">
+      {% include "components/_csrf.html" %}
+      <select name="fulfilment_status" class="input-field">
+        {% for status in statuses %}
+        <option value="{{ status.value }}" {{ "selected" if status == order.fulfilment_status }}>{{ status|hwval }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-secondary">Update</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

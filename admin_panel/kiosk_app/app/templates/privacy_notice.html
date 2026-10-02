@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Privacy Notice — {{ tenant_name }}{% endblock %}
+{% block body %}
+<body style="margin:0; background:#0c1120; color:#e6e9f2; font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px;">
+<div style="max-width:640px; margin:0 auto; padding:40px 24px;">
+  <h1 style="font-size:20px;">Privacy Notice — {{ tenant_name }}</h1>
+  <p style="color:#8b93a8; font-size:13px;">This notice is provided under the Protection of Personal Information Act (POPIA). It explains what this kiosk system records about you as a staff user and why.</p>
+
+  <h2 style="font-size:15px;">What is collected</h2>
+  <ul style="font-size:13.5px; line-height:1.6;">
+    <li>Your name/username and badge code, used to log you in.</li>
+    <li>A record of tool/equipment/consumable/PPE/welding-wire checkouts and issuances made under your account, including timestamps and which project they were for.</li>
+    <li>Login timestamps and an administrative audit log of account/role changes made by administrators.</li>
+  </ul>
+
+  <h2 style="font-size:15px;">Why</h2>
+  <p style="font-size:13.5px; line-height:1.6;">This information is processed solely to operate stock/tool/PPE custody and accountability at this site — knowing who has what, when it was issued, and for auditing and safety purposes. It is not used for any other purpose, and is not sold or shared outside this organization and its Instance Agent/Admin Panel sync (used to keep this kiosk's data backed up and visible to your employer's own administrators).</p>
+
+  <h2 style="font-size:15px;">How long it's kept</h2>
+  <p style="font-size:13.5px; line-height:1.6;">
+    {% if configured_retention_days %}
+      Historical activity/checkout/issuance records are retained for up to {{ configured_retention_days }} days after they're closed, then deleted automatically.
+    {% else %}
+      This site has not yet configured an automatic retention period; ask your administrator if you'd like to know how long records are kept here.
+    {% endif %}
+  </p>
+
+  <h2 style="font-size:15px;">Your rights</h2>
+  <p style="font-size:13.5px; line-height:1.6;">You may ask your administrator to see what this system holds about you, correct it, or (once you've left) have your account's personal data erased. Contact: {{ information_officer_contact or "your site administrator" }}.</p>
+
+  <h2 style="font-size:15px;">How this system protects your information</h2>
+  <p style="font-size:13.5px; line-height:1.6;">Measures this kiosk has in place under POPIA:</p>
+  <ul style="font-size:13.5px; line-height:1.6;">
+    <li><strong>Security safeguards (Condition 7).</strong> Passwords are never stored or logged in plain text — only as a salted Argon2 hash. This terminal's own login is only reachable from this machine, never over the network; the separate LAN Client Portal (where enabled) requires an admin-level account with a password set, and never reveals whether a given username/badge exists. Sessions use HttpOnly cookies and log out automatically after a short period of inactivity. Local database backups are restricted to this machine's own system account (not world-readable).</li>
+    <li><strong>Retention and restriction of records (Condition 5).</strong> {% if configured_retention_days %}Closed activity/checkout/issuance records past {{ configured_retention_days }} days are deleted automatically, and administrators can also purge them manually on demand.{% else %}Administrators can purge closed activity/checkout/issuance records on demand, and can configure this to happen automatically.{% endif %} Records still open (e.g. a tool currently checked out) are never deleted just for being old.</li>
+    <li><strong>Data subject participation (Conditions 5, 6, 8).</strong> Administrators have a dedicated tool to erase a former staff member's identifying account details (username, badge, password) on request, and to review/correct account information.</li>
+    <li><strong>Accountability and openness (Conditions 1, 6).</strong> Administrative changes to accounts, roles, and permissions are recorded in an audit log with who made the change and when. This notice itself is that openness commitment — it is publicly reachable without needing to log in.</li>
+  </ul>
+  <p style="font-size:12px; color:#6b7290; line-height:1.6;">These are the technical measures built into this software. Full POPIA compliance for this organization also depends on things outside this system — such as a registered Information Officer, a documented retention policy, and staff processes — which your organization is responsible for separately.</p>
+
+  <p style="margin-top:28px;"><a href="{{ url_for('auth.login') }}">← Back to login</a></p>
+</div>
+</body>
+{% endblock %}

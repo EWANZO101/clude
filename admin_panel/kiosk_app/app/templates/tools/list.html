@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Tools — {{ tenant_name }}{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+  <h1 style="margin:0;">Tools</h1>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    {% if uncategorized_count and current_user.role in ('super_admin', 'admin') %}
+      <form method="post" action="{{ url_for('tools.auto_categorize') }}"
+            onsubmit="return confirm('Auto-categorize {{ uncategorized_count }} uncategorized tool(s) by name? Tools already categorized are never touched.');">
+        <button type="submit" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text);">
+          Auto-categorize ({{ uncategorized_count }})
+        </button>
+      </form>
+    {% endif %}
+    <a href="{{ url_for('tools.add_tool') }}" class="btn">+ Add Tool</a>
+  </div>
+</div>
+
+{% if tools %}
+  {% for category_label, rows in tools_by_category %}
+    <details class="category-group">
+      <summary>{{ category_label }} <span class="muted" style="font-weight:400;">({{ rows|length }})</span></summary>
+      <div class="category-body">
+      <div class="table-scroll">
+      <table style="width:100%; border-collapse:collapse;">
+        <tbody>
+          {% for tool in rows %}
+            <tr style="border-bottom:1px solid var(--panel-border);">
+              <td style="padding:14px;">
+                <div style="font-weight:600;">{{ tool.name }}</div>
+                <div class="muted" style="font-size:12.5px;">
+                  {% if tool.status == 'available' %}
+                    <span style="color:var(--green);">● Available</span>
+                  {% elif tool.status == 'checked_out' %}
+                    <span style="color:var(--orange);">● Checked out — {{ tool.checked_out_by_name }}{% if tool.current_project %} for {{ tool.current_project }}{% endif %}</span>
+                  {% else %}
+                    <span style="color:var(--red);">● Maintenance (level {{ tool.maintenance_level }})</span>
+                  {% endif %}
+                  — code <code>{{ tool.barcode_code }}</code>
+                </div>
+              </td>
+              <td style="padding:14px;">
+                <div class="row-actions">
+                  {% if tool.status == 'available' %}
+                    <button type="button" class="btn" style="padding:6px 10px; font-size:12.5px;"
+                            onclick="document.getElementById('checkout-{{ tool.id }}').style.display='table-row';">Check Out</button>
+                    <form method="post" action="{{ url_for('tools.start_maintenance', tool_id=tool.id) }}">
+                      <input type="hidden" name="level" value="1">
+                      <button type="submit" style="background:transparent; border:1px solid var(--panel-border); padding:6px 10px; font-size:12.5px;">Mark Maintenance</button>
+                    </form>
+                  {% elif tool.status == 'checked_out' %}
+                    <form method="post" action="{{ url_for('tools.checkin_tool', tool_id=tool.id) }}">
+                      <button type="submit" class="btn" style="padding:6px 10px; font-size:12.5px;">Check In</button>
+                    </form>
+                  {% else %}
+                    {% set open_event = tool.maintenance_events | selectattr('ended_at', 'none') | first %}
+                    {% if open_event %}
+                      <form method="post" action="{{ url_for('tools.close_maintenance', tool_id=tool.id, event_id=open_event.id) }}" style="display:flex; gap:6px; align-items:center;">
+                        <input type="text" name="cost" placeholder="cost" style="width:70px; padding:6px;">
+                        <button type="submit" style="background:transparent; border:1px solid var(--panel-border); padding:6px 10px; font-size:12.5px;">Close Maintenance</button>
+                      </form>
+                    {% endif %}
+                  {% endif %}
+                  <a href="{{ url_for('tools.view_barcode', tool_id=tool.id) }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text); padding:6px 10px; font-size:12.5px;">Barcode</a>
+                  <a href="{{ url_for('tools.edit_tool', tool_id=tool.id) }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text); padding:6px 10px; font-size:12.5px;">Edit</a>
+                  {% if tool.status == 'available' %}
+                    <form method="post" action="{{ url_for('tools.delete_tool', tool_id=tool.id) }}" onsubmit="return confirm('Delete this tool?');">
+                      <button type="submit" style="background:var(--red); padding:6px 10px; font-size:12.5px;">Delete</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% if tool.status == 'available' %}
+            <tr id="checkout-{{ tool.id }}" style="display:none; background:var(--bg);">
+              <td colspan="2" style="padding:12px 14px;">
+                <form method="post" action="{{ url_for('tools.checkout_tool', tool_id=tool.id) }}" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                  <input type="text" name="project" placeholder="Project (optional)" style="flex:1; min-width:160px;">
+                  <button type="submit" class="btn" style="padding:8px 14px;">Confirm Check Out</button>
+                </form>
+              </td>
+            </tr>
+            {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      </div>
+    </details>
+  {% endfor %}
+{% else %}
+  <div class="panel"><p class="muted" style="margin:0;">No tools yet.</p></div>
+{% endif %}
+{% endblock %}

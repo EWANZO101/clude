@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Sidebar Order — {{ instance.display_name() }}{% endblock %}
+{% block content %}
+<style>
+  .drag-list { list-style:none; margin:0; padding:0; }
+  .drag-item {
+    display:flex; align-items:center; gap:10px; padding:12px 14px; margin-bottom:6px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    cursor:grab; user-select:none;
+  }
+  .drag-item.dragging { opacity:.4; }
+  .drag-item .handle { color:var(--muted); font-size:16px; }
+  .drag-item .section-tag { margin-left:auto; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+</style>
+
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('instances.detail', company_id=company.public_id, instance_id=instance.public_id) }}" class="crumb">← {{ instance.display_name() }}</a>
+    <h1>Sidebar Order</h1>
+    <div class="page-sub">Drag to rearrange the kiosk terminal's sidebar — no code, no template edits.</div>
+  </div>
+</div>
+
+<p class="muted">
+  This is a cached read-out of the kiosk's own nav layout — dragging and saving here queues a
+  <code>sidebar_reorder</code> command that the instance's Agent picks up and applies on its next poll.
+  Who can see each item is controlled per-role on the Roles panel; a custom type's own entry appears here
+  automatically as soon as it's created.
+</p>
+
+<div class="panel">
+  {% if nav_entries %}
+  <ul class="drag-list" id="drag-list">
+    {% for e in nav_entries %}
+      <li class="drag-item" draggable="true" data-key="{{ e.key }}">
+        <span class="handle">⠿</span>
+        <span>{{ e.label }}</span>
+        {% if e.is_builtin %}<span class="pill pill-muted">built-in</span>{% endif %}
+        <span class="section-tag">{{ e.section }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+  <form method="post" action="{{ url_for('instances.set_sidebar_order', company_id=company.public_id, instance_id=instance.public_id) }}" id="reorder-form" style="margin-top:16px;">
+    <input type="hidden" name="order" id="order-input">
+    <button type="submit">Save Order</button>
+  </form>
+  {% else %}
+    <div class="empty">Nothing cached yet — this fills in once the instance's Agent has synced at least once.</div>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  var list = document.getElementById('drag-list');
+  if (!list) return;
+  var dragging = null;
+
+  list.querySelectorAll('.drag-item').forEach(function (item) {
+    item.addEventListener('dragstart', function () {
+      dragging = item;
+      item.classList.add('dragging');
+    });
+    item.addEventListener('dragend', function () {
+      item.classList.remove('dragging');
+      dragging = null;
+    });
+    item.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      if (!dragging || dragging === item) return;
+      var rect = item.getBoundingClientRect();
+      var before = (e.clientY - rect.top) < (rect.height / 2);
+      list.insertBefore(dragging, before ? item : item.nextSibling);
+    });
+  });
+
+  document.getElementById('reorder-form').addEventListener('submit', function () {
+    var keys = Array.prototype.map.call(list.querySelectorAll('.drag-item'), function (el) {
+      return el.dataset.key;
+    });
+    document.getElementById('order-input').value = keys.join(',');
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}New import — {{ app_name }}{% endblock %}
+{% block content %}
+<h1 class="text-lg font-semibold text-gray-100 mb-6">Restore an export package</h1>
+
+<p class="text-sm text-gray-500 mb-4 max-w-2xl">
+  Can't open a port to the target, or it's behind NAT/a firewall?
+  <a href="{{ url_for('agent.new_import') }}" class="text-blue-400 hover:text-blue-300">Use the agent method instead →</a>
+</p>
+
+<form method="POST" enctype="multipart/form-data" novalidate
+      class="max-w-2xl bg-panel border border-border rounded-lg p-6 space-y-5">
+  {{ form.hidden_tag() }}
+  {% include "_form_errors.html" %}
+
+  <div>
+    {{ form.package_file.label(class="block text-sm text-gray-400 mb-1") }}
+    {{ form.package_file(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+    {% for error in form.package_file.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+  </div>
+
+  <div>
+    {{ form.connection_type.label(class="block text-sm text-gray-400 mb-1") }}
+    {{ form.connection_type(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200", id="connection_type") }}
+  </div>
+
+  <div id="ssh_fields" class="border border-border rounded-md p-4 space-y-4 hidden">
+    <p class="text-xs text-gray-500">Password auth only — no SSH key is used or required.</p>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div class="sm:col-span-2">
+        {{ form.ssh_host.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.ssh_host(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200", placeholder="swift1 or 10.0.0.5") }}
+      </div>
+      <div>
+        {{ form.ssh_port.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.ssh_port(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.remote_os.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.remote_os(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.ssh_username.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.ssh_username(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.ssh_password.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.ssh_password(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+    </div>
+    <p class="text-xs text-gray-600">{{ form.remote_os.description }}</p>
+  </div>
+
+  <div>
+    {{ form.target_path.label(class="block text-sm text-gray-400 mb-1") }}
+    {{ form.target_path(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200", placeholder="/opt/snailycad or C:\\snailycad") }}
+    <p class="text-xs text-gray-600 mt-1">{{ form.target_path.description }}</p>
+  </div>
+
+  <div class="border-t border-border pt-4">
+    <p class="text-sm font-semibold text-gray-300 mb-3">Database restore (optional)</p>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div class="sm:col-span-2">
+        {{ form.db_type.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_type(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.db_host.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_host(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.db_port.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_port(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.db_name.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_name(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.db_user.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_user(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.db_password.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_password(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.sqlite_target_path.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.sqlite_target_path(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+    </div>
+  </div>
+
+  {{ form.submit(class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md py-2") }}
+  <p class="text-xs text-gray-600">
+    The package's own sha256 manifest is verified before anything is restored.
+    Runs synchronously — the page redirects once it finishes or fails.
+  </p>
+</form>
+
+<script>
+  const connType = document.getElementById('connection_type');
+  const sshFields = document.getElementById('ssh_fields');
+  function toggleSsh() {
+    sshFields.classList.toggle('hidden', connType.value !== 'ssh');
+  }
+  connType.addEventListener('change', toggleSsh);
+  toggleSsh();
+</script>
+{% endblock %}

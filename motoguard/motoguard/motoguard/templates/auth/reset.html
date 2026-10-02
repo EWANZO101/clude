@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto mt-6">
+  <p class="eyebrow mb-1">Account recovery</p>
+  <h1 class="font-display font-800 text-2xl text-chalk mb-5">Choose a new password</h1>
+  <form method="post" action="{{ url_for('auth.reset', token=token) }}" class="space-y-3 card p-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div><label class="label">New password</label><input name="new_password" type="password" placeholder="At least 8 characters" class="input" required></div>
+    <button class="btn btn-primary btn-block">Set new password</button>
+  </form>
+</div>
+{% endblock %}

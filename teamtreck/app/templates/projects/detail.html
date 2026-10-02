@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}{{ project.name }} - TeamTreck{% endblock %}
+{% block content %}
+<div class="flex items-start justify-between mb-6 flex-wrap gap-3">
+    <div>
+        <a href="{{ url_for('projects.index') }}" class="text-xs text-gray-500 dark:text-gray-400 hover:underline">← Projects</a>
+        <h1 class="text-2xl font-bold mt-1">{{ project.name }}</h1>
+        {% if project.client %}<p class="text-sm text-gray-500 dark:text-gray-400">Client: {{ project.client.name }}</p>{% endif %}
+    </div>
+    <div class="text-right">
+        <div class="text-xs text-gray-500 dark:text-gray-400">Total tracked</div>
+        <div class="text-2xl font-mono font-bold text-brand-600 dark:text-brand-400">{{ total_secs|hms }}</div>
+    </div>
+</div>
+
+{% if current_user.is_manager %}
+<div class="flex gap-2 mb-6">
+    <form method="POST" action="{{ url_for('projects.archive', project_id=project.id) }}">
+        <button class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-gray-800">
+            {{ 'Archive' if project.status == 'active' else 'Reactivate' }}
+        </button>
+    </form>
+    <form method="POST" action="{{ url_for('projects.delete', project_id=project.id) }}" onsubmit="return confirm('Delete this project? Tasks and time entries will be unlinked, not deleted.')">
+        <button class="px-3 py-1.5 text-sm rounded-lg bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Delete</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <h2 class="font-semibold mb-3">Tasks</h2>
+        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-200 dark:border-gray-800 text-left text-gray-500 dark:text-gray-400">
+                        <th class="px-4 py-2">Task</th>
+                        <th class="px-4 py-2">Assigned</th>
+                        <th class="px-4 py-2">Status</th>
+                        <th class="px-4 py-2">Time</th>
+                        <th class="px-4 py-2"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tasks %}
+                    <tr class="border-b border-gray-100 dark:border-gray-800/50">
+                        <td class="px-4 py-2">{{ t.name }}</td>
+                        <td class="px-4 py-2 text-gray-500 dark:text-gray-400">{{ t.assigned_to.name if t.assigned_to else '—' }}</td>
+                        <td class="px-4 py-2">
+                            <form method="POST" action="{{ url_for('projects.update_task_status', task_id=t.id) }}" class="inline">
+                                <select name="status" onchange="this.form.submit()"
+                                    class="text-xs rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1">
+                                    <option value="open" {{ 'selected' if t.status == 'open' }}>Open</option>
+                                    <option value="in_progress" {{ 'selected' if t.status == 'in_progress' }}>In Progress</option>
+                                    <option value="done" {{ 'selected' if t.status == 'done' }}>Done</option>
+                                </select>
+                            </form>
+                        </td>
+                        <td class="px-4 py-2 font-mono">{{ task_stats[t.id]|hms }}</td>
+                        <td class="px-4 py-2 text-right">
+                            {% if current_user.is_manager %}
+                            <form method="POST" action="{{ url_for('projects.delete_task', task_id=t.id) }}" onsubmit="return confirm('Delete task?')" class="inline">
+                                <button class="text-red-500 hover:text-red-600 text-xs">Delete</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="px-4 py-4 text-gray-500 dark:text-gray-400 text-center">No tasks yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 h-fit">
+        <h2 class="font-semibold mb-3">New Task</h2>
+        <form method="POST" action="{{ url_for('projects.create_task', project_id=project.id) }}" class="space-y-3">
+            <input type="text" name="name" placeholder="Task name" required
+                class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 rounded-lg text-sm">
+                Add Task
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

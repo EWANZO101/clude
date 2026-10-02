@@ -1,0 +1,41 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Inventory — Admin{% endblock %}
+{% block page_title %}Server inventory{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="p-4 border-b border-border">
+    <form method="GET" class="flex gap-2">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search by title…" class="input-field max-w-xs">
+      <button type="submit" class="btn-secondary">Search</button>
+    </form>
+  </div>
+  <table class="table-base">
+    <thead><tr><th>Server</th><th>Seller</th><th>Current stock status</th><th>Change to</th></tr></thead>
+    <tbody>
+      {% for server in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ server.title }}</td>
+        <td class="text-text-secondary">{{ server.seller.business_name if server.seller else "Platform" }}</td>
+        <td><span class="badge-info">{{ server.inventory_status|hwval }}</span></td>
+        <td>
+          <form method="POST" action="{{ url_for('admin.server_detail', server_id=server.id) }}" class="flex gap-2">
+            {% include "components/_csrf.html" %}
+            <input type="hidden" name="action" value="set_inventory_status">
+            <select name="inventory_status" class="input-field max-w-xs">
+              {% for status in inventory_statuses %}
+              <option value="{{ status.value }}" {{ "selected" if status == server.inventory_status }}>{{ status|hwval }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn-secondary">Update</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="text-center text-text-muted py-8">No servers yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.seller_inventory", q=q) }}
+</div>
+{% endblock %}

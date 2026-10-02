@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="relative min-h-[calc(100vh-3.5rem)] flex items-center justify-center py-16 px-4">
+  <div class="absolute inset-0 grid-overlay pointer-events-none opacity-70"></div>
+  <div class="relative w-full max-w-[400px] animate-fade-up">
+    <div class="flex justify-center mb-6"><div class="w-11 h-11 rounded-xl border border-white/10 bg-white/[.03] flex items-center justify-center text-gray-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg></div></div>
+    <h1 class="text-2xl font-semibold text-center tracking-tight text-white">Reset your password</h1>
+    <p class="text-center text-sm text-gray-400 mt-2">Enter your email and we'll send you a reset link.</p>
+    <div class="mt-8 rounded-xl border border-white/[.08] bg-ink-900 p-6 sm:p-7">
+      <form method="post" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1.5" for="email">Email</label>
+          <input id="email" type="email" name="email" required autofocus autocomplete="email" class="form-input w-full px-3 h-10 text-sm" placeholder="you@example.com">
+        </div>
+        <button type="submit" class="ui-btn ui-btn-primary w-full !h-10">Send reset link</button>
+      </form>
+    </div>
+    <p class="text-center mt-6"><a href="{{ url_for('auth.login') }}" class="text-sm text-gray-400 hover:text-white inline-flex items-center gap-1.5">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      Back to sign in</a></p>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ user.username }} — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">Access control</p>
+    <h1 class="page-title">Edit {{ user.username }}</h1>
+  </div>
+</div>
+
+<div class="card" style="max-width:440px;">
+  <form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="field">
+      {{ form.username.label }}
+      {{ form.username() }}
+      {% for e in form.username.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.email.label }}
+      {{ form.email() }}
+      {% for e in form.email.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.role_id.label }}
+      {{ form.role_id() }}
+    </div>
+
+    <div class="field field-inline">
+      {{ form.is_active() }}
+      {{ form.is_active.label }}
+    </div>
+
+    <div class="field">
+      {{ form.new_password.label }}
+      {{ form.new_password() }}
+      {% for e in form.new_password.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <button class="btn btn-primary" type="submit">Save changes</button>
+  </form>
+</div>
+{% endblock %}

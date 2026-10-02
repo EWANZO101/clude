@@ -1,0 +1,251 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Gallery — Admin{% endblock %}
+{% block head %}
+<style>
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  @media (max-width: 480px) {
+    .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 0.65rem; }
+  }
+  .gallery-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color .2s;
+    cursor: grab;
+  }
+  .gallery-card:hover { border-color: var(--accent); }
+  .gallery-card.inactive { opacity: 0.4; }
+  .gallery-card img {
+    width: 100%; aspect-ratio: 1;
+    object-fit: cover; display: block;
+    background: var(--bg-base);
+  }
+  .gallery-card .actions {
+    padding: 0.6rem 0.65rem;
+    display: flex; gap: 0.35rem; align-items: center;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .gallery-card .caption-input {
+    background: transparent;
+    border: none; color: var(--text-secondary);
+    font-size: 0.78rem; width: 100%;
+    padding: 0.4rem 0.65rem;
+    font-family: 'Crimson Pro', serif;
+    border-bottom: 1px solid var(--border);
+  }
+  .gallery-card .caption-input:focus {
+    outline: none; border-color: var(--accent);
+    color: var(--text-primary);
+  }
+  .gact {
+    width: 28px; height: 28px; border-radius: 6px;
+    border: 1px solid var(--border); background: none;
+    cursor: pointer; font-size: 0.8rem; color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s; flex-shrink: 0;
+  }
+  .gact:hover { border-color: var(--accent); color: var(--accent); }
+  .gact.danger:hover { border-color: var(--danger); color: var(--danger); }
+  /* drop zone */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 14px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    margin-bottom: 1.25rem;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .drop-zone input[type=file] { display: none; }
+  /* flash confirm */
+  @keyframes savedFlash {
+    0%   { box-shadow: 0 0 0 0 rgba(34,197,94,.5); }
+    100% { box-shadow: 0 0 0 10px rgba(34,197,94,0); }
+  }
+  .flash-saved { animation: savedFlash .6s ease; }
+</style>
+{% endblock %}
+{% block admin_content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:1rem;">
+  <div>
+    <h1 class="font-display" style="font-size:1.6rem;margin-bottom:0.2rem;">Gallery</h1>
+    <p style="color:var(--text-muted);font-size:0.85rem;font-style:italic;">
+      Images appear in the carousel on the homepage. Drag to reorder.
+    </p>
+  </div>
+  <div style="font-size:0.82rem;color:var(--text-muted);">
+    {{ images|length }} image{{ 's' if images|length != 1 else '' }}
+  </div>
+</div>
+
+<!-- ── Upload drop zone ── -->
+<form method="POST" action="/admin/gallery/upload"
+      enctype="multipart/form-data" id="uploadForm">
+  <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <div style="font-size:2.5rem;margin-bottom:0.5rem;">🖼</div>
+    <div class="font-display" style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:0.35rem;">
+      Drop images here or click to browse
+    </div>
+    <div style="font-size:0.78rem;color:var(--text-muted);">PNG, JPG, GIF, WebP — multiple files OK</div>
+    <input type="file" id="fileInput" name="images" multiple
+           accept="image/png,image/jpeg,image/gif,image/webp"
+           onchange="previewFiles(this)">
+  </div>
+
+  <!-- Preview before upload -->
+  <div id="previewGrid" style="display:none;margin-bottom:1rem;">
+    <div class="font-display" style="font-size:0.78rem;color:var(--text-muted);letter-spacing:.06em;
+         text-transform:uppercase;margin-bottom:0.65rem;">Ready to upload</div>
+    <div id="previewItems" style="display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
+    <div style="margin-top:0.85rem;display:flex;gap:0.65rem;align-items:center;flex-wrap:wrap;">
+      <input type="text" name="caption" class="input"
+             placeholder="Caption for all selected images (optional)"
+             style="flex:1;min-width:180px;">
+      <button type="submit" class="btn btn-primary">⬆ Upload</button>
+      <button type="button" class="btn btn-ghost" onclick="clearPreview()">✕ Cancel</button>
+    </div>
+  </div>
+</form>
+
+<!-- ── Gallery grid ── -->
+{% if images %}
+<div class="gallery-grid" id="galleryGrid">
+  {% for img in images %}
+  <div class="gallery-card {{ 'inactive' if not img.active }}"
+       id="gcard-{{ img.id }}" data-id="{{ img.id }}" draggable="true">
+    <img src="/gallery/{{ img.filename }}"
+         alt="{{ img.caption or 'Gallery image' }}"
+         loading="lazy">
+    <!-- Caption -->
+    <form method="POST" action="/admin/gallery/{{ img.id }}/caption"
+          style="display:contents;">
+      <input type="text" name="caption" class="caption-input"
+             value="{{ img.caption }}" placeholder="Add a caption…"
+             onblur="this.form.submit()">
+    </form>
+    <!-- Actions -->
+    <div class="actions">
+      <!-- Toggle -->
+      <form method="POST" action="/admin/gallery/{{ img.id }}/toggle" style="display:contents;">
+        <button type="submit" class="gact"
+                title="{{ 'Hide from gallery' if img.active else 'Show in gallery' }}">
+          {{ '👁' if img.active else '🚫' }}
+        </button>
+      </form>
+      <!-- Delete -->
+      <form method="POST" action="/admin/gallery/{{ img.id }}/delete"
+            style="display:contents;"
+            onsubmit="return confirm('Delete this image? This cannot be undone.')">
+        <button type="submit" class="gact danger" title="Delete permanently">🗑</button>
+      </form>
+      <span style="font-size:0.68rem;color:var(--text-muted);margin-left:auto;
+                   font-style:italic;">{{ img.created_at.strftime('%b %d') }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center;padding:3rem;color:var(--text-muted);font-style:italic;
+            background:var(--bg-elevated);border-radius:12px;">
+  No images yet. Upload some above to start your gallery!
+</div>
+{% endif %}
+
+<script>
+// ── Drop zone ────────────────────────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+
+['dragenter','dragover'].forEach(ev => {
+  dropZone.addEventListener(ev, e => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+});
+['dragleave','drop'].forEach(ev => {
+  dropZone.addEventListener(ev, e => {
+    dropZone.classList.remove('drag-over');
+  });
+});
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  const dt = e.dataTransfer;
+  if (dt.files.length) {
+    document.getElementById('fileInput').files = dt.files;
+    previewFiles(document.getElementById('fileInput'));
+  }
+});
+
+function previewFiles(input) {
+  const grid = document.getElementById('previewGrid');
+  const items = document.getElementById('previewItems');
+  items.innerHTML = '';
+  if (!input.files.length) { grid.style.display = 'none'; return; }
+  grid.style.display = 'block';
+  [...input.files].forEach(file => {
+    const url = URL.createObjectURL(file);
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);';
+    items.appendChild(img);
+  });
+}
+
+function clearPreview() {
+  document.getElementById('fileInput').value = '';
+  document.getElementById('previewGrid').style.display = 'none';
+  document.getElementById('previewItems').innerHTML = '';
+}
+
+// ── Drag-to-reorder ───────────────────────────────────────────────────────────
+let dragging = null;
+let saveTimer = null;
+
+document.querySelectorAll('.gallery-card').forEach(card => {
+  card.addEventListener('dragstart', e => {
+    dragging = card;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => card.style.opacity = '0.4', 0);
+  });
+  card.addEventListener('dragend', () => {
+    card.style.opacity = '';
+    dragging = null;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveOrder, 500);
+  });
+  card.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (!dragging || dragging === card) return;
+    const rect = card.getBoundingClientRect();
+    const after = e.clientX > rect.left + rect.width / 2;
+    card.parentNode.insertBefore(dragging, after ? card.nextSibling : card);
+  });
+});
+
+function saveOrder() {
+  const ids = [...document.querySelectorAll('.gallery-card')].map(c => parseInt(c.dataset.id));
+  fetch('/admin/gallery/reorder', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({order: ids})
+  }).then(r => r.json()).then(d => {
+    if (d.ok) {
+      document.querySelectorAll('.gallery-card').forEach(c => {
+        c.classList.add('flash-saved');
+        setTimeout(() => c.classList.remove('flash-saved'), 600);
+      });
+    }
+  });
+}
+</script>
+{% endblock %}

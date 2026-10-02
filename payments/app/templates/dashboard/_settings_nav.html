@@ -1,0 +1,11 @@
+<div>
+  <h1 class="text-xl font-semibold mb-4">Settings</h1>
+  <div class="flex gap-2 overflow-x-auto text-sm">
+    <a href="{{ url_for('dashboard.settings_general') }}" class="px-3 py-1.5 rounded-lg whitespace-nowrap {{ 'bg-accent text-white' if request.endpoint == 'dashboard.settings_general' else 'bg-surface-card border border-surface-border text-slate-300' }}">General</a>
+    <a href="{{ url_for('dashboard.settings_appearance') }}" class="px-3 py-1.5 rounded-lg whitespace-nowrap {{ 'bg-accent text-white' if request.endpoint == 'dashboard.settings_appearance' else 'bg-surface-card border border-surface-border text-slate-300' }}">Appearance</a>
+    <a href="{{ url_for('dashboard.settings_finance') }}" class="px-3 py-1.5 rounded-lg whitespace-nowrap {{ 'bg-accent text-white' if request.endpoint == 'dashboard.settings_finance' else 'bg-surface-card border border-surface-border text-slate-300' }}">Finance</a>
+    <a href="{{ url_for('dashboard.settings_notifications') }}" class="px-3 py-1.5 rounded-lg whitespace-nowrap {{ 'bg-accent text-white' if request.endpoint == 'dashboard.settings_notifications' else 'bg-surface-card border border-surface-border text-slate-300' }}">Notifications</a>
+    <a href="{{ url_for('dashboard.settings_security') }}" class="px-3 py-1.5 rounded-lg whitespace-nowrap {{ 'bg-accent text-white' if request.endpoint == 'dashboard.settings_security' else 'bg-surface-card border border-surface-border text-slate-300' }}">Security</a>
+    <a href="{{ url_for('export.index') }}" class="px-3 py-1.5 rounded-lg whitespace-nowrap {{ 'bg-accent text-white' if request.endpoint == 'export.index' else 'bg-surface-card border border-surface-border text-slate-300' }}">Export data</a>
+  </div>
+</div>

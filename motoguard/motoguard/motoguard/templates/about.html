@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "_macros.html" import plate with context %}
+{% block title %}About — MotoGuard{% endblock %}
+{% block content %}
+<article class="max-w-2xl mx-auto">
+  <p class="eyebrow">Our story</p>
+  <h1 class="font-display font-900 text-4xl sm:text-5xl text-chalk mt-3 leading-[1.02]">Why I created MotoGuard</h1>
+
+  <div class="flex items-center gap-3 mt-5 mb-9">
+    <span class="w-9 h-9 rounded-full bg-plate text-[#10140F] font-display font-800 flex items-center justify-center">E</span>
+    <div>
+      <div class="font-display font-700 text-chalk text-sm">Ewan</div>
+      <div class="eyebrow">Founder · Scotland</div>
+    </div>
+    <span class="ml-auto">{{ plate('75', true) }}</span>
+  </div>
+
+  <div class="space-y-5 text-[1.05rem] leading-relaxed text-chalk/90">
+    <p>In early 2026, I experienced something that every motorcycle owner fears: my moped was stolen.</p>
+
+    <p>I had only owned it since October 2025. It was a brand-new 75-plate electric moped that I had worked hard to afford. One morning, I went outside to go for a ride and discovered it was gone.</p>
+
+    <p>Thankfully, my moped was fitted with a tracker. After checking its location, I found it just three streets away from my home. It had been stolen the previous night at around 11 PM.</p>
+
+    <p>Looking back, I know I made a mistake by not using a chain lock. However, what I discovered showed me that it may not have made much difference. The thieves had snapped the steering lock, stripped off the front panel, exposed the wiring, completely destroyed the ignition barrel, and attempted to hotwire the bike.</p>
+
+    <p>Fortunately, because it was electric, they were unable to start it. Unfortunately, the damage had already been done.</p>
+
+    <p>When I tried to make an insurance claim, it was denied because the moped had not been secured with a chain lock. As a result, I was left out of pocket for nearly £2,000. The only money I recovered was just over £300 from the unused portion of my annual insurance policy.</p>
+  </div>
+
+  <div class="flex gap-3 my-8">
+    <div class="card-2 px-5 py-4 flex-1 text-center">
+      <div class="font-display font-800 text-2xl text-stolen">£2,000</div>
+      <div class="eyebrow mt-1">Out of pocket</div>
+    </div>
+    <div class="card-2 px-5 py-4 flex-1 text-center">
+      <div class="font-display font-800 text-2xl text-chalk">£300</div>
+      <div class="eyebrow mt-1">All that came back</div>
+    </div>
+  </div>
+
+  <blockquote class="border-l-2 border-plate pl-5 my-8">
+    <p class="font-display font-700 text-xl sm:text-2xl text-chalk leading-snug">I was one of the lucky ones, because my moped had a tracker. Without it, I may never have found the bike at all.</p>
+  </blockquote>
+
+  <div class="space-y-5 text-[1.05rem] leading-relaxed text-chalk/90">
+    <p>That experience opened my eyes to a major problem. Most riders don't have trackers, and when a motorcycle is stolen, there is often no simple way for members of the public, businesses, garages, or other riders to help identify and recover it.</p>
+
+    <p class="font-display font-700 text-2xl text-plate">That's why I created MotoGuard.</p>
+
+    <p>MotoGuard is a UK-wide motorcycle registration database designed to help protect riders and increase the chances of recovering stolen motorcycles, mopeds, and scooters. By creating a shared database that can be accessed across the United Kingdom, we hope to make it easier for stolen vehicles to be identified and returned to their rightful owners.</p>
+
+    <p>MotoGuard was built from personal experience, with one simple goal: helping riders protect what matters to them.</p>
+  </div>
+
+  <div class="divider my-9"></div>
+
+  <div class="card p-6 text-center">
+    <h2 class="font-display font-700 text-xl text-chalk">Put your bike on the network</h2>
+    <p class="text-mute text-sm mt-1 mb-4">It takes two minutes, and it's there the moment you ever need it.</p>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register your bike</a>
+  </div>
+</article>
+{% endblock %}

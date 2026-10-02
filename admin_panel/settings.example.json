@@ -1,0 +1,18 @@
+{
+  "admin_url": "https://admin.opslabsystems.cloud",
+  "registration_token": "paste-the-enrollment-token-from-the-admin-panel-here",
+  "instance_id": null,
+  "instance_secret": null,
+  "heartbeat_interval_seconds": 60,
+  "config_poll_interval_seconds": 30,
+  "update_poll_interval_seconds": 60,
+  "kiosk_config_path": "/etc/opslab-agent/kiosk_config.json",
+  "kiosk_start_command": "",
+  "kiosk_working_dir": "",
+  "kiosk_health_check_url": "",
+  "kiosk_health_check_command": "",
+  "health_check_timeout_seconds": 5.0,
+  "health_check_retries": 5,
+  "health_check_retry_delay_seconds": 2.0,
+  "health_check_grace_period_seconds": 3.0
+}

@@ -1,0 +1,169 @@
+{% extends "admin/_layout.html" %}
+{% block admin_title %}{{ job.title }}{% endblock %}
+{% block admin_content %}
+<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+  <div>
+    <div class="text-xs font-bold uppercase tracking-widest text-ops-400 mb-1"><a href="{{ url_for('quickjobs.admin_list') }}" class="hover:text-ops-300">Quick Jobs</a></div>
+    <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight">{{ job.title }}</h1>
+    <div class="mt-2"><span class="pill" style="background:{{ job.status_meta.color }}1f;color:{{ job.status_meta.color }};border:1px solid {{ job.status_meta.color }}55;">{{ job.status_meta.label }}</span></div>
+  </div>
+</div>
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-6">
+    <!-- Share link -->
+    <div class="rounded-2xl border border-ops-500/30 bg-ops-500/[.06] p-5">
+      <div class="text-sm font-bold mb-2 text-ops-200">Share link</div>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <input id="shareUrl" readonly value="{{ share_url }}" class="form-input w-full font-mono text-sm">
+        <div class="flex gap-2">
+          <button type="button" onclick="copyShare()" id="copyBtn" class="px-4 py-2 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-lg whitespace-nowrap">Copy</button>
+          <a href="{{ share_url }}" target="_blank" class="px-4 py-2 text-sm font-semibold text-gray-200 bg-white/5 border border-ink-600 rounded-lg whitespace-nowrap">Open</a>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-2">Anyone with this link can view the job{{ ' and choose a day' if job.allow_client_scheduling and job.status=='new' else '' }}. No account needed.</p>
+      <form method="post" action="{{ url_for('quickjobs.admin_regen', job_id=job.id) }}" class="mt-2" onsubmit="return confirm('Regenerate the link? The current link will stop working.');">
+        <button class="text-xs text-gray-400 hover:text-red-300">↻ Regenerate link</button>
+      </form>
+    </div>
+
+    <!-- Edit details -->
+    <form method="post" action="{{ url_for('quickjobs.admin_edit', job_id=job.id) }}" class="rounded-2xl border border-ink-600 bg-ink-800/40 p-5 space-y-4">
+      <div class="text-sm font-bold">Details</div>
+      <input name="title" value="{{ job.title }}" class="form-input w-full" placeholder="Title">
+      <textarea name="details" rows="4" class="form-textarea w-full" placeholder="Details">{{ job.details or '' }}</textarea>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <input name="location" value="{{ job.location or '' }}" class="form-input w-full" placeholder="Address / location">
+        <input name="contact_phone" value="{{ job.contact_phone or '' }}" class="form-input w-full" placeholder="Our contact phone">
+        <input name="price" value="{{ '%.2f'|format(job.price_cents/100) if job.price_cents is not none else '' }}" class="form-input w-full" placeholder="Flat price £ (used if no items)">
+        <input name="client_name" value="{{ job.client_name or '' }}" class="form-input w-full" placeholder="Client name">
+        <input name="client_email" value="{{ job.client_email or '' }}" class="form-input w-full" placeholder="Client email">
+        <input name="client_phone" value="{{ job.client_phone or '' }}" class="form-input w-full" placeholder="Client phone">
+      </div>
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input type="checkbox" name="allow_client_scheduling" {{ 'checked' if job.allow_client_scheduling }} class="w-4 h-4 rounded accent-ops-500">
+        <span class="text-sm">Let the client pick the day from the link</span>
+      </label>
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input type="checkbox" name="allow_client_edits" {{ 'checked' if job.allow_client_edits }} class="w-4 h-4 rounded accent-ops-500">
+        <span class="text-sm">Let the client edit items, details &amp; cancel from the link</span>
+      </label>
+      <button class="px-4 py-2 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-lg">Save details</button>
+    </form>
+
+    <!-- Line items -->
+    <div class="rounded-2xl border border-ink-600 bg-ink-800/40 p-5">
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-sm font-bold">Items</div>
+        <div class="text-sm">Total <span class="font-semibold">{{ job.total_display }}</span></div>
+      </div>
+      {% if job.items %}
+      <div class="rounded-xl border border-ink-600 overflow-hidden divide-y divide-ink-600/50 mb-4">
+        {% for it in job.items %}
+        <div class="flex items-center gap-3 p-3 bg-ink-900/30">
+          <div class="flex-1 min-w-0">
+            <div class="text-sm text-gray-100 truncate">{{ it.label }}</div>
+            <div class="text-xs text-gray-500">{{ it.unit_display }} × {{ it.quantity }}{% if it.source == 'client' %} · <span class="text-ops-300">added by client</span>{% endif %}</div>
+          </div>
+          <div class="text-sm font-semibold">{{ it.amount_display }}</div>
+          <form method="post" action="{{ url_for('quickjobs.admin_item_remove', job_id=job.id, item_id=it.id) }}"><button class="text-gray-500 hover:text-red-400 px-1" title="Remove">✕</button></form>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-sm text-gray-400 mb-4">No items. Add some below, or set a flat price in Details.</p>
+      {% endif %}
+      <form method="post" action="{{ url_for('quickjobs.admin_item_add', job_id=job.id) }}" class="flex flex-col sm:flex-row gap-2 sm:items-end">
+        <div class="flex-1"><label class="block text-[11px] text-gray-500 mb-1">Item</label><input name="label" required class="form-input w-full" placeholder="e.g. Front tyre fitting"></div>
+        <div class="w-full sm:w-28"><label class="block text-[11px] text-gray-500 mb-1">Unit £</label><input name="unit_price" inputmode="decimal" class="form-input w-full" placeholder="0.00"></div>
+        <div class="w-full sm:w-16"><label class="block text-[11px] text-gray-500 mb-1">Qty</label><input name="quantity" value="1" class="form-input w-full"></div>
+        <button class="px-4 py-2.5 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-lg whitespace-nowrap">Add</button>
+      </form>
+      <p class="text-[11px] text-gray-500 mt-2">When items exist, the total is their sum and the flat price is ignored.</p>
+    </div>
+  </div>
+
+  <!-- Side: schedule + status -->
+  <div class="space-y-6">
+    <div class="rounded-2xl border border-ink-600 bg-ink-800/40 p-5">
+      <div class="text-sm font-bold mb-3">Schedule</div>
+      {% if job.scheduled_day %}
+        <div class="mb-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+          <div class="text-sm font-semibold text-green-200">{{ job.scheduled_day.strftime('%A %d %b %Y') }}{{ ' · ' ~ job.scheduled_time if job.scheduled_time else '' }}</div>
+          <div class="text-xs text-gray-400 mt-0.5">Set by {{ job.scheduled_by or 'admin' }}</div>
+        </div>
+      {% else %}
+        <p class="text-sm text-gray-400 mb-3">No day set yet.</p>
+      {% endif %}
+      <form method="post" action="{{ url_for('quickjobs.admin_schedule', job_id=job.id) }}" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 mb-1">Day</label>
+          <input name="scheduled_day" type="date" value="{{ job.scheduled_day.strftime('%Y-%m-%d') if job.scheduled_day else '' }}" class="form-input w-full text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 mb-1">Time (24h)</label>
+          <input name="scheduled_time" type="time" value="{{ job.scheduled_time or '' }}" class="form-input w-full text-sm">
+        </div>
+        <button class="w-full px-4 py-2 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-lg">Set day</button>
+        <p class="text-[11px] text-gray-500">Leave the day blank and save to clear it (reopens client scheduling).</p>
+      </form>
+    </div>
+
+    <div class="rounded-2xl border border-ink-600 bg-ink-800/40 p-5">
+      <div class="text-sm font-bold mb-3">Payment</div>
+      {% if not job.has_price %}
+        <p class="text-sm text-gray-400">No price set. Add a price in Details to enable a Pay button on the share link.</p>
+      {% elif job.is_paid %}
+        <div class="mb-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+          <div class="text-sm font-semibold text-green-200">Paid · {{ job.total_display }}</div>
+          <div class="text-xs text-gray-400 mt-0.5">{{ job.paid_at.strftime('%d %b %Y %H:%M') if job.paid_at else '' }} · via {{ job.paid_via or 'stripe' }}</div>
+        </div>
+        <form method="post" action="{{ url_for('quickjobs.admin_mark_paid', job_id=job.id) }}">
+          <input type="hidden" name="paid" value="0">
+          <button class="text-xs text-gray-400 hover:text-red-300">Mark as unpaid</button>
+        </form>
+      {% else %}
+        <div class="mb-3">
+          <div class="text-xs text-gray-500">Amount due</div>
+          <div class="text-xl font-semibold">{{ job.total_display }}</div>
+        </div>
+        {% if stripe_on %}
+          <p class="text-xs text-gray-400 mb-3">The share link shows a <span class="text-ops-300 font-semibold">Pay</span> button (Stripe Checkout). It'll be marked paid automatically once they pay.</p>
+        {% else %}
+          <p class="text-xs text-yellow-300/90 mb-3">Stripe isn't configured, so the Pay button is hidden on the share link. Set STRIPE_SECRET_KEY to enable it.</p>
+        {% endif %}
+        <form method="post" action="{{ url_for('quickjobs.admin_mark_paid', job_id=job.id) }}">
+          <input type="hidden" name="paid" value="1">
+          <button class="w-full px-4 py-2 text-sm font-semibold text-gray-200 bg-white/5 border border-ink-600 rounded-lg hover:bg-white/10 transition">Mark as paid manually</button>
+        </form>
+      {% endif %}
+    </div>
+
+    <div class="rounded-2xl border border-ink-600 bg-ink-800/40 p-5 space-y-2">
+      <div class="text-sm font-bold mb-2">Status</div>
+      {% for key, meta in status_meta.items() %}
+        {% if key != job.status %}
+        <form method="post" action="{{ url_for('quickjobs.admin_status', job_id=job.id) }}">
+          <input type="hidden" name="status" value="{{ key }}">
+          <button class="w-full text-left px-3 py-2 text-sm rounded-lg bg-white/5 border border-ink-600 hover:bg-white/10 transition">Mark {{ meta.label.lower() }}</button>
+        </form>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <form method="post" action="{{ url_for('quickjobs.admin_delete', job_id=job.id) }}" onsubmit="return confirm('Delete this job permanently?');">
+      <button class="w-full px-4 py-2.5 text-sm font-semibold text-red-300 bg-red-500/10 border border-red-500/30 rounded-xl hover:bg-red-500/20 transition">Delete job</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  function copyShare(){
+    var f=document.getElementById('shareUrl'); f.select(); f.setSelectionRange(0,99999);
+    navigator.clipboard.writeText(f.value).then(function(){
+      var b=document.getElementById('copyBtn'); var t=b.textContent; b.textContent='Copied!';
+      setTimeout(function(){b.textContent=t;},1500);
+    });
+  }
+</script>
+{% endblock %}

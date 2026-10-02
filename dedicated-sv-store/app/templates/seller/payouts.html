@@ -1,0 +1,32 @@
+{% extends "layouts/seller_dashboard.html" %}
+{% from "components/_stat_card.html" import stat_card with context %}
+{% block title %}Payouts — Seller Portal{% endblock %}
+{% block page_title %}Payouts{% endblock %}
+{% block content %}
+<div class="grid sm:grid-cols-3 gap-4 mb-6">
+  {{ stat_card("Gross Sales", "£" ~ totals.gross) }}
+  {{ stat_card("Commission", "£" ~ totals.commission) }}
+  {{ stat_card("Net Payout", "£" ~ totals.net) }}
+</div>
+{% if payouts %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Order</th><th>Gross</th><th>Commission</th><th>Net</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for payout in payouts %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ payout.order.order_number }}</td>
+        <td class="text-text-secondary">£{{ payout.gross_amount }}</td>
+        <td class="text-text-secondary">£{{ payout.commission_amount }}</td>
+        <td class="text-text-primary">£{{ payout.net_amount }}</td>
+        <td>{% if payout.status == "paid" %}<span class="badge-success">Paid</span>{% else %}<span class="badge-warning">Pending</span>{% endif %}</td>
+        <td class="text-text-muted">{{ payout.created_at.strftime("%d %b %Y") }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card p-10 text-center text-text-secondary">No payouts yet — these appear once a customer pays for one of your servers.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+{% block title %}Report {{ report.report_id }} — Admin{% endblock %}
+{% block content %}
+<div class="admin-layout">
+{% include "admin/_sidebar.html" %}
+<div>
+  <div style="margin-bottom:.85rem">
+    <a href="{{ url_for('admin_reports') }}" style="color:var(--muted);text-decoration:none;font-size:.85rem">← Back to Reports</a>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 290px;gap:1.35rem;align-items:start">
+
+  <!-- Left: details + live ticket -->
+  <div>
+    <!-- Report details card -->
+    <div class="card" style="margin-bottom:1.1rem">
+      <div class="card-body">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem">
+          <div>
+            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.3rem">
+              <span class="post-id">{{ report.report_id }}</span>
+              <span id="a-status-badge" class="status-{{ report.status }}">{{ report.status.title() }}</span>
+              {% if not report.admin_seen %}<span style="background:var(--danger);color:white;font-size:.7rem;padding:.1rem .42rem;border-radius:10px;font-weight:700">NEW</span>{% endif %}
+            </div>
+            <h1 style="font-size:1.1rem;font-weight:700;margin:0">Report Details</h1>
+          </div>
+          <!-- Live indicator -->
+          <div style="display:flex;align-items:center;gap:.35rem">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block;animation:pulse 2s infinite" id="a-live-dot"></span>
+            <span style="font-size:.72rem;color:var(--muted)" id="a-live-label">Live</span>
+          </div>
+        </div>
+
+        <div style="font-size:.875rem;margin-bottom:1rem">
+          {% for label,value in [
+            ('Reported Post', report.post_ref_id),
+            ('Reporter', 'Anonymous' if report.is_anonymous else (report.reporter_display_name or 'Portal user')),
+            ('IP Address', report.ip_address or '—'),
+            ('Submitted', report.created_at.strftime('%d %B %Y %H:%M')),
+          ] %}
+          <div style="display:flex;gap:1rem;padding:.38rem 0;border-bottom:1px solid var(--border)">
+            <span style="color:var(--muted);width:130px;flex-shrink:0;font-size:.82rem">{{ label }}</span>
+            <span style="color:var(--text);font-family:{% if 'IP' in label or 'Post' in label %}'IBM Plex Mono',monospace{% else %}inherit{% endif %};font-size:{% if 'IP' in label or 'Post' in label %}.79rem{% else %}.875rem{% endif %}">{{ value }}</span>
+          </div>
+          {% endfor %}
+        </div>
+
+        <h3 style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.45rem">Description</h3>
+        <div style="white-space:pre-wrap;font-size:.875rem;color:var(--text);line-height:1.7;background:var(--surface);padding:.75rem .9rem;border-radius:7px;border:1px solid var(--border);margin-bottom:.85rem">{{ report.description }}</div>
+
+        {% if report.links %}
+        <h3 style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.38rem">Links</h3>
+        <div style="font-size:.85rem;color:var(--accent);background:var(--surface);padding:.5rem .75rem;border-radius:6px;border:1px solid var(--border);margin-bottom:.85rem;word-break:break-all">{{ report.links }}</div>
+        {% endif %}
+        {% if report.other_info %}
+        <h3 style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.38rem">Additional Info</h3>
+        <div style="white-space:pre-wrap;font-size:.875rem;color:var(--text);background:var(--surface);padding:.65rem .8rem;border-radius:6px;border:1px solid var(--border);margin-bottom:.85rem">{{ report.other_info }}</div>
+        {% endif %}
+
+        {% if report.evidence_files %}
+        <h3 style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.55rem">Evidence ({{ report.evidence_files|length }})</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.55rem;margin-bottom:.5rem">
+          {% for ef in report.evidence_files %}
+            {% if ef.media_type == 'image' %}
+            <a href="{{ url_for('uploaded_file', filename=ef.filename) }}" target="_blank">
+              <img src="{{ url_for('uploaded_file', filename=ef.filename) }}" alt="Evidence" style="width:100%;height:100px;object-fit:cover;border-radius:7px;border:1px solid var(--border)">
+            </a>
+            {% else %}
+            <a href="{{ url_for('uploaded_file', filename=ef.filename) }}" target="_blank" class="card" style="display:flex;align-items:center;gap:.4rem;padding:.55rem;text-decoration:none">
+              <span>📄</span><span style="font-size:.75rem;color:var(--muted);word-break:break-all">{{ ef.filename.split('/')[-1][:20] }}</span>
+            </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if report.reported_post %}
+        <div style="padding:.7rem .85rem;background:var(--surface);border:1px solid var(--border);border-radius:7px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+            <div>
+              <span class="post-id" style="font-size:.73rem">{{ report.reported_post.post_id }}</span>
+              <span style="font-size:.83rem;color:var(--text);margin-left:.45rem">{{ report.reported_post.title[:55] }}</span>
+            </div>
+            <div style="display:flex;gap:.4rem">
+              <a href="{{ url_for('advice_detail' if report.reported_post.forum_type=='advice' else 'post_detail', post_id=report.reported_post.post_id) }}" target="_blank" class="btn btn-ghost btn-sm">↗ View</a>
+              <a href="{{ url_for('admin_posts') }}?q={{ report.reported_post.post_id }}" class="btn btn-ghost btn-sm">⚙ Manage</a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ── Live Ticket Thread ── -->
+    <div class="card">
+      <div style="padding:.8rem 1.1rem;border-bottom:1px solid var(--border);background:rgba(88,166,255,.04);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <h2 style="font-size:.9rem;font-weight:600;margin:0">🔒 Private Ticket Thread</h2>
+          <p style="font-size:.74rem;color:var(--muted);margin:.15rem 0 0">Visible only to you and the reporter · Updates live every 2s</p>
+        </div>
+        <span id="a-unread-badge" style="display:none;background:var(--danger);color:white;font-size:.72rem;font-weight:700;padding:.15rem .5rem;border-radius:10px"></span>
+      </div>
+
+      <!-- Thread -->
+      <div id="a-ticket-thread"
+           style="padding:1rem 1.1rem;min-height:200px;max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:.7rem">
+        <div id="a-thread-empty" style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.85rem">No messages yet.</div>
+      </div>
+
+      <!-- Status bar -->
+      <div style="padding:.32rem 1.1rem;border-top:1px solid var(--border);background:rgba(0,0,0,.12);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:.71rem;color:var(--muted)" id="a-last-updated">Connecting…</span>
+        <span style="font-size:.71rem;color:var(--muted)" id="a-msg-count"></span>
+      </div>
+
+      <!-- Admin reply form -->
+      <div style="padding:.85rem 1.1rem;border-top:1px solid var(--border)">
+        <form id="a-reply-form" method="POST" action="{{ url_for('admin_report_message', report_id=report.report_id) }}" onsubmit="handleAdminReply(event)">
+          <div style="display:flex;gap:.45rem;align-items:flex-end">
+            <textarea name="content" id="a-reply-text" class="form-input" rows="3"
+                      placeholder="Send a private message to the reporter…"
+                      required style="flex:1;min-height:72px;resize:vertical"></textarea>
+            <button type="submit" class="btn btn-primary" style="flex-shrink:0;align-self:flex-end" id="a-send-btn">Send →</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: status actions -->
+  <div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-body">
+        <h3 style="font-size:.79rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem">Update Status</h3>
+        <form method="POST">
+          <div class="form-group">
+            <label class="form-label" style="font-size:.82rem">Status</label>
+            <select name="status" class="form-input" id="a-status-select">
+              {% for s in ['pending','seen','resolved','dismissed'] %}
+              <option value="{{ s }}" {% if s==report.status %}selected{% endif %}>{{ s.title() }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-size:.82rem">Static Reply (optional)</label>
+            <textarea name="reply" class="form-input" rows="3" placeholder="Legacy single reply — use the ticket thread for conversations…">{{ report.admin_reply or '' }}</textarea>
+            <p class="form-hint">Prefer the live ticket thread above.</p>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm btn-full">Save Status</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h3 style="font-size:.79rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.65rem">Reporter</h3>
+        <div style="font-size:.82rem;color:var(--muted)">
+          {% for label,value in [
+            ('Portal account', 'Linked' if report.portal_user_id else ('Unclaimed' if report.claim_token else 'None')),
+            ('Anonymous', 'Yes' if report.is_anonymous else 'No'),
+            ('IP', report.ip_address or '—'),
+          ] %}
+          <div style="display:flex;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid var(--border)">
+            <span>{{ label }}</span>
+            <span style="color:var(--text);font-family:{% if label=='IP' %}'IBM Plex Mono',monospace{% else %}inherit{% endif %};font-size:{% if label=='IP' %}.76rem{% else %}.82rem{% endif %}">{{ value }}</span>
+          </div>
+          {% endfor %}
+          <div style="display:flex;justify-content:space-between;padding:.3rem 0">
+            <span>Thread msgs</span>
+            <span style="color:var(--text)" id="a-msg-count-side">{{ report.messages|length }}</span>
+          </div>
+        </div>
+        {% if report.claim_token %}
+        <div style="margin-top:.65rem;padding:.5rem .65rem;background:rgba(227,179,65,.07);border:1px solid rgba(227,179,65,.18);border-radius:6px;font-size:.77rem;color:var(--warn)">
+          ⚠ Reporter has not yet created a portal account.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+</div>
+
+<style>
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.a-bubble-admin{display:flex;justify-content:flex-end}
+.a-bubble-reporter{display:flex;justify-content:flex-start}
+.a-bubble{max-width:84%;padding:.78rem .9rem;border-radius:12px}
+.a-bubble-inner-admin{background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.2);border-radius:12px 12px 0 12px}
+.a-bubble-inner-reporter{background:rgba(63,185,80,.07);border:1px solid rgba(63,185,80,.2);border-radius:12px 12px 12px 0}
+.a-label{font-size:.69rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem}
+.a-label-admin{color:var(--accent)}
+.a-label-reporter{color:var(--success)}
+.a-time{font-size:.68rem;color:var(--muted)}
+.a-content{font-size:.875rem;color:var(--text);white-space:pre-wrap;line-height:1.62;margin:.25rem 0 0}
+</style>
+
+<script>
+const A_REPORT_ID = {{ report.report_id | tojson }};
+const A_POLL_MS   = 2000;
+let   a_pollTimer = null;
+let   a_sending   = false;
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function buildAdminBubble(msg) {
+  const isAdmin = msg.sender === 'admin';
+  const wrap = document.createElement('div');
+  wrap.className = isAdmin ? 'a-bubble-admin' : 'a-bubble-reporter';
+  wrap.dataset.msgId = msg.id;
+  wrap.innerHTML = `
+    <div class="a-bubble ${isAdmin ? 'a-bubble-inner-admin' : 'a-bubble-inner-reporter'}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem">
+        <span class="a-label ${isAdmin ? 'a-label-admin' : 'a-label-reporter'}">${msg.sender_label}</span>
+        <span class="a-time">${msg.created_at}</span>
+      </div>
+      <div class="a-content">${escHtml(msg.content)}</div>
+    </div>`;
+  return wrap;
+}
+
+async function adminPoll() {
+  try {
+    const res  = await fetch(`/report-portal/report/${A_REPORT_ID}/messages.json`, { cache: 'no-store' });
+    const data = await res.json();
+
+    const thread = document.getElementById('a-ticket-thread');
+    const empty  = document.getElementById('a-thread-empty');
+
+    let allMsgs = data.messages;
+    if (data.admin_reply && allMsgs.length === 0) {
+      allMsgs = [{id:-1, sender:'admin', sender_label:'Admin Team (reply)', content:data.admin_reply, is_read:true, created_at:''}];
+    }
+
+    if (allMsgs.length > 0) {
+      if (empty) empty.style.display = 'none';
+      const existing = new Set(Array.from(thread.querySelectorAll('[data-msg-id]')).map(el => el.dataset.msgId));
+      let appended = false;
+      allMsgs.forEach(msg => {
+        if (!existing.has(String(msg.id))) {
+          thread.appendChild(buildAdminBubble(msg));
+          appended = true;
+        }
+      });
+      if (appended) thread.scrollTop = thread.scrollHeight;
+    }
+
+    // Count unread from reporter
+    const unread = data.messages.filter(m => m.sender === 'reporter' && !m.is_read);
+    const badge  = document.getElementById('a-unread-badge');
+    if (badge) {
+      if (unread.length > 0) {
+        badge.textContent = unread.length + ' unread';
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    const total = allMsgs.length;
+    const mc = document.getElementById('a-msg-count');
+    const mcs = document.getElementById('a-msg-count-side');
+    if (mc) mc.textContent = total + ' message' + (total!==1?'s':'');
+    if (mcs) mcs.textContent = total;
+
+    // Update status badge
+    const sb = document.getElementById('a-status-badge');
+    if (sb) { sb.textContent = data.status.charAt(0).toUpperCase()+data.status.slice(1); sb.className='status-'+data.status; }
+    // Sync select
+    const sel = document.getElementById('a-status-select');
+    if (sel) sel.value = data.status;
+
+    const now = new Date();
+    const t = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0');
+    const dot = document.getElementById('a-live-dot');
+    const lbl = document.getElementById('a-live-label');
+    if (dot) dot.style.background = 'var(--success)';
+    if (lbl) lbl.textContent = 'Live · '+t;
+    document.getElementById('a-last-updated').textContent = 'Last updated '+t;
+  } catch(e) {
+    const dot = document.getElementById('a-live-dot');
+    if (dot) dot.style.background = 'var(--danger)';
+    document.getElementById('a-last-updated').textContent = 'Connection error — retrying…';
+  }
+  a_pollTimer = setTimeout(adminPoll, A_POLL_MS);
+}
+
+function handleAdminReply(e) {
+  e.preventDefault();
+  if (a_sending) return;
+  const txt = document.getElementById('a-reply-text');
+  const btn = document.getElementById('a-send-btn');
+  if (!txt.value.trim()) return;
+  a_sending = true;
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  clearTimeout(a_pollTimer);
+
+  const fd = new FormData(document.getElementById('a-reply-form'));
+  fetch(document.getElementById('a-reply-form').action, { method:'POST', body:fd })
+    .then(() => {
+      txt.value = '';
+      btn.textContent = 'Send →';
+      btn.disabled = false;
+      a_sending = false;
+      adminPoll();
+    })
+    .catch(() => {
+      btn.textContent = 'Send →';
+      btn.disabled = false;
+      a_sending = false;
+      document.getElementById('a-reply-form').submit();
+    });
+}
+
+document.addEventListener('DOMContentLoaded', adminPoll);
+document.addEventListener('visibilitychange', function(){
+  if (document.hidden) {
+    clearTimeout(a_pollTimer);
+    const dot = document.getElementById('a-live-dot');
+    if (dot) dot.style.animation='none';
+  } else {
+    adminPoll();
+    const dot = document.getElementById('a-live-dot');
+    if (dot) dot.style.animation='pulse 2s infinite';
+  }
+});
+</script>
+{% endblock %}

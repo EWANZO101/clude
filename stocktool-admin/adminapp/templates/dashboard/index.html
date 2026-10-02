@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Dashboard</h1>
+  <p class="page-subtitle">{{ now.strftime('%A, %d %B %Y') if now else '' }}</p>
+</div>
+
+{% if summary.tools.overdue %}
+<a href="{{ url_for('tools.index', overdue='true') }}" class="alert alert-danger"
+   style="text-decoration:none;justify-content:space-between;">
+  <span>
+    <i class="fas fa-triangle-exclamation"></i>
+    <strong>{{ summary.tools.overdue }}</strong> tool{{ 's' if summary.tools.overdue != 1 }}
+    checked out longer than expected
+    {% if summary.overdue_tools %}
+      — {{ summary.overdue_tools[0].name }}{% if summary.overdue_tools|length > 1 %} and {{ summary.overdue_tools|length - 1 }} other{{ 's' if summary.overdue_tools|length > 2 }}{% endif %}
+    {% endif %}
+  </span>
+  <span style="white-space:nowrap;">View overdue tools <i class="fas fa-arrow-right"></i></span>
+</a>
+{% endif %}
+
+<!-- Stat cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:16px;">
+  <a href="{{ url_for('items.index') }}" class="stat-card" style="text-decoration:none;display:flex;align-items:flex-start;gap:12px;">
+    <div style="background:#1e3a8a;border-radius:8px;padding:9px;flex-shrink:0;">
+      <i class="fas fa-calendar-days" style="font-size:15px;color:#93c5fd;"></i>
+    </div>
+    <div>
+      <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Items</div>
+      <div style="font-size:26px;font-weight:800;color:#f9fafb;line-height:1.2;">{{ summary.items.low_stock }}</div>
+      <div style="font-size:12px;color:#60a5fa;">Low stock</div>
+    </div>
+  </a>
+  <a href="{{ url_for('tools.index') }}" class="stat-card" style="text-decoration:none;display:flex;align-items:flex-start;gap:12px;">
+    <div style="background:#065f46;border-radius:8px;padding:9px;flex-shrink:0;">
+      <i class="fas fa-wrench" style="font-size:15px;color:#6ee7b7;"></i>
+    </div>
+    <div>
+      <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Tools</div>
+      <div style="font-size:26px;font-weight:800;color:#f9fafb;line-height:1.2;">{{ summary.tools.total - summary.tools.checked_out }}</div>
+      <div style="font-size:12px;color:#34d399;">Available</div>
+    </div>
+  </a>
+  <a href="{{ url_for('tools.index', status='checked_out') }}" class="stat-card" style="text-decoration:none;display:flex;align-items:flex-start;gap:12px;">
+    <div style="background:#78350f;border-radius:8px;padding:9px;flex-shrink:0;">
+      <i class="fas fa-arrow-up-from-bracket" style="font-size:15px;color:#fcd34d;"></i>
+    </div>
+    <div>
+      <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Out</div>
+      <div style="font-size:26px;font-weight:800;color:#f9fafb;line-height:1.2;">{{ summary.tools.checked_out }}</div>
+      <div style="font-size:12px;color:#fbbf24;">In use</div>
+    </div>
+  </a>
+  <a href="{{ url_for('tools.index') }}" class="stat-card" style="text-decoration:none;display:flex;align-items:flex-start;gap:12px;">
+    <div style="background:#7f1d1d;border-radius:8px;padding:9px;flex-shrink:0;">
+      <i class="fas fa-triangle-exclamation" style="font-size:15px;color:#fca5a5;"></i>
+    </div>
+    <div>
+      <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Issues</div>
+      <div style="font-size:26px;font-weight:800;color:#f9fafb;line-height:1.2;">{{ summary.tools.needs_attention }}</div>
+      <div style="font-size:12px;color:#f87171;">Broken / repair</div>
+    </div>
+  </a>
+</div>
+
+<!-- Quick links -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+  <a href="{{ url_for('tools.index', status='available') }}" class="card"
+     style="padding:16px;text-decoration:none;text-align:center;">
+    <div style="font-size:13px;font-weight:600;color:#f3f4f6;">
+      <i class="fas fa-circle-check" style="color:#34d399;"></i> Available Tools
+    </div>
+    <div style="font-size:11px;color:#6b7280;margin-top:2px;">View all tools</div>
+  </a>
+  <a href="{{ url_for('items.index', stock='low') }}" class="card"
+     style="padding:16px;text-decoration:none;text-align:center;">
+    <div style="font-size:13px;font-weight:600;color:#f3f4f6;">
+      <i class="fas fa-triangle-exclamation" style="color:#fbbf24;"></i> Low Stock
+    </div>
+    <div style="font-size:11px;color:#6b7280;margin-top:2px;">View low stock</div>
+  </a>
+</div>
+
+<!-- Recent Checkouts + Recent Activity -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="detail-grid-2col">
+  <div class="card" style="padding:0;">
+    <div style="padding:14px 18px;border-bottom:1px solid #374151;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:13px;font-weight:600;color:#f9fafb;">
+        <i class="fas fa-right-left" style="color:#9ca3af;"></i> Recent Checkouts
+      </div>
+      <a href="{{ url_for('logs.tool_history') }}" style="font-size:12px;color:#818cf8;text-decoration:none;">View all</a>
+    </div>
+    <div style="min-height:110px;display:flex;align-items:center;justify-content:center;">
+      {% if summary.recent_checkouts %}
+      <div style="width:100%;">
+        {% for h in summary.recent_checkouts %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px;
+                    {% if not loop.last %}border-bottom:1px solid #1f2937;{% endif %}">
+          <div>
+            <div style="font-size:13px;color:#f3f4f6;font-weight:500;">{{ h.tool_name or 'Unknown tool' }}</div>
+            <div style="font-size:11px;color:#6b7280;">{{ h.username or '—' }}</div>
+          </div>
+          <div style="font-size:11px;color:#6b7280;white-space:nowrap;">
+            {{ h.checked_out_at.strftime('%d %b %H:%M') if h.checked_out_at else '' }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="color:#4b5563;font-size:13px;">No recent checkouts</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card" style="padding:0;">
+    <div style="padding:14px 18px;border-bottom:1px solid #374151;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:13px;font-weight:600;color:#f9fafb;">
+        <i class="fas fa-clock-rotate-left" style="color:#9ca3af;"></i> Recent Activity
+      </div>
+      <a href="{{ url_for('logs.index') }}" style="font-size:12px;color:#818cf8;text-decoration:none;">View all</a>
+    </div>
+    <div style="min-height:110px;">
+      {% if summary.recent_activity %}
+        {% for log in summary.recent_activity[:6] %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px;
+                    {% if not loop.last %}border-bottom:1px solid #1f2937;{% endif %}">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-circle-dot" style="font-size:8px;color:#818cf8;"></i>
+            <div>
+              <div style="font-size:13px;color:#f3f4f6;font-weight:500;">{{ log.action.replace('_',' ')|title }}</div>
+              <div style="font-size:11px;color:#6b7280;">{{ log.username or 'System' }}</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#6b7280;white-space:nowrap;">
+            {{ log.created_at.strftime('%d %b %H:%M') if log.created_at else '' }}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="display:flex;align-items:center;justify-content:center;min-height:110px;color:#4b5563;font-size:13px;">
+          No recent activity
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+  @media (max-width: 640px) {
+    .detail-grid-2col { grid-template-columns: 1fr !important; }
+  }
+</style>
+{% endblock %}

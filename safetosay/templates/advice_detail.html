@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} — Advice — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div style="margin-bottom:1rem">
+  <a href="{{ url_for('advice') }}" style="color:var(--muted);text-decoration:none;font-size:.875rem">← Back to Advice Forum</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 280px;gap:1.5rem;align-items:start">
+<div>
+  <div class="card" style="border-left:3px solid rgba(227,179,65,.4)">
+    <div class="card-body">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem">
+        <div style="flex:1">
+          <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:.6rem">
+            <span class="post-id" style="border-color:rgba(227,179,65,.2);background:rgba(227,179,65,.07);color:var(--warn)">{{ post.post_id }}</span>
+            <span style="padding:.15rem .5rem;background:rgba(227,179,65,.1);border:1px solid rgba(227,179,65,.25);border-radius:4px;font-size:.75rem;color:var(--warn)">ADVICE</span>
+            {% if post.tag %}<span class="post-tag">{{ post.tag }}</span>{% endif %}
+          </div>
+          <h1 style="font-size:1.5rem;font-weight:700;line-height:1.3;margin:0 0 .5rem">{{ post.title }}</h1>
+          <div class="post-meta">
+            <span>by <a href="{{ url_for('profile', username=post.author.username) }}" style="color:var(--accent);text-decoration:none">{{ post.author.username }}</a></span>
+            <span>{{ post.created_at.strftime('%d %B %Y') }}</span>
+          </div>
+        </div>
+        <button onclick="openReportModal('{{ post.post_id }}')" class="btn btn-ghost btn-sm">⚑ Report</button>
+      </div>
+      <hr class="divider">
+      <div style="line-height:1.75;white-space:pre-wrap;color:var(--text);font-size:.95rem">{{ post.content }}</div>
+
+      {% if approved_media %}
+      <div style="margin-top:1.5rem">
+        <h3 style="font-size:.875rem;font-weight:600;color:var(--muted);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.06em">Attachments</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem">
+          {% for media in approved_media %}
+            {% if media.media_type == 'image' %}
+              <a href="{{ url_for('uploaded_file', filename=media.filename) }}" target="_blank">
+                <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="Attachment" style="width:100%;height:130px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+              </a>
+            {% else %}
+              <a href="{{ url_for('uploaded_file', filename=media.filename) }}" target="_blank" class="card" style="display:flex;align-items:center;gap:.5rem;padding:.65rem;text-decoration:none">
+                <span>📄</span><span style="font-size:.78rem;color:var(--muted);word-break:break-all">{{ media.filename.split('/')[-1] }}</span>
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% set pending_media = post.media | rejectattr('approved') | list %}
+      {% if pending_media and current_user.is_authenticated and current_user.is_admin %}
+      <div style="margin-top:1rem;padding:.75rem;background:rgba(227,179,65,.07);border:1px solid rgba(227,179,65,.2);border-radius:8px">
+        <p style="font-size:.85rem;color:var(--warn);margin-bottom:.5rem">{{ pending_media|length }} attachment(s) pending admin approval:</p>
+        {% for media in pending_media %}
+        <form method="POST" action="{{ url_for('admin_approve_media', media_id=media.id) }}" style="display:inline-block;margin:.25rem">
+          <button type="submit" class="btn btn-success btn-sm">✓ Approve {{ media.filename.split('/')[-1][:20] }}</button>
+        </form>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Comments -->
+  <div style="margin-top:1.5rem">
+    <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem">{{ comments|length }} Response{{ 's' if comments|length != 1 }}</h2>
+    {% for comment in comments %}
+    <div class="comment" style="border-left-color:rgba(227,179,65,.3)">
+      <div class="comment-meta">
+        <a href="{{ url_for('profile', username=comment.author.username) }}" style="color:var(--accent);text-decoration:none;font-weight:500">{{ comment.author.username }}</a>
+        <span style="margin-left:.5rem">{{ comment.created_at.strftime('%d %b %Y %H:%M') }}</span>
+      </div>
+      <div class="comment-content">{{ comment.content }}</div>
+    </div>
+    {% endfor %}
+
+    {% if current_user.is_authenticated %}
+    <div class="card" style="margin-top:1.25rem">
+      <div class="card-body">
+        <h3 style="font-size:.9rem;font-weight:600;margin-bottom:.75rem">Offer Advice or Support</h3>
+        <form method="POST" action="{{ url_for('add_advice_comment', post_id=post.post_id) }}">
+          <div class="form-group">
+            <textarea name="content" class="form-input" rows="4" placeholder="Offer your advice or support..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Post Response</button>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <div class="card" style="margin-top:1.25rem;text-align:center;padding:1.5rem">
+      <p style="color:var(--muted);font-size:.9rem"><a href="{{ url_for('login') }}" style="color:var(--accent)">Log in</a> to offer advice.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Sidebar -->
+<div>
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-body">
+      <div style="padding:.65rem;background:rgba(227,179,65,.07);border:1px solid rgba(227,179,65,.2);border-radius:6px;font-size:.82rem;color:#ffe8a0">
+        ⚠ This is an <strong>advice post</strong> for an ongoing situation. Please be supportive and do not share identifying information.
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-body">
+      <h3 style="font-size:.875rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem">Posted By</h3>
+      <a href="{{ url_for('profile', username=post.author.username) }}" style="display:flex;align-items:center;gap:.75rem;text-decoration:none">
+        <div style="width:38px;height:38px;border-radius:50%;background:rgba(227,179,65,.15);border:1px solid rgba(227,179,65,.3);display:flex;align-items:center;justify-content:center;color:var(--warn);flex-shrink:0">{{ post.author.username[0].upper() }}</div>
+        <div>
+          <div style="color:var(--text);font-weight:500;font-size:.9rem">{{ post.author.username }}</div>
+          <div style="color:var(--muted);font-size:.8rem">{{ post.created_at.strftime('%d %b %Y') }}</div>
+        </div>
+      </a>
+    </div>
+  </div>
+  <button onclick="openReportModal('{{ post.post_id }}')" class="btn btn-danger" style="width:100%;justify-content:center">⚑ Report</button>
+</div>
+</div>
+{% endblock %}

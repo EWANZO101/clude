@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}Instances — {{ company.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('companies.detail', company_id=company.public_id) }}" class="crumb">← {{ company.name }}</a>
+    <h1>Kiosk instances</h1>
+  </div>
+  {% if role in ["owner", "administrator"] %}
+    <div class="page-actions">
+      <a href="{{ url_for('instances.bulk_schedule', company_id=company.public_id) }}" class="btn btn-secondary btn-sm">Push to multiple →</a>
+      <a href="{{ url_for('rollouts.list_rollouts', company_id=company.public_id) }}" class="btn btn-secondary btn-sm">Staged rollouts →</a>
+    </div>
+  {% endif %}
+</div>
+
+<div class="stat-grid" id="instances-stat-grid">
+  <div class="stat-tile"><div class="stat-num" id="stat-total">{{ stats.total }}</div><div class="stat-label">Total kiosks</div></div>
+  <div class="stat-tile"><div class="stat-num" id="stat-online" style="color:var(--green);">{{ stats.online }}</div><div class="stat-label">Online</div></div>
+  <div class="stat-tile"><div class="stat-num" id="stat-offline" style="color:var(--muted);">{{ stats.offline }}</div><div class="stat-label">Offline</div></div>
+  <div class="stat-tile"><div class="stat-num" id="stat-updating" style="color:var(--amber);">{{ stats.updating }}</div><div class="stat-label">Updating</div></div>
+  <div class="stat-tile"><div class="stat-num" id="stat-failed-24h" style="color:{{ 'var(--red)' if stats.failed_24h else 'var(--text)' }};">{{ stats.failed_24h }}</div><div class="stat-label">Failed (24h)</div></div>
+</div>
+
+<div class="panel" style="padding:8px 22px 20px;">
+  {% if instances %}
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>Name</th><th>OS</th><th>Version</th><th>Connection</th><th>Update status</th><th>Last seen</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for i in instances %}
+          {% set d = i.active_deployment() %}
+          <tr data-instance-row="{{ i.public_id }}">
+            <td style="font-weight:600;">{{ i.display_name() }}</td>
+            <td>{{ i.os }}{% if i.os_version %} <span class="muted">({{ i.os_version }})</span>{% endif %}</td>
+            <td class="mono" data-field="version">{{ i.app_version or '—' }}</td>
+            <td data-field="connection">
+              {% if i.connection_status == 'online' %}
+                <span class="pill pill-green">Online</span>
+              {% else %}
+                <span class="pill pill-muted">Offline</span>
+              {% endif %}
+            </td>
+            <td data-field="update-status">
+              {% if d %}
+                <span class="pill pill-amber">{{ d.status.replace('_',' ')|capitalize }} → v{{ d.package.version }}</span>
+              {% else %}
+                <span class="muted">Up to date</span>
+              {% endif %}
+            </td>
+            <td data-field="last-seen">{{ i.last_seen_at | friendly_dt if i.last_seen_at else 'never' }}</td>
+            <td style="white-space:nowrap;">
+              <a href="{{ url_for('instances.detail', company_id=company.public_id, instance_id=i.public_id) }}" class="btn btn-secondary btn-sm">Open →</a>
+              {% if role in ["owner", "administrator"] %}
+                <form method="post" action="{{ url_for('instances.delete_instance', company_id=company.public_id, instance_id=i.public_id) }}" style="display:inline;" onsubmit="return confirm('Permanently delete {{ i.display_name()|e }}? This removes its config, update, and command history. This cannot be undone.');">
+                  <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="empty">No instances registered yet. Use an enrollment token below to connect your first kiosk.</div>
+  {% endif %}
+</div>
+
+{% if instances %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var STATUS_URL = {{ url_for('instances.instances_status', company_id=company.public_id)|tojson }};
+
+  function friendlyDt(stamp) {
+    // stamp is "YYYY-MM-DD HH:MM UTC" from the server — good enough as-is
+    // for a live-updated cell; the full friendly_dt relative line only
+    // matters on initial page load.
+    return stamp || 'never';
+  }
+
+  opslabLongPoll(STATUS_URL, function (data) {
+    var s = data.stats;
+    var setNum = function (id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+    setNum('stat-total', s.total);
+    setNum('stat-online', s.online);
+    setNum('stat-offline', s.offline);
+    setNum('stat-updating', s.updating);
+    var failedEl = document.getElementById('stat-failed-24h');
+    if (failedEl) {
+      failedEl.textContent = s.failed_24h;
+      failedEl.style.color = s.failed_24h ? 'var(--red)' : 'var(--text)';
+    }
+
+    Object.keys(data.instances).forEach(function (publicId) {
+      var row = document.querySelector('[data-instance-row="' + publicId + '"]');
+      if (!row) return;  // instance registered after page load — needs a real reload to appear
+      var info = data.instances[publicId];
+
+      var versionCell = row.querySelector('[data-field="version"]');
+      if (versionCell) versionCell.textContent = info.app_version || '—';
+
+      var connCell = row.querySelector('[data-field="connection"]');
+      if (connCell) {
+        connCell.innerHTML = info.connection_status === 'online'
+          ? '<span class="pill pill-green">Online</span>'
+          : '<span class="pill pill-muted">Offline</span>';
+      }
+
+      var updateCell = row.querySelector('[data-field="update-status"]');
+      if (updateCell) {
+        updateCell.innerHTML = info.deployment
+          ? '<span class="pill pill-amber">' + info.deployment.status.replace(/_/g, ' ').replace(/^./, function (c) { return c.toUpperCase(); }) + ' → v' + info.deployment.version + '</span>'
+          : '<span class="muted">Up to date</span>';
+      }
+
+      var lastSeenCell = row.querySelector('[data-field="last-seen"]');
+      if (lastSeenCell) lastSeenCell.textContent = friendlyDt(info.last_seen_at);
+    });
+  });
+});
+</script>
+{% endif %}
+
+{% if role in ["owner", "administrator", "manager"] %}
+<div class="panel">
+  <h2>Enrollment tokens</h2>
+  <p class="muted">A customer runs the install command below on their server; it registers the new kiosk against this company automatically — no manual pairing required.</p>
+
+  {% if tokens %}
+    <div class="table-scroll">
+    <table style="margin-bottom:20px;">
+      <thead><tr><th>Label</th><th>Uses</th><th>Expires</th><th>Grants license</th><th class="wrap-cell">Install command</th><th></th></tr></thead>
+      <tbody>
+        {% for t in tokens %}
+          <tr>
+            <td>{{ t.label or '—' }}</td>
+            <td class="mono">{{ t.use_count }}{% if t.max_uses %} / {{ t.max_uses }}{% endif %}</td>
+            <td class="muted">{{ t.expires_at | friendly_date if t.expires_at else 'never' }}</td>
+            <td class="muted">{{ (t.license_duration_days ~ ' days') if t.license_duration_days else 'no expiry' }}</td>
+            <td class="wrap-cell">
+              <div class="install-tabs" data-token="{{ t.token }}">
+                <div class="install-tab-buttons">
+                  <button type="button" class="install-tab-btn active" data-os="linux">Linux</button>
+                  <button type="button" class="install-tab-btn" data-os="windows">Windows</button>
+                </div>
+                <div class="install-tab-panel" data-os-panel="linux">
+                  <code class="install-cmd">curl -fsSL {{ config.BASE_URL }}/install.sh | sudo bash -s -- --token {{ t.token }} --admin-url {{ config.BASE_URL }}</code>
+                  <button type="button" class="btn btn-secondary btn-sm copy-btn">Copy</button>
+                </div>
+                <div class="install-tab-panel" data-os-panel="windows" style="display:none;">
+                  <code class="install-cmd">irm {{ config.BASE_URL }}/install.ps1 -OutFile install.ps1; .\install.ps1 -Token {{ t.token }} -AdminUrl {{ config.BASE_URL }}</code>
+                  <button type="button" class="btn btn-secondary btn-sm copy-btn">Copy</button>
+                  <div class="muted" style="font-size:11px; margin-top:4px;">Run in an elevated (Administrator) PowerShell window. Nothing else to install first — the script downloads its own private Python runtime, so no system Python, Microsoft Store app, or PATH setup is needed.</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <form method="post" action="{{ url_for('instances.revoke_token', company_id=company.public_id, token_id=t.id) }}">
+                <button type="submit" class="btn btn-danger btn-sm">Revoke</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% endif %}
+
+  <p class="muted" style="font-size:12px;">
+    Note: the install scripts (Ubuntu/Debian and Windows PowerShell) ship with the
+    Instance Agent — this token is what it will call
+    <code>POST /api/v1/instances/register</code> with.
+    "Expires in" is how long the token itself can be used to enroll a new machine;
+    "Instance license" is a separate thing — the license term handed to whichever instance
+    actually registers with it (see that instance's own License panel afterward to extend
+    or suspend it).
+  </p>
+
+  <form method="post" action="{{ url_for('instances.new_token', company_id=company.public_id) }}" class="form-row" style="margin-top:14px;">
+    <div>
+      <label>Label (optional)</label>
+      <input type="text" name="label" placeholder="e.g. Branch 2 rollout">
+    </div>
+    <div>
+      <label>Expires in (days, optional)</label>
+      <input type="text" name="expires_in_days" placeholder="never">
+    </div>
+    <div>
+      <label>Max uses (optional)</label>
+      <input type="text" name="max_uses" placeholder="unlimited">
+    </div>
+    <div>
+      <label>Instance license (days, optional)</label>
+      <input type="text" name="license_duration_days" placeholder="no expiry">
+    </div>
+    <div style="flex:0 0 auto;">
+      <button type="submit">Generate token</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

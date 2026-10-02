@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Reports — Admin — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div class="admin-layout">
+{% include "admin/_sidebar.html" %}
+<div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
+    <h1 style="font-size:1.4rem;font-weight:700">Reports</h1>
+    <span style="color:var(--muted);font-size:.875rem">{{ reports.total }} total</span>
+  </div>
+
+  <!-- Status filter tabs -->
+  <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:1.25rem">
+    {% for s, label in [('all','All'),('pending','Pending'),('seen','Seen'),('resolved','Resolved'),('dismissed','Dismissed')] %}
+    <a href="{{ url_for('admin_reports', status=s) }}"
+       class="btn btn-sm {% if status_filter==s %}btn-primary{% else %}btn-ghost{% endif %}">
+      {{ label }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:.85rem">
+    {% for report in reports.items %}
+    <a href="{{ url_for('admin_report_detail', report_id=report.report_id) }}" style="text-decoration:none">
+    <div class="card" style="border-left:3px solid {% if not report.admin_seen %}var(--danger){% elif report.status=='resolved' %}var(--success){% elif report.status=='dismissed' %}var(--border){% else %}var(--accent){% endif %};transition:border-color .2s">
+      <div class="card-body" style="padding:1rem 1.25rem">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.35rem">
+              <span class="post-id" style="font-size:.75rem">{{ report.report_id }}</span>
+              <span style="font-size:.75rem;color:var(--muted)">Re: <span style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">{{ report.post_ref_id }}</span></span>
+              {% if not report.admin_seen %}<span style="font-size:.72rem;background:rgba(248,81,73,.15);color:var(--danger);padding:.1rem .4rem;border-radius:3px;border:1px solid rgba(248,81,73,.3)">NEW</span>{% endif %}
+            </div>
+            <div style="font-size:.875rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.25rem">{{ report.description[:150] }}</div>
+            <div style="font-size:.78rem;color:var(--muted)">
+              {{ 'Anonymous' if report.is_anonymous else (report.reporter_display_name or 'Portal user') }}
+              — {{ report.created_at.strftime('%d %b %Y %H:%M') }}
+              — {{ report.evidence_files|length }} evidence file{{ 's' if report.evidence_files|length != 1 }}
+              — IP: {{ report.ip_address or '—' }}
+            </div>
+          </div>
+          <div style="flex-shrink:0">
+            <span class="status-{{ report.status }}">{{ report.status.title() }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    </a>
+    {% else %}
+    <div class="card" style="text-align:center;padding:2.5rem">
+      <p style="color:var(--success)">✓ No reports found for this filter.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if reports.pages > 1 %}
+  <div class="pagination">
+    {% if reports.has_prev %}<a href="{{ url_for('admin_reports', page=reports.prev_num, status=status_filter) }}" class="page-btn">← Prev</a>{% endif %}
+    {% for p in reports.iter_pages(left_edge=1,right_edge=1,left_current=2,right_current=2) %}
+      {% if p %}<a href="{{ url_for('admin_reports', page=p, status=status_filter) }}" class="page-btn {% if p==reports.page %}active{% endif %}">{{ p }}</a>
+      {% else %}<span class="page-btn">…</span>{% endif %}
+    {% endfor %}
+    {% if reports.has_next %}<a href="{{ url_for('admin_reports', page=reports.next_num, status=status_filter) }}" class="page-btn">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "layouts/public.html" %}
+{% block title %}Compare Servers — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+  <h1 class="text-2xl font-semibold text-text-primary mb-6">Compare servers</h1>
+  {% if servers %}
+  <div class="card overflow-x-auto">
+    <table class="table-base">
+      <thead>
+        <tr>
+          <th>Specification</th>
+          {% for s in servers %}<th>{{ s.title }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for label, attr in [("CPU","cpu_summary"),("RAM","ram_summary"),("Storage","storage_summary"),("GPU","gpu_summary"),("Network","network_summary"),("Bandwidth","bandwidth_mbps")] %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ label }}</td>
+          {% for s in servers %}<td class="text-text-secondary">{{ s[attr] or "—" }}</td>{% endfor %}
+        </tr>
+        {% endfor %}
+        <tr>
+          <td class="font-medium text-text-primary">Location</td>
+          {% for s in servers %}<td class="text-text-secondary">{{ (s.location.city ~ ", " ~ s.location.country) if s.location and s.location.city else "—" }}</td>{% endfor %}
+        </tr>
+        <tr>
+          <td class="font-medium text-text-primary">Price</td>
+          {% for s in servers %}<td class="text-text-primary font-semibold">£{{ s.monthly_price }}/mo</td>{% endfor %}
+        </tr>
+        <tr>
+          <td></td>
+          {% for s in servers %}<td><a href="{{ url_for('marketplace.server_detail', slug=s.slug) }}" class="btn-secondary !px-3 !py-1.5 text-sm">View</a></td>{% endfor %}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card p-10 text-center text-text-secondary">
+    Select servers to compare from the <a href="{{ url_for('marketplace.servers') }}" class="text-brand-400 hover:text-brand-300">browse page</a>.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

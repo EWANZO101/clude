@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Projects{% endblock %}
+{% block content %}
+{% import "_layout_blocks.html" as blocks with context %}
+{% for c in layout_components %}
+  {% if c.visible != false %}
+    {% if c.type == 'page_header' %}
+      {{ blocks.render_page_header(c, 'Projects', projects|length ~ ' project' ~ ('s' if projects|length != 1 else ''), 'fas fa-diagram-project', url_for('projects.add'), projects|length ~ ' projects') }}
+    {% elif c.type == 'stat_cards' %}
+      {{ blocks.render_stat_cards(c, stats) }}
+    {% elif c.type == 'filter_bar' %}
+      {{ blocks.render_filter_bar(c, 'projects', search, '', [], '', None, url_for('projects.index')) }}
+    {% elif c.type == 'data_table' %}
+      {{ blocks.render_data_table(c, 'projects', projects, 'projects.view', column_meta, None) }}
+    {% elif c.type == 'button_row' %}
+      {{ blocks.render_button_row(c) }}
+    {% elif c.type == 'text_block' %}
+      {{ blocks.render_text_block(c) }}
+    {% elif c.type == 'spacer' %}
+      {{ blocks.render_spacer(c) }}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import btn_secondary, btn_danger_form %}
+{% block title %}Users — Admin{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="font-bold text-2xl">Users</h1>
+  <a href="{{ url_for('admin.user_new') }}" class="inline-flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-800 font-medium rounded-lg text-sm px-4 py-2.5 text-center transition">+ Add user</a>
+</div>
+
+<div class="card divide-y divide-asphalt-border">
+  {% for u in users %}
+  <div class="flex items-center justify-between gap-3 p-4 flex-wrap">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="font-mono text-sm text-ink">{{ u.username }}</span>
+        {% if u.is_admin %}<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gauge/15 text-gauge">ADMIN</span>{% endif %}
+        {% if u.is_disabled %}<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-danger/15 text-danger">DISABLED</span>{% endif %}
+      </div>
+      <p class="text-xs text-ink-faint mt-1">{{ u.motorcycles.count() }} motorcycle{{ 's' if u.motorcycles.count() != 1 }} · joined {{ u.created_at.strftime('%d %b %Y') }}</p>
+    </div>
+    <div class="flex items-center gap-3 text-xs">
+      <a href="{{ url_for('admin.user_reset_password', user_id=u.id) }}" class="text-odometer hover:underline">Reset password</a>
+      {% if u.id != current_user.id %}
+      <form method="post" action="{{ url_for('admin.user_toggle_admin', user_id=u.id) }}">
+        <button class="text-ink-muted hover:underline">{{ 'Remove admin' if u.is_admin else 'Make admin' }}</button>
+      </form>
+      <form method="post" action="{{ url_for('admin.user_toggle_disabled', user_id=u.id) }}">
+        <button class="{{ 'text-okay' if u.is_disabled else 'text-ink-muted' }} hover:underline">{{ 'Enable' if u.is_disabled else 'Disable' }}</button>
+      </form>
+      {{ btn_danger_form(url_for('admin.user_delete', user_id=u.id), confirm='Permanently delete ' + u.username + ' and all their motorcycles?') }}
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}New contract · Ledgerly{% endblock %}
+{% block content %}
+<p class="text-gold text-xs tracking-[0.2em] uppercase mb-1">Step 1 of 2</p>
+<h1 class="font-display text-4xl tracking-tight mb-8">New contract</h1>
+
+<form method="post" id="new-contract-form" class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+  <div class="lg:col-span-2 space-y-6">
+
+    <!-- Basics -->
+    <div class="card p-6">
+      <p class="font-display text-lg mb-5">Basics</p>
+      <div class="space-y-5">
+        <div>
+          <label class="block text-xs text-muted mb-1.5">Contract title</label>
+          <input id="f-title" name="title" required placeholder="Website Development" class="w-full input-field px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs text-muted mb-1.5">Client</label>
+          {% if clients %}
+          <select id="f-client" name="client_id" required class="w-full input-field px-3 py-2 text-sm">
+            <option value="">Select a client…</option>
+            {% for c in clients %}
+            <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <p class="text-sm text-muted">No clients yet. <a href="{{ url_for('clients') }}" class="text-gold hover:underline">Add one first</a>.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Amount & currency -->
+    <div class="card p-6">
+      <p class="font-display text-lg mb-5">Amount &amp; currency</p>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-muted mb-1.5">Contract total</label>
+          <input id="f-total" type="number" step="0.01" min="0" name="total_amount" required placeholder="2400.00" class="w-full input-field px-3 py-2 text-sm num">
+        </div>
+        <div>
+          <label class="block text-xs text-muted mb-1.5">Currency</label>
+          <div class="currency-select relative" data-name="currency_code">
+            <input type="text" class="cs-input w-full input-field px-3 py-2 text-sm" placeholder="🔍 Search currency..." value="GBP — British Pound" autocomplete="off">
+            <input type="hidden" class="cs-hidden" name="currency_code" value="GBP">
+            <div class="cs-results hidden absolute z-20 mt-2 w-full max-h-64 overflow-y-auto card p-1.5"></div>
+          </div>
+        </div>
+      </div>
+      <label class="flex items-center gap-2 text-sm text-muted mt-4">
+        <input type="checkbox" name="allow_outstanding_balance" class="rounded border-ink-line bg-ink-raised">
+        Allow an outstanding balance (schedule doesn't have to sum to the full total)
+      </label>
+    </div>
+
+    <!-- Agreement -->
+    <div class="card p-6">
+      <div class="flex items-baseline justify-between mb-1">
+        <p class="font-display text-lg">Agreement / terms</p>
+        <span class="text-xs text-muted">optional — can be edited later</span>
+      </div>
+      <p class="text-xs text-muted mb-4">Shown to the client above the signature block on the share page and in the PDF.</p>
+      <div class="rich-editor" data-target="agreement_text_hidden" data-preview-target="#agreement-preview" data-placeholder="e.g. This agreement is between [Company] and [Client] for the delivery of…">
+        <div class="rich-editor-surface"></div>
+      </div>
+      <textarea id="agreement_text_hidden" name="agreement_text" class="hidden"></textarea>
+    </div>
+
+    <!-- Sharing -->
+    <div class="card p-6">
+      <p class="font-display text-lg mb-4">Client access</p>
+      <div class="space-y-2.5">
+        <label class="flex items-center gap-2 text-sm text-muted">
+          <input type="checkbox" name="allows_schedule_changes" checked class="rounded border-ink-line bg-ink-raised">
+          Client may request schedule changes later (requires your approval)
+        </label>
+        <label class="flex items-center gap-2 text-sm text-muted">
+          <input type="checkbox" name="client_can_build_schedule" checked class="rounded border-ink-line bg-ink-raised">
+          Let the client set up the initial schedule themselves via the share link
+        </label>
+        <label class="flex items-center gap-2 text-sm text-muted">
+          <input type="checkbox" name="require_pin" class="rounded border-ink-line bg-ink-raised">
+          Protect the share link with a PIN (auto-generated, shown after saving)
+        </label>
+      </div>
+      <div class="mt-4 pt-4 border-t border-ink-line">
+        <label class="block text-xs text-muted mb-1.5">Maximum months to pay off the full balance <span class="text-muted/60">(optional)</span></label>
+        <input type="number" min="1" name="max_payment_months" placeholder="e.g. 7 — leave blank for no limit" class="w-full max-w-[220px] input-field px-3 py-2 text-sm num">
+        <p class="text-xs text-muted mt-1.5">The client can spread payments however they like, but the final instalment can't fall later than this many months after the first one.</p>
+      </div>
+    </div>
+
+    <button class="btn-primary px-5 py-2.5 text-sm">Continue to payment schedule →</button>
+  </div>
+
+  <!-- Live summary sidebar -->
+  <div class="lg:sticky lg:top-6 space-y-4">
+    <div class="card card-raised p-5">
+      <p class="text-gold text-xs tracking-[0.2em] uppercase mb-3">Preview</p>
+      <p id="preview-title" class="font-display text-lg leading-snug">Untitled contract</p>
+      <p id="preview-client" class="text-xs text-muted mt-1">No client selected</p>
+      <div class="mt-4 pt-4 border-t border-ink-line">
+        <p class="text-xs text-muted mb-1">Total value</p>
+        <p id="preview-total" class="num text-2xl text-gold">£0.00</p>
+      </div>
+    </div>
+    <div class="card p-5">
+      <p class="text-gold text-xs tracking-[0.2em] uppercase mb-3">Agreement preview</p>
+      <div id="agreement-preview" class="prose prose-invert prose-sm max-w-none prose-headings:font-display prose-a:text-gold">
+        <p class="text-muted italic">Nothing written yet — this section won't appear for the client.</p>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script src="{{ url_for('static', filename='js/currency-select.js') }}"></script>
+<script>
+  const titleInput = document.getElementById('f-title');
+  const clientSelect = document.getElementById('f-client');
+  const totalInput = document.getElementById('f-total');
+  const previewTitle = document.getElementById('preview-title');
+  const previewClient = document.getElementById('preview-client');
+  const previewTotal = document.getElementById('preview-total');
+  let currencySymbol = '£';
+
+  function refreshPreview() {
+    previewTitle.textContent = titleInput.value.trim() || 'Untitled contract';
+    if (clientSelect) {
+      const opt = clientSelect.options[clientSelect.selectedIndex];
+      previewClient.textContent = (opt && opt.value) ? opt.textContent : 'No client selected';
+    }
+    const amt = parseFloat(totalInput.value) || 0;
+    previewTotal.textContent = currencySymbol + amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  titleInput.addEventListener('input', refreshPreview);
+  if (clientSelect) clientSelect.addEventListener('change', refreshPreview);
+  totalInput.addEventListener('input', refreshPreview);
+  document.querySelector('.currency-select').addEventListener('currency-change', (e) => {
+    currencySymbol = e.detail.symbol;
+    refreshPreview();
+  });
+  refreshPreview();
+</script>
+<script src="{{ url_for('static', filename='js/rich-editor.js') }}"></script>
+{% endblock %}

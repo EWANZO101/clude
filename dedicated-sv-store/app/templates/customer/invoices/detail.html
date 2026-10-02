@@ -1,0 +1,45 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_invoice_badge.html" import invoice_status_badge with context %}
+{% block title %}{{ invoice.invoice_number }} — {{ app_name }}{% endblock %}
+{% block page_title %}{{ invoice.invoice_number }}{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for item in invoice.items %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ item.description }}</td>
+          <td>{{ item.quantity }}</td>
+          <td class="text-text-secondary">£{{ item.unit_price }}</td>
+          <td class="text-text-secondary">£{{ item.line_total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="p-5 border-t border-border space-y-2 text-sm max-w-xs ml-auto">
+      <div class="flex justify-between"><span class="text-text-secondary">Subtotal</span><span class="text-text-primary">£{{ invoice.subtotal }}</span></div>
+      {% if invoice.discount_amount %}<div class="flex justify-between"><span class="text-text-secondary">Discount</span><span class="text-status-success">-£{{ invoice.discount_amount }}</span></div>{% endif %}
+      <div class="flex justify-between"><span class="text-text-secondary">Tax ({{ invoice.tax_rate }}%)</span><span class="text-text-primary">£{{ invoice.tax_amount }}</span></div>
+      {% if invoice.shipping_amount %}<div class="flex justify-between"><span class="text-text-secondary">Shipping</span><span class="text-text-primary">£{{ invoice.shipping_amount }}</span></div>{% endif %}
+      <div class="flex justify-between border-t border-border pt-2"><span class="text-text-primary font-medium">Total</span><span class="text-text-primary font-semibold">£{{ invoice.total }}</span></div>
+    </div>
+  </div>
+  <div class="card p-5">
+    <dl class="space-y-2 text-sm mb-4">
+      <div class="flex justify-between"><dt class="text-text-muted">Status</dt><dd>{{ invoice_status_badge(invoice.status) }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Due date</dt><dd class="text-text-primary">{{ invoice.due_date.strftime("%d %b %Y") if invoice.due_date else "—" }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Balance due</dt><dd class="text-text-primary font-semibold">£{{ invoice.balance_due }}</dd></div>
+    </dl>
+    {% if invoice.balance_due > 0 %}
+    <form method="POST">
+      {% include "components/_csrf.html" %}
+      <button type="submit" class="btn-primary w-full">Pay £{{ invoice.balance_due }} now</button>
+    </form>
+    {% else %}
+    <p class="text-status-success text-sm text-center">Paid in full</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

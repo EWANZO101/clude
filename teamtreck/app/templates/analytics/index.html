@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Analytics - TeamTreck{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <h1 class="text-2xl font-bold">Productivity &amp; Workforce Analytics</h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('analytics.index', period='week') }}"
+           class="px-3 py-1.5 text-sm rounded-lg {{ 'bg-brand-600 text-white' if period == 'week' else 'bg-gray-100 dark:bg-gray-800' }}">This Week</a>
+        <a href="{{ url_for('analytics.index', period='month') }}"
+           class="px-3 py-1.5 text-sm rounded-lg {{ 'bg-brand-600 text-white' if period == 'month' else 'bg-gray-100 dark:bg-gray-800' }}">This Month</a>
+    </div>
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 mb-6">
+    <div class="flex items-baseline justify-between mb-4">
+        <h2 class="font-semibold">Team Tracked Time Trend</h2>
+        <span class="text-sm text-gray-500 dark:text-gray-400">Total: <span class="font-mono font-semibold">{{ team_total_seconds|hms }}</span></span>
+    </div>
+    {% set max_secs = trend|map(attribute=1)|max %}
+    <div class="flex items-end gap-2 h-40">
+        {% for bucket_date, secs in trend %}
+        <div class="flex-1 flex flex-col items-center justify-end h-full">
+            <div class="w-full bg-brand-500 dark:bg-brand-500 rounded-t"
+                 style="height: {{ ((secs / max_secs * 100) if max_secs else 0)|round|int }}%; min-height: {{ '2px' if secs == 0 else '4px' }};"
+                 title="{{ (secs / 3600)|round(1) }}h"></div>
+            <span class="text-[10px] text-gray-400 mt-1 whitespace-nowrap">
+                {% if bucket_days == 1 %}{{ bucket_date.strftime('%a') }}{% else %}{{ bucket_date.strftime('%d %b') }}{% endif %}
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<h2 class="text-lg font-semibold mb-3">Employee Comparison &amp; Workload</h2>
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden mb-6">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-800 text-left text-gray-500 dark:text-gray-400">
+                <th class="px-4 py-3">Employee</th>
+                <th class="px-4 py-3">Total Time</th>
+                <th class="px-4 py-3">Active Days</th>
+                <th class="px-4 py-3">Avg Hrs / Active Day</th>
+                <th class="px-4 py-3">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in comparisons %}
+            <tr class="border-b border-gray-100 dark:border-gray-800/50">
+                <td class="px-4 py-3">{{ c.user.name }}</td>
+                <td class="px-4 py-3 font-mono">{{ c.total_seconds|hms }}</td>
+                <td class="px-4 py-3">{{ c.active_days }}</td>
+                <td class="px-4 py-3">{{ c.avg_hours_per_active_day }}h</td>
+                <td class="px-4 py-3">
+                    {% if c.flag == 'overloaded' %}
+                    <span class="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Overloaded</span>
+                    {% elif c.flag == 'underloaded' %}
+                    <span class="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">Underused</span>
+                    {% elif c.flag == 'no_activity' %}
+                    <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">No Activity</span>
+                    {% else %}
+                    <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">Normal</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<p class="text-xs text-gray-400">
+    Flags are based on average hours per active day: ≥9h = overloaded, ≤3h = underused (relative to days they logged any time).
+    Thresholds are indicative and can be tuned later.
+</p>
+{% endblock %}

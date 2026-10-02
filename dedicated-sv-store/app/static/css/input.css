@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-surface-950;
+  }
+  body {
+    @apply bg-surface-950 text-text-primary antialiased;
+  }
+  ::selection {
+    @apply bg-brand-600/40 text-white;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-surface-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-600 rounded-full;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface-850 border border-border rounded-xl shadow-card;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
+      transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500
+      focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-500;
+  }
+  .btn-secondary {
+    @apply btn bg-surface-700 text-text-primary border border-border-light hover:bg-surface-600;
+  }
+  .btn-danger {
+    @apply btn bg-status-danger/90 text-white hover:bg-status-danger;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-text-secondary hover:bg-surface-800 hover:text-text-primary;
+  }
+
+  .input-field {
+    @apply block w-full rounded-lg bg-surface-800 border border-border text-text-primary placeholder-text-muted
+      px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500;
+  }
+  .field-label {
+    @apply block text-sm font-medium text-text-secondary mb-1.5;
+  }
+  .field-error {
+    @apply text-xs text-status-danger mt-1;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .badge-success { @apply badge bg-status-success/15 text-status-success; }
+  .badge-warning { @apply badge bg-status-warning/15 text-status-warning; }
+  .badge-danger { @apply badge bg-status-danger/15 text-status-danger; }
+  .badge-info { @apply badge bg-status-info/15 text-status-info; }
+  .badge-neutral { @apply badge bg-status-neutral/15 text-text-secondary; }
+
+  .nav-link {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary
+      hover:bg-surface-800 hover:text-text-primary transition-colors;
+  }
+  .nav-link-active {
+    @apply nav-link bg-surface-800 text-text-primary;
+  }
+
+  .table-base {
+    @apply w-full text-sm text-left;
+  }
+  .table-base thead {
+    @apply text-xs uppercase text-text-muted border-b border-border;
+  }
+  .table-base tbody tr {
+    @apply border-b border-border/60 hover:bg-surface-800/60;
+  }
+  .table-base th, .table-base td {
+    @apply px-4 py-3;
+  }
+}

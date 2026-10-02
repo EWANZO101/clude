@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Login - {{ site_name }}{% endblock %}
+{% block auth_content %}
+<div class="w-full max-w-md relative z-10">
+    <div class="bg-dark-800/80 backdrop-blur-xl border border-dark-700/50 rounded-2xl p-8 shadow-2xl">
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-gradient-to-br from-{{ primary_color }}-400 to-{{ primary_color }}-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-{{ primary_color }}-500/25">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">{{ site_name }}</h1>
+            <p class="text-gray-500 mt-1">{{ site_tagline }}</p>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="mb-4 p-3 rounded-xl text-sm {% if category == 'error' %}bg-red-500/10 text-red-400 border border-red-500/20{% else %}bg-blue-500/10 text-blue-400 border border-blue-500/20{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" class="space-y-5">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                <input type="email" name="email" required autofocus
+                    class="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-xl text-white focus:outline-none focus:border-{{ primary_color }}-500 focus:ring-1 focus:ring-{{ primary_color }}-500/50 transition-colors"
+                    placeholder="admin@example.com">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                <input type="password" name="password" required
+                    class="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-xl text-white focus:outline-none focus:border-{{ primary_color }}-500 focus:ring-1 focus:ring-{{ primary_color }}-500/50 transition-colors"
+                    placeholder="••••••••">
+            </div>
+            
+            <div class="flex items-center">
+                <input type="checkbox" name="remember" id="remember" class="w-4 h-4 bg-dark-700 border-dark-600 rounded text-{{ primary_color }}-500 focus:ring-{{ primary_color }}-500">
+                <label for="remember" class="ml-2 text-sm text-gray-400">Remember me</label>
+            </div>
+            
+            <button type="submit" class="w-full py-3 bg-gradient-to-r from-{{ primary_color }}-500 to-{{ primary_color }}-600 hover:from-{{ primary_color }}-400 hover:to-{{ primary_color }}-500 text-white font-semibold rounded-xl shadow-lg shadow-{{ primary_color }}-500/25 transition-all duration-200">
+                Sign In
+            </button>
+        </form>
+        
+        <p class="text-center text-gray-500 text-sm mt-6">
+            {{ company_name }} &copy; 2026
+        </p>
+    </div>
+</div>
+{% endblock %}

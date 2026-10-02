@@ -1,0 +1,37 @@
+{% extends "layout/base.html" %}
+{% block title %}General settings{% endblock %}
+{% block content %}
+{% include "dashboard/_settings_nav.html" %}
+<form method="POST" class="max-w-lg space-y-4 bg-surface-card border border-surface-border rounded-2xl p-6 mt-4"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="space-y-1">
+    <label class="text-sm text-slate-400">Name</label>
+    <input name="name" value="{{ current_user.name }}" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm">
+  </div>
+  <div class="space-y-1">
+    <label class="text-sm text-slate-400">Country</label>
+    <input name="country" value="{{ current_user.country or '' }}" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm">
+  </div>
+  <div class="space-y-1">
+    <label class="text-sm text-slate-400">Currency</label>
+    <input name="currency" value="{{ current_user.currency }}" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm">
+  </div>
+  <div class="space-y-1">
+    <label class="text-sm text-slate-400">Timezone</label>
+    <input name="timezone" value="{{ current_user.timezone }}" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm">
+  </div>
+  <div class="grid grid-cols-2 gap-4">
+    <div class="space-y-1">
+      <label class="text-sm text-slate-400">Date format</label>
+      <input name="date_format" value="{{ current_user.date_format }}" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm">
+    </div>
+    <div class="space-y-1">
+      <label class="text-sm text-slate-400">First day of week</label>
+      <select name="first_day_of_week" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm">
+        <option value="monday" {{ 'selected' if current_user.first_day_of_week == 'monday' }}>Monday</option>
+        <option value="sunday" {{ 'selected' if current_user.first_day_of_week == 'sunday' }}>Sunday</option>
+      </select>
+    </div>
+  </div>
+  <button class="bg-accent hover:bg-accent-hover text-white text-sm font-medium py-2.5 px-5 rounded-lg">Save</button>
+</form>
+{% endblock %}

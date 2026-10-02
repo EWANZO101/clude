@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}My Servers — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-6">My Servers</h1>
+
+  <form method="POST" action="{{ url_for('portal.new_server') }}" class="flex gap-3 mb-8">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="text" name="name" placeholder="e.g. Main Server" required
+      class="flex-1 bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+    <button type="submit" class="bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition whitespace-nowrap">
+      Register server
+    </button>
+  </form>
+
+  {% if servers %}
+    <div class="space-y-2">
+      {% for s in servers %}
+        <a href="{{ url_for('portal.server_detail', server_id=s.id) }}"
+           class="flex items-center justify-between gap-3 bg-surface-card border border-surface-border rounded-lg px-4 py-3 hover:border-brand transition">
+          <div class="min-w-0 flex-1">
+            <div class="text-white text-sm font-medium truncate">{{ s.name }}</div>
+            <div class="text-gray-500 text-xs">{{ s.attachments|length }} product(s) attached</div>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="text-xs text-gray-500">{{ server_status[s.id].last_seen_text }}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full {{ 'bg-emerald-950 text-emerald-400' if server_status[s.id].online else 'bg-gray-800 text-gray-500' }}">
+              {{ 'online' if server_status[s.id].online else 'offline' }}
+            </span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500">No servers registered yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

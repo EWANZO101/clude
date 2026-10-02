@@ -1,0 +1,46 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_stat_card.html" import stat_card with context %}
+{% block title %}Dashboard — Admin{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  {{ stat_card("Customers", stats.customers) }}
+  {{ stat_card("Active Sellers", stats.sellers) }}
+  {{ stat_card("Seller Applications", stats.seller_applications) }}
+  {{ stat_card("Staff Users", stats.staff_users) }}
+  {{ stat_card("Orders Today", stats.orders_today) }}
+  {{ stat_card("Pending Orders", stats.pending_orders) }}
+  {{ stat_card("Pending Requests", stats.pending_requests) }}
+</div>
+
+<div class="card">
+  <div class="px-5 py-4 border-b border-border flex items-center justify-between">
+    <h2 class="font-semibold text-text-primary">Recent activity</h2>
+    <a href="{{ url_for('admin.audit_logs') }}" class="text-sm text-brand-400 hover:text-brand-300">View all</a>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="table-base">
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>Object</th>
+          <th>User</th>
+          <th>When</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in stats.recent_audit %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ entry.action }}</td>
+          <td>{{ entry.object_type }}{% if entry.object_id %} #{{ entry.object_id }}{% endif %}</td>
+          <td>{{ entry.user.email if entry.user else "System" }}</td>
+          <td class="text-text-muted">{{ entry.created_at.strftime("%d %b %Y %H:%M") }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-text-muted py-8">No activity yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

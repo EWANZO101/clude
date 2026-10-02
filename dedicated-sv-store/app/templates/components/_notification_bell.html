@@ -1,0 +1,35 @@
+<div x-data="{
+  open: false,
+  unreadCount: 0,
+  items: [],
+  async load() {
+    const resp = await fetch('{{ url_for("notifications.list_json") }}');
+    const data = await resp.json();
+    if (data.success) { this.unreadCount = data.data.unread_count; this.items = data.data.items; }
+  },
+  async markAllRead() {
+    await fetch('{{ url_for("notifications.mark_all_read") }}', { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token() }}' } });
+    this.unreadCount = 0;
+    this.items = this.items.map(i => ({ ...i, is_read: true }));
+  }
+}" x-init="load(); setInterval(load, 30000)" class="relative">
+  <button @click="open = !open" class="btn-ghost !px-2 relative">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+    <span x-show="unreadCount > 0" x-text="unreadCount" class="absolute -top-1 -right-1 bg-status-danger text-white text-[10px] leading-none rounded-full h-4 w-4 flex items-center justify-center"></span>
+  </button>
+  <div x-show="open" @click.outside="open = false" x-transition style="display:none"
+       class="absolute right-0 mt-2 w-80 card shadow-panel z-50 max-h-96 overflow-y-auto">
+    <div class="p-3 border-b border-border flex items-center justify-between">
+      <span class="text-sm font-medium text-text-primary">Notifications</span>
+      <button @click="markAllRead()" class="text-xs text-brand-400 hover:text-brand-300">Mark all read</button>
+    </div>
+    <template x-for="item in items" :key="item.id">
+      <a :href="item.link || '#'" class="block px-3 py-2.5 border-b border-border/60 last:border-0 hover:bg-surface-800"
+         :class="{ 'bg-surface-800/40': !item.is_read }">
+        <p class="text-sm text-text-primary" x-text="item.title"></p>
+        <p class="text-xs text-text-muted" x-text="item.body"></p>
+      </a>
+    </template>
+    <p x-show="items.length === 0" class="text-sm text-text-muted p-4 text-center">No notifications yet.</p>
+  </div>
+</div>

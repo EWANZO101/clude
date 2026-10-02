@@ -1,0 +1,46 @@
+{
+  "ticket_id": "TICK-0071",
+  "ticket_type": "whitelist",
+  "opened_by": "e",
+  "opened_at": "2026-04-27 19:02:58",
+  "closed_by": "Alex Bento | Pierre jordaan",
+  "closed_at": "2026-04-27 20:33 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-27T19:02:59.828000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1451691985730539592> <@344560012997165057>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T19:03:00.705000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T19:03:01.163000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T19:03:01.636000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@344560012997165057>",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

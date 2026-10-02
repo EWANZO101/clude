@@ -1,0 +1,26 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Receiving — Admin{% endblock %}
+{% block page_title %}Receiving{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Shipment</th><th>Condition</th><th>Packaging</th><th>Damage</th><th>Received</th><th></th></tr></thead>
+    <tbody>
+      {% for record in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ record.shipment.shipment_number }}</td>
+        <td class="text-text-secondary">{{ record.condition|title }}</td>
+        <td class="text-text-secondary">{{ record.packaging_condition|title }}</td>
+        <td>{% if record.damage_noted %}<span class="badge-danger">Yes</span>{% else %}<span class="badge-success">No</span>{% endif %}</td>
+        <td class="text-text-muted">{{ record.received_at.strftime("%d %b %Y") }}</td>
+        <td><a href="{{ url_for('admin.shipment_detail', shipment_id=record.shipment_id) }}" class="text-brand-400 hover:text-brand-300">View</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-text-muted py-8">No receiving records yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.receiving") }}
+</div>
+{% endblock %}

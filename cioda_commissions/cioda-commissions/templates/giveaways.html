@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Giveaways — Cioda's Commissions{% endblock %}
+
+{% block drawer_title %}<span class="nav-logo" style="font-size:1rem;">Cioda's <span>Commissions</span></span>{% endblock %}
+{% block drawer_nav %}{% include "_giveaway_drawer.html" %}{% endblock %}
+
+{% block body %}
+{% include "_giveaway_nav.html" %}
+
+<main style="max-width:680px;margin:0 auto;padding:3rem 1.5rem;">
+  <div style="text-align:center;margin-bottom:2.5rem;">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem;">🎁</div>
+    <h1 class="font-display" style="font-size:1.9rem;margin-bottom:0.6rem;color:var(--text-primary);">Giveaways</h1>
+    <p style="color:var(--text-secondary);font-size:1rem;font-style:italic;">
+      Enter here or with the 🎉 button in the Discord server — one entry per person.
+    </p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}" style="margin-bottom:1.25rem;">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="font-display" style="font-size:0.78rem;color:var(--accent);letter-spacing:.06em;margin-bottom:0.75rem;">✨ HAPPENING NOW</div>
+  {% for g in active %}
+  <a href="/giveaways/{{ g.giveaway_id }}" class="card fade-in"
+     style="display:block;margin-bottom:0.85rem;text-decoration:none;border-color:var(--border-accent);">
+    <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
+      <div>
+        <div class="font-display" style="font-size:1.15rem;color:var(--text-primary);">{{ g.prize }}</div>
+        <div style="font-size:0.85rem;color:var(--text-muted);margin-top:0.2rem;">
+          {{ counts[g.giveaway_id] }} {{ 'entry' if counts[g.giveaway_id] == 1 else 'entries' }} ·
+          {{ g.winners_count }} winner{{ 's' if g.winners_count != 1 }}
+        </div>
+      </div>
+      <div style="font-size:0.85rem;color:var(--gold);white-space:nowrap;">
+        ⏳ <span data-countdown="{{ g.ends_at.isoformat() }}Z">ends soon</span>
+      </div>
+    </div>
+  </a>
+  {% else %}
+  <div class="card" style="text-align:center;padding:2rem;color:var(--text-muted);font-style:italic;margin-bottom:0.85rem;">
+    No giveaways running right now — check back soon!
+  </div>
+  {% endfor %}
+
+  {% if ended %}
+  <div class="font-display" style="font-size:0.78rem;color:var(--text-muted);letter-spacing:.06em;margin:2rem 0 0.75rem;">🏁 RECENTLY ENDED</div>
+  {% for g in ended %}
+  <a href="/giveaways/{{ g.giveaway_id }}" class="card"
+     style="display:block;margin-bottom:0.65rem;text-decoration:none;opacity:0.8;">
+    <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+      <div style="color:var(--text-primary);">{{ g.prize }}</div>
+      <div style="font-size:0.82rem;color:var(--text-muted);">{{ counts[g.giveaway_id] }} entries</div>
+    </div>
+  </a>
+  {% endfor %}
+  {% endif %}
+</main>
+{% include "_giveaway_countdown_js.html" %}
+{% endblock %}

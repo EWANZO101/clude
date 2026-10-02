@@ -1,0 +1,36 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% block title %}{{ role.name }} — Admin{% endblock %}
+{% block page_title %}{{ role.name }}{% endblock %}
+{% block content %}
+<div class="card p-5">
+  {% if role.is_system %}
+  <p class="text-sm text-text-muted mb-4">This is a system role and its permissions cannot be changed here.</p>
+  {% endif %}
+  <form method="POST">
+    {% include "components/_csrf.html" %}
+    {% set current_ids = role.permissions|map(attribute='permission_id')|list %}
+    {% set categories = all_permissions|groupby('category') %}
+    <div class="space-y-6 mb-6">
+      {% for category, perms in categories %}
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">{{ category }}</p>
+        <div class="grid sm:grid-cols-2 gap-2">
+          {% for perm in perms %}
+          <label class="flex items-center gap-2 text-sm text-text-secondary">
+            <input type="checkbox" name="permission_ids" value="{{ perm.id }}"
+                   {{ "checked" if perm.id in current_ids }}
+                   {{ "disabled" if role.is_system }}
+                   class="rounded border-border bg-surface-800 text-brand-600 focus:ring-brand-500">
+            {{ perm.code }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if not role.is_system %}
+    <button type="submit" class="btn-primary">Save permissions</button>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

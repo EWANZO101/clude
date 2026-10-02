@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Dev Files — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <h1>Dev Files</h1>
+    <div class="page-sub">
+      <span class="muted">Three separate systems live here — see OWNERSHIP.md. Never cross-edit between them.</span>
+      <span class="mono muted">· {{ file_count }} file{{ 's' if file_count != 1 }}, {{ total_size_display }} total</span>
+    </div>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('dev_files.download_zip') }}" class="btn btn-secondary btn-sm">Download all as .zip</a>
+    <a href="{{ url_for('releases.build_from_source') }}" class="btn btn-sm">Build Kiosk release from kiosk_app/</a>
+    <form method="post" action="{{ url_for('dev_files.publish') }}" style="display:inline;"
+          onsubmit="return confirm('Rebuild opslab-agent.tar.gz from agent/ + service_files/ + requirements.txt only? New installs pick this up immediately — already-enrolled kiosks still need a reinstall.');">
+      <button type="submit" class="btn btn-sm">Publish → rebuild agent tarball</button>
+    </form>
+  </div>
+</div>
+
+<div class="dev-files-legend">
+  <a href="#section-admin-panel" class="dev-files-card dev-files-card-red">
+    <div class="dev-files-card-head">
+      <span class="pill pill-red">Live now</span>
+      <span class="mono muted" style="font-size:11.5px;">{{ files_by_system["admin_panel"]|length }} file{{ 's' if files_by_system["admin_panel"]|length != 1 }}</span>
+    </div>
+    <div class="dev-files-card-title">Admin Panel</div>
+    <div class="dev-files-card-sub">Saving here changes <strong>this running site</strong>, right now — a bad edit can take it down.</div>
+  </a>
+  <a href="#section-kiosk-app" class="dev-files-card dev-files-card-blue">
+    <div class="dev-files-card-head">
+      <span class="pill pill-blue">Ships via a release</span>
+      <span class="mono muted" style="font-size:11.5px;">{{ files_by_system["kiosk_app"]|length }} file{{ 's' if files_by_system["kiosk_app"]|length != 1 }}</span>
+    </div>
+    <div class="dev-files-card-title">Kiosk App</div>
+    <div class="dev-files-card-sub">No live effect. Reaches a kiosk only via <strong>Build Kiosk Release → Push Update</strong>.</div>
+  </a>
+  <a href="#section-instance-agent" class="dev-files-card dev-files-card-purple">
+    <div class="dev-files-card-head">
+      <span class="pill pill-accent">Ships via Publish</span>
+      <span class="mono muted" style="font-size:11.5px;">{{ files_by_system["agent"]|length }} file{{ 's' if files_by_system["agent"]|length != 1 }}</span>
+    </div>
+    <div class="dev-files-card-title">Instance Agent</div>
+    <div class="dev-files-card-sub">No live effect. Reaches a kiosk only after <strong>Publish</strong> and a reinstall on that machine.</div>
+  </a>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Upload a .zip</h2>
+  </div>
+  <form method="post" action="{{ url_for('dev_files.upload_zip') }}" enctype="multipart/form-data" class="form-row">
+    <div>
+      <input type="file" name="file" accept=".zip" required>
+    </div>
+    <div style="flex:0 0 auto;">
+      <button type="submit" onclick="return confirm('Extract this zip? Adds and overwrites matching files under agent/, service_files/, app/, kiosk_app/, migrations/, requirements.txt, run.py, or config.py — doesn\'t delete anything not in the zip. A change under app/ or migrations/ takes effect immediately on this running site.');">Upload &amp; extract</button>
+    </div>
+  </form>
+  <p class="muted" style="font-size:12px; margin-top:10px; margin-bottom:0;">
+    Expects the same layout as "Download all as .zip". Adds and updates matching files; doesn't remove anything
+    not included. The current files are snapshotted to <span class="mono">data/dev_file_backups/</span> first.
+    <strong>A zip that mixes files from more than one of the three cards above is almost certainly a mistake</strong> —
+    that's exactly how the v1.0.2 kiosk release incident happened.
+  </p>
+</div>
+
+<input type="text" id="dev-files-filter" placeholder="Filter by path, across all three sections…" style="margin-bottom:16px; width:100%;"
+       oninput="devFilesFilter(this.value)">
+
+<div class="panel" id="section-admin-panel" style="border-color:rgba(240,96,92,.35);">
+  <div class="panel-head"><h2><span class="pill pill-red" style="margin-right:8px;">Live now</span>Admin Panel</h2></div>
+  <p class="muted" style="margin-top:0; font-size:12.5px;">
+    <span class="mono">app/</span>, <span class="mono">migrations/</span>, <span class="mono">run.py</span>,
+    <span class="mono">config.py</span> — this Admin Panel's own code. This server auto-reloads on every save —
+    a mistake here (a syntax error, a broken import) can take the whole site down <strong>immediately</strong>,
+    and won't come back on its own until a further save succeeds. If that happens, restore the pre-save
+    snapshot in <span class="mono">data/dev_file_backups/</span> over SSH.
+    <strong>Never</strong> import anything from <span class="mono">kiosk_app/</span> here — see OWNERSHIP.md.
+  </p>
+  {% set files = files_by_system["admin_panel"] %}
+  {% include "dev_files/_file_table.html" %}
+</div>
+
+<div class="panel" id="section-kiosk-app" style="border-color:rgba(79,142,247,.35);">
+  <div class="panel-head"><h2><span class="pill pill-blue" style="margin-right:8px;">Ships via a release</span>Kiosk App</h2></div>
+  <p class="muted" style="margin-top:0; font-size:12.5px;">
+    <span class="mono">kiosk_app/</span> — the actual application a kiosk operator uses. A fully separate
+    Flask project; edits here have <strong>no live effect on anything</strong> — they only reach a real
+    machine after <a href="{{ url_for('releases.build_from_source') }}">Build Kiosk Release</a> and a Push
+    Update. <strong>Never</strong> import anything from the Admin Panel's <span class="mono">app/</span> here.
+  </p>
+  {% set files = files_by_system["kiosk_app"] %}
+  {% include "dev_files/_file_table.html" %}
+</div>
+
+<div class="panel" id="section-instance-agent" style="border-color:rgba(124,108,246,.35);">
+  <div class="panel-head"><h2><span class="pill pill-accent" style="margin-right:8px;">Ships via Publish</span>Instance Agent</h2></div>
+  <p class="muted" style="margin-top:0; font-size:12.5px;">
+    <span class="mono">agent/</span>, <span class="mono">service_files/</span> — the management daemon that
+    runs on a kiosk machine (NOT the Kiosk App itself). Only reaches a kiosk after
+    <span class="mono">Publish</span> above <em>and</em> that machine is reinstalled — editing these can't
+    affect anything running right now.
+  </p>
+  {% set files = files_by_system["agent"] %}
+  {% include "dev_files/_file_table.html" %}
+</div>
+
+<style>
+  .dev-files-legend{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:12px; margin-bottom:20px;}
+  .dev-files-card{
+    display:block; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius);
+    padding:14px 16px; color:var(--text);
+  }
+  .dev-files-card:hover{text-decoration:none; border-color:var(--muted-2);}
+  .dev-files-card-red{border-top:3px solid var(--red);}
+  .dev-files-card-blue{border-top:3px solid var(--blue);}
+  .dev-files-card-purple{border-top:3px solid var(--accent);}
+  .dev-files-card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .dev-files-card-title{font-weight:600; font-size:14.5px; margin-bottom:4px;}
+  .dev-files-card-sub{font-size:12px; color:var(--muted); line-height:1.4;}
+</style>
+<script>
+function devFilesFilter(q) {
+  q = q.trim().toLowerCase();
+  document.querySelectorAll('.dev-files-body tr').forEach(function (row) {
+    row.style.display = (!q || row.dataset.path.indexOf(q) !== -1) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

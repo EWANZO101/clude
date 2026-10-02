@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block title %}Timesheets - TeamTreck{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <h1 class="text-2xl font-bold">Timesheets</h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('timesheets.index', view='day') }}"
+           class="px-3 py-1.5 text-sm rounded-lg {{ 'bg-brand-600 text-white' if view == 'day' else 'bg-gray-100 dark:bg-gray-800' }}">Day</a>
+        <a href="{{ url_for('timesheets.index', view='week') }}"
+           class="px-3 py-1.5 text-sm rounded-lg {{ 'bg-brand-600 text-white' if view == 'week' else 'bg-gray-100 dark:bg-gray-800' }}">Week</a>
+        <a href="{{ url_for('timesheets.index', view='range') }}"
+           class="px-3 py-1.5 text-sm rounded-lg {{ 'bg-brand-600 text-white' if view == 'range' else 'bg-gray-100 dark:bg-gray-800' }}">Range</a>
+    </div>
+</div>
+
+<form method="GET" class="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800 mb-6 flex flex-wrap items-end gap-3">
+    <input type="hidden" name="view" value="{{ view }}">
+
+    {% if view == 'range' %}
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">From</label>
+        <input type="date" name="start" value="{{ range_start }}" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+    </div>
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">To</label>
+        <input type="date" name="end" value="{{ range_end }}" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+    </div>
+    {% else %}
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Date</label>
+        <input type="date" name="date" value="{{ range_start }}" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+    </div>
+    {% endif %}
+
+    {% if current_user.is_manager %}
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Employee</label>
+        <select name="user_id" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+            <option value="">All</option>
+            {% for m in team_members %}
+            <option value="{{ m.id }}" {{ 'selected' if filter_user_id == m.id|string }}>{{ m.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Project</label>
+        <select name="project_id" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+            <option value="">All</option>
+            {% for p in projects %}
+            <option value="{{ p.id }}" {{ 'selected' if filter_project_id == p.id|string }}>{{ p.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Task</label>
+        <select name="task_id" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+            <option value="">All</option>
+            {% for t in tasks %}
+            <option value="{{ t.id }}" {{ 'selected' if filter_task_id == t.id|string }}>{{ t.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <button type="submit" class="px-4 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium">Apply</button>
+</form>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Tracked</div>
+        <div class="text-2xl font-mono font-bold">{{ total_seconds|hms }}</div>
+        <div class="text-xs text-gray-400 mt-1">{{ range_start }} → {{ range_end }}</div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Gaps Detected</div>
+        <div class="text-2xl font-bold {{ 'text-yellow-500' if gaps else '' }}">{{ gaps|length }}</div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Overlaps Detected</div>
+        <div class="text-2xl font-bold {{ 'text-red-500' if overlaps else '' }}">{{ overlaps|length }}</div>
+    </div>
+</div>
+
+{% if gaps %}
+<div class="mb-4 px-4 py-3 rounded-lg text-sm bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+    <strong>Untracked gaps:</strong>
+    {% for g in gaps %}
+    {{ g[0].strftime('%d %b %H:%M') }} – {{ g[1].strftime('%H:%M') }} ({{ (g[2] / 60)|round|int }} min){% if not loop.last %}, {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if overlaps %}
+<div class="mb-4 px-4 py-3 rounded-lg text-sm bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+    <strong>Overlapping entries detected</strong> — {{ overlaps|length }} pair(s). Review and edit below.
+</div>
+{% endif %}
+
+{% for day, day_entries in by_day %}
+<div class="mb-6">
+    <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">{{ day.strftime('%A, %d %B %Y') }}</h3>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b border-gray-200 dark:border-gray-800 text-left text-gray-500 dark:text-gray-400">
+                    {% if current_user.is_manager %}<th class="px-4 py-2">Employee</th>{% endif %}
+                    <th class="px-4 py-2">Start</th>
+                    <th class="px-4 py-2">End</th>
+                    <th class="px-4 py-2">Project</th>
+                    <th class="px-4 py-2">Task</th>
+                    <th class="px-4 py-2">Note</th>
+                    <th class="px-4 py-2">Duration</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in day_entries %}
+                <tr class="border-b border-gray-100 dark:border-gray-800/50">
+                    {% if current_user.is_manager %}<td class="px-4 py-2">{{ e.user.name }}</td>{% endif %}
+                    <td class="px-4 py-2 text-gray-500 dark:text-gray-400">{{ e.started_at.strftime('%H:%M:%S') }}</td>
+                    <td class="px-4 py-2 text-gray-500 dark:text-gray-400">{{ e.ended_at.strftime('%H:%M:%S') if e.ended_at else '—' }}</td>
+                    <td class="px-4 py-2">{{ e.project.name if e.project else '—' }}</td>
+                    <td class="px-4 py-2">{{ e.task.name if e.task else '—' }}</td>
+                    <td class="px-4 py-2 text-gray-500 dark:text-gray-400">{{ e.note or '—' }}</td>
+                    <td class="px-4 py-2 font-mono">{{ e.duration_hms() }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<p class="text-gray-500 dark:text-gray-400 text-sm">No time entries in this range.</p>
+{% endfor %}
+{% endblock %}

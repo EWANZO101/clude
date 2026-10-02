@@ -1,0 +1,173 @@
+OPSLAB INSTANCE AGENT — BUILD PROGRESS
+==========================================
+(The client that runs on a customer's kiosk machine and talks to the Admin
+Panel's agent-facing /api/v1 — a separate project from the Admin Panel,
+started once the Admin Panel's own 9-part plan finished.)
+
+STATUS: 6-PART PLAN COMPLETE
+--------------------------------
+1. [DONE] Scaffold + identity/registration + heartbeat loop + config poll/apply
+2. [DONE] Update download, verification, recovery-point creation, install +
+   lifecycle status reporting
+3. [DONE] Process supervision — start/stop/restart the Kiosk Application,
+   systemd unit (Linux) / Windows service wrapper, crash watchdog
+4. [DONE] Real health checks + automatic rollback via recovery-point restore
+5. [DONE] Linux install script + Windows MSI-equivalent installer
+6. [DONE] Remote tunnel client stub + error reporting + final polish
+
+WHAT YOU ASKED FOR (recap)
+---------------------------
+- Same pattern as the Admin Panel: numbered parts, each delivered as a full
+  zip, with a progress/recap txt after every part.
+- "contue on" -> Part 4: real health checks + automatic rollback, delivered
+  and tested (21 tests, no mocking of anything local).
+- "keep going to 6" -> started Part 5 (Linux installer finished + tested
+  for real; Windows installer drafted), gave an honest status update mid-
+  way rather than rushing an unverified deliverable.
+- "Continue" (x2) -> finished Part 5 (Windows installer reviewed/fixed,
+  uninstall scripts added) and built all of Part 6 (error reporting,
+  tunnel stub, final polish), including catching and fixing a real bug
+  along the way. This note.
+
+PART 5 — DONE
+----------------
+- install/install.sh + install/uninstall.sh (Linux/Ubuntu/Debian): creates
+  a dedicated unprivileged opslab-agent system user/group, installs the
+  Agent's code + a fresh venv to /opt/opslab-agent, sets up
+  /etc/opslab-agent with restrictive permissions, installs the Part 3
+  systemd unit, and either bootstraps settings.json from
+  --admin-url/--registration-token and starts the service, or installs
+  everything short of starting it (to avoid crash-looping with nothing to
+  register against) and prints exact next steps. Idempotent/upgrade-safe.
+  TESTED FOR REAL in this build environment (a real Ubuntu 24.04 sandbox
+  with root access): full install -> run-as-service-user -> upgrade ->
+  uninstall -> purge cycles all actually executed, including the installed
+  Agent genuinely registering against a real stand-in HTTP server while
+  running as the unprivileged service account, exactly as systemd's
+  ExecStart would invoke it. Along the way, hardened apt-get update against
+  a real-world issue this sandbox itself has (an unrelated third-party repo
+  failing) rather than letting one bad repo block the whole install.
+  NOT tested: actual `systemctl enable/start`, since this sandbox has no
+  running systemd (no PID 1 systemd) to operate against — everything up to
+  that boundary is proven for real; the systemctl calls themselves are
+  standard, ordinary usage.
+- install/windows/install.ps1 + uninstall.ps1: the Windows counterpart.
+  Two honesty flags, stated in the scripts' own headers too:
+    1. This is "a Windows MSI-equivalent installer" per the build plan's
+       own wording, not a literal .msi — building a real .msi needs the
+       WiX Toolset on an actual Windows build chain, unavailable in this
+       Linux sandbox. The script does the same real work (venv, pywin32,
+       service registration via the Part 3 wrapper, sc.exe failure crash
+       recovery) using tools that work the same with or without a Windows
+       box to run them on.
+    2. Unlike install.sh, this could NOT be execution-tested at all — no
+       pwsh/PowerShell interpreter exists or could be installed in this
+       sandbox (outside the allowed package sources). Reviewed by hand
+       instead, which caught and fixed two real bugs before they'd have
+       hit an actual machine: the project-root path was computed one
+       directory level too shallow (would have broken every file-copy
+       step — install.ps1 lives two levels under the project root, not
+       one), and two string-concatenation expressions were written without
+       parentheses, which PowerShell's command-argument parser does not
+       evaluate as concatenation despite how it reads. There is a real
+       chance further issues like these remain, undiscoverable without an
+       actual Windows/PowerShell environment to run against.
+
+PART 6 — DONE
+----------------
+- agent/error_reporter.py: ships ERROR/CRITICAL log records to the Admin
+  Panel (spec Section 2.2's error-reporting line item) from anywhere in the
+  Agent — attaches to the "agent" logger, the parent of every agent.*
+  module's logger, so every existing log.error()/log.exception() call
+  across the whole project (failed health checks, crash-loop give-ups,
+  install failures, etc.) starts flowing to the Admin Panel automatically,
+  with zero changes needed in any of those modules. Built against three
+  specific failure modes: recursion (a reporting failure that itself logs
+  an error must not report itself forever — handled with a re-entrancy
+  guard), storms (rate limiting + short-window deduplication so a
+  genuinely broken machine logging the same failure hundreds of times a
+  minute doesn't become hundreds of HTTP calls), and never letting a
+  reporting failure raise back into the logging system. 13 real tests
+  (real logging.Logger hierarchy, no mocking) covering all three, plus a
+  separate live check that a real raised exception actually reaches a real
+  running HTTP server over the wire.
+- agent/tunnel.py: the remote-access tunnel client, honestly scoped as a
+  STUB exactly as the plan called it — real, tested poll-loop and status-
+  reporting plumbing (6 tests), but tunnel establishment itself is not
+  implemented and says so plainly in its own status report ("unsupported")
+  rather than silently doing nothing. A working tunnel needs a broker on
+  the Admin Panel side to terminate the reverse connection, which doesn't
+  exist in that project; building a client against a protocol that isn't
+  there would produce something that looks done without being connectable
+  to anything. The one function that needs to change once a real broker
+  exists (_establish_tunnel()) is isolated and clearly marked.
+- Closed the forward reference Part 3 explicitly left open in
+  process_supervisor.py's docstring ("status()['giving_up'] flags this for
+  something upstream to surface (Part 6's error reporting)"):
+  heartbeat.py now includes the supervisor's full status() dict in every
+  heartbeat when one is configured. Tested against a real crash-looping
+  subprocess actually hitting giving_up=True, not simulated.
+- CAUGHT AND FIXED A REAL BUG while building this part's end-to-end test
+  harness: main.py called signal.signal() unconditionally, which raises
+  ValueError when run() isn't executing on the main thread — which is
+  EXACTLY how the Part 3 Windows service wrapper calls it (agent.main.run()
+  inside a worker thread, with SvcStop() signaling shutdown via an event
+  rather than an OS signal). This would have crashed the Agent on every
+  real Windows service start, silently, since nothing in this Linux-only
+  build environment could have caught it any other way. Fixed: OS signal
+  handlers now only register on the main thread; off the main thread,
+  shutdown relies purely on external_stop_event, which the Windows wrapper
+  already sets. Verified with a full in-process harness — real
+  registration, heartbeat, config-poll, update-poll, and tunnel-poll all
+  running together against a real stand-in HTTP server, then a clean
+  shutdown with zero signal errors, deliberately run from a non-main
+  thread the same way the Windows wrapper does it.
+- New settings: tunnel_poll_interval_seconds, error_report_max_per_window,
+  error_report_window_seconds, error_report_dedup_seconds — optional,
+  defaulted.
+
+TESTING GAP — CARRIED FORWARD FROM PART 4, NOW COVERING MORE SURFACE
+--------------------------------------------------------------------------
+The Admin Panel project has not been available to run in this build
+environment since Part 4. Part 6 adds two more endpoints this affects:
+POST /api/v1/instances/errors and GET/POST /api/v1/instances/tunnel
+[/<id>/status]. Both are exercised against a scripted stand-in (proving the
+Agent's own HTTP client code, JSON shapes, and error handling are
+correct), and the error-reporter check does hit a real running HTTP
+server — just not the real Admin Panel. Whether the actual Admin Panel
+recognizes these two new endpoints, or Part 4's rolling_back/rolled_back
+statuses, has still not been verified against it. This remains the single
+most important thing to check before trusting any of Parts 4-6 in
+production. Everything else built across this whole 6-part plan has either
+been verified for real against real subprocesses/real HTTP/real file
+systems/a real installed service account, or has its remaining gaps stated
+explicitly rather than implied away — see this file's Part-by-part entries
+and README.md's "Current honest gaps" section for the full, current list.
+
+NOT BUILT AT ALL / KNOWN-INCOMPLETE, FULL LIST AS OF THE END OF PART 6
+----------------------------------------------------------------------------
+- rolling_back/rolled_back statuses and the two Part 6 endpoints unverified
+  against the real Admin Panel (see above).
+- No mid-flight resume if the Agent restarts partway through a deployment
+  or a rollback.
+- Windows is untested on real Windows for both the service wrapper (Part
+  3) and the installer (Part 5) — this build environment has never had a
+  Windows machine, or even a PowerShell interpreter, available.
+- The Windows installer is a PowerShell script standing in for a literal
+  .msi (Part 5) — needs a real Windows/WiX build chain to close.
+- Remote tunnel establishment is a stub — the broker it needs doesn't
+  exist on the Admin Panel side yet (Part 6).
+- The Kiosk Application itself still doesn't exist as a separate project —
+  everything here that depends on it (config sync's reader, process
+  supervision, health checks) has been built and tested against generic
+  stand-ins for exactly this reason and works unmodified once a real one
+  exists to point at.
+
+SETUP REMINDER
+-----------------
+See README.md, updated throughout to reflect the finished 6-part plan.
+Production install:
+    sudo ./install/install.sh --admin-url <url> --registration-token <token>
+Full test suite (43 tests as of Part 6, all real except where the Admin
+Panel side is a stand-in, per the testing-gap note above):
+    python3 -m unittest discover -s tests -v

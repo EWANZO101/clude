@@ -1,0 +1,14 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}Request a Change — {{ app_name }}{% endblock %}
+{% block page_title %}Request a change{% endblock %}
+{% block content %}
+<div class="max-w-xl">
+  <p class="text-text-secondary mb-6">This request is locked for shipment. Describe the change you need and our team will review it.</p>
+  <form method="POST" class="card p-6">
+    {{ form.hidden_tag() }}
+    {{ field(form.message, rows=4, placeholder="e.g. I need to add another 10Gb network switch.") }}
+    <button type="submit" class="btn-primary w-full">Submit change request</button>
+  </form>
+</div>
+{% endblock %}

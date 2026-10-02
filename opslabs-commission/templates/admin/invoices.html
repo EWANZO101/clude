@@ -1,0 +1,68 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Invoices — Admin{% endblock %}
+{% block admin_content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+  <h1 class="font-display" style="font-size:1.7rem;">Invoices</h1>
+  <a href="/admin/invoices/new" class="btn btn-gold">+ New Invoice</a>
+</div>
+
+<div class="card">
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Invoice ID</th>
+          <th>Order ID</th>
+          <th>Customer</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Due Date</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in invoices %}
+        <tr>
+          <td class="font-mono" style="font-size:0.85rem;color:var(--gold);">{{ inv.invoice_id }}</td>
+          <td class="font-mono" style="font-size:0.85rem;color:var(--accent);">
+            <a href="/admin/orders/{{ inv.order_id }}" style="color:var(--accent);">{{ inv.order_id }}</a>
+          </td>
+          <td>{{ inv.customer_name or '—' }}</td>
+          <td style="font-size:1rem;font-weight:700;color:var(--gold);">${{ "%.2f"|format(inv.amount) }}</td>
+          <td>
+            <span class="badge {{ 'badge-paid' if inv.paid else 'badge-unpaid' }}">
+              {{ 'Paid' if inv.paid else 'Unpaid' }}
+            </span>
+          </td>
+          <td style="font-size:0.85rem;color:var(--text-secondary);">{{ inv.due_date or '—' }}</td>
+          <td style="font-size:0.82rem;color:var(--text-muted);">{{ inv.created_at.strftime('%b %d, %Y') }}</td>
+          <td>
+            {% if not inv.paid %}
+            <form method="POST" action="/admin/invoices/{{ inv.invoice_id }}/mark-paid"
+                  style="display:inline-flex;gap:0.4rem;align-items:center;">
+              <input type="number" name="amount" value="{{ inv.amount }}" step="0.01"
+                     class="input" style="width:90px;padding:0.3rem 0.5rem;font-size:0.85rem;">
+              <button type="submit" class="btn btn-success btn-sm">Mark Paid</button>
+            </form>
+            {% else %}
+            <span style="font-size:0.85rem;color:var(--success);">
+              ✓ {{ inv.paid_at.strftime('%b %d') if inv.paid_at else 'Paid' }}
+            </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align:center;color:var(--text-muted);padding:2rem;font-style:italic;">
+            No invoices yet. Create one from an order page or here.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

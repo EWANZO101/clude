@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}File too large{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto text-center py-16">
+  <span class="plate text-sm mb-6 inline-block">413</span>
+  <h1 class="font-bold text-2xl mb-2">File too large</h1>
+  <p class="text-sm text-ink-muted mb-6">One of your uploads was too large. Try a smaller file or fewer files at once.</p>
+  <a href="javascript:history.back()" class="inline-flex items-center gap-2 rounded-lg bg-asphalt-alt hover:bg-asphalt-border border border-asphalt-border text-ink text-sm font-medium px-4 py-2.5 transition">Go back</a>
+</div>
+{% endblock %}

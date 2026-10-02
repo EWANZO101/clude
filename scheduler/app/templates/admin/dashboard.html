@@ -1,0 +1,87 @@
+{% extends "layouts/admin.html" %}
+{% block title %}Dashboard · {{ app_name }}{% endblock %}
+{% block page_content %}
+
+<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-semibold text-ink">Good to see you, {{ current_user.name.split(' ')[0] }}</h1>
+    <p class="mt-1 text-sm text-ink-muted">Here's where things stand today.</p>
+  </div>
+  <span class="status-pill border-status-{{ status.status }}/30 bg-status-{{ status.status }}/10 text-status-{{ status.status }} self-start">
+    <span class="status-dot bg-status-{{ status.status }} {{ 'animate-pulse-soft' if status.status == 'available' }}"></span>
+    {{ status.status|capitalize }}{% if status.is_manual %} · manual{% endif %}
+  </span>
+</div>
+
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  <div class="card p-5">
+    <p class="text-xs font-medium uppercase tracking-wide text-ink-muted">Today's bookings</p>
+    <p class="mt-2 font-display text-3xl font-semibold text-ink">{{ stats.todays_bookings }}</p>
+  </div>
+  <div class="card p-5">
+    <p class="text-xs font-medium uppercase tracking-wide text-ink-muted">This week</p>
+    <p class="mt-2 font-display text-3xl font-semibold text-ink">{{ stats.week_bookings }}</p>
+  </div>
+  <div class="card p-5 sm:col-span-2 lg:col-span-1">
+    <p class="text-xs font-medium uppercase tracking-wide text-ink-muted">
+      {{ "Currently unavailable" if status.status != "available" else "Status" }}
+    </p>
+    <p class="mt-2 text-sm text-ink-muted">
+      {% if status.message %}{{ status.message }}{% elif status.next_available %}Back {{ status.next_available|lower }}{% else %}Available now{% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="mt-8 card p-6 sm:p-8">
+  <h2 class="font-display text-base font-semibold text-ink">Set your status manually</h2>
+  <p class="mt-1.5 max-w-2xl text-sm text-ink-muted">
+    Overrides the automatic status computed from your working hours until you switch it back to automatic.
+  </p>
+  <form method="POST" action="{{ url_for('admin.update_status') }}" class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+    {{ override_form.hidden_tag() }}
+    <div class="flex-1">
+      <label class="field-label" for="{{ override_form.manual_status.id }}">Status</label>
+      {{ override_form.manual_status(class_="field-input") }}
+    </div>
+    <div class="flex-1">
+      <label class="field-label" for="{{ override_form.manual_status_message.id }}">Message (optional)</label>
+      {{ override_form.manual_status_message(class_="field-input", placeholder="e.g. Back after lunch") }}
+    </div>
+    <button type="submit" class="btn-primary">Update</button>
+  </form>
+</div>
+
+<div class="mt-8 card p-6 sm:p-8">
+  <h2 class="font-display text-base font-semibold text-ink">Current task</h2>
+  <p class="mt-1.5 max-w-2xl text-sm text-ink-muted">
+    Shown on <a href="{{ url_for('public.current_task_page') }}" class="text-accent hover:underline" target="_blank">{{ url_for('public.current_task_page', _external=True) }}</a> —
+    a minimal public page that shows only this text. No name, no schedule, nothing else.
+  </p>
+  <form method="POST" action="{{ url_for('admin.update_current_task') }}" class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+    {{ task_form.hidden_tag() }}
+    <div class="flex-1">
+      <label class="field-label" for="{{ task_form.current_task.id }}">What are you working on?</label>
+      {{ task_form.current_task(class_="field-input", placeholder="e.g. Fixing a production issue") }}
+    </div>
+    <button type="submit" class="btn-primary">Update</button>
+  </form>
+</div>
+
+<div class="mt-8 card p-6 sm:p-8">
+  <div class="flex items-start gap-4">
+    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-muted text-accent">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 2"/></svg>
+    </div>
+    <div>
+      <h2 class="font-display text-base font-semibold text-ink">Availability is live</h2>
+      <p class="mt-1.5 max-w-2xl text-sm text-ink-muted">
+        Working hours, breaks, and time off now drive your status above. Manage them from
+        <a href="{{ url_for('admin.availability') }}" class="text-accent hover:underline">Availability</a>
+        and <a href="{{ url_for('admin.time_off') }}" class="text-accent hover:underline">Time Off</a> in the sidebar.
+        Booking types, the calendar, and the public pages arrive in the phases that follow.
+      </p>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

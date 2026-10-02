@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Claude Manager{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-gray-950 to-gray-900 text-gray-100 min-h-screen">
+  {% if current_user.is_authenticated %}
+  <nav class="sticky top-0 z-40 backdrop-blur bg-gray-950/80 border-b border-gray-800/80 px-4 sm:px-6 py-3.5 flex items-center justify-between">
+    <a href="{{ url_for('dashboard') }}" class="flex items-center gap-2.5 group">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-950/50 group-hover:shadow-indigo-900/60 transition-shadow">
+        <svg viewBox="0 0 24 24" class="h-4.5 w-4.5 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.9L19 9.8l-4.9 1.9L12 16.6l-1.9-4.9L5 9.8l4.9-1.9L12 3z"/><path d="M19 15l.9 2.3L22 18.2l-2.1.9L19 21.4l-.9-2.3-2.1-.9 2.1-.9L19 15z"/></svg>
+      </span>
+      <span class="text-[15px] font-semibold tracking-tight text-gray-100">Claude Manager</span>
+    </a>
+    <a href="{{ url_for('logout') }}" class="text-sm text-gray-400 hover:text-gray-100 transition-colors flex items-center gap-1.5">
+      <span>Log out</span>
+      <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+    </a>
+  </nav>
+  {% endif %}
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="mb-5 px-4 py-2.5 rounded-lg text-sm border flex items-center gap-2
+            {{ 'bg-red-950/50 text-red-300 border-red-900' if category=='error' else 'bg-emerald-950/50 text-emerald-300 border-emerald-900' }}">
+            {% if category == 'error' %}
+            <svg viewBox="0 0 24 24" class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {% else %}
+            <svg viewBox="0 0 24 24" class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            {% endif %}
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

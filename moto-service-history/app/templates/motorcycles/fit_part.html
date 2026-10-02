@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import field, btn_primary, btn_secondary %}
+{% block title %}Fit part — {{ m.display_name }}{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <p class="text-xs font-mono text-ink-faint mb-2 uppercase tracking-wide">{{ m.display_name }}</p>
+  <h1 class="font-bold text-2xl mb-2">Mark "{{ part.part_name }}" as fitted</h1>
+  <p class="text-sm text-ink-muted mb-6">This moves the part from your parts stock into the motorcycle's modification history.</p>
+  <form method="post" class="card p-6">
+    {{ form.hidden_tag() }}
+    <div class="grid sm:grid-cols-2 gap-4">
+      {{ field(form.date_fitted) }}
+      {{ field(form.mileage_fitted) }}
+      {{ field(form.installation_cost) }}
+      {{ field(form.fitted_by) }}
+    </div>
+    <div class="flex items-center gap-3 pt-6 mt-6 border-t border-asphalt-border">
+      {{ btn_primary('Move to modification history') }}
+      {{ btn_secondary('Cancel', url_for('moto.view', moto_id=m.id)) }}
+    </div>
+  </form>
+</div>
+{% endblock %}

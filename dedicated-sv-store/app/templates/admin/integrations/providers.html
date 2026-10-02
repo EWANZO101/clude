@@ -1,0 +1,56 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}Seller API Providers — Admin{% endblock %}
+{% block page_title %}Seller API providers{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Seller</th><th>Name</th><th>Base URL</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for conn in connections %}
+        <tr>
+          <td class="text-text-secondary">{{ conn.seller.business_name }}</td>
+          <td class="font-medium text-text-primary">{{ conn.name }}</td>
+          <td class="text-text-secondary font-mono text-xs truncate max-w-xs">{{ conn.base_url }}</td>
+          <td>
+            {% if conn.status.value == "connected" %}<span class="badge-success">Connected</span>
+            {% elif conn.status.value == "failed" %}<span class="badge-danger">Failed</span>
+            {% else %}<span class="badge-neutral">Untested</span>{% endif %}
+          </td>
+          <td class="whitespace-nowrap">
+            <form method="POST" action="{{ url_for('admin.provider_test', connection_id=conn.id) }}" class="inline">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-brand-400 hover:text-brand-300 text-sm mr-3">Test</button>
+            </form>
+            <form method="POST" action="{{ url_for('admin.provider_toggle', connection_id=conn.id) }}" class="inline">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-text-secondary hover:text-text-primary text-sm mr-3">{{ "Disable" if conn.is_active else "Enable" }}</button>
+            </form>
+            <form method="POST" action="{{ url_for('admin.provider_delete', connection_id=conn.id) }}" class="inline">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-status-danger hover:opacity-80 text-sm">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-text-muted py-8">No seller API connections configured yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Add connection</h2>
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      {{ field(form.seller_id) }}
+      {{ field(form.name) }}
+      {{ field(form.provider_type) }}
+      {{ field(form.base_url, placeholder="https://seller-system.example.com/api") }}
+      {{ field(form.api_key) }}
+      {{ checkbox(form.is_active) }}
+      <button type="submit" class="btn-primary w-full">Add connection</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

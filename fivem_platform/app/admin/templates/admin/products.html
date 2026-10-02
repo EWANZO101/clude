@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Products — Admin — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold text-white mb-6">Products</h1>
+
+  <form method="GET" class="mb-6">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search product name or ID..."
+      class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+  </form>
+
+  <div class="space-y-2">
+    {% for p in products %}
+      <div class="flex items-center justify-between gap-3 flex-wrap bg-surface-card border border-surface-border rounded-lg px-4 py-3">
+        <div class="min-w-0 flex-1">
+          <div class="text-white text-sm font-medium truncate">{{ p.name }}</div>
+          <div class="text-gray-500 text-xs font-mono truncate">{{ p.product_id }} · developer: {{ p.developer.username }}</div>
+        </div>
+        <div class="flex items-center gap-3 flex-shrink-0">
+          <span class="text-xs px-2 py-0.5 rounded-full {{ 'bg-emerald-950 text-emerald-400' if p.is_active else 'bg-gray-800 text-gray-500' }}">
+            {{ 'active' if p.is_active else 'disabled' }}
+          </span>
+          <form method="POST" action="{{ url_for('admin.toggle_product_active', product_id=p.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="text-xs text-gray-400 hover:text-white">{{ 'Disable' if p.is_active else 'Enable' }}</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% if not products %}
+    <p class="text-sm text-gray-500">No products found.</p>
+  {% endif %}
+</div>
+{% endblock %}

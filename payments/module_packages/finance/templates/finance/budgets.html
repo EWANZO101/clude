@@ -1,0 +1,40 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Budgets{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  {{ ui.page_header("Budgets") }}
+  <form method="POST" action="{{ url_for('finance.new_budget') }}" class="bg-surface-card border border-surface-border rounded-2xl p-4 flex flex-wrap gap-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <select name="category_id" required class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      <option value="">Category…</option>
+      {% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+    </select>
+    <input name="amount" placeholder="Monthly amount e.g. 200.00" class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    {{ ui.button("Set budget", type="submit", variant="primary") }}
+  </form>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    {% for b, status in budget_rows %}
+      <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-2 hover:border-slate-700 transition-colors">
+        <div class="flex items-center justify-between">
+          <p class="font-medium text-slate-100">{{ b.category.name }}</p>
+          <form method="POST" action="{{ url_for('finance.delete_budget', budget_id=b.id) }}" onsubmit="return confirm('Remove this budget?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-xs text-red-400 hover:text-red-300">Remove</button></form>
+        </div>
+        <div class="h-1.5 bg-surface rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all {{ 'bg-red-500' if status.over_budget else ('bg-amber-500' if status.over_warning else 'bg-accent') }}" style="width: {{ [status.pct_used, 100] | min }}%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-slate-400">
+          <span>{{ status.spent_minor | money }} spent</span>
+          <span>{{ status.remaining_minor | money }} remaining</span>
+        </div>
+        <p class="text-xs text-slate-500">Forecast: {{ status.forecast_minor | money }} by month end</p>
+      </div>
+    {% else %}
+      <div class="sm:col-span-2">
+        {% call ui.empty_state("No budgets set yet", "Pick a category above to start tracking spend against a monthly amount.", "pie-chart") %}{% endcall %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

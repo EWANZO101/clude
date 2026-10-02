@@ -1,0 +1,52 @@
+{% extends "layout/base.html" %}
+{% block title %}Backups{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between flex-wrap gap-2">
+    <h1 class="text-xl font-semibold">Backups</h1>
+    <form method="POST" action="{{ url_for('backup.create') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 rounded-lg">Create backup now</button>
+    </form>
+  </div>
+
+  {% if db_backend != 'sqlite' %}
+    <div class="bg-surface-card border border-emerald-800/50 rounded-2xl p-4 text-sm text-emerald-300">
+      Using a {{ db_backend }} database — backups include a real SQL dump (via mysqldump/pg_dump)
+      alongside module metadata and uploaded files, as long as that tool is installed on this server.
+    </div>
+  {% endif %}
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+    <p class="text-sm font-medium mb-2">Scheduled backups</p>
+    <p class="text-xs text-slate-500 mb-3">Runs daily via the background scheduler (needs a cron/beat process calling <code>run_due_scheduled_jobs()</code> periodically — see System Health).</p>
+    <form method="POST" action="{{ url_for('backup.schedule') }}" class="flex items-center gap-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="checkbox" name="enabled" id="sched-enabled" class="rounded border-surface-border" onchange="this.form.submit()" {{ 'checked' if scheduled_enabled }}>
+      <label for="sched-enabled" class="text-sm text-slate-300">Enable daily scheduled backup</label>
+    </form>
+  </div>
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    {% for b in backups %}
+      <div class="p-4 flex items-center justify-between text-sm flex-wrap gap-2">
+        <div>
+          <p class="text-slate-100">{{ b.filename }}</p>
+          <p class="text-xs text-slate-500">{{ b.created_at.strftime('%d %b %Y %H:%M') }} UTC · {{ b.source }} · {{ (b.size_bytes / 1024 / 1024) | round(2) }} MB · {{ b.status }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+          {% if b.status == 'completed' %}
+            <a href="{{ url_for('backup.download', backup_id=b.id) }}" class="text-xs text-accent hover:underline">Download</a>
+            <form method="POST" action="{{ url_for('backup.restore', backup_id=b.id) }}" onsubmit="return confirm('Extract the database from this backup for restoring? You\'ll finish the restore manually.');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="text-xs text-amber-400 hover:underline">Prepare restore</button>
+            </form>
+          {% endif %}
+          <form method="POST" action="{{ url_for('backup.delete', backup_id=b.id) }}" onsubmit="return confirm('Delete this backup permanently?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="text-xs text-red-400 hover:underline">Delete</button>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <p class="p-4 text-sm text-slate-500">No backups yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

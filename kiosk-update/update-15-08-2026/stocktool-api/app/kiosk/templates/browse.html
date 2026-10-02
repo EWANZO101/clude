@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Preview' if preview else 'Browse' }}{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('kiosk.static', filename='browse.css') }}" />
+{% endblock %}
+{% block content %}
+<div class="browse-screen" id="browseScreen">
+  {% if preview %}
+  <div class="preview-banner"><i class="fas fa-eye"></i> Preview only — nothing here changes real stock</div>
+  {% endif %}
+
+  <div id="browseComponents" class="browse-components"><!-- rendered by browse.js --></div>
+
+  {% if not preview %}
+  <div class="browse-footer">
+    <a href="{{ url_for('kiosk.scan_screen') }}" class="footer-link"><i class="fas fa-barcode"></i> Scan</a>
+    <button class="footer-link" id="browseLogoutBtn"><i class="fas fa-right-from-bracket"></i> Log out</button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Item detail / quantity modal (reused for both count and amount items) -->
+<div class="kiosk-modal" id="itemModal">
+  <div class="kiosk-modal-card">
+    <div class="qty-item-name" id="modalItemName">—</div>
+    <div class="qty-item-stock" id="modalItemStock">—</div>
+    <div class="qty-display" id="modalQtyDisplay">0</div>
+    <div class="qty-keypad" id="modalKeypad">
+      <button class="qty-key" data-key="1">1</button>
+      <button class="qty-key" data-key="2">2</button>
+      <button class="qty-key" data-key="3">3</button>
+      <button class="qty-key" data-key="4">4</button>
+      <button class="qty-key" data-key="5">5</button>
+      <button class="qty-key" data-key="6">6</button>
+      <button class="qty-key" data-key="7">7</button>
+      <button class="qty-key" data-key="8">8</button>
+      <button class="qty-key" data-key="9">9</button>
+      <button class="qty-key qty-key-clear" data-key="clear">Clear</button>
+      <button class="qty-key" data-key="0">0</button>
+      <button class="qty-key" data-key="back"><i class="fas fa-delete-left"></i></button>
+    </div>
+    <div class="qty-actions">
+      <button class="btn-cancel" id="modalCancelBtn">Cancel</button>
+      <button class="btn-remove" id="modalRemoveBtn"><i class="fas fa-minus"></i> Remove Stock</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  Browse.init({
+    preview: {{ 'true' if preview else 'false' }},
+    previewLayoutId: {{ preview_layout_id | default('null') }},
+    idleTimeout: {{ idle_timeout | default(60) }},
+  });
+</script>
+{% endblock %}

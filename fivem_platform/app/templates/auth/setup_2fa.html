@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Set up 2FA — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-2">Set up two-factor authentication</h1>
+  <p class="text-sm text-gray-400 mb-6">Scan this with Google Authenticator, Authy, or any TOTP app.</p>
+
+  <div class="bg-white rounded-lg p-4 flex items-center justify-center mb-4" id="qr-container">
+    <div id="qr-code"></div>
+  </div>
+
+  <p class="text-xs text-gray-500 mb-1">Can't scan? Enter this key manually:</p>
+  <div class="font-mono text-sm text-gray-300 bg-surface-card border border-surface-border rounded-md px-3 py-2 mb-6 break-all">{{ secret }}</div>
+
+  <form method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="block text-sm text-gray-400 mb-1">Enter the 6-digit code from your app to confirm</label>
+    <input type="text" name="code" required autofocus placeholder="123456"
+      class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm font-mono text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-brand">
+    <button type="submit" class="w-full bg-brand hover:bg-brand-hover text-white rounded-md py-2 text-sm font-medium transition">
+      Enable 2FA
+    </button>
+  </form>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  new QRCode(document.getElementById("qr-code"), {
+    text: {{ otpauth_url | tojson }},
+    width: 200,
+    height: 200,
+  });
+</script>
+{% endblock %}

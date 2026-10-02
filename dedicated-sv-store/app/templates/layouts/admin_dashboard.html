@@ -1,0 +1,65 @@
+{% extends "layouts/_dashboard_base.html" %}
+{% from "components/_nav_section.html" import nav_section with context %}
+{% block sidebar_nav %}
+{{ nav_section(None, [("Dashboard", "admin.dashboard", None)]) }}
+{{ nav_section("Marketplace", [
+  ("Servers", "admin.servers", None),
+  ("Custom Configurations", "admin.configurations", None),
+  ("Hardware", "admin.hardware_overview", None),
+  ("Categories", "admin.categories", None),
+  ("Locations", "admin.datacenters", None),
+  ("Compatibility Rules", "admin.compatibility_rules", None),
+  ("Pricing Rules", "admin.pricing_rules", None),
+]) }}
+{{ nav_section("Orders", [("All Orders", "admin.orders", None)]) }}
+{{ nav_section("Customers", [
+  ("Customers", "admin.users", None),
+  ("Requests", "admin.requests", None),
+  ("Customer Equipment", "admin.customer_equipment", None),
+  ("Equipment Types", "admin.equipment_types", None),
+  ("Customer Servers", "admin.customer_servers", None),
+]) }}
+{{ nav_section("Sellers", [
+  ("Sellers", "admin.seller_applications", None),
+  ("Inventory", "admin.seller_inventory", None),
+  ("Orders", "admin.seller_orders", None),
+]) }}
+{{ nav_section("Finance", [
+  ("Invoices", "admin.invoices", None),
+  ("Payments", "admin.payments", None),
+  ("Transactions", "admin.transactions", None),
+  ("Payouts", "admin.payouts", None),
+  ("Coupons", "admin.coupons", None),
+]) }}
+{{ nav_section("Shipping", [
+  ("Shipments", "admin.shipments", None),
+  ("Receiving", "admin.receiving", None),
+  ("Inspections", "admin.inspections", None),
+  ("Equipment", "admin.customer_equipment", None),
+]) }}
+{{ nav_section("Infrastructure", [
+  ("Racks", "admin.racks", None),
+  ("Power", "admin.power", None),
+  ("Networks", "admin.networks", None),
+  ("IP Addresses", "admin.ip_addresses", None),
+]) }}
+{{ nav_section("Communication", [
+  ("Chats", "admin.chats", None),
+  ("Tickets", "admin.tickets", None),
+  ("Notifications", "admin.notifications", None),
+  ("Email Templates", "admin.email_templates", None),
+]) }}
+{{ nav_section("API", [
+  ("API Keys", "admin.api_keys", None),
+  ("Providers", "admin.providers", None),
+  ("Hardware APIs", "admin.hardware_apis", None),
+  ("Webhooks", "admin.webhooks", None),
+  ("Logs", "admin.api_logs", None),
+]) }}
+{{ nav_section("System", [
+  ("Users", "admin.users", None),
+  ("Roles", "admin.roles", None),
+  ("Settings", "admin.settings", None),
+  ("Audit Logs", "admin.audit_logs", None),
+]) }}
+{% endblock %}

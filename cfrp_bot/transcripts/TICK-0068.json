@@ -1,0 +1,73 @@
+{
+  "ticket_id": "TICK-0068",
+  "ticket_type": "support",
+  "opened_by": "IMPI CHAPLIN",
+  "opened_at": "2026-04-27 18:21:12",
+  "closed_by": "IMPI CHAPLIN",
+  "closed_at": "2026-04-27 18:47 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-27T18:21:12.972000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1451691985730539592> <@580405393650483232>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T18:21:24.236000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T18:21:53.471000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "<@344560012997165057> sttop fucking  the website up pierre cant fly in",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T18:22:24.945000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "",
+      "content": "he can",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T18:22:35.071000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "",
+      "content": "i fix it so he can",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T18:22:53.279000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "502 Bad Gateway\nnginx/1.24.0 (Ubuntu)",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T18:39:41.380000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "",
+      "content": "i already told pj i was updating it",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

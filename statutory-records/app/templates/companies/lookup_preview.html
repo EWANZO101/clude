@@ -1,0 +1,50 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Confirm company{% endblock %}
+{% block content %}
+<div class="max-w-xl space-y-5">
+  {{ ui.page_header("Confirm and add", "Pulled straight from Companies House — check it over, then save.") }}
+
+  <form method="POST" action="{{ url_for('main.confirm_lookup') }}" class="space-y-5">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-3">
+      {{ ui.field_input("company_name", "Company name", value=profile.company_name, required=true) }}
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div><p class="text-xs text-slate-500">Company number</p><p class="text-slate-200 mt-0.5">{{ profile.company_number }}</p></div>
+        <div><p class="text-xs text-slate-500">Status</p><p class="text-slate-200 mt-0.5">{{ profile.company_status | title }}</p></div>
+        <div><p class="text-xs text-slate-500">Type</p><p class="text-slate-200 mt-0.5">{{ profile.company_type | upper }}</p></div>
+        <div><p class="text-xs text-slate-500">Incorporated</p><p class="text-slate-200 mt-0.5">{{ profile.incorporation_date or '—' }}</p></div>
+      </div>
+      <div><p class="text-xs text-slate-500">Registered office</p><p class="text-slate-200 mt-0.5 text-sm">{{ profile.registered_office_address or '—' }}</p></div>
+      <div><p class="text-xs text-slate-500">SIC codes</p><p class="text-slate-200 mt-0.5 text-sm">{{ profile.sic_codes or '—' }}</p></div>
+    </div>
+
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-2">
+      <p class="text-sm font-medium text-slate-200 flex items-center gap-2">{{ ui.icon('users', 'w-4 h-4 text-slate-500') }} Directors &amp; PSC ({{ officers | rejectattr('resigned_on') | list | length }} active)</p>
+      <div class="divide-y divide-surface-border -mx-2">
+        {% for o in officers %}
+          <div class="px-2 py-2 flex items-center justify-between text-sm {{ 'opacity-40' if o.resigned_on }}">
+            <span class="text-slate-200">{{ o.name }}</span>
+            <span class="text-xs text-slate-500">{{ {'director':'Director','psc':'PSC','both':'Director & PSC'}.get(o.role, o.role) }}{% if o.resigned_on %} · resigned{% endif %}</span>
+          </div>
+        {% else %}
+          <p class="text-xs text-slate-500 py-2">No officer records found.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-2">
+      <p class="text-sm font-medium text-slate-200 flex items-center gap-2">{{ ui.icon('alarm-clock', 'w-4 h-4 text-slate-500') }} Filing deadlines</p>
+      {% if profile.confirmation_statement_due %}<p class="text-sm text-slate-300">Confirmation statement due <span class="text-slate-100">{{ profile.confirmation_statement_due }}</span></p>{% endif %}
+      {% if profile.accounts_due %}<p class="text-sm text-slate-300">Annual accounts due <span class="text-slate-100">{{ profile.accounts_due }}</span></p>{% endif %}
+      {% if not profile.confirmation_statement_due and not profile.accounts_due %}<p class="text-xs text-slate-500">Companies House didn't return any upcoming deadlines for this company.</p>{% endif %}
+    </div>
+
+    <div class="flex items-center gap-2">
+      {{ ui.button("Add this company", type="submit", variant="primary", icon_name="check") }}
+      {{ ui.button("Search again", href=url_for('main.lookup_company'), variant="secondary") }}
+    </div>
+  </form>
+</div>
+{% endblock %}

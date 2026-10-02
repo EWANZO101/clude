@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Privacy policy · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto max-w-2xl px-4 py-12 sm:py-16">
+  <div class="card p-6 sm:p-8 space-y-6 text-sm text-ink-muted leading-relaxed">
+    <div>
+      <h1 class="font-display text-2xl font-semibold text-ink">Privacy policy</h1>
+      <p class="mt-1 text-xs text-ink-faint">Covers this website and the Scheduler iPhone app · Last updated {{ updated }}</p>
+    </div>
+
+    <p>
+      Scheduler is a booking and availability tool run by {{ owner_name }}. This page explains what
+      information it handles, why, and who it's shared with. There's no advertising, no tracking and no
+      selling of data.
+    </p>
+
+    <section class="space-y-2">
+      <h2 class="font-display text-lg font-semibold text-ink">If you make a booking</h2>
+      <p>
+        When you book a time, we store the name, email address, optional phone number and notes you enter,
+        plus the time you booked. They're used only to run your booking: to confirm it, remind you, and
+        contact you about it. You can view or cancel your booking at any time from the link in your
+        confirmation email.
+      </p>
+    </section>
+
+    <section class="space-y-2">
+      <h2 class="font-display text-lg font-semibold text-ink">The Scheduler app</h2>
+      <p>
+        The iPhone app is for the account holder to manage their own schedule. It isn't used by people
+        making bookings, and you can't create an account in it.
+      </p>
+      <ul class="list-disc pl-5 space-y-1">
+        <li>
+          <strong class="text-ink">Sign-in:</strong> your email and password are sent securely to this
+          website to sign you in. The app keeps only a sign-in token, in the iPhone's encrypted keychain,
+          and deletes it when you sign out.
+        </li>
+        <li>
+          <strong class="text-ink">Notifications:</strong> if you allow notifications, the app registers a
+          push token for your phone so it can be told about new bookings and cancellations. The token is
+          removed when you sign out. Notifications are delivered through Expo's push service
+          (<a class="underline" href="https://expo.dev/privacy" rel="noopener">Expo privacy policy</a>)
+          and Apple's push notification service. They contain only the booking's name and time.
+        </li>
+        <li>
+          <strong class="text-ink">Booking details:</strong> the app shows the booking information described
+          above, fetched securely from this website. It isn't stored anywhere else.
+        </li>
+      </ul>
+      <p>The app contains no analytics, advertising or third-party tracking.</p>
+    </section>
+
+    <section class="space-y-2">
+      <h2 class="font-display text-lg font-semibold text-ink">Where data is kept</h2>
+      <p>
+        Everything is stored on this website's own server and sent over encrypted (HTTPS) connections.
+        Booking records are kept for as long as they're needed to run the schedule, and are deleted on request.
+      </p>
+    </section>
+
+    <section class="space-y-2">
+      <h2 class="font-display text-lg font-semibold text-ink">Your rights and contact</h2>
+      <p>
+        You can ask to see, correct or delete any information held about you by emailing
+        <a class="underline" href="mailto:{{ contact_email }}">{{ contact_email }}</a>.
+      </p>
+    </section>
+  </div>
+</div>
+{% endblock %}

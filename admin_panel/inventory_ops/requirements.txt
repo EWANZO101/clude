@@ -1,0 +1,11 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+python-dotenv==1.0.1
+waitress==3.0.0
+argon2-cffi==23.1.0
+# Optional — only exercised when Settings.barcode_enabled is turned on from
+# the Settings page; app/barcode_render.py imports both lazily, so the app
+# runs fine without them installed if that toggle stays off.
+python-barcode==0.15.1
+qrcode==8.2

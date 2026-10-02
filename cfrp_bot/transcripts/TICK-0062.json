@@ -1,0 +1,28 @@
+{
+  "ticket_id": "TICK-0062",
+  "ticket_type": "whitelist",
+  "opened_by": "IMPI CHAPLIN",
+  "opened_at": "2026-04-26 07:39:17",
+  "closed_by": "IMPI CHAPLIN",
+  "closed_at": "2026-04-26 07:41 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-26T07:39:17.707000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1451691985730539592> <@580405393650483232>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T07:39:18.294000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

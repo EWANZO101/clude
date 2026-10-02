@@ -1,0 +1,93 @@
+{
+  "ticket_id": "TICK-0076",
+  "ticket_type": "whitelist",
+  "opened_by": "SYRYS.exe",
+  "opened_at": "2026-05-02 18:25:58",
+  "closed_by": "IMPI CHAPLIN",
+  "closed_at": "2026-05-03 05:25 UTC",
+  "messages": [
+    {
+      "ts": "2026-05-02T18:25:58.400000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1451691985730539592> <@821741520394125362>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-02T18:25:59.121000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-02T18:27:07.422000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "staff",
+      "content": "<@821741520394125362> plz read <#1492610119664406528>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-02T18:32:07.794000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "staff",
+      "content": "https://web.cfrp.co.za/applications/whitelist-application/apply",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-02T18:43:09.936000+00:00",
+      "author": "SYRYS.exe",
+      "author_id": "821741520394125362",
+      "role": "",
+      "content": "",
+      "attachments": [
+        "https://cdn.discordapp.com/attachments/1500201700504375443/1500206029214978179/image.png?ex=69f7973d&is=69f645bd&hm=1ae5166684c68927e2459b7292d38913cdbf83bee48677482b30e0411cfb656b&"
+      ],
+      "system": false
+    },
+    {
+      "ts": "2026-05-02T18:44:16.438000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "staff",
+      "content": "Do you have time for a chat",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-02T18:44:42.996000+00:00",
+      "author": "SYRYS.exe",
+      "author_id": "821741520394125362",
+      "role": "",
+      "content": "For sure!",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-02T18:44:59.817000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "staff",
+      "content": "https://discord.com/channels/1213807920635052043/1497863377643503657",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-02T18:45:03.892000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "staff",
+      "content": "Join here",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

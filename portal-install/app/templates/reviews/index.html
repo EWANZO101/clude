@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Reviews · OpsLab Systems{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-16 w-full">
+
+  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+    <div>
+      <div class="text-xs font-bold uppercase tracking-widest text-ops-300 mb-2">What people say</div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Reviews</h1>
+      {% if avg %}
+      <div class="mt-3 flex items-center gap-2 text-gray-300">
+        <span class="text-yellow-400 text-lg tracking-tight">{{ '★' * (avg|round(0,'floor')|int) }}{{ '☆' * (5 - (avg|round(0,'floor')|int)) }}</span>
+        <span class="font-semibold">{{ avg }}</span>
+        <span class="text-gray-500 text-sm">· {{ count }} review{{ 's' if count != 1 }}</span>
+      </div>
+      {% endif %}
+    </div>
+    <a href="{{ url_for('reviews.new') }}" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition self-start">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+      Leave a review
+    </a>
+  </div>
+
+  {% for cat, msg in get_flashed_messages(with_categories=true) %}
+    <div class="mb-6 text-sm px-4 py-2.5 rounded-lg {{ 'bg-red-500/10 border border-red-500/30 text-red-200' if cat=='error' else 'bg-green-500/10 border border-green-500/30 text-green-200' }}">{{ msg }}</div>
+  {% endfor %}
+
+  {% if reviews %}
+  <style>#reviewGrid summary::-webkit-details-marker{display:none}</style>
+  <div id="reviewGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 items-start">
+    {% for r in reviews %}
+    <div id="review-{{ r.id }}" class="rounded-2xl border border-ink-600 bg-ink-800/40 p-5 flex flex-col scroll-mt-24">
+      <div class="text-yellow-400 text-lg mb-3">{{ r.stars }}</div>
+      <p class="text-gray-200 leading-relaxed flex-1 whitespace-pre-line">“{{ r.body }}”</p>
+      <div class="mt-4 pt-4 border-t border-ink-600/60">
+        <div class="font-semibold text-white">{{ r.name }}</div>
+        <div class="text-xs text-gray-400">{{ [r.organisation, r.country]|select|join(' · ') }}</div>
+      </div>
+
+      <details class="mt-4 review-replies">
+        <summary class="text-sm text-ops-300 hover:text-ops-200 cursor-pointer select-none" style="list-style:none">
+          💬 View replies ({{ r.reply_count }})
+        </summary>
+        <div class="mt-3 space-y-3">
+          {% for rep in r.replies %}
+          <div class="rounded-lg bg-ink-900/40 border border-ink-600/60 p-3">
+            <div class="flex items-center gap-2 text-xs">
+              <span class="font-semibold {{ 'text-ops-300' if rep.is_staff else 'text-gray-200' }}">{{ rep.name }}</span>
+              {% if rep.is_staff %}<span class="px-1.5 py-0.5 rounded bg-ops-500/15 text-ops-300 border border-ops-500/30 text-[10px] font-bold uppercase tracking-wide">OpsLab</span>{% endif %}
+              <span class="text-gray-500">· {{ rep.created_at.strftime('%d %b %Y') }}</span>
+              {% if current_user.is_authenticated and (current_user.is_staff or current_user.is_admin) %}
+              <form method="post" action="{{ url_for('reviews.delete_reply', reply_id=rep.id) }}" class="ml-auto" onsubmit="return confirm('Delete this reply?');">
+                <button class="text-gray-500 hover:text-red-400">✕</button>
+              </form>
+              {% endif %}
+            </div>
+            <p class="text-sm text-gray-200 mt-1 whitespace-pre-line">{{ rep.body }}</p>
+          </div>
+          {% else %}
+          <p class="text-xs text-gray-500">No replies yet — ask the first question.</p>
+          {% endfor %}
+
+          <form method="post" action="{{ url_for('reviews.reply', rid=r.id) }}" class="space-y-2 pt-1">
+            {% if not (current_user.is_authenticated and (current_user.is_staff or current_user.is_admin)) %}
+            <input name="name" required class="form-input w-full text-sm" placeholder="Your name">
+            {% endif %}
+            <textarea name="body" required rows="2" class="form-textarea w-full text-sm" placeholder="Ask a question or reply…"></textarea>
+            <button class="px-4 py-2 text-xs font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-lg">
+              {{ 'Reply as OpsLab' if (current_user.is_authenticated and (current_user.is_staff or current_user.is_admin)) else 'Post reply' }}
+            </button>
+          </form>
+        </div>
+      </details>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="rounded-2xl border border-ink-600 bg-ink-800/40 p-10 text-center">
+    <p class="text-gray-400">No reviews yet — be the first to leave one!</p>
+    <a href="{{ url_for('reviews.new') }}" class="inline-block mt-4 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl">Leave a review</a>
+  </div>
+  {% endif %}
+</div>
+<script>
+  (function(){
+    if (location.hash && location.hash.indexOf('#review-') === 0){
+      var el = document.querySelector(location.hash);
+      if (el){
+        var d = el.querySelector('.review-replies');
+        if (d){ d.setAttribute('open',''); }
+        el.scrollIntoView();
+      }
+    }
+  })();
+</script>
+{% endblock %}

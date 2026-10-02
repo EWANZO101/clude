@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block auth_content %}
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;
+            background:#111827;padding:16px;">
+  <div style="width:100%;max-width:400px;">
+    <div class="card" style="padding:32px 28px;">
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="display:inline-flex;align-items:center;justify-content:center;
+                    background:#2563eb;border-radius:12px;width:56px;height:56px;margin-bottom:14px;">
+          <i class="fas fa-toolbox" style="font-size:24px;color:#fff;"></i>
+        </div>
+        <h1 style="font-size:22px;font-weight:700;color:#f9fafb;margin:0;">StockTool</h1>
+        <p style="color:#6b7280;font-size:14px;margin:4px 0 0;">Sign in to your account</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <i class="fas fa-triangle-exclamation" style="flex-shrink:0;"></i>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.login') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div style="margin-bottom:16px;">
+          <label class="form-label">Username</label>
+          <input type="text" name="username" class="form-input"
+                 placeholder="Enter your username"
+                 autocomplete="username" autocapitalize="none"
+                 required autofocus />
+        </div>
+        <div style="margin-bottom:20px;">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-input"
+                 placeholder="Enter your password"
+                 autocomplete="current-password" required />
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+          <input type="checkbox" name="remember" id="remember"
+                 style="width:18px;height:18px;accent-color:#2563eb;flex-shrink:0;cursor:pointer;" />
+          <label for="remember" style="font-size:14px;color:#9ca3af;cursor:pointer;">
+            Remember me for 8 hours
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="font-size:15px;padding:12px;">
+          <i class="fas fa-right-to-bracket"></i> Sign In
+        </button>
+      </form>
+    </div>
+    <p style="text-align:center;margin-top:14px;font-size:12px;color:#4b5563;">
+      StockTool — Internal Use Only
+    </p>
+  </div>
+</div>
+{% endblock %}

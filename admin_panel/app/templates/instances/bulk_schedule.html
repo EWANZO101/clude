@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Push update to multiple instances — {{ company.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('instances.list_instances', company_id=company.public_id) }}" class="crumb">← Instances</a>
+    <h1>Push update to multiple instances</h1>
+  </div>
+</div>
+
+<div class="panel">
+  {% if not packages %}
+    <div class="empty">No validated packages available yet.</div>
+  {% elif not instances %}
+    <div class="empty">No instances registered yet.</div>
+  {% else %}
+    <form method="post">
+      <label>Package</label>
+      <select name="package_id">
+        {% for month_label, month_packages in package_groups %}
+          <optgroup label="{{ month_label }}">
+            {% for p in month_packages %}
+              <option value="{{ p.public_id }}" title="{{ p.release_notes or '' }}">
+                v{{ p.version }} — {{ p.uploaded_at.strftime('%d %b') }} ({{ p.supported_os_list()|join(', ') }}){{ ' (latest)' if p.public_id == packages[0].public_id else '' }}
+              </option>
+            {% endfor %}
+          </optgroup>
+        {% endfor %}
+      </select>
+
+      <label>When</label>
+      <select name="mode" onchange="document.getElementById('custom-dt').style.display = this.value === 'custom' ? 'block' : 'none';">
+        <option value="now">Update now</option>
+        <option value="schedule" selected>Use each instance's configured schedule</option>
+        <option value="custom">Custom date &amp; time (same for all)</option>
+      </select>
+      <div id="custom-dt" style="display:none;">
+        <label>Custom date &amp; time (UTC)</label>
+        <input type="datetime-local" name="custom_datetime">
+      </div>
+
+      <label>Instances</label>
+      <div class="checklist">
+        {% for i in instances %}
+          <label>
+            <input type="checkbox" name="instance_ids" value="{{ i.public_id }}">
+            {{ i.display_name() }} <span class="muted">({{ i.os }})</span>
+          </label>
+        {% endfor %}
+      </div>
+
+      <button type="submit" style="margin-top:16px;">Push to selected instances</button>
+    </form>
+    <p class="muted" style="margin-top:14px; font-size:12px;">
+      Only instances whose OS is supported by the chosen package will succeed —
+      others are reported individually rather than blocking the whole batch.
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

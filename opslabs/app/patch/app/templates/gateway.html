@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#05080f">
+<title>OpsLab Systems · Get started</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] },
+        colors: {
+          ink: { 950:'#04070e', 900:'#070b16', 800:'#0b1224', 700:'#111c33', 600:'#1b2a4a' },
+          ops: { 400:'#429fff', 500:'#2196f3', 600:'#1976d2', 700:'#0d47a1' },
+        },
+        boxShadow: {
+          glow: '0 0 0 1px rgba(33,150,243,.25), 0 12px 40px -8px rgba(33,150,243,.35)',
+        },
+      }
+    }
+  }
+</script>
+<style>
+  html, body { background:#04070e; color:#e6edf7; height:100%; }
+  body {
+    background-image:
+      radial-gradient(900px 600px at 85% -10%, rgba(33,150,243,.10), transparent 60%),
+      radial-gradient(700px 500px at 10% 20%, rgba(13,71,161,.10), transparent 60%),
+      linear-gradient(180deg, #04070e, #060a14);
+    background-attachment: fixed;
+  }
+  .choice-card {
+    display:flex; flex-direction:column; height:100%; text-align:left;
+    padding:28px; border-radius:20px; border:1px solid #1b2a4a;
+    background: rgba(11,18,36,.55); transition: border-color .15s, background .15s, transform .15s;
+  }
+  .choice-card:hover { border-color: rgba(33,150,243,.5); background: rgba(11,18,36,.85); transform: translateY(-2px); }
+</style>
+</head>
+<body class="font-sans antialiased min-h-screen flex items-center justify-center px-4 py-10">
+
+<div class="w-full max-w-3xl">
+  <div class="flex items-center justify-center gap-2.5 mb-8">
+    <svg viewBox="0 0 64 64" width="30" height="30">
+      <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="#2196f3" stroke-width="4"/>
+      <polygon points="32,4 56,18 32,32" fill="#2196f3"/>
+      <polygon points="32,32 56,18 56,46 32,60" fill="#ffffff" opacity=".95"/>
+    </svg>
+    <span class="font-extrabold text-lg tracking-tight"><span class="text-ops-500">OpsLab</span> Systems</span>
+  </div>
+
+  <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-center">What are you looking for today?</h1>
+  <p class="text-gray-400 text-center mt-2 mb-10 text-sm">Pick one — you can always reach the other from the site later.</p>
+
+  <div class="grid sm:grid-cols-2 gap-5">
+    <a href="#" id="choiceCloud" class="choice-card group">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style="background:#2196f31f;border:1px solid #2196f34d;color:#71b7ff">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h10a4 4 0 000-8 5 5 0 00-9.6-1.5A4 4 0 003 15z"/></svg>
+      </div>
+      <h2 class="font-bold text-lg text-white mb-1">Websites, FiveM, hosting &amp; tickets</h2>
+      <p class="text-sm text-gray-400 leading-relaxed">Web development, FiveM development, hosting, system setup, tech support — browse services and open a ticket.</p>
+      <span class="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-ops-300 group-hover:text-white transition">
+        Continue <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </span>
+    </a>
+
+    <a href="#" id="choiceOnsite" class="choice-card group">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style="background:#ef44441f;border:1px solid #ef44444d;color:#fca5a5">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M5.106 12.5a10.5 10.5 0 0113.788 0M1.5 8.5a15.5 15.5 0 0121 0M12 20h.01"/></svg>
+      </div>
+      <h2 class="font-bold text-lg text-white mb-1">On-site IT &amp; networking</h2>
+      <p class="text-sm text-gray-400 leading-relaxed">Need someone at your location — network setup, hardware, wiring, on-site troubleshooting.</p>
+      <span class="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-ops-300 group-hover:text-white transition">
+        Continue <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </span>
+    </a>
+  </div>
+
+  <div class="text-center mt-8">
+    <a href="#" id="choiceSkip" class="text-xs text-gray-500 hover:text-gray-300 transition">Skip — show me everything</a>
+  </div>
+</div>
+
+<script>
+  function enter(dest) {
+    document.cookie = "ols_entry=1; path=/; max-age=" + (60 * 60 * 24 * 365);
+    window.location.href = dest;
+  }
+  document.getElementById('choiceCloud').addEventListener('click', function (e) { e.preventDefault(); enter('/'); });
+  document.getElementById('choiceOnsite').addEventListener('click', function (e) { e.preventDefault(); enter('/onsitesupport'); });
+  document.getElementById('choiceSkip').addEventListener('click', function (e) { e.preventDefault(); enter('/'); });
+</script>
+</body>
+</html>

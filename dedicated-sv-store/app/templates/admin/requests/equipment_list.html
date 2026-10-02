@@ -1,0 +1,32 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Customer Equipment — Admin{% endblock %}
+{% block page_title %}Customer equipment{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="p-4 border-b border-border">
+    <form method="GET" class="flex gap-2">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search by serial, asset # or model…" class="input-field max-w-sm">
+      <button type="submit" class="btn-secondary">Search</button>
+    </form>
+  </div>
+  <table class="table-base">
+    <thead><tr><th>Request</th><th>Type</th><th>Manufacturer / Model</th><th>Serial</th><th>Qty</th><th></th></tr></thead>
+    <tbody>
+      {% for item in pagination.items %}
+      <tr>
+        <td class="text-text-secondary">{{ item.request.request_number }}</td>
+        <td class="text-text-secondary">{{ item.equipment_type.name }}</td>
+        <td class="font-medium text-text-primary">{{ item.manufacturer }} {{ item.model }}</td>
+        <td class="text-text-secondary font-mono text-xs">{{ item.serial_number or "—" }}</td>
+        <td>{{ item.quantity }}</td>
+        <td><a href="{{ url_for('admin.request_detail', request_id=item.request_id) }}" class="text-brand-400 hover:text-brand-300">View request</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-text-muted py-8">No equipment found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.customer_equipment", q=q) }}
+</div>
+{% endblock %}

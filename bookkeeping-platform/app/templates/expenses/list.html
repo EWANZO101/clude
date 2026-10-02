@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Expenses{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Expenses</h1>
+  <a href="{{ url_for('expenses.new_expense') }}" class="btn btn-primary btn-sm">+ New expense</a>
+</div>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">Date</th><th class="p-3">Description</th><th class="p-3">Account</th><th class="p-3 text-right">Amount</th></tr></thead>
+    <tbody>
+      {% for e in expenses %}
+      <tr class="row-border">
+        <td class="p-3">{{ e.expense_date }}</td>
+        <td class="p-3">{{ e.description }}</td>
+        <td class="p-3">{{ e.expense_account.name }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(e.amount) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="empty-state">No expenses yet.</td></tr>
+      {% endfor %}
+      <tbody id="queued-expenses-list"></tbody>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

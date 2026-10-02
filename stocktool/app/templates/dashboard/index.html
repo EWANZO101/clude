@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Dashboard</h1>
+  <p class="page-subtitle">{{ now.strftime('%A, %d %B %Y') if now else '' }}</p>
+</div>
+
+<!-- Stat cards — 2-col on phone, 4-col on desktop -->
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;">
+
+  <div class="stat-card">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+      <div style="min-width:0;">
+        <div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;
+                    letter-spacing:.05em;margin-bottom:4px;">Items</div>
+        <div style="font-size:28px;font-weight:800;color:#f9fafb;line-height:1;">{{ total_items }}</div>
+      </div>
+      <div style="background:#1e3a5f;border-radius:8px;padding:9px;flex-shrink:0;">
+        <i class="fas fa-boxes-stacked" style="color:#60a5fa;font-size:16px;"></i>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:12px;">
+      {% if out_of_stock > 0 %}
+      <span style="color:#f87171;">{{ out_of_stock }} out · </span>
+      {% endif %}
+      <span style="color:#fbbf24;">{{ low_stock_items }} low</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+      <div style="min-width:0;">
+        <div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;
+                    letter-spacing:.05em;margin-bottom:4px;">Tools</div>
+        <div style="font-size:28px;font-weight:800;color:#f9fafb;line-height:1;">{{ total_tools }}</div>
+      </div>
+      <div style="background:#1a3a2a;border-radius:8px;padding:9px;flex-shrink:0;">
+        <i class="fas fa-wrench" style="color:#34d399;font-size:16px;"></i>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:12px;color:#34d399;">{{ available_tools }} available</div>
+  </div>
+
+  <div class="stat-card">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+      <div style="min-width:0;">
+        <div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;
+                    letter-spacing:.05em;margin-bottom:4px;">Out</div>
+        <div style="font-size:28px;font-weight:800;color:#f9fafb;line-height:1;">{{ checked_out_tools }}</div>
+      </div>
+      <div style="background:#1e3050;border-radius:8px;padding:9px;flex-shrink:0;">
+        <i class="fas fa-arrow-up-from-bracket" style="color:#818cf8;font-size:16px;"></i>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:12px;color:#6b7280;">In use</div>
+  </div>
+
+  <div class="stat-card">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+      <div style="min-width:0;">
+        <div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;
+                    letter-spacing:.05em;margin-bottom:4px;">Issues</div>
+        <div style="font-size:28px;font-weight:800;color:#f9fafb;line-height:1;">{{ broken_tools }}</div>
+      </div>
+      <div style="background:#3b1a1a;border-radius:8px;padding:9px;flex-shrink:0;">
+        <i class="fas fa-triangle-exclamation" style="color:#f87171;font-size:16px;"></i>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:12px;color:#6b7280;">Broken / repair</div>
+  </div>
+</div>
+
+<!-- Quick actions on mobile -->
+<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+  <a href="{{ url_for('tools.index') }}?status=available" class="btn btn-secondary" style="flex:1;justify-content:center;">
+    <i class="fas fa-wrench"></i> <span>Available Tools</span>
+  </a>
+  <a href="{{ url_for('items.index') }}?stock=low" class="btn btn-secondary" style="flex:1;justify-content:center;">
+    <i class="fas fa-triangle-exclamation"></i> <span>Low Stock</span>
+  </a>
+</div>
+
+<!-- Recent checkouts -->
+<div class="card" style="margin-bottom:16px;">
+  <div style="padding:14px 16px;border-bottom:1px solid #374151;display:flex;
+              justify-content:space-between;align-items:center;">
+    <h3 style="font-size:14px;font-weight:600;color:#f9fafb;margin:0;">
+      <i class="fas fa-clock-rotate-left" style="color:#818cf8;"></i> Recent Checkouts
+    </h3>
+    <a href="{{ url_for('logs.tool_history') }}" style="font-size:12px;color:#60a5fa;">All →</a>
+  </div>
+  {% if recent_checkouts %}
+    {% for h in recent_checkouts %}
+    <div style="padding:11px 16px;border-bottom:1px solid #1f2937;
+                display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <div style="min-width:0;">
+        <div style="font-size:14px;font-weight:500;color:#f3f4f6;
+                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          {{ h.tool.name if h.tool else 'Unknown' }}
+        </div>
+        <div style="font-size:12px;color:#6b7280;">{{ h.user.username if h.user else '—' }}</div>
+      </div>
+      <div style="font-size:12px;color:#4b5563;white-space:nowrap;flex-shrink:0;">
+        {{ h.created_at.strftime('%d %b %H:%M') if h.created_at else '' }}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="padding:24px;text-align:center;color:#4b5563;font-size:14px;">No recent checkouts</div>
+  {% endif %}
+</div>
+
+<!-- Low stock -->
+{% if low_stock_list %}
+<div class="card" style="margin-bottom:16px;">
+  <div style="padding:14px 16px;border-bottom:1px solid #374151;">
+    <h3 style="font-size:14px;font-weight:600;color:#f9fafb;margin:0;">
+      <i class="fas fa-triangle-exclamation" style="color:#fbbf24;"></i> Low Stock Items
+    </h3>
+  </div>
+  {% for item in low_stock_list %}
+  <div style="padding:11px 16px;border-bottom:1px solid #1f2937;
+              display:flex;justify-content:space-between;align-items:center;gap:8px;">
+    <a href="{{ url_for('items.view', item_id=item.id) }}"
+       style="font-size:14px;font-weight:500;color:#60a5fa;text-decoration:none;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">
+      {{ item.name }}
+    </a>
+    {% if item.quantity == 0 %}
+      <span class="badge" style="background:#450a0a;color:#fca5a5;flex-shrink:0;">Out</span>
+    {% else %}
+      <span class="badge" style="background:#451a03;color:#fcd34d;flex-shrink:0;">
+        {{ item.quantity }} {{ item.unit or '' }}
+      </span>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Recent activity -->
+<div class="card">
+  <div style="padding:14px 16px;border-bottom:1px solid #374151;display:flex;
+              justify-content:space-between;align-items:center;">
+    <h3 style="font-size:14px;font-weight:600;color:#f9fafb;margin:0;">
+      <i class="fas fa-scroll" style="color:#34d399;"></i> Recent Activity
+    </h3>
+    <a href="{{ url_for('logs.index') }}" style="font-size:12px;color:#60a5fa;">All →</a>
+  </div>
+  {% if recent_logs %}
+    {% for log in recent_logs %}
+    <div style="padding:10px 16px;border-bottom:1px solid #1f2937;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="min-width:0;">
+          <span style="font-size:11px;font-family:monospace;background:#111827;color:#34d399;
+                       padding:1px 7px;border-radius:4px;white-space:nowrap;">
+            {{ log.action.replace('_',' ') }}
+          </span>
+          {% if log.entity_name %}
+          <div style="font-size:12px;color:#6b7280;margin-top:3px;
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            {{ log.entity_name }}
+          </div>
+          {% endif %}
+        </div>
+        <div style="font-size:11px;color:#4b5563;white-space:nowrap;flex-shrink:0;text-align:right;">
+          <div>{{ log.user.username if log.user else 'System' }}</div>
+          <div>{{ log.created_at.strftime('%d %b %H:%M') if log.created_at else '' }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="padding:24px;text-align:center;color:#4b5563;font-size:14px;">No activity yet</div>
+  {% endif %}
+</div>
+{% endblock %}

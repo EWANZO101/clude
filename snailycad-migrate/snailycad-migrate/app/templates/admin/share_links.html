@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Share links — Admin — {{ app_name }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+
+<div class="bg-panel border border-border rounded-lg p-4 mb-6">
+  <h2 class="text-sm font-semibold text-gray-200 mb-3">
+    Pending approval ({{ pending|length }})
+  </h2>
+  {% if pending %}
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-gray-500 border-b border-border">
+          <th class="py-2">Requested by</th>
+          <th class="py-2">Export</th>
+          <th class="py-2">Duration requested</th>
+          <th class="py-2">Requested</th>
+          <th class="py-2"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for link in pending %}
+        <tr class="border-b border-border/50">
+          <td class="py-2 text-gray-300">{{ link.creator.email if link.creator else "—" }}</td>
+          <td class="py-2 text-gray-400">
+            <a href="{{ url_for('exports.detail', export_id=link.export_id) }}" class="text-blue-400 hover:text-blue-300">
+              {{ link.export_id[:8] }}
+            </a>
+          </td>
+          <td class="py-2 text-gray-300">{{ link.requested_hours }} hours ({{ "%.1f"|format(link.requested_hours / 24) }} days)</td>
+          <td class="py-2 text-gray-500">{{ link.created_at }}</td>
+          <td class="py-2 text-right space-x-3">
+            <form method="POST" action="{{ url_for('admin.approve_share_link', link_id=link.id) }}" class="inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="text-green-400 hover:text-green-300 text-xs">Approve</button>
+            </form>
+            <form method="POST" action="{{ url_for('admin.deny_share_link', link_id=link.id) }}" class="inline"
+                  onsubmit="return confirm('Deny this share link request?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="text-red-400 hover:text-red-300 text-xs">Deny</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="text-sm text-gray-500">Nothing waiting on approval.</p>
+  {% endif %}
+</div>
+
+<div class="bg-panel border border-border rounded-lg p-4">
+  <h2 class="text-sm font-semibold text-gray-200 mb-3">All share links</h2>
+  <table class="w-full text-xs">
+    <thead>
+      <tr class="text-left text-gray-500 border-b border-border">
+        <th class="py-2">Created</th>
+        <th class="py-2">By</th>
+        <th class="py-2">Export</th>
+        <th class="py-2">Expires</th>
+        <th class="py-2">Status</th>
+        <th class="py-2">Downloads</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for link in all_links %}
+      <tr class="border-b border-border/50">
+        <td class="py-1.5 text-gray-400">{{ link.created_at }}</td>
+        <td class="py-1.5 text-gray-300">{{ link.creator.email if link.creator else "—" }}</td>
+        <td class="py-1.5 text-gray-400">{{ link.export_id[:8] }}</td>
+        <td class="py-1.5 text-gray-400">{{ link.expires_at }}</td>
+        <td class="py-1.5">
+          {% if link.revoked %}<span class="text-gray-500">Revoked</span>
+          {% elif not link.approved %}<span class="text-yellow-400">Pending</span>
+          {% elif link.is_expired %}<span class="text-gray-500">Expired</span>
+          {% elif link.is_locked %}<span class="text-red-400">Locked</span>
+          {% else %}<span class="text-green-400">Active</span>{% endif %}
+        </td>
+        <td class="py-1.5 text-gray-400">{{ link.download_count }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="py-4 text-center text-gray-500">No share links yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Inventory Ops instances — {{ company.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('companies.detail', company_id=company.public_id) }}" class="crumb">← {{ company.name }}</a>
+    <h1>Inventory Ops instances</h1>
+  </div>
+</div>
+
+<div class="panel" style="padding:8px 22px 20px;">
+  {% if instances %}
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>Name</th><th>OS</th><th>Version</th><th>Connection</th><th>Update status</th><th>Last seen</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for i in instances %}
+          {% set d = i.active_deployment() %}
+          <tr>
+            <td style="font-weight:600;">{{ i.display_name() }}</td>
+            <td>{{ i.os }}{% if i.os_version %} <span class="muted">({{ i.os_version }})</span>{% endif %}</td>
+            <td class="mono">{{ i.app_version or '—' }}</td>
+            <td>
+              {% if i.connection_status == 'online' %}
+                <span class="pill pill-green">Online</span>
+              {% else %}
+                <span class="pill pill-muted">Offline</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if d %}
+                <span class="pill pill-amber">{{ d.status.replace('_',' ')|capitalize }} → v{{ d.package.version }}</span>
+              {% else %}
+                <span class="muted">Up to date</span>
+              {% endif %}
+            </td>
+            <td>{{ i.last_seen_at | friendly_dt if i.last_seen_at else 'never' }}</td>
+            <td style="white-space:nowrap;">
+              <a href="{{ url_for('inventory_ops_instances.detail', company_id=company.public_id, instance_id=i.public_id) }}" class="btn btn-secondary btn-sm">Open →</a>
+              {% if role in ["owner", "administrator"] %}
+                <form method="post" action="{{ url_for('inventory_ops_instances.delete_instance', company_id=company.public_id, instance_id=i.public_id) }}" style="display:inline;" onsubmit="return confirm('Permanently delete {{ i.display_name()|e }}? This removes its command/update history. This cannot be undone.');">
+                  <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="empty">No instances registered yet. Use an enrollment token below to connect your first Inventory Ops machine.</div>
+  {% endif %}
+</div>
+
+{% if role in ["owner", "administrator", "manager"] %}
+<div class="panel">
+  <h2>Enrollment tokens</h2>
+  <p class="muted">Run the install command below on a Linux or Windows machine; it registers a new Inventory Ops instance against this company automatically.</p>
+
+  {% if tokens %}
+    <div class="table-scroll">
+    <table style="margin-bottom:20px;">
+      <thead><tr><th>Label</th><th>Uses</th><th>Expires</th><th class="wrap-cell">Install command</th><th></th></tr></thead>
+      <tbody>
+        {% for t in tokens %}
+          <tr>
+            <td>{{ t.label or '—' }}</td>
+            <td class="mono">{{ t.use_count }}{% if t.max_uses %} / {{ t.max_uses }}{% endif %}</td>
+            <td class="muted">{{ t.expires_at | friendly_date if t.expires_at else 'never' }}</td>
+            <td class="wrap-cell">
+              <div class="install-tabs" data-token="{{ t.token }}">
+                <div class="install-tab-buttons">
+                  <button type="button" class="install-tab-btn active" data-os="linux">Linux</button>
+                  <button type="button" class="install-tab-btn" data-os="windows">Windows</button>
+                </div>
+                <div class="install-tab-panel" data-os-panel="linux">
+                  <code class="install-cmd">curl -fsSL {{ config.BASE_URL }}/install.sh | sudo bash -s -- --token {{ t.token }} --admin-url {{ config.BASE_URL }}</code>
+                  <button type="button" class="btn btn-secondary btn-sm copy-btn">Copy</button>
+                </div>
+                <div class="install-tab-panel" data-os-panel="windows" style="display:none;">
+                  <code class="install-cmd">irm {{ config.BASE_URL }}/install.ps1 -OutFile install.ps1; .\install.ps1 -Token {{ t.token }} -AdminUrl {{ config.BASE_URL }}</code>
+                  <button type="button" class="btn btn-secondary btn-sm copy-btn">Copy</button>
+                  <div class="muted" style="font-size:11px; margin-top:4px;">Run in an elevated (Administrator) PowerShell window.</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <form method="post" action="{{ url_for('inventory_ops_instances.revoke_token', company_id=company.public_id, token_id=t.id) }}">
+                <button type="submit" class="btn btn-danger btn-sm">Revoke</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% endif %}
+
+  <p class="muted" style="font-size:12px;">
+    Same install script the Kiosk fleet uses — this token is what it calls
+    <code>POST /api/v1/instances/register</code> with, and the token itself is what tells
+    the Agent it's enrolling for Inventory Ops rather than Kiosk.
+  </p>
+
+  <form method="post" action="{{ url_for('inventory_ops_instances.new_token', company_id=company.public_id) }}" class="form-row" style="margin-top:14px;">
+    <div>
+      <label>Label (optional)</label>
+      <input type="text" name="label" placeholder="e.g. Front desk PC">
+    </div>
+    <div>
+      <label>Expires in (days, optional)</label>
+      <input type="text" name="expires_in_days" placeholder="never">
+    </div>
+    <div>
+      <label>Max uses (optional)</label>
+      <input type="text" name="max_uses" placeholder="unlimited">
+    </div>
+    <div style="flex:0 0 auto;">
+      <button type="submit">Generate token</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

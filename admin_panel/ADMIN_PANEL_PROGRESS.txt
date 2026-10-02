@@ -1,0 +1,408 @@
+OPSLAB ADMIN PANEL — REMAKE BUILD PROGRESS
+============================================
+STATUS: The 9-part Admin Panel plan is COMPLETE as of this zip.
+
+(Central multi-tenant Admin Panel from the "Kiosk Management System – Complete Remake
+Specification" doc — separate from, and much bigger than, the old local-only Admin
+Panel already folded into the StockTool Kiosk exe.)
+
+WHAT YOU ASKED FOR (recap, full history)
+-------------------------------------------
+- Build the (new, central) Admin Panel first, out of the full remake spec.
+- Do it in parts, each part delivered as a zip with full code.
+- After each part, leave a txt file listing what's still to be done.
+- Also keep a recap of everything asked for.
+- Tell you up front how many parts the Admin Panel will take -> answered: 9 parts.
+- Parts 2 through 6 delivered one at a time on request ("go to part 2", "3", "4",
+  "keep going", "keep going with the next part").
+- Mid-build, you hit a real deployment error on your own server: SQLite said
+  "no such table: users" at /root/admin_panel. Cause: migrations were never
+  run against that server's database. Answered plainly: there's no seeded
+  admin login, every account (including the first) is created via normal
+  signup; platform-admin access is a separate grant via
+  `flask create-superuser ... --platform-admin` or hand-setting
+  is_platform_admin=True. Fix was to run `flask db init` (one-time — you
+  reported `migrations` didn't exist yet), then `flask db migrate` +
+  `flask db upgrade`.
+- "keep going" -> Part 7 built (monitoring), but you also asked to
+  "keep going to part 10" — flagged at the time that the original plan only
+  has 9 parts total, so there is no Part 10 in this plan; that message
+  continued through Part 8 and got interrupted partway (Part 8 code was
+  written and smoke-tested but not yet packaged/committed to a zip when the
+  turn ended).
+- "keep going" (again) -> this zip: Part 8 finished/packaged, Part 9 built,
+  and the plan is now complete at Part 9 as originally scoped.
+
+Source docs used: the "Kiosk Management System – Complete Remake Specification" (the
+new architecture: Admin Panel + Instance Agent + Kiosk App + Rescue System), and the
+"StockTool Kiosk Complete Technical Reference" (audit of the CURRENT kiosk app, v2.3.0
+— used as the functional reference for what the eventual Kiosk Application / Instance
+Agent parts need to preserve, per spec Section 3).
+
+TOTAL PLAN: 9 PARTS for the Admin Panel — ALL DONE
+-----------------------------------------------------
+1. [DONE] Scaffold + DB models + Auth + Company/Role system
+2. [DONE] Instance registration & agent-facing API (register, heartbeat, identity, status)
+3. [DONE] Instance dashboard + remote config push/versioning
+4. [DONE] Update packages: ZIP upload, validation, storage, release metadata
+5. [DONE] Update scheduling: push/schedule, priority hierarchy, 9PM UK default w/ BST/GMT
+6. [DONE] Update lifecycle: state machine, health checks, Last Known Good, rollback
+7. [DONE] Monitoring: dashboard overview, kiosk diagnostics, remote monitoring table
+8. [DONE] Remote access tokens + audit log (security hardening)
+9. [DONE] Staged rollouts + configuration rollback + final polish
+
+There is no Part 10 in this plan. Anything past this point is new scope —
+see "NOT BUILT AT ALL" below for the obvious next candidates.
+
+PART-BY-PART SUMMARY
+-----------------------
+
+PART 1: Flask app factory, auth (signup/verify/reset/change-password/profile),
+Company/CompanyMembership/CompanyInvite, RBAC (owner/administrator/manager/
+operator + permission matrix), member invites, dark UI matching the kiosk
+design system.
+
+PART 2: Instance + EnrollmentToken models, admin instance list/detail UI,
+agent-facing /api/v1 register/heartbeat/me with argon2-hashed per-instance
+credentials issued once at registration.
+
+PART 3: InstanceConfig model (versioned, append-only), Configuration panel,
+agent poll/ack endpoints, auto-supersede on double-push before ack.
+
+PART 4: User.is_platform_admin, UpdatePackage model + /admin/releases, ZIP
+validation (zip-slip protection, update.json + rescue/ requirements, SHA-256
+checksum), withdraw/reinstate.
+
+PART 5: UpdateDeployment model, priority hierarchy (kiosk -> company -> 9PM UK
+system default) via zoneinfo (correct BST/GMT), single + bulk push, cancel,
+supersede-before-start.
+
+PART 6: Full deployment lifecycle (scheduled -> waiting -> downloading ->
+validating -> preparing -> installing -> restarting -> health_check ->
+successful, or failed -> rolling_back -> rolled_back), forward-only state
+machine, "successful" gated on a passed health check, Last Known Good only
+ever set on genuine success, agent download/status-report endpoints.
+
+PART 7: Fleet stat cards (total/online/offline/updating/failed-24h) per
+company, "Update status" column on the instances table, Diagnostics panel on
+instance detail (health, tunnel, deployment event log), cross-company
+platform dashboard at /admin/dashboard for OpsLab staff.
+
+PART 8: RemoteAccessToken model + "Request remote access token" button
+(issues/tracks only — tunnel server not built, said plainly in the UI),
+AuditLogEntry model + log_action() wired into the security-relevant mutation
+points (tokens, config, updates, membership changes, package upload/withdraw),
+company-scoped /audit-log page. Also fixed a real bug found while testing:
+.env.example's placeholder MAIL_SERVER value made any email-triggering action
+crash with an unhandled socket error instead of degrading gracefully — now
+wrapped in try/except and the placeholder was removed from .env.example.
+
+PART 9: StagedRollout / StagedRolloutInstance models + /companies/<id>/rollouts
+— batched push (batch 1 on creation, manual "Advance" per subsequent batch,
+one instance's failure never blocks its batch-mates), auto-completion on the
+last batch, halt. Configuration rollback: "Restore" button on any applied
+config version pushes its content as a brand-new version rather than rewriting
+history. Both smoke-tested end to end (5-instance/3-batch rollout; config
+restore reproducing exact old content as a new pending push).
+
+WHAT WAS TESTED, NOT JUST WRITTEN
+------------------------------------
+Every part in this build was smoke-tested through the actual Flask test
+client (or, for pure functions like the BST/GMT scheduler and ZIP validator,
+directly) before being packaged — not just written and assumed correct.
+That includes deliberately adversarial cases: zip-slip attempts, invalid
+state-machine jumps, unauthorized package downloads, stale config acks,
+double-pushes-before-ack, rollout advance-after-completion, and the email
+crash bug mentioned under Part 8. All test scripts were deleted before
+packaging — only application code ships in the zip.
+
+NOT BUILT AT ALL (explicitly out of scope for this 9-part plan)
+---------------------------------------------------------------------
+- The Instance Agent itself — the piece that would actually run on a
+  customer's machine, download packages, apply configs, run real health
+  checks, and report all of it back through the endpoints this Admin Panel
+  now exposes. Parts 2-9 built the Admin Panel's side of directing and
+  recording all of that; nothing in this zip runs on a kiosk.
+- The rewritten Kiosk Application (the actual touch-UI inventory app).
+- The Ubuntu/Debian install one-liner and the Windows MSI.
+- The outbound remote-tunnel server component — Part 8 issues/tracks access
+  tokens for it, but the relay/tunnel service itself doesn't exist.
+- Full cryptographic package signing (spec Section 18's "signature/
+  authentication" check) — deferred since it needs the Agent's key
+  infrastructure to mean anything; noted in code rather than faked.
+
+If you want to keep going, the natural next step is scoping the Instance
+Agent as its own numbered-parts project, the same way this one was.
+
+POST-COMPLETION: PLATFORM USER MANAGEMENT + A REAL BUG FOUND VIA CROSS-
+PROJECT INTEGRATION TESTING (this update)
+-----------------------------------------------------------------------
+You uploaded your live server's admin_panel directory partway through the
+Instance Agent build. It turned out to be running a more advanced version
+of this Admin Panel than the one in the working zips — most notably a full
+platform user-management area (`/admin/users` — list, create, view,
+toggle-active, toggle-platform-admin, verify-email — plus
+`/admin/settings/toggle-signups`), on top of everything documented above.
+That version has been adopted as ground truth going forward; this zip
+reflects it, not a re-derivation.
+
+While using that upload to verify a gap flagged in the Instance Agent's own
+Part 4 notes (whether the real automatic-rollback status reports actually
+round-trip against a real Admin Panel — the Agent's Part 4 was originally
+built and tested with a scripted fake server, since the real one wasn't
+available in that build environment), a real bug was found and fixed HERE,
+in this project's state machine understanding — see the Instance Agent's
+progress notes for the full story, but the short version: the Agent was
+reporting a direct `health_check -> rolling_back` transition, which
+`ALLOWED_TRANSITIONS` correctly rejects (only `successful`/`failed` are
+legal from `health_check`). This Admin Panel's transition table was
+already correct; the fix was entirely on the Agent side (report `failed`
+first, matching every other failure path). Verified against a real running
+copy of this Admin Panel end-to-end after the fix: the full
+`health_check -> failed -> rolling_back -> rolled_back` sequence round-trips
+correctly, `app_version`/Last Known Good stay correctly unadvanced, and the
+Admin Panel UI shows the rollback in history.
+
+SETUP REMINDER
+-----------------
+See README.md for install/run steps. On a fresh server:
+  flask db init            (one-time only, if migrations/ doesn't exist yet)
+  flask db migrate -m "..."
+  flask db upgrade
+Re-run migrate+upgrade after unzipping this part — several new tables
+(staged_rollouts, staged_rollout_instances, remote_access_tokens,
+audit_log_entries) and the config-restore route depend on the schema being
+current. Grant platform-admin with:
+  flask create-superuser ops@yourcompany.com "Ops Admin" --platform-admin
+
+RELEASES FIX (this update): auto-fix version + safe delete
+------------------------------------------------------------------
+Directly prompted by the real v3.1 incident: a package was uploaded with
+the wrong version typed into the form (its own update.json said something
+different), and the only way to fix it was rebuilding and re-uploading the
+whole ZIP. This update, adopted from an improved version of the releases
+feature you provided:
+- `UpdatePackage.delete_blocking_reason()` — a package is only safe to hard-
+  delete if nothing points at it: no deployment history, and no instance
+  currently reporting it as its running or Last-Known-Good version.
+  Otherwise, delete is refused with a clear explanation and Withdraw is
+  suggested instead (which keeps history intact but stops further pushes).
+- `peek_manifest_version()` — reads the version actually baked into a
+  package's own update.json, independent of what was typed on the upload
+  form
+- New route `/admin/releases/<id>/autofix-version` — for an invalid
+  package, re-validates against its own manifest's version instead of the
+  wrong one from the form, refusing if that version already exists as a
+  different package (conflict) or if the manifest version already matched
+  (meaning the mismatch wasn't the actual problem)
+- New route `/admin/releases/<id>/delete` — hard delete, gated by the
+  guard above; the Delete button only appears in the UI for packages that
+  are actually safe to remove
+
+Verified for real, not just adopted on faith: uploaded a package with a
+deliberate form/manifest version mismatch, confirmed it was marked invalid,
+ran auto-fix, confirmed the version corrected and the package became
+validated; confirmed auto-fix correctly refuses when the target version
+already exists as a separate package; confirmed an unused package can be
+deleted (row and file both actually removed) and its Delete button appears;
+then pushed a package to a real instance and confirmed delete on that same
+package is now correctly refused, with the Delete button no longer shown at
+all in the list.
+
+DEV FILES CLARITY + RELEASES UPLOAD DEBUGGING + CLIENT PORTAL (this update)
+------------------------------------------------------------------
+Three asks in one pass:
+
+- Dev Files (/admin/dev-files/): added an "at a glance" row of three
+  color-coded cards above the file tables (Admin Panel = red "Live now",
+  Kiosk App = blue "Ships via a release", Instance Agent = purple "Ships
+  via Publish"), each linking down to its section; matching colored pills
+  repeated on each section's own heading and a colored top border on each
+  panel. Existing per-system grouping/backup/upload logic untouched.
+
+- Releases upload debugging: `validate_update_zip` now captures every
+  filename actually inside the uploaded zip (capped at 500 entries) before
+  any rejection, stored on a new `UpdatePackage.file_listing` column
+  (migration f2a6c3e91d47 — applied directly against the live sqlite file
+  and stamped, since this repo's migration history already has two
+  unreconciled heads off b4d8f2a1c6e9; see that migration's docstring).
+  Release detail page now shows an expandable "Package contents" panel
+  (auto-expanded when the package is invalid) alongside the existing
+  Validation log, and the Releases list's "Invalid" pill now shows an
+  error count and the first error as a tooltip.
+
+- Client Portal (Instances): new `operate_kiosk` permission (start/stop/
+  restart + Items & Tools + Local Kiosk Users on an instance a role can
+  already see) and `operate_kiosk_updates` (push/cancel an update on ONE
+  instance, deliberately separate from `manage_updates` so it doesn't also
+  unlock bulk-scheduling or staged rollouts). The existing "operator"
+  company role now holds both — this IS the client-facing role: a
+  customer's own staff, logged in and scoped to only their own company,
+  seeing exactly those actions and nothing else (no config editing, no
+  arbitrary run-command, no remote access, no rename/delete, no enrollment
+  tokens, no member management). instances/detail.html now gates on
+  explicit `can_operate_kiosk`/`can_manage_instances`/`can_manage_config`/
+  `can_manage_updates` booleans computed in the view instead of hardcoded
+  role-name lists. Also: a user in exactly one non-platform-admin company
+  now lands straight on that company's Instances page after login instead
+  of the company picker; fixed a pre-existing nav bug where "Audit log"
+  was shown to (and 403'd for) manager/operator, who never had the
+  `manage_members` permission it requires; renamed "Fleet" to "Instances"
+  throughout for consistency with how it's actually talked about.
+
+Verified for real: created throwaway operator- and manager-role company
+memberships, logged in as each over the live site, and confirmed by
+inspecting the rendered instance detail page that operator sees exactly
+start/stop/restart, item/tool and local-user CRUD, export/backup, and
+single-instance update push — nothing else — while manager's prior
+(broader) access was unchanged; confirmed operator gets 403 on bulk-
+schedule and staged-rollout-creation directly by URL; confirmed the
+single-company dashboard redirect fires for operator and not for the
+platform admin; uploaded a real zip containing an Admin-Panel fingerprint
+file through Releases → Upload and confirmed both the validation error and
+the actual zip contents render on the detail page. Test users/packages
+were deleted afterward. Also: caused one brief live-site outage mid-edit
+(a decorator signature mismatch between two files saved out of sync) and
+restarted the process — see run.py's own comment for how it's normally
+run (`nohup python run.py`); nothing systemd-managed exists for the Admin
+Panel itself.
+
+CLIENT PORTAL (this update): a second, separate login system
+------------------------------------------------------------------
+Follow-up correction to the "Client Portal" work above — that gave the
+existing "operator" COMPANY role the right capabilities, but what was
+actually wanted was a genuinely separate system: a client signs themselves
+up (no company, no invite), and only after that does a platform admin
+assign them to whichever specific instance(s) they should operate —
+possibly across different companies, since a client isn't scoped to one.
+
+- New models: `ClientUser` (own email/password, own login, no
+  CompanyMembership — see models.py's "Client Portal" section for the full
+  rationale), `ClientInstanceAccess` (the assignment: one client, one
+  instance, who granted it), `ClientActionLog` (a self-contained activity
+  trail, since AuditLogEntry's actor_id is a NOT NULL FK into `users`, not
+  `client_users`). Also `User.is_service_account` + a lazily-created
+  synthetic "Client Portal" User row: several existing tables
+  (InstanceCommand.requested_by_id, UpdateDeployment.requested_by_id) have
+  NOT NULL foreign keys into `users.id` — a ClientUser's own id must never
+  be written there (different table, colliding id space), so those writes
+  use the service account's id while a duck-typed shim object still carries
+  the real client's email into the human-readable log text, and
+  ClientActionLog captures full attribution separately.
+- Flask-Login now serves two account types off one session mechanism:
+  `ClientUser.get_id()` returns `"client:<public_id>"`, `User.get_id()`
+  stays a bare public_id (so already-logged-in staff sessions weren't
+  invalidated), and the shared user_loader in app/__init__.py dispatches on
+  that prefix.
+- New `app/blueprints/client_portal.py` (url_prefix `/client`): signup,
+  login, logout, a dashboard listing only the instances that client is
+  assigned to, and an instance page reusing the same start/stop/restart +
+  Items & Tools + Local Kiosk Users + push-an-update capabilities as the
+  operator company role, permission-checked via ClientInstanceAccess
+  instead of a company role. Deliberately does not extend base.html — a
+  standalone `client_portal/_base.html` shell, same visual language, no
+  Platform/Company nav (none of it applies).
+- New `Platform → Clients` pages (platform.py + templates/platform/
+  clients.html, client_detail.html): list every ClientUser, open one to see
+  their assigned instances + recent activity, assign a new instance (a
+  single dropdown across every company's instances), revoke, disable.
+- Found and fixed a real gap while testing: several staff-only decorators
+  (rbac.py's load_company_context, platform_auth.py's
+  platform_admin_required) called methods that only exist on `User`
+  (role_in, is_platform_admin) — a logged-in ClientUser hitting any of
+  those routes 500'd instead of being turned away. Fixed at both layers:
+  a new before_request hook (confine_client_portal_sessions in
+  app/__init__.py) redirects a logged-in ClientUser to their own dashboard
+  before any staff route runs at all, and the two decorators themselves now
+  use getattr(...) fallbacks as defense in depth.
+- Migration a8d3f6b21e0c (chained after f2a6c3e91d47, applied directly
+  against the live sqlite file the same way, then stamped — see that
+  migration's own docstring for why this repo's history doesn't go through
+  `flask db upgrade` normally right now).
+
+Verified for real: signed up a throwaway client account, assigned it the
+real "Ewan" test instance from Platform → Clients as the platform admin,
+logged in as the client and confirmed the dashboard/instance page showed
+exactly that one instance; exercised every operate action (kiosk start,
+add an Item, add a Local Kiosk User, push an update) and confirmed each
+one wrote the correct DB rows with FK-safe attribution, the correct
+human-readable "requested by" text, and a matching ClientActionLog entry
+visible on the Platform-side client detail page; confirmed hitting a
+staff-only company route or a platform-admin route while logged in as the
+client redirects instead of 500ing (this is the bug described above,
+caught during this same verification pass). All test data — the client
+account, its assignment, the equipment/local-user/command/deployment rows
+it created — was deleted from the real instance afterward; confirmed
+nothing pre-existing on that instance was disturbed.
+
+REAL KIOSK APP INVENTORY SYNC (this update)
+------------------------------------------------------------------
+Follow-up to the Client Portal work above — "Items & Tools" and "Local
+Kiosk Users" turned out to be simplified Admin-Panel-only placeholders
+with no connection at all to kiosk_app's own real Item/Tool/LocalUser
+tables (a genuine stock/consumable/PPE inventory system with quantity,
+SKU, checkout/maintenance history — nothing like the Admin Panel's
+"scanners/printers" asset list). Built the real two-way sync:
+
+- kiosk_app/app/models.py: added `public_id` (stable cross-system
+  identity) and `updated_at` to Item, Tool, LocalUser, plus `deleted_at`
+  tombstones on Item/Tool (LocalUser has no delete concept in this app at
+  all — see admin.py — so a remote "removed" maps onto is_active=False
+  here instead of a tombstone). `to_sync_dict()` on each. Since release
+  packages ship with no migrations/ folder (see run.py's own docstring),
+  added a small in-place "poor man's migration" (run.py's
+  `_ensure_sync_columns()`) that ALTER TABLEs in any missing column on
+  every startup — a no-op once already applied, same spirit as
+  `db.create_all()` itself.
+- New kiosk_app/app/blueprints/sync_api.py: GET /api/sync/state and POST
+  /api/sync/apply, deliberately unauthenticated like the existing /health
+  route — this process binds to 127.0.0.1 only (run.py), so only another
+  process on this exact machine (in practice, only the Agent) can ever
+  reach it. Last-write-wins by updated_at, decided independently per row.
+- Admin Panel: InstanceEquipmentItem gained sku/quantity/unit/category/
+  unit_cost (kind="item"), tool_status/checked_out_by_name/
+  current_project/purchase_price (kind="tool"), barcode_code (either
+  kind, kiosk-assigned, never set from this side), and deleted_at.
+  InstanceLocalUser gained username/role/badge_code and deleted_at. New
+  agent_api.py endpoints (GET/POST .../equipment/sync,
+  .../local-users/sync) mirroring kiosk_app's sync_api.py exactly —
+  same last-write-wins-by-updated_at logic, independently on this side.
+  Every existing list/export/backup query updated to filter
+  deleted_at IS NULL; every existing "Remove" button now soft-deletes
+  instead of hard-deleting (a hard delete would just look like "never
+  existed" to whichever side hasn't synced since, which would re-create
+  it right back). Migration c4e91b7a3f52.
+- New Agent module agent/inventory_sync.py (5th polling thread in
+  main.py, alongside heartbeat/config/update/command): each pass, fetch
+  both sides' current full state (Admin Panel via the new ApiClient
+  methods, the Kiosk App over loopback via kiosk_inventory_sync_url — a
+  new "Configure what starts the kiosk process" field), then POST each
+  side's list to the OTHER side. Neither this module nor either receiving
+  endpoint decides "who wins" — every row defends itself independently by
+  its own updated_at, so the loop itself stays simple. No-op until an
+  admin actually sets kiosk_inventory_sync_url, same convention as
+  kiosk_start_command being empty meaning "nothing to supervise yet".
+- A PIN set on a Local Kiosk User becomes a real login password at the
+  kiosk terminal once synced (both sides hash with the same argon2
+  scheme) — layered on top of kiosk_app's own badge/username-only
+  default, never a replacement for it.
+
+Verified for real, actually running both sides at once (something no
+earlier pass in this file could do, since the Kiosk App was never
+runnable before now): registered a genuine throwaway test instance
+against the live Admin Panel via a real enrollment token, ran a second,
+separate kiosk_app process locally against its own throwaway sqlite file,
+then called agent/inventory_sync.py's sync_once() directly (the exact
+function the Agent's own poll thread calls) — confirmed an item added on
+the Admin Panel side actually appeared on the Kiosk App's real /items/
+page, confirmed a tool added directly through the Kiosk App's own /tools/
+add form appeared correctly typed (kind, tool_status, purchase_price) on
+the Admin Panel side, confirmed the seeded "admin" LocalUser synced up
+with its kiosk-assigned badge code, ran three consecutive sync passes and
+confirmed zero duplicate rows on either side, then deleted the Admin-
+Panel-side item and confirmed the deletion actually reached and removed
+it from the Kiosk App's real item list on the next sync pass. Also
+rebuilt a real kiosk release from kiosk_app/ after all of this and
+confirmed it still passes the existing content-firewall validation
+unchanged. All test instances, tokens, and rows were deleted from both
+systems afterward.

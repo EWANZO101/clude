@@ -1,0 +1,9 @@
+{% macro coming_soon(section_title) %}
+<div class="card p-10 text-center">
+  <div class="h-12 w-12 rounded-lg bg-surface-700 flex items-center justify-center mx-auto mb-4 text-text-muted">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+  </div>
+  <h2 class="text-lg font-semibold text-text-primary mb-1">{{ section_title }}</h2>
+  <p class="text-text-secondary text-sm">This section is being built out and will be available soon.</p>
+</div>
+{% endmacro %}

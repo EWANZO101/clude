@@ -1,0 +1,56 @@
+{% extends "layout/base.html" %}
+{% block title %}Setup{% endblock %}
+{% block content %}
+<div class="w-full max-w-md mx-auto bg-surface-card border border-surface-border rounded-2xl p-6 md:p-8">
+  <div class="flex items-center gap-1.5 mb-6">
+    {% for s in steps %}
+      <span class="h-1.5 flex-1 rounded-full {{ 'bg-accent' if steps.index(s) <= steps.index(step) else 'bg-surface-border' }}"></span>
+    {% endfor %}
+  </div>
+
+  {% if step == 'welcome' %}
+    <h1 class="text-xl font-semibold mb-2">Welcome to Personal Platform</h1>
+    <p class="text-sm text-slate-400 mb-6">Let's get your account set up. It only takes a minute.</p>
+    <form method="POST"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="w-full bg-accent hover:bg-accent-hover text-white text-sm font-medium py-2.5 rounded-lg">Get started</button></form>
+
+  {% elif step == 'profile' %}
+    <h1 class="text-xl font-semibold mb-4">Your profile</h1>
+    <form method="POST" class="space-y-4"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="space-y-1">
+        <label class="text-sm text-slate-400">Country</label>
+        <input name="country" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm">
+      </div>
+      <div class="space-y-1">
+        <label class="text-sm text-slate-400">Currency</label>
+        <select name="currency" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm">
+          <option value="GBP">GBP — British Pound</option>
+          <option value="USD">USD — US Dollar</option>
+          <option value="EUR">EUR — Euro</option>
+        </select>
+      </div>
+      <div class="space-y-1">
+        <label class="text-sm text-slate-400">Timezone</label>
+        <input name="timezone" value="Europe/London" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm">
+      </div>
+      <button class="w-full bg-accent hover:bg-accent-hover text-white text-sm font-medium py-2.5 rounded-lg">Continue</button>
+    </form>
+
+  {% elif step == 'modules' %}
+    <h1 class="text-xl font-semibold mb-2">Choose modules</h1>
+    <p class="text-sm text-slate-400 mb-6">Modules install as separate parts of the build — you'll add them from the Modules page once available.</p>
+    <form method="POST"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="w-full bg-accent hover:bg-accent-hover text-white text-sm font-medium py-2.5 rounded-lg">Continue</button></form>
+
+  {% elif step == 'finance' %}
+    <h1 class="text-xl font-semibold mb-2">Finance basics</h1>
+    <p class="text-sm text-slate-400 mb-6">Bank connections and budgets are configured later, in the Finance module.</p>
+    <form method="POST"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="w-full bg-accent hover:bg-accent-hover text-white text-sm font-medium py-2.5 rounded-lg">Continue</button></form>
+
+  {% elif step == 'done' %}
+    <h1 class="text-xl font-semibold mb-2">You're all set</h1>
+    <p class="text-sm text-slate-400 mb-6">Head to your dashboard.</p>
+    <form method="POST"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="w-full bg-accent hover:bg-accent-hover text-white text-sm font-medium py-2.5 rounded-lg">Go to dashboard</button></form>
+  {% endif %}
+
+  <a href="{{ url_for('dashboard.setup_skip') }}" class="block text-center text-xs text-slate-500 hover:underline mt-4">Skip setup</a>
+</div>
+{% endblock %}

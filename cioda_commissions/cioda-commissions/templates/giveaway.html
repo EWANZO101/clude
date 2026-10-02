@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}{{ g.prize }} — Giveaway{% endblock %}
+
+{% block drawer_title %}<span class="nav-logo" style="font-size:1rem;">Cioda's <span>Commissions</span></span>{% endblock %}
+{% block drawer_nav %}{% include "_giveaway_drawer.html" %}{% endblock %}
+
+{% block body %}
+{% include "_giveaway_nav.html" %}
+
+<main style="max-width:560px;margin:0 auto;padding:3rem 1.5rem;">
+  <a href="/giveaways" style="font-size:0.85rem;color:var(--text-muted);">← All giveaways</a>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}" style="margin:1rem 0 0;">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="card fade-in" style="margin-top:1.25rem;text-align:center;padding:2rem 1.5rem;
+       border-color:{{ 'var(--border-accent)' if is_open else 'var(--border)' }};">
+    <div style="font-size:2.5rem;margin-bottom:0.5rem;">{{ '🎁' if g.status != 'ended' else '🏆' }}</div>
+    <h1 class="font-display" style="font-size:1.7rem;margin-bottom:0.5rem;color:var(--text-primary);">{{ g.prize }}</h1>
+    {% if g.description %}
+    <p style="color:var(--text-secondary);white-space:pre-line;margin:0 auto 1rem;max-width:440px;">{{ g.description }}</p>
+    {% endif %}
+
+    {% if prize_details %}
+    <p style="color:var(--text-secondary);margin:0 auto 0.5rem;">🎁 {{ prize_details|replace('**', '') }}</p>
+    {% endif %}
+    <p style="color:var(--text-muted);font-size:0.85rem;margin:0;">
+      {% if g.win_mode == 'first_come' %}⚡ First {{ g.winners_count }} to enter win instantly
+      {% else %}🎲 {{ g.winners_count }} winner{{ 's' if g.winners_count != 1 }} drawn at random when it ends{% endif %}
+    </p>
+
+    {% if my_entry and my_entry.status == 'winner' %}
+    <div class="card" style="margin:1.25rem auto 0;max-width:380px;border-color:var(--gold);">
+      <div class="font-display" style="color:var(--gold);margin-bottom:0.35rem;">🏆 You won!</div>
+      {% if my_entry.prize_code %}
+      <div style="font-size:0.85rem;color:var(--text-secondary);">Your single-use code:</div>
+      <code style="display:inline-block;margin:0.4rem 0;font-family:'JetBrains Mono',monospace;font-size:1.15rem;color:var(--accent);
+                   background:var(--accent-glow);padding:0.3rem 0.8rem;border-radius:6px;">{{ my_entry.prize_code }}</code>
+      <div style="font-size:0.8rem;color:var(--text-muted);">Enter it in the discount box when you <a href="/queue/waiting" style="color:var(--accent);">request a commission</a>.</div>
+      {% else %}
+      <div style="font-size:0.85rem;color:var(--text-secondary);">Cioda will reach out {{ 'by email' if my_entry.is_email else 'on Discord' }} to sort out your prize.</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div style="display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;margin:1rem 0 1.5rem;font-size:0.9rem;">
+      <div><div class="form-label" style="margin:0;">Entries</div><div class="font-display" style="font-size:1.3rem;">{{ count }}</div></div>
+      <div><div class="form-label" style="margin:0;">Winners</div><div class="font-display" style="font-size:1.3rem;">{{ g.winners_count }}</div></div>
+      {% if is_open %}
+      <div><div class="form-label" style="margin:0;">Ends in</div>
+        <div class="font-display" style="font-size:1.3rem;color:var(--gold);" data-countdown="{{ g.ends_at.isoformat() }}Z">…</div></div>
+      {% endif %}
+    </div>
+
+    {% if is_open %}
+      {% if my_entry %}
+        <div style="color:var(--success);font-family:'Cinzel',serif;margin-bottom:0.75rem;">✓ You're entered as {{ my_entry.display }}</div>
+        {% if my_entry.status == 'entered' %}
+        <form method="POST" action="/giveaways/{{ g.giveaway_id }}/leave">
+          <button type="submit" class="btn btn-ghost btn-sm">Leave giveaway</button>
+        </form>
+        {% endif %}
+      {% else %}
+        <div class="font-display" style="font-size:0.72rem;color:var(--text-muted);letter-spacing:.06em;margin-bottom:0.75rem;">
+          ENTER ON THE WEBSITE OR ON DISCORD — ONE ENTRY PER PERSON</div>
+
+        {% if ident %}
+        <form method="POST" action="/giveaways/{{ g.giveaway_id }}/enter" style="margin-bottom:0.5rem;">
+          <button type="submit" class="btn btn-primary" style="font-size:1rem;padding:0.75rem 2rem;">
+            🎉 Enter as @{{ ident.username }}
+          </button>
+        </form>
+        {% elif email_ready %}
+        <form method="POST" action="/giveaways/{{ g.giveaway_id }}/enter-email"
+              style="display:flex;flex-direction:column;gap:0.5rem;max-width:340px;margin:0 auto;text-align:left;">
+          <input type="text" name="name" class="input" required maxlength="100" placeholder="Your name" autocomplete="name">
+          <input type="email" name="email" class="input" required maxlength="254" placeholder="you@example.com" autocomplete="email">
+          <button type="submit" class="btn btn-primary" style="justify-content:center;font-size:1rem;padding:0.7rem 1rem;">
+            🎉 Enter with email
+          </button>
+          <div style="font-size:0.78rem;color:var(--text-muted);text-align:center;line-height:1.45;">
+            We'll email you a link to confirm, and your entry counts once you click it.
+            If you win, your prize (or prize code) is sent to that email.
+          </div>
+        </form>
+        {% endif %}
+
+        <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+          {% if not ident and oauth_ready %}
+          <form method="POST" action="/giveaways/{{ g.giveaway_id }}/enter">
+            <button type="submit" class="btn btn-ghost btn-sm" style="border-color:#5865F2;color:#5865F2;">
+              🔐 Sign in with Discord instead
+            </button>
+          </form>
+          {% endif %}
+          {% if discord_url %}
+          <a href="{{ discord_url }}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm"
+             style="border-color:#5865F2;color:#5865F2;">💬 Enter on Discord</a>
+          {% endif %}
+        </div>
+        {% if discord_url %}
+        <p style="font-size:0.78rem;color:var(--text-muted);margin:0.6rem auto 0;">
+          On Discord, press 🎉 <b>Enter</b> on the giveaway post in #🎊giveaways.
+        </p>
+        {% endif %}
+      {% endif %}
+    {% elif g.status == 'ended' %}
+      <div class="font-display" style="font-size:0.78rem;color:var(--gold);letter-spacing:.06em;margin-bottom:0.5rem;">
+        WINNER{{ 'S' if winners|length != 1 }}</div>
+      {% for w in winners %}
+        <div style="font-size:1.05rem;color:var(--text-primary);">{{ w.display }}
+          {% if my_entry and my_entry.id == w.id %}<span style="color:var(--gold);"> — that's you! 🎉</span>{% endif %}</div>
+      {% else %}
+        <div style="color:var(--text-muted);font-style:italic;">No winners were drawn.</div>
+      {% endfor %}
+    {% elif g.status == 'cancelled' %}
+      <div style="color:var(--text-muted);font-style:italic;">This giveaway was cancelled.</div>
+    {% else %}
+      <div style="color:var(--text-muted);font-style:italic;">Entries are closed — winners are being drawn…</div>
+    {% endif %}
+  </div>
+
+  {% if ident %}
+  <form method="POST" action="/giveaways/discord/forget" style="text-align:center;margin-top:1rem;">
+    <input type="hidden" name="next" value="/giveaways/{{ g.giveaway_id }}">
+    <button type="submit" style="background:none;border:none;color:var(--text-muted);font-size:0.8rem;cursor:pointer;text-decoration:underline;">
+      Not @{{ ident.username }}? Sign out of Discord
+    </button>
+  </form>
+  {% endif %}
+</main>
+{% include "_giveaway_countdown_js.html" %}
+{% endblock %}

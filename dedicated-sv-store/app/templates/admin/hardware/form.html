@@ -1,0 +1,42 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}{{ "Add" if is_new else "Edit" }} {{ entry.label }} — Admin{% endblock %}
+{% block page_title %}{{ "Add" if is_new else "Edit" }} {{ entry.label[:-1] if entry.label.endswith("s") else entry.label }}{% endblock %}
+{% block content %}
+<div class="max-w-3xl">
+  <div class="card p-6">
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="grid sm:grid-cols-2 gap-x-4">
+        {% for f in form %}
+          {% if f.name != "csrf_token" %}
+            {% if f.type == "BooleanField" %}
+              <div class="sm:col-span-2">{{ checkbox(f) }}</div>
+            {% elif f.type == "TextAreaField" %}
+              <div class="sm:col-span-2">{{ field(f, rows=3) }}</div>
+            {% else %}
+              {{ field(f) }}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+      </div>
+      <div class="flex items-center gap-3 mt-2">
+        <button type="submit" class="btn-primary">{{ "Add" if is_new else "Save changes" }}</button>
+        <a href="{{ url_for('admin.hardware_list', type_slug=type_slug) }}" class="btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  {% if not is_new %}
+  <div class="card p-6 mt-6">
+    <h2 class="font-semibold text-text-primary mb-1">Merge into another record</h2>
+    <p class="text-sm text-text-secondary mb-4">Marks this record inactive and points it at the record you choose. Use this to resolve duplicate catalog entries.</p>
+    <form method="POST" action="{{ url_for('admin.hardware_merge', type_slug=type_slug, item_id=instance.id) }}" class="flex gap-3">
+      {% include "components/_csrf.html" %}
+      <input type="number" name="target_id" placeholder="Target record ID" class="input-field max-w-xs" required>
+      <button type="submit" class="btn-secondary">Merge</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

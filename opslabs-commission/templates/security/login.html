@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Security Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#080810;color:#e8e6f0;font-family:'JetBrains Mono',monospace;
+         min-height:100vh;display:flex;align-items:center;justify-content:center;
+         padding:1rem;}
+    .scan-line{position:fixed;top:0;left:0;width:100%;height:2px;
+               background:linear-gradient(90deg,transparent,#c084fc,transparent);
+               animation:scan 4s linear infinite;z-index:0;opacity:.4;}
+    @keyframes scan{0%{top:-2px}100%{top:100vh}}
+    .grid-bg{position:fixed;inset:0;background-image:
+      linear-gradient(rgba(192,132,252,.03) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(192,132,252,.03) 1px,transparent 1px);
+      background-size:40px 40px;z-index:0;}
+    .box{position:relative;z-index:1;background:#0f0f18;
+         border:1px solid #2e2e50;border-radius:12px;padding:2.5rem;
+         width:100%;max-width:400px;
+         box-shadow:0 0 40px rgba(192,132,252,.1);
+         animation:fadeIn .5s ease;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    .icon{text-align:center;font-size:2.5rem;margin-bottom:1rem;}
+    .title{font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;
+           color:#c084fc;text-align:center;margin-bottom:0.2rem;letter-spacing:.06em;}
+    .sub{font-size:0.72rem;color:#3d3d5a;text-align:center;
+         letter-spacing:.1em;text-transform:uppercase;margin-bottom:2rem;}
+    label{font-size:0.72rem;color:#5f5d72;letter-spacing:.08em;
+          text-transform:uppercase;display:block;margin-bottom:.35rem;}
+    input{background:#0a0a14;border:1px solid #2e2e50;color:#e8e6f0;
+          border-radius:6px;padding:.65rem .9rem;font-family:'JetBrains Mono',monospace;
+          font-size:.88rem;width:100%;transition:border-color .2s;margin-bottom:1rem;}
+    input:focus{outline:none;border-color:#c084fc;
+                box-shadow:0 0 0 2px rgba(192,132,252,.12);}
+    button{background:#c084fc;color:#fff;border:none;border-radius:6px;
+           padding:.65rem;width:100%;font-family:'Cinzel',serif;font-size:.85rem;
+           font-weight:700;cursor:pointer;letter-spacing:.04em;transition:all .2s;}
+    button:hover{background:#a855f7;box-shadow:0 0 20px rgba(192,132,252,.3);}
+    .flash{background:#450a0a22;border:1px solid #7f1d1d;color:#fca5a5;
+           padding:.65rem .9rem;border-radius:6px;font-size:.82rem;
+           margin-bottom:1rem;text-align:center;}
+    .footer{text-align:center;margin-top:1.5rem;font-size:0.68rem;
+            color:#2e2e50;letter-spacing:.06em;}
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="scan-line"></div>
+  <div class="box">
+    <div class="icon">🔐</div>
+    <div class="title">Security Portal</div>
+    <div class="sub">Authorised Access Only</div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+    <form method="POST">
+      <label>Username</label>
+      <input type="text" name="username" required autocomplete="off" spellcheck="false">
+      <label>Password</label>
+      <input type="password" name="password" required>
+      <button type="submit">AUTHENTICATE</button>
+    </form>
+    <div class="footer">ACCESS RESTRICTED · AUTHORISED PERSONNEL ONLY</div>
+  </div>
+</body>
+</html>

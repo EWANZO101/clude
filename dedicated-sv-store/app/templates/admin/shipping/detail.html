@@ -1,0 +1,54 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_shipment_badge.html" import shipment_status_badge with context %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}{{ shipment.shipment_number }} — Admin{% endblock %}
+{% block page_title %}{{ shipment.shipment_number }}{% endblock %}
+{% block header_actions %}
+{{ shipment_status_badge(shipment.status) }}
+{% if not receiving %}
+<a href="{{ url_for('admin.shipment_receive', shipment_id=shipment.id) }}" class="btn-primary">Record receiving</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-6">
+    <div class="card p-5">
+      <h2 class="font-semibold text-text-primary mb-4">Tracking</h2>
+      <div class="space-y-3">
+        {% for event in shipment.events %}
+        <div class="flex gap-3 text-sm">
+          <span class="text-text-muted whitespace-nowrap">{{ event.occurred_at.strftime("%d %b %Y %H:%M") }}</span>
+          <span class="text-text-secondary">{{ event.status|hwval }}{{ " — " ~ event.description if event.description }}{{ " (" ~ event.location ~ ")" if event.location }}</span>
+        </div>
+        {% else %}
+        <p class="text-text-muted text-sm">No tracking events yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if receiving %}
+    <div class="card p-5">
+      <h2 class="font-semibold text-text-primary mb-4">Receiving record</h2>
+      <dl class="grid sm:grid-cols-2 gap-3 text-sm">
+        <div><dt class="text-text-muted">Condition</dt><dd class="text-text-primary">{{ receiving.condition|title }}</dd></div>
+        <div><dt class="text-text-muted">Packaging</dt><dd class="text-text-primary">{{ receiving.packaging_condition|title }}</dd></div>
+        <div><dt class="text-text-muted">Damage noted</dt><dd class="text-text-primary">{{ "Yes" if receiving.damage_noted else "No" }}</dd></div>
+        <div><dt class="text-text-muted">Received</dt><dd class="text-text-primary">{{ receiving.received_at.strftime("%d %b %Y") }}</dd></div>
+      </dl>
+      {% if receiving.notes %}<p class="text-sm text-text-secondary mt-3">{{ receiving.notes }}</p>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Add tracking event</h2>
+    <form method="POST" class="space-y-3">
+      {{ form.hidden_tag() }}
+      {{ field(form.status) }}
+      {{ field(form.location) }}
+      {{ field(form.description) }}
+      <button type="submit" class="btn-primary w-full">Add event</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

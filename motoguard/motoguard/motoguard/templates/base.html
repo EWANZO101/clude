@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}MotoGuard — Recovery Network{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { asphalt:'#0E1216', surface:'#161C22', surface2:'#1C242C', hair:'#283038',
+                hair2:'#323C46', chalk:'#E8ECF1', mute:'#8B94A1', plate:'#F5C518',
+                stolen:'#FF453A', recover:'#30D158', link:'#6AA6FF' },
+      fontFamily: { display:['Archivo','sans-serif'], sans:['"IBM Plex Sans"','system-ui','sans-serif'],
+                    mono:['"IBM Plex Mono"','monospace'] }
+    }}}
+  </script>
+  <style>
+    :root{--asphalt:#0E1216;--surface:#161C22;--surface2:#1C242C;--hair:#283038;--hair2:#323C46;
+      --chalk:#E8ECF1;--mute:#8B94A1;--plate:#F5C518;--plate-ink:#10140F;--stolen:#FF453A;--recover:#30D158;--link:#6AA6FF;}
+    *{-webkit-tap-highlight-color:transparent;}
+    html{color-scheme:dark;}
+    body{background:var(--asphalt);color:var(--chalk);font-family:"IBM Plex Sans",system-ui,sans-serif;}
+    select.input option{background:#161C22;color:#E8ECF1;}
+    h1,h2,h3,.font-display{font-family:"Archivo",sans-serif;letter-spacing:-0.015em;}
+    .eyebrow{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.2em;font-size:.7rem;color:var(--mute);}
+    .grain{background-image:radial-gradient(rgba(255,255,255,.018) 1px,transparent 1px);background-size:3px 3px;}
+    .card{background:var(--surface);border:1px solid var(--hair);border-radius:14px;}
+    .card-2{background:var(--surface2);border:1px solid var(--hair);border-radius:12px;}
+    .card-hover{transition:border-color .15s,transform .08s;}
+    .card-hover:hover{border-color:var(--hair2);transform:translateY(-2px);}
+    .input{width:100%;background:#0F141A;border:1px solid var(--hair);color:var(--chalk);border-radius:10px;
+      padding:.6rem .8rem;font-size:.95rem;outline:none;transition:border-color .15s,box-shadow .15s;}
+    .input::placeholder{color:#5C6675;}
+    .input:focus{border-color:var(--plate);box-shadow:0 0 0 3px rgba(245,197,24,.16);}
+    select.input{appearance:none;background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMicgaGVpZ2h0PScxMicgdmlld0JveD0nMCAwIDEyIDEyJz48cGF0aCBmaWxsPScjOEI5NEExJyBkPSdNNiA4TDEgM2gxMHonLz48L3N2Zz4=");background-repeat:no-repeat;background-position:right .8rem center;padding-right:2rem;}
+    .label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--mute);margin-bottom:.4rem;}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-weight:600;border-radius:10px;
+      padding:.62rem 1.05rem;font-size:.9rem;cursor:pointer;border:1px solid transparent;text-decoration:none;
+      transition:transform .05s,background .15s,border-color .15s,filter .15s;}
+    .btn:active{transform:translateY(1px);}
+    .btn-primary{background:var(--plate);color:var(--plate-ink);}
+    .btn-primary:hover{background:#FFD83A;}
+    .btn-ghost{background:transparent;color:var(--chalk);border-color:var(--hair2);}
+    .btn-ghost:hover{background:var(--surface2);}
+    .btn-danger{background:var(--stolen);color:#fff;}
+    .btn-danger:hover{filter:brightness(1.08);}
+    .btn-recover{background:var(--recover);color:#08140C;}
+    .btn-recover:hover{filter:brightness(1.05);}
+    .btn-sm{padding:.4rem .75rem;font-size:.8rem;}
+    .btn-block{width:100%;}
+    .tag{display:inline-flex;align-items:center;gap:.4rem;font-size:.7rem;font-weight:600;text-transform:uppercase;
+      letter-spacing:.06em;padding:.22rem .6rem;border-radius:999px;border:1px solid var(--hair2);color:var(--mute);}
+    .tag .dot{width:.45rem;height:.45rem;border-radius:50%;background:currentColor;}
+    .tag-stolen{color:#FF6A61;border-color:rgba(255,69,58,.4);background:rgba(255,69,58,.09);}
+    .tag-recovered{color:#5BE39B;border-color:rgba(48,209,88,.32);background:rgba(48,209,88,.08);}
+    .tag-active{color:#9AA4B2;}
+    .plate{display:inline-flex;align-items:stretch;border-radius:5px;overflow:hidden;font-family:"IBM Plex Mono",monospace;
+      font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.5),inset 0 0 0 1px rgba(0,0,0,.3);vertical-align:middle;}
+    .plate .gb{background:#0B3D91;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding:0 .3rem;font-size:.55rem;line-height:1.05;font-weight:700;}
+    .plate .vrm{background:var(--plate);color:#10140F;padding:.2rem .6rem;letter-spacing:.06em;font-size:1.05rem;white-space:nowrap;}
+    .plate-sm .vrm{font-size:.82rem;padding:.13rem .48rem;}
+    .plate-sm .gb{font-size:.46rem;}
+    .divider{height:1px;background:var(--hair);}
+    .font-500{font-weight:500}.font-600{font-weight:600}.font-700{font-weight:700}.font-800{font-weight:800}.font-900{font-weight:900}
+    .ac-wrap{position:relative;}
+    .ac-list{position:absolute;left:0;right:0;top:calc(100% + 5px);background:var(--surface);border:1px solid var(--hair2);
+      border-radius:11px;overflow:hidden;z-index:50;box-shadow:0 14px 34px rgba(0,0,0,.55);display:none;}
+    .ac-list.show{display:block;}
+    .ac-item{padding:.55rem .8rem;cursor:pointer;display:flex;flex-direction:column;gap:.05rem;border-bottom:1px solid var(--hair);}
+    .ac-item:last-of-type{border-bottom:none;}
+    .ac-item:hover,.ac-item.active{background:var(--surface2);}
+    .ac-item .main{font-size:.92rem;color:var(--chalk);}
+    .ac-item .sub{font-size:.72rem;color:var(--mute);}
+    .ac-credit{padding:.35rem .8rem;font-size:.6rem;letter-spacing:.04em;color:var(--mute);text-align:right;border-top:1px solid var(--hair);background:#0F141A;}
+    .nav-link{color:var(--mute);font-size:.88rem;font-weight:500;transition:color .15s;}
+    .nav-link:hover{color:var(--chalk);}
+    .pulse{animation:pulse 1.8s ease-in-out infinite;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+    @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+    .marquee{display:flex;gap:.6rem;width:max-content;animation:scroll 38s linear infinite;}
+    @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  </style>
+</head>
+<body class="min-h-screen flex flex-col grain">
+{% from "_macros.html" import plate with context %}
+<nav class="sticky top-0 z-40 backdrop-blur bg-asphalt/85 border-b border-hair">
+  <div class="max-w-6xl mx-auto px-4 h-14 flex items-center gap-5">
+    <a href="{{ url_for('main.index') }}" class="flex items-center gap-2 group">
+      <span class="w-6 h-6 rounded bg-plate flex items-center justify-center text-[#10140F] font-display font-900 text-sm">M</span>
+      <span class="font-display font-800 tracking-tight text-chalk text-[15px] uppercase" style="letter-spacing:.02em">MotoGuard</span>
+    </a>
+    <a href="{{ url_for('main.stolen_map') }}" class="nav-link hidden sm:block">Stolen map</a>
+    <a href="{{ url_for('forum.index') }}" class="nav-link hidden sm:block">Community</a>
+    <a href="{{ url_for('main.about') }}" class="nav-link hidden sm:block">About</a>
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('vehicles.mine') }}" class="nav-link hidden sm:block">My bikes</a>
+      <a href="{{ url_for('messaging.inbox') }}" class="nav-link hidden sm:block">
+        Messages{% if unread_messages %} <span class="text-plate">·{{ unread_messages }}</span>{% endif %}</a>
+    {% endif %}
+    <div class="ml-auto flex items-center gap-3">
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('main.notifications') }}" class="nav-link relative" title="Notifications">
+          Alerts{% if unread_notifications %} <span class="text-stolen">·{{ unread_notifications }}</span>{% endif %}</a>
+        {% if current_user.is_admin %}<a href="{{ url_for('admin.dashboard') }}" class="nav-link text-plate/90">Admin</a>{% endif %}
+        <a href="{{ url_for('auth.profile') }}" class="nav-link">{{ current_user.username }}</a>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-ghost btn-sm">Sign out</a>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}" class="nav-link">Log in</a>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Register a bike</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<main class="flex-1 max-w-6xl mx-auto w-full px-4 py-7">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      {% set tone = {'error':'border-stolen/50 bg-stolen/10 text-[#FF8A82]','success':'border-recover/40 bg-recover/10 text-[#6FE6A6]','warning':'border-plate/40 bg-plate/10 text-plate'}.get(cat,'border-hair bg-surface text-chalk') %}
+      <div class="mb-3 px-4 py-2.5 rounded-xl border text-sm {{ tone }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="border-t border-hair">
+  <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+    <div class="flex items-center gap-2 text-mute text-sm">
+      <span class="w-4 h-4 rounded-sm bg-plate inline-block"></span>
+      <span class="font-display font-700 uppercase tracking-wide text-chalk text-xs">MotoGuard</span>
+      <span class="text-mute">Recovery Network</span>
+    </div>
+    <p class="eyebrow">
+      <a href="{{ url_for('main.privacy') }}" class="hover:text-chalk">Privacy</a> ·
+      <a href="{{ url_for('main.terms') }}" class="hover:text-chalk">Terms</a>
+    </p>
+  </div>
+</footer>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

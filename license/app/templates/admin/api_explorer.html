@@ -1,0 +1,856 @@
+{% extends "base.html" %}
+{% block title %}API Explorer — {{ site_name }}{% endblock %}
+
+{% block content %}
+
+{# ── Macro must be defined before first use in Jinja2 ── #}
+{% macro endpoint_card() %}
+<div class="bg-dark-800 border border-dark-700/50 rounded-2xl overflow-hidden">
+  {{ caller() }}
+</div>
+{% endmacro %}
+
+<div class="p-6 space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-white">API Explorer</h1>
+      <p class="text-sm text-gray-500 mt-1">Live documentation and testing for all licence API endpoints</p>
+    </div>
+    <div class="flex items-center gap-2 px-3 py-2 bg-dark-800 border border-dark-700/50 rounded-xl">
+      <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+      <span class="text-xs font-mono text-gray-400">Base URL:</span>
+      <code class="text-xs font-mono text-emerald-400" id="baseUrlDisplay">{{ base_url }}/api</code>
+    </div>
+  </div>
+
+  <!-- Quick copy base URL -->
+  <div class="bg-dark-800 border border-dark-700/50 rounded-xl px-4 py-3 flex items-center gap-3">
+    <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p class="text-xs text-gray-500 flex-1">All endpoints require <code class="text-amber-400 bg-dark-700 px-1.5 py-0.5 rounded font-mono">Content-Type: application/json</code>. No authentication required for API calls — secure using IP lock or domain lock on the licence itself.</p>
+  </div>
+
+  <!-- ── LICENCE ENDPOINTS ─────────────────────────────────────── -->
+  <div class="space-y-3">
+    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Licence Validation</h2>
+
+    <!-- POST /api/validate -->
+    {% call endpoint_card() %}
+    <div data-endpoint="validate">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('validate')">
+        <span class="method-badge method-post">POST</span>
+        <code class="text-sm font-mono text-white">/api/validate</code>
+        <span class="text-sm text-gray-500 ml-2">Validate a licence key — returns features, tier, expiry</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <p class="text-sm text-gray-400">Validates a licence key. Auto-registers the caller's IP on first use if IP lock is enabled. Returns all features assigned to the licence.</p>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Request Body</p>
+            <div class="space-y-2">
+              <div class="field-row">
+                <code class="field-name">license_key</code>
+                <span class="field-type required">string *</span>
+                <span class="field-desc">The licence key e.g. <code class="text-emerald-400">XXXX-XXXX-XXXX-XXXX</code></span>
+              </div>
+              <div class="field-row">
+                <code class="field-name">domain</code>
+                <span class="field-type">string</span>
+                <span class="field-desc">Caller's domain for domain-lock check</span>
+              </div>
+              <div class="field-row">
+                <code class="field-name">hardware_id</code>
+                <span class="field-type">string</span>
+                <span class="field-desc">Unique hardware identifier for the machine</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Response</p>
+            <pre class="response-sample">{"valid": true,
+  "product": "NOVACAD",
+  "tier": "pro",
+  "tier_name": "Professional",
+  "features": ["dispatch","mdt","citizens"],
+  "expires_at": "2026-12-31T00:00:00",
+  "days_until_expiry": 291,
+  "customer": "Acme PD",
+  "your_ip": "1.2.3.4"
+}</pre>
+          </div>
+        </div>
+
+        <!-- Try it out -->
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <div class="grid grid-cols-3 gap-3 mb-3">
+            <div>
+              <label class="field-label">license_key *</label>
+              <input type="text" placeholder="XXXX-XXXX-XXXX-XXXX" class="tryit-input" id="v_license_key">
+            </div>
+            <div>
+              <label class="field-label">domain</label>
+              <input type="text" placeholder="example.com" class="tryit-input" id="v_domain">
+            </div>
+            <div>
+              <label class="field-label">hardware_id</label>
+              <input type="text" placeholder="optional" class="tryit-input" id="v_hardware_id">
+            </div>
+          </div>
+          <button onclick="tryPost('/api/validate', {license_key: gv('v_license_key'), domain: gv('v_domain'), hardware_id: gv('v_hardware_id')}, 'validate_result')"
+                  class="tryit-btn">Send Request</button>
+          <div id="validate_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- POST /api/activate -->
+    {% call endpoint_card() %}
+    <div data-endpoint="activate">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('activate')">
+        <span class="method-badge method-post">POST</span>
+        <code class="text-sm font-mono text-white">/api/activate</code>
+        <span class="text-sm text-gray-500 ml-2">Activate a licence on a server / machine</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <p class="text-sm text-gray-400">Creates a new activation record. If the hardware ID already has an active activation, it is updated instead. Returns the full licence object including features.</p>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Request Body</p>
+            <div class="space-y-2">
+              <div class="field-row"><code class="field-name">license_key</code><span class="field-type required">string *</span><span class="field-desc">Licence key</span></div>
+              <div class="field-row"><code class="field-name">domain</code><span class="field-type">string</span><span class="field-desc">Domain of the server</span></div>
+              <div class="field-row"><code class="field-name">hardware_id</code><span class="field-type">string</span><span class="field-desc">Unique ID to track this machine</span></div>
+              <div class="field-row"><code class="field-name">hostname</code><span class="field-type">string</span><span class="field-desc">Human-readable server name</span></div>
+            </div>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Response</p>
+            <pre class="response-sample">{"success": true,
+  "message": "License activated",
+  "activation_id": 42,
+  "license": { ...licence object... },
+  "your_ip": "1.2.3.4"
+}</pre>
+          </div>
+        </div>
+
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div><label class="field-label">license_key *</label><input type="text" placeholder="XXXX-XXXX-XXXX-XXXX" class="tryit-input" id="a_license_key"></div>
+            <div><label class="field-label">hostname</label><input type="text" placeholder="my-server" class="tryit-input" id="a_hostname"></div>
+            <div><label class="field-label">domain</label><input type="text" placeholder="example.com" class="tryit-input" id="a_domain"></div>
+            <div><label class="field-label">hardware_id</label><input type="text" placeholder="hw-abc123" class="tryit-input" id="a_hardware_id"></div>
+          </div>
+          <button onclick="tryPost('/api/activate', {license_key:gv('a_license_key'),domain:gv('a_domain'),hardware_id:gv('a_hardware_id'),hostname:gv('a_hostname')}, 'activate_result')"
+                  class="tryit-btn">Send Request</button>
+          <div id="activate_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- POST /api/deactivate -->
+    {% call endpoint_card() %}
+    <div data-endpoint="deactivate">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('deactivate')">
+        <span class="method-badge method-post">POST</span>
+        <code class="text-sm font-mono text-white">/api/deactivate</code>
+        <span class="text-sm text-gray-500 ml-2">Deactivate a licence activation</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <p class="text-sm text-gray-400">Deactivates the most recent activation for a licence. Pass <code class="text-amber-400">activation_id</code> to deactivate a specific one.</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Request Body</p>
+            <div class="space-y-2">
+              <div class="field-row"><code class="field-name">license_key</code><span class="field-type required">string *</span><span class="field-desc">Licence key</span></div>
+              <div class="field-row"><code class="field-name">activation_id</code><span class="field-type">integer</span><span class="field-desc">Specific activation to deactivate</span></div>
+            </div>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Response</p>
+            <pre class="response-sample">{"success": true,
+  "message": "License deactivated"
+}</pre>
+          </div>
+        </div>
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div><label class="field-label">license_key *</label><input type="text" placeholder="XXXX-XXXX-XXXX-XXXX" class="tryit-input" id="d_license_key"></div>
+            <div><label class="field-label">activation_id</label><input type="number" placeholder="optional" class="tryit-input" id="d_activation_id"></div>
+          </div>
+          <button onclick="tryPost('/api/deactivate', {license_key:gv('d_license_key'),activation_id:gv('d_activation_id')||null}, 'deactivate_result')"
+                  class="tryit-btn">Send Request</button>
+          <div id="deactivate_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- POST /api/heartbeat -->
+    {% call endpoint_card() %}
+    <div data-endpoint="heartbeat">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('heartbeat')">
+        <span class="method-badge method-post">POST</span>
+        <code class="text-sm font-mono text-white">/api/heartbeat</code>
+        <span class="text-sm text-gray-500 ml-2">Periodic keep-alive check from a running application</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <p class="text-sm text-gray-400">Called periodically by a running application to confirm the licence is still valid. Updates the last-seen timestamp on the activation. IP is checked if IP-lock is enabled.</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Request Body</p>
+            <div class="space-y-2">
+              <div class="field-row"><code class="field-name">license_key</code><span class="field-type required">string *</span><span class="field-desc">Licence key</span></div>
+              <div class="field-row"><code class="field-name">activation_id</code><span class="field-type">integer</span><span class="field-desc">Activation ID from activate response</span></div>
+            </div>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Response</p>
+            <pre class="response-sample">{"valid": true,
+  "license": { ...licence object... },
+  "your_ip": "1.2.3.4"
+}</pre>
+          </div>
+        </div>
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div><label class="field-label">license_key *</label><input type="text" placeholder="XXXX-XXXX-XXXX-XXXX" class="tryit-input" id="hb_license_key"></div>
+            <div><label class="field-label">activation_id</label><input type="number" placeholder="optional" class="tryit-input" id="hb_activation_id"></div>
+          </div>
+          <button onclick="tryPost('/api/heartbeat', {license_key:gv('hb_license_key'),activation_id:gv('hb_activation_id')||null}, 'heartbeat_result')"
+                  class="tryit-btn">Send Request</button>
+          <div id="heartbeat_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+  </div>
+
+  <!-- ── INFO ENDPOINTS ─────────────────────────────────────────── -->
+  <div class="space-y-3">
+    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Info & Utility</h2>
+
+    <!-- GET /api/info/<key> -->
+    {% call endpoint_card() %}
+    <div data-endpoint="info">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('info')">
+        <span class="method-badge method-get">GET</span>
+        <code class="text-sm font-mono text-white">/api/info/&lt;license_key&gt;</code>
+        <span class="text-sm text-gray-500 ml-2">Get public summary of a licence</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <p class="text-sm text-gray-400">Returns a brief public summary of a licence — valid/expired, tier name, expiry date. Does not return features or customer details.</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">URL Parameter</p>
+            <div class="field-row"><code class="field-name">license_key</code><span class="field-type required">string *</span><span class="field-desc">Key in the URL path</span></div>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Response</p>
+            <pre class="response-sample">{"valid": true,
+  "status": "active",
+  "tier": "Professional",
+  "expires_at": "2026-12-31T00:00:00"
+}</pre>
+          </div>
+        </div>
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div><label class="field-label">license_key *</label><input type="text" placeholder="XXXX-XXXX-XXXX-XXXX" class="tryit-input" id="info_key"></div>
+          </div>
+          <button onclick="tryGet('/api/info/' + gv('info_key'), 'info_result')"
+                  class="tryit-btn">Send Request</button>
+          <div id="info_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- GET /api/my-ip -->
+    {% call endpoint_card() %}
+    <div data-endpoint="myip">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('myip')">
+        <span class="method-badge method-get">GET</span>
+        <code class="text-sm font-mono text-white">/api/my-ip</code>
+        <span class="text-sm text-gray-500 ml-2">Returns the caller's detected IP address</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <p class="text-sm text-gray-400">Useful for checking which IP will be registered when a server calls the validate or activate endpoint — especially behind proxies or NAT.</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div><p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">No parameters</p></div>
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Response</p>
+            <pre class="response-sample">{"ip": "1.2.3.4"}</pre>
+          </div>
+        </div>
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <button onclick="tryGet('/api/my-ip', 'myip_result')" class="tryit-btn">Send Request</button>
+          <div id="myip_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- GET /api/health -->
+    {% call endpoint_card() %}
+    <div data-endpoint="health">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('health')">
+        <span class="method-badge method-get">GET</span>
+        <code class="text-sm font-mono text-white">/api/health</code>
+        <span class="text-sm text-gray-500 ml-2">Server health check</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <p class="text-sm text-gray-400">Simple health check. Use this to confirm the licence server is up before sending a validate request.</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div><p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">No parameters</p></div>
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Response</p>
+            <pre class="response-sample">{"status": "ok",
+  "timestamp": "2026-03-14T12:00:00"
+}</pre>
+          </div>
+        </div>
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <button onclick="tryGet('/api/health', 'health_result')" class="tryit-btn">Send Request</button>
+          <div id="health_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+  </div>
+
+  <!-- ── MANAGEMENT API ────────────────────────────────────────── -->
+  <div class="space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Management API</h2>
+      <span class="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg">Requires X-API-Key</span>
+    </div>
+
+    <!-- API Key input bar -->
+    <div class="bg-dark-800 border border-amber-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+      <svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+      </svg>
+      <label class="text-xs text-amber-400 font-semibold whitespace-nowrap">API Key</label>
+      <input type="password" id="globalApiKey" placeholder="Paste your admin_api_key from Settings"
+             class="flex-1 bg-dark-700 border border-dark-600 rounded-lg px-3 py-1.5 text-sm font-mono text-white placeholder-gray-600 outline-none focus:border-amber-500/50">
+      <button onclick="toggleKeyVisibility()" class="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 bg-dark-700 rounded-lg transition-colors">Show</button>
+      <a href="{{ url_for('admin.settings') }}" class="text-xs text-amber-400 hover:text-amber-300 whitespace-nowrap">Set in Settings →</a>
+    </div>
+
+    <!-- GET /api/admin/dashboard -->
+    {% call endpoint_card() %}
+    <div data-endpoint="mgmt_dash">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('mgmt_dash')">
+        <span class="method-badge method-get">GET</span>
+        <code class="text-sm font-mono text-white">/api/admin/dashboard</code>
+        <span class="text-sm text-gray-500 ml-2">Summary stats — licences, customers, products, recent activity</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <p class="text-sm text-gray-400">Returns a full stats snapshot — total/active/suspended/revoked licences, expiring-soon count, customer count, and 5 most recent activity log entries.</p>
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <button onclick="tryGetAuth('/api/admin/dashboard', 'mgmt_dash_result')" class="tryit-btn">Send Request</button>
+          <div id="mgmt_dash_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- GET /api/admin/licenses -->
+    {% call endpoint_card() %}
+    <div data-endpoint="mgmt_lic_list">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('mgmt_lic_list')">
+        <span class="method-badge method-get">GET</span>
+        <code class="text-sm font-mono text-white">/api/admin/licenses</code>
+        <span class="text-sm text-gray-500 ml-2">List licences with filters</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Query Params</p>
+            <div class="space-y-1">
+              <div class="field-row"><code class="field-name">status</code><span class="field-type">string</span><span class="field-desc">active / suspended / revoked</span></div>
+              <div class="field-row"><code class="field-name">customer_id</code><span class="field-type">integer</span><span class="field-desc">Filter by customer</span></div>
+              <div class="field-row"><code class="field-name">product_id</code><span class="field-type">integer</span><span class="field-desc">Filter by product</span></div>
+              <div class="field-row"><code class="field-name">page</code><span class="field-type">integer</span><span class="field-desc">Page number (default 1)</span></div>
+              <div class="field-row"><code class="field-name">per_page</code><span class="field-type">integer</span><span class="field-desc">Results per page (max 100)</span></div>
+            </div>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Response</p>
+            <pre class="response-sample">{"total": 42, "page": 1,
+  "licenses": [
+    {"license_key": "...", "status": "active",
+     "features": ["dispatch","mdt"],
+     "expires_at": "2026-12-31T00:00:00",
+     ...}
+  ]
+}</pre>
+          </div>
+        </div>
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <div class="grid grid-cols-3 gap-3 mb-3">
+            <div><label class="field-label">status</label><select class="tryit-input" id="ml_status"><option value="">all</option><option>active</option><option>suspended</option><option>revoked</option></select></div>
+            <div><label class="field-label">page</label><input type="number" value="1" class="tryit-input" id="ml_page"></div>
+            <div><label class="field-label">per_page</label><input type="number" value="10" class="tryit-input" id="ml_per_page"></div>
+          </div>
+          <button onclick="tryGetAuth('/api/admin/licenses?status='+gv('ml_status')+'&page='+gv('ml_page')+'&per_page='+gv('ml_per_page'), 'mgmt_lic_result')" class="tryit-btn">Send Request</button>
+          <div id="mgmt_lic_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- PATCH /api/admin/licenses/:id/status -->
+    {% call endpoint_card() %}
+    <div data-endpoint="mgmt_lic_status">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('mgmt_lic_status')">
+        <span class="method-badge" style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.25)">PATCH</span>
+        <code class="text-sm font-mono text-white">/api/admin/licenses/&lt;id&gt;/status</code>
+        <span class="text-sm text-gray-500 ml-2">Change a licence's status</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div><label class="field-label">licence ID</label><input type="number" placeholder="1" class="tryit-input" id="ls_id"></div>
+            <div><label class="field-label">new status</label><select class="tryit-input" id="ls_status"><option>active</option><option>suspended</option><option>revoked</option></select></div>
+          </div>
+          <button onclick="tryPatch('/api/admin/licenses/'+gv('ls_id')+'/status', {status: gv('ls_status')}, 'ls_result')" class="tryit-btn">Send Request</button>
+          <div id="ls_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- PUT /api/admin/licenses/:id/features -->
+    {% call endpoint_card() %}
+    <div data-endpoint="mgmt_lic_feat">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('mgmt_lic_feat')">
+        <span class="method-badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.25)">PUT</span>
+        <code class="text-sm font-mono text-white">/api/admin/licenses/&lt;id&gt;/features</code>
+        <span class="text-sm text-gray-500 ml-2">Set features on a licence</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <p class="text-sm text-gray-400">Replaces all features on a licence. Pass an array of feature IDs. Pass an empty array to clear all features (licence will fall back to tier defaults).</p>
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div><label class="field-label">licence ID</label><input type="number" placeholder="1" class="tryit-input" id="lf_id"></div>
+            <div><label class="field-label">feature_ids (comma separated)</label><input type="text" placeholder="1,2,3" class="tryit-input" id="lf_ids"></div>
+          </div>
+          <button onclick="tryPut('/api/admin/licenses/'+gv('lf_id')+'/features', {feature_ids: gv('lf_ids').split(',').filter(Boolean).map(Number)}, 'lf_result')" class="tryit-btn">Send Request</button>
+          <div id="lf_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- GET /api/admin/customers -->
+    {% call endpoint_card() %}
+    <div data-endpoint="mgmt_cust">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('mgmt_cust')">
+        <span class="method-badge method-get">GET</span>
+        <code class="text-sm font-mono text-white">/api/admin/customers</code>
+        <span class="text-sm text-gray-500 ml-2">List customers</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <p class="text-sm text-gray-400">Returns paginated list of customers with licence counts. Also supports <code class="text-amber-400">POST</code> to create a new customer, <code class="text-amber-400">GET /customers/&lt;id&gt;</code> for details, and <code class="text-amber-400">PATCH /customers/&lt;id&gt;</code> to update.</p>
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <button onclick="tryGetAuth('/api/admin/customers', 'mgmt_cust_result')" class="tryit-btn">Send Request</button>
+          <div id="mgmt_cust_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- GET /api/admin/products -->
+    {% call endpoint_card() %}
+    <div data-endpoint="mgmt_prod">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('mgmt_prod')">
+        <span class="method-badge method-get">GET</span>
+        <code class="text-sm font-mono text-white">/api/admin/products</code>
+        <span class="text-sm text-gray-500 ml-2">List products with tiers</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <button onclick="tryGetAuth('/api/admin/products', 'mgmt_prod_result')" class="tryit-btn">Send Request</button>
+          <div id="mgmt_prod_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- GET /api/admin/features -->
+    {% call endpoint_card() %}
+    <div data-endpoint="mgmt_feat">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('mgmt_feat')">
+        <span class="method-badge method-get">GET</span>
+        <code class="text-sm font-mono text-white">/api/admin/features</code>
+        <span class="text-sm text-gray-500 ml-2">List / create / update / delete features</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <p class="text-sm text-gray-400">Full CRUD for features. <code class="text-amber-400">GET</code> lists all, <code class="text-amber-400">POST</code> creates, <code class="text-amber-400">PATCH /features/&lt;id&gt;</code> updates, <code class="text-amber-400">DELETE /features/&lt;id&gt;</code> deletes.</p>
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <button onclick="tryGetAuth('/api/admin/features', 'mgmt_feat_result')" class="tryit-btn">Send Request</button>
+          <div id="mgmt_feat_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- GET /api/admin/roles -->
+    {% call endpoint_card() %}
+    <div data-endpoint="mgmt_roles">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('mgmt_roles')">
+        <span class="method-badge method-get">GET</span>
+        <code class="text-sm font-mono text-white">/api/admin/roles</code>
+        <span class="text-sm text-gray-500 ml-2">List roles with permissions</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <button onclick="tryGetAuth('/api/admin/roles', 'mgmt_roles_result')" class="tryit-btn">Send Request</button>
+          <div id="mgmt_roles_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- GET /api/admin/users -->
+    {% call endpoint_card() %}
+    <div data-endpoint="mgmt_users">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('mgmt_users')">
+        <span class="method-badge method-get">GET</span>
+        <code class="text-sm font-mono text-white">/api/admin/users</code>
+        <span class="text-sm text-gray-500 ml-2">List admin users with roles</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <button onclick="tryGetAuth('/api/admin/users', 'mgmt_users_result')" class="tryit-btn">Send Request</button>
+          <div id="mgmt_users_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- GET /api/admin/activity -->
+    {% call endpoint_card() %}
+    <div data-endpoint="mgmt_activity">
+      <div class="endpoint-header flex items-center gap-3 px-5 py-4 cursor-pointer select-none" onclick="toggle('mgmt_activity')">
+        <span class="method-badge method-get">GET</span>
+        <code class="text-sm font-mono text-white">/api/admin/activity</code>
+        <span class="text-sm text-gray-500 ml-2">Activity log — paginated, filterable</span>
+        <svg class="w-4 h-4 text-gray-600 ml-auto chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="endpoint-body hidden px-5 pb-5 space-y-4 border-t border-dark-700/50 pt-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Query Params</p>
+            <div class="space-y-1">
+              <div class="field-row"><code class="field-name">entity_type</code><span class="field-type">string</span><span class="field-desc">license / customer / feature etc.</span></div>
+              <div class="field-row"><code class="field-name">action</code><span class="field-type">string</span><span class="field-desc">partial match e.g. "create"</span></div>
+              <div class="field-row"><code class="field-name">page / per_page</code><span class="field-type">integer</span><span class="field-desc">pagination (max 200)</span></div>
+            </div>
+          </div>
+          <div><pre class="response-sample">{"total": 150, "logs": [
+  {"action": "create_license",
+   "entity_type": "license",
+   "admin": "Administrator",
+   "created_at": "2026-03-14T..."}
+]}</pre></div>
+        </div>
+        <div class="tryit-box">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Try It Out</p>
+          <div class="grid grid-cols-3 gap-3 mb-3">
+            <div><label class="field-label">entity_type</label><input type="text" placeholder="license" class="tryit-input" id="act_type"></div>
+            <div><label class="field-label">action</label><input type="text" placeholder="create" class="tryit-input" id="act_action"></div>
+            <div><label class="field-label">per_page</label><input type="number" value="10" class="tryit-input" id="act_pp"></div>
+          </div>
+          <button onclick="tryGetAuth('/api/admin/activity?entity_type='+gv('act_type')+'&action='+gv('act_action')+'&per_page='+gv('act_pp'), 'mgmt_act_result')" class="tryit-btn">Send Request</button>
+          <div id="mgmt_act_result" class="result-box hidden mt-3"></div>
+        </div>
+      </div>
+    </div>
+    {% endcall %}
+  </div>
+
+  <!-- ── CODE SNIPPETS ──────────────────────────────────────────── -->
+  <div class="space-y-3">
+    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Code Examples</h2>
+    <div class="bg-dark-800 border border-dark-700/50 rounded-2xl overflow-hidden">
+      <!-- Tabs -->
+      <div class="flex border-b border-dark-700/50 px-1 pt-1 gap-1">
+        <button onclick="showSnippet('python')" id="tab-python" class="snippet-tab snippet-tab-active px-4 py-2.5 text-sm font-medium rounded-t-lg">Python</button>
+        <button onclick="showSnippet('js')" id="tab-js" class="snippet-tab px-4 py-2.5 text-sm font-medium rounded-t-lg">JavaScript</button>
+        <button onclick="showSnippet('curl')" id="tab-curl" class="snippet-tab px-4 py-2.5 text-sm font-medium rounded-t-lg">cURL</button>
+      </div>
+
+      <div id="snippet-python" class="snippet-content p-5">
+        <pre class="code-block">import requests
+
+LICENSE_SERVER = "{{ base_url }}"
+LICENSE_KEY    = "XXXX-XXXX-XXXX-XXXX"
+
+def validate():
+    r = requests.post(f"{LICENSE_SERVER}/api/validate", json={
+        "license_key": LICENSE_KEY,
+        "hardware_id": "my-server-id",
+        "domain": "example.com",
+    }, timeout=8)
+    data = r.json()
+    if data["valid"]:
+        print("✓ Valid —", data["tier_name"])
+        print("Features:", data["features"])
+    else:
+        print("✗ Invalid —", data["error"])
+
+validate()</pre>
+      </div>
+
+      <div id="snippet-js" class="snippet-content hidden p-5">
+        <pre class="code-block">const LICENSE_SERVER = "{{ base_url }}";
+const LICENSE_KEY    = "XXXX-XXXX-XXXX-XXXX";
+
+async function validate() {
+  const res = await fetch(`${LICENSE_SERVER}/api/validate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      license_key: LICENSE_KEY,
+      hardware_id: "my-server-id",
+      domain: window.location.hostname,
+    }),
+  });
+  const data = await res.json();
+  if (data.valid) {
+    console.log("✓ Valid —", data.tier_name);
+    console.log("Features:", data.features);
+  } else {
+    console.error("✗ Invalid —", data.error);
+  }
+}
+
+validate();</pre>
+      </div>
+
+      <div id="snippet-curl" class="snippet-content hidden p-5">
+        <pre class="code-block">curl -X POST {{ base_url }}/api/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "license_key": "XXXX-XXXX-XXXX-XXXX",
+    "hardware_id": "my-server-id",
+    "domain": "example.com"
+  }'
+
+# Health check
+curl {{ base_url }}/api/health
+
+# Get your server's IP as seen by the licence server
+curl {{ base_url }}/api/my-ip
+
+# Public licence info (no auth needed)
+curl {{ base_url }}/api/info/XXXX-XXXX-XXXX-XXXX</pre>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /p-6 -->
+
+<style>
+  .method-badge { padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; font-family: monospace; flex-shrink: 0; }
+  .method-post  { background: rgba(234,179,8,0.15); color: #fbbf24; border: 1px solid rgba(234,179,8,0.25); }
+  .method-get   { background: rgba(34,197,94,0.15);  color: #4ade80;  border: 1px solid rgba(34,197,94,0.25); }
+  .field-row    { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; }
+  .field-name   { font-size: 12px; font-family: monospace; color: #e2e8f0; background: #1a1a1a; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+  .field-type   { font-size: 11px; color: #60a5fa; background: rgba(96,165,250,0.1); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+  .field-type.required { color: #f87171; background: rgba(248,113,113,0.1); }
+  .field-desc   { font-size: 12px; color: #6b7280; }
+  .response-sample { font-size: 11px; font-family: monospace; background: #0a0a0a; border: 1px solid #242424; border-radius: 10px; padding: 12px; color: #4ade80; line-height: 1.6; overflow-x: auto; }
+  .tryit-box    { background: rgba(16,185,129,0.04); border: 1px solid rgba(16,185,129,0.12); border-radius: 12px; padding: 16px; }
+  .tryit-input  { width: 100%; background: #121212; border: 1px solid #2e2e2e; border-radius: 8px; padding: 8px 12px; color: #e2e8f0; font-size: 13px; font-family: monospace; outline: none; transition: border-color .15s; }
+  .tryit-input:focus { border-color: rgba(16,185,129,0.4); }
+  .tryit-btn    { padding: 8px 18px; background: #10b981; color: white; border: none; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
+  .tryit-btn:hover { background: #059669; }
+  .field-label  { display: block; font-size: 11px; color: #6b7280; margin-bottom: 4px; font-weight: 500; }
+  .result-box   { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 10px; padding: 14px; font-size: 12px; font-family: monospace; line-height: 1.6; max-height: 260px; overflow-y: auto; }
+  .result-ok    { color: #4ade80; }
+  .result-err   { color: #f87171; }
+  .result-meta  { color: #374151; font-size: 11px; margin-bottom: 6px; }
+  .code-block   { font-size: 12px; font-family: monospace; color: #a3e635; line-height: 1.7; overflow-x: auto; background: transparent; }
+  .snippet-tab         { color: #6b7280; border-bottom: 2px solid transparent; transition: all .15s; }
+  .snippet-tab:hover   { color: #9ca3af; }
+  .snippet-tab-active  { color: #10b981; border-bottom-color: #10b981; background: rgba(16,185,129,0.05); }
+</style>
+
+<script>
+const BASE = "{{ base_url }}";
+
+function gv(id) { return document.getElementById(id)?.value?.trim() || ''; }
+
+function toggle(id) {
+  const el = document.querySelector(`[data-endpoint="${id}"] .endpoint-body`);
+  const ch = document.querySelector(`[data-endpoint="${id}"] .chevron`);
+  el.classList.toggle('hidden');
+  ch.style.transform = el.classList.contains('hidden') ? '' : 'rotate(180deg)';
+}
+
+async function tryPost(path, body, resultId) {
+  const el = document.getElementById(resultId);
+  el.classList.remove('hidden');
+  el.innerHTML = '<span class="result-meta">Sending…</span>';
+  const t = Date.now();
+  try {
+    const r = await fetch(BASE + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    const ms = Date.now() - t;
+    const isOk = data.valid || data.success || data.status === 'ok';
+    el.innerHTML = `<div class="result-meta">HTTP ${r.status} · ${ms}ms</div><pre class="${isOk ? 'result-ok' : 'result-err'}">${JSON.stringify(data, null, 2)}</pre>`;
+  } catch(e) {
+    el.innerHTML = `<span class="result-err">Error: ${e.message}</span>`;
+  }
+}
+
+async function tryGet(path, resultId) {
+  const el = document.getElementById(resultId);
+  el.classList.remove('hidden');
+  el.innerHTML = '<span class="result-meta">Sending…</span>';
+  const t = Date.now();
+  try {
+    const r = await fetch(BASE + path);
+    const data = await r.json();
+    const ms = Date.now() - t;
+    el.innerHTML = `<div class="result-meta">HTTP ${r.status} · ${ms}ms</div><pre class="result-ok">${JSON.stringify(data, null, 2)}</pre>`;
+  } catch(e) {
+    el.innerHTML = `<span class="result-err">Error: ${e.message}</span>`;
+  }
+}
+
+function toggleKeyVisibility() {
+  const inp = document.getElementById('globalApiKey');
+  const btn = event.target;
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = 'Hide'; }
+  else { inp.type = 'password'; btn.textContent = 'Show'; }
+}
+
+function getApiKey() { return document.getElementById('globalApiKey')?.value?.trim() || ''; }
+
+async function tryGetAuth(path, resultId) {
+  const key = getApiKey();
+  if (!key) { showResult(resultId, null, 'Paste your API key above first', true); return; }
+  const el = document.getElementById(resultId);
+  el.classList.remove('hidden');
+  el.innerHTML = '<span class="result-meta">Sending…</span>';
+  const t = Date.now();
+  try {
+    const r = await fetch(BASE + path, { headers: { 'X-API-Key': key } });
+    const data = await r.json();
+    const ms = Date.now() - t;
+    el.innerHTML = `<div class="result-meta">HTTP ${r.status} · ${ms}ms</div><pre class="${r.ok ? 'result-ok' : 'result-err'}">${JSON.stringify(data, null, 2)}</pre>`;
+  } catch(e) { el.innerHTML = `<span class="result-err">Error: ${e.message}</span>`; }
+}
+
+async function tryPatch(path, body, resultId) {
+  const key = getApiKey();
+  if (!key) { showResult(resultId, null, 'Paste your API key above first', true); return; }
+  const el = document.getElementById(resultId);
+  el.classList.remove('hidden');
+  el.innerHTML = '<span class="result-meta">Sending…</span>';
+  const t = Date.now();
+  try {
+    const r = await fetch(BASE + path, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': key },
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    el.innerHTML = `<div class="result-meta">HTTP ${r.status} · ${Date.now()-t}ms</div><pre class="${r.ok?'result-ok':'result-err'}">${JSON.stringify(data,null,2)}</pre>`;
+  } catch(e) { el.innerHTML = `<span class="result-err">Error: ${e.message}</span>`; }
+}
+
+async function tryPut(path, body, resultId) {
+  const key = getApiKey();
+  if (!key) { showResult(resultId, null, 'Paste your API key above first', true); return; }
+  const el = document.getElementById(resultId);
+  el.classList.remove('hidden');
+  el.innerHTML = '<span class="result-meta">Sending…</span>';
+  const t = Date.now();
+  try {
+    const r = await fetch(BASE + path, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': key },
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    el.innerHTML = `<div class="result-meta">HTTP ${r.status} · ${Date.now()-t}ms</div><pre class="${r.ok?'result-ok':'result-err'}">${JSON.stringify(data,null,2)}</pre>`;
+  } catch(e) { el.innerHTML = `<span class="result-err">Error: ${e.message}</span>`; }
+}
+
+function showResult(resultId, status, msg, isErr) {
+  const el = document.getElementById(resultId);
+  el.classList.remove('hidden');
+  el.innerHTML = `<span class="${isErr ? 'result-err' : 'result-ok'}">${msg}</span>`;
+}
+
+
+  document.querySelectorAll('.snippet-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.snippet-tab').forEach(el => el.classList.remove('snippet-tab-active'));
+  document.getElementById('snippet-' + lang).classList.remove('hidden');
+  document.getElementById('tab-' + lang).classList.add('snippet-tab-active');
+}
+</script>
+{% endblock %}

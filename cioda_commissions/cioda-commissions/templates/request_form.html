@@ -1,0 +1,585 @@
+{% extends "base.html" %}
+{% block title %}Request a Commission — Cioda's Commissions{% endblock %}
+{% block body %}
+<nav class="nav-bar">
+  <a class="nav-logo" href="/">Cioda's <span>Commissions</span></a>
+  <a href="/" class="btn btn-ghost btn-sm">← Back</a>
+</nav>
+
+<main style="max-width:720px;margin:0 auto;padding:2rem 1.25rem 4rem;">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div style="text-align:center;margin-bottom:2rem;" class="fade-in">
+    <div class="glow-gold font-display" style="letter-spacing:.15em;margin-bottom:0.5rem;">⭐ ✨ ⭐</div>
+    <h1 class="font-display" style="font-size:clamp(1.7rem,5vw,2.4rem);margin-bottom:0.4rem;">Request a Commission</h1>
+    <p style="color:var(--text-secondary);font-style:italic;font-size:1rem;">Fill out the form and I'll get back to you soon!</p>
+  </div>
+
+  <!-- ═══ THE FORM (hidden after review) ═══ -->
+  <div id="formSection" class="fade-in">
+  <form id="commissionForm" method="POST" onsubmit="showReview(event)">
+    <!-- Honeypot fields — hidden from real users, bots fill these in -->
+    <div style="display:none;visibility:hidden;position:absolute;left:-9999px;" aria-hidden="true">
+      <input type="text" name="website_url"   tabindex="-1" autocomplete="off">
+      <input type="text" name="phone_number"  tabindex="-1" autocomplete="off">
+    </div>
+
+    <!-- ── Contact Info ── -->
+    <div class="card" style="margin-bottom:1rem;">
+      <h3 class="font-display" style="color:var(--accent);font-size:0.88rem;letter-spacing:.07em;margin-bottom:0.3rem;">
+        CONTACT INFO
+      </h3>
+      <p style="font-size:0.82rem;color:var(--text-muted);font-style:italic;margin-bottom:1rem;">
+        Provide at least one way to reach you.
+      </p>
+
+      <div style="margin-bottom:0.85rem;">
+        <label class="form-label">Your Name *</label>
+        <input type="text" name="customer_name" id="f_name" class="input" required placeholder="What should I call you?">
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;">
+        <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:0.85rem;">
+          <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.5rem;">
+            <span>💬</span>
+            <span class="font-display" style="font-size:0.75rem;color:var(--text-secondary);">DISCORD</span>
+          </div>
+          <input type="text" name="customer_discord" id="f_discord" class="input" placeholder="@username" style="font-size:0.9rem;">
+          <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.35rem;font-style:italic;">Preferred — fastest replies</p>
+        </div>
+        <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:0.85rem;">
+          <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.5rem;">
+            <span>📸</span>
+            <span class="font-display" style="font-size:0.75rem;color:var(--text-secondary);">INSTAGRAM</span>
+          </div>
+          <input type="text" name="customer_instagram" id="f_instagram" class="input" placeholder="@handle" style="font-size:0.9rem;">
+          <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.35rem;font-style:italic;">DMs open? Leave your handle</p>
+        </div>
+        <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:0.85rem;">
+          <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.5rem;">
+            <span>✉️</span>
+            <span class="font-display" style="font-size:0.75rem;color:var(--text-secondary);">EMAIL</span>
+          </div>
+          <input type="email" name="customer_email" id="f_email" class="input" placeholder="your@email.com" style="font-size:0.9rem;">
+          <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.35rem;font-style:italic;">For receipts &amp; updates</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Commission Types (multi-select checkboxes) ── -->
+    <div class="card" style="margin-bottom:1rem;">
+      <h3 class="font-display" style="color:var(--accent);font-size:0.88rem;letter-spacing:.07em;margin-bottom:0.3rem;">
+        COMMISSION TYPE *
+      </h3>
+      <p style="font-size:0.82rem;color:var(--text-muted);font-style:italic;margin-bottom:1rem;">
+        Tick everything you'd like. You can choose more than one!
+      </p>
+
+      {% set categories = presets | groupby('category') %}
+      <div style="display:grid;gap:1.1rem;">
+        {% for cat, items in categories %}
+        <div>
+          <div class="font-display" style="font-size:0.75rem;color:var(--text-muted);letter-spacing:.08em;
+               text-transform:uppercase;margin-bottom:0.5rem;padding-bottom:0.3rem;
+               border-bottom:1px solid var(--border);">{{ cat }}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0.5rem;">
+            {% for item in items %}
+            <label class="comm-item" style="cursor:pointer;display:flex;align-items:center;gap:0.6rem;
+                   padding:0.6rem 0.75rem;background:var(--bg-elevated);border:2px solid var(--border);
+                   border-radius:8px;transition:all 0.15s;user-select:none;">
+              <input type="checkbox" name="commission_type" value="{{ item.type }}"
+                     class="comm-check" data-price="{{ item.price }}"
+                     style="width:16px;height:16px;accent-color:var(--accent);flex-shrink:0;"
+                     onchange="updateSummary()">
+              <div>
+                <div style="font-size:0.88rem;font-weight:600;color:var(--text-primary);line-height:1.2;">
+                  {{ item.type.split(' - ')[-1] if ' - ' in item.type else item.type }}
+                </div>
+                <div style="font-size:0.8rem;color:var(--gold);">${{ item.price }}</div>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+
+        <!-- Other / Custom -->
+        <div>
+          <div class="font-display" style="font-size:0.75rem;color:var(--text-muted);letter-spacing:.08em;
+               text-transform:uppercase;margin-bottom:0.5rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border);">Other</div>
+          <label class="comm-item" style="cursor:pointer;display:inline-flex;align-items:center;gap:0.6rem;
+                 padding:0.6rem 0.75rem;background:var(--bg-elevated);border:2px solid var(--border);
+                 border-radius:8px;transition:all 0.15s;user-select:none;">
+            <input type="checkbox" name="commission_type" value="Custom / Other"
+                   class="comm-check" data-price="0"
+                   style="width:16px;height:16px;accent-color:var(--accent);"
+                   onchange="updateSummary()">
+            <div>
+              <div style="font-size:0.88rem;font-weight:600;color:var(--text-primary);">Custom / Other</div>
+              <div style="font-size:0.8rem;color:var(--text-muted);">Describe in notes below</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Running total -->
+      <div id="selectionSummary" style="display:none;margin-top:1rem;padding:0.75rem 1rem;
+           background:var(--bg-base);border-radius:8px;border:1px solid var(--accent);">
+        <div style="font-family:'Cinzel',serif;font-size:0.78rem;color:var(--text-muted);
+             letter-spacing:.06em;margin-bottom:0.4rem;">YOUR SELECTION</div>
+        <div id="summaryList" style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.4rem;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:0.4rem;
+             border-top:1px solid var(--border);">
+          <span style="font-family:'Cinzel',serif;font-size:0.8rem;color:var(--text-muted);">ESTIMATED TOTAL</span>
+          <span id="summaryTotal" style="font-size:1.1rem;font-weight:700;color:var(--gold);"></span>
+        </div>
+        <p style="font-size:0.72rem;color:var(--text-muted);font-style:italic;margin-top:0.35rem;">
+          +55% per additional character. Final price confirmed by Cioda.
+        </p>
+      </div>
+      <!-- Hidden validation field -->
+      <input type="hidden" id="commissionRequired" required>
+    </div>
+
+    <!-- ── Description ── -->
+    <div class="card" style="margin-bottom:1rem;">
+      <h3 class="font-display" style="color:var(--accent);font-size:0.88rem;letter-spacing:.07em;margin-bottom:0.75rem;">
+        DESCRIPTION *
+      </h3>
+      <textarea name="description" id="f_description" class="input" required
+        placeholder="Tell me about your character, what you'd like, any special details, number of characters..."
+        style="min-height:120px;"></textarea>
+    </div>
+
+    <!-- ── Custom form fields ── -->
+    {% if fields %}
+    <div class="card" style="margin-bottom:1rem;">
+      <h3 class="font-display" style="color:var(--accent);font-size:0.88rem;letter-spacing:.07em;margin-bottom:0.75rem;">
+        ADDITIONAL DETAILS
+      </h3>
+      {% for field in fields %}
+      <div style="margin-bottom:0.85rem;">
+        <label class="form-label">{{ field.label }}{% if field.required %} *{% endif %}</label>
+        {% if field.field_type == 'textarea' %}
+          <textarea name="{{ field.field_key }}" class="input"
+            {{ 'required' if field.required }} placeholder="{{ field.label }}..."></textarea>
+        {% elif field.field_type == 'select' %}
+          <select name="{{ field.field_key }}" class="input" {{ 'required' if field.required }}>
+            <option value="">— Select —</option>
+            {% for opt in field.options | from_json %}
+            <option value="{{ opt }}">{{ opt }}</option>
+            {% endfor %}
+          </select>
+        {% elif field.field_type == 'checkbox' %}
+          <div style="display:flex;align-items:center;gap:0.5rem;padding-top:0.25rem;">
+            <input type="checkbox" name="{{ field.field_key }}" id="{{ field.field_key }}"
+                   style="width:16px;height:16px;accent-color:var(--accent);">
+            <label for="{{ field.field_key }}" style="font-family:'Crimson Pro',serif;font-size:1rem;color:var(--text-secondary);">Yes</label>
+          </div>
+        {% else %}
+          <input type="text" name="{{ field.field_key }}" class="input"
+            {{ 'required' if field.required }} placeholder="{{ field.label }}">
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ── Payment Info ── -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <h3 class="font-display" style="color:var(--accent);font-size:0.88rem;letter-spacing:.07em;margin-bottom:0.3rem;">
+        PAYMENT INFO
+      </h3>
+      <p style="font-size:0.82rem;color:var(--text-muted);font-style:italic;margin-bottom:1rem;">
+        Helps keep track of payments. No charge is made through this form.
+      </p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.85rem;">
+        <label style="cursor:pointer;">
+          <input type="radio" name="payment_method" value="CashApp" required
+                 style="display:none;" onchange="updatePaymentLabel(this)">
+          <div class="payment-card" style="background:var(--bg-elevated);border:2px solid var(--border);
+                border-radius:10px;padding:0.85rem;text-align:center;transition:all 0.2s;">
+            <div style="font-size:1.4rem;margin-bottom:0.3rem;">💵</div>
+            <div class="font-display" style="font-size:0.82rem;color:var(--text-secondary);">Cash App</div>
+          </div>
+        </label>
+        <label style="cursor:pointer;">
+          <input type="radio" name="payment_method" value="PayPal" required
+                 style="display:none;" onchange="updatePaymentLabel(this)">
+          <div class="payment-card" style="background:var(--bg-elevated);border:2px solid var(--border);
+                border-radius:10px;padding:0.85rem;text-align:center;transition:all 0.2s;">
+            <div style="font-size:1.4rem;margin-bottom:0.3rem;">🅿️</div>
+            <div class="font-display" style="font-size:0.82rem;color:var(--text-secondary);">PayPal</div>
+          </div>
+        </label>
+      </div>
+
+      <div>
+        <label class="form-label" id="paymentUsernameLabel">Cash App $Cashtag or PayPal Email *</label>
+        <input type="text" name="payment_username" id="f_payment_username" class="input" required
+               placeholder="e.g. $YourCashtag or you@email.com">
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.35rem;font-style:italic;">
+          Used only to match your payment to your order. We never charge through this form.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Discount Code ── -->
+    <div style="margin-bottom:1.25rem;">
+      <label class="form-label" style="font-size:0.82rem;color:var(--text-muted);">
+        Discount Code <span style="font-weight:400;font-style:italic;">(optional)</span>
+      </label>
+      <div style="display:flex;gap:0.5rem;align-items:flex-start;">
+        <input type="text" name="discount_code" id="discountCode" class="input"
+               placeholder="Enter code" style="flex:1;text-transform:uppercase;"
+               oninput="this.value=this.value.toUpperCase();checkDiscount(this.value)">
+        <div id="discountBadge" style="display:none;white-space:nowrap;padding:0.45rem 0.85rem;
+             border-radius:8px;font-size:0.85rem;font-weight:600;align-self:center;"></div>
+      </div>
+    </div>
+
+    <!-- ── Reference Images (shown if selected type allows it) ── -->
+    <div id="refImagesSection" style="margin-bottom:1.25rem;display:none;">
+      <div class="card" style="padding:1rem;">
+        <h3 class="font-display" style="color:var(--accent);font-size:0.88rem;
+            letter-spacing:.07em;margin-bottom:0.3rem;">REFERENCE IMAGES</h3>
+        <p style="font-size:0.82rem;color:var(--text-muted);font-style:italic;margin-bottom:0.85rem;">
+          Upload images to help describe your commission.
+          <span id="refMaxLabel" style="color:var(--accent);"></span>
+        </p>
+        <div id="refDropZone"
+             style="border:2px dashed var(--border);border-radius:10px;padding:1.1rem;
+                    text-align:center;cursor:pointer;transition:all .2s;margin-bottom:0.75rem;"
+             onclick="document.getElementById('refFileInput').click()"
+             ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+             ondragleave="this.style.borderColor='var(--border)'"
+             ondrop="handleRefDrop(event)">
+          <div style="font-size:1.6rem;margin-bottom:0.3rem;">📎</div>
+          <div style="font-size:0.88rem;color:var(--text-secondary);">Drop images here or click to browse</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.2rem;">PNG, JPG, GIF, WebP</div>
+          <input type="file" id="refFileInput" name="ref_images" multiple
+                 accept="image/png,image/jpeg,image/gif,image/webp"
+                 style="display:none;" onchange="previewRefImages(this.files)">
+        </div>
+        <div id="refPreview" style="display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
+      </div>
+    </div>
+
+    <!-- ── Check Order Button ── -->
+    <button type="submit" class="btn btn-primary"
+            style="width:100%;justify-content:center;padding:0.85rem;font-size:1rem;">
+      👁 Check My Order
+    </button>
+    <p style="font-size:0.8rem;color:var(--text-muted);font-style:italic;margin-top:0.75rem;text-align:center;">
+      You'll review your order before it's submitted.
+    </p>
+
+  </form>
+  </div><!-- end #formSection -->
+
+
+  <!-- ═══ REVIEW PANEL (shown after clicking Check) ═══ -->
+  <div id="reviewSection" style="display:none;" class="fade-in">
+    <div class="card" style="border:1px solid var(--accent);box-shadow:0 0 30px var(--accent-glow);margin-bottom:1rem;">
+      <div style="text-align:center;margin-bottom:1.25rem;">
+        <div style="font-size:2.5rem;margin-bottom:0.5rem;">👀</div>
+        <h2 class="font-display" style="font-size:1.3rem;color:var(--accent);margin-bottom:0.25rem;">Review Your Order</h2>
+        <p style="font-size:0.88rem;color:var(--text-muted);font-style:italic;">
+          Please check everything looks right before submitting.
+        </p>
+      </div>
+
+      <div style="display:grid;gap:0.6rem;margin-bottom:1.25rem;">
+
+        <div style="padding:0.6rem 0.85rem;background:var(--bg-elevated);border-radius:8px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--text-muted);letter-spacing:.06em;margin-bottom:0.2rem;">NAME</div>
+          <div id="rv_name" style="font-size:0.95rem;"></div>
+        </div>
+
+        <div style="padding:0.6rem 0.85rem;background:var(--bg-elevated);border-radius:8px;" id="rv_contact_row">
+          <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--text-muted);letter-spacing:.06em;margin-bottom:0.2rem;">CONTACT</div>
+          <div id="rv_contact" style="font-size:0.95rem;"></div>
+        </div>
+
+        <div style="padding:0.6rem 0.85rem;background:var(--bg-elevated);border-radius:8px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--text-muted);letter-spacing:.06em;margin-bottom:0.2rem;">COMMISSION TYPE(S)</div>
+          <div id="rv_types" style="font-size:0.95rem;"></div>
+          <div id="rv_estimate" style="font-size:0.88rem;color:var(--gold);margin-top:0.25rem;"></div>
+        </div>
+
+        <div style="padding:0.6rem 0.85rem;background:var(--bg-elevated);border-radius:8px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--text-muted);letter-spacing:.06em;margin-bottom:0.2rem;">DESCRIPTION</div>
+          <div id="rv_description" style="font-size:0.95rem;white-space:pre-wrap;max-height:120px;overflow-y:auto;"></div>
+        </div>
+
+        <div style="padding:0.6rem 0.85rem;background:var(--bg-elevated);border-radius:8px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--text-muted);letter-spacing:.06em;margin-bottom:0.2rem;">PAYMENT</div>
+          <div id="rv_payment" style="font-size:0.95rem;"></div>
+        </div>
+
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+        <button type="button" onclick="goBack()"
+                class="btn btn-ghost" style="justify-content:center;padding:0.75rem;">
+          ✏️ Edit
+        </button>
+        <button type="button" onclick="submitForm()"
+                class="btn btn-primary" style="justify-content:center;padding:0.75rem;">
+          ✦ Confirm &amp; Submit
+        </button>
+      </div>
+      <p style="font-size:0.78rem;color:var(--text-muted);font-style:italic;margin-top:0.75rem;text-align:center;">
+        You'll get your tracking link immediately after submitting.
+      </p>
+    </div>
+  </div>
+
+  <!-- Hidden real form that actually POSTs -->
+  <form id="realForm" method="POST" style="display:none;"></form>
+
+</main>
+
+<style>
+  .comm-item:has(.comm-check:checked) {
+    border-color: var(--accent) !important;
+    background: var(--accent-glow) !important;
+  }
+  .comm-item:has(.comm-check:checked) .font-display,
+  .comm-item:has(.comm-check:checked) div[style*="color:var(--text-primary)"] {
+    color: var(--accent) !important;
+  }
+  .payment-card:hover { border-color: var(--accent) !important; }
+  input[type="radio"]:checked + .payment-card {
+    border-color: var(--accent) !important;
+    background: var(--accent-glow) !important;
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  input[type="radio"]:checked + .payment-card .font-display { color: var(--accent) !important; }
+  @media (max-width: 480px) {
+    .comm-item { padding: 0.5rem !important; }
+  }
+</style>
+
+<script>
+  // ── Commission selection summary ──────────────────────────────────────
+  function updateSummary() {
+    const checks = document.querySelectorAll('.comm-check:checked');
+    const summary = document.getElementById('selectionSummary');
+    const list    = document.getElementById('summaryList');
+    const total   = document.getElementById('summaryTotal');
+    const reqField = document.getElementById('commissionRequired');
+
+    if (checks.length === 0) {
+      summary.style.display = 'none';
+      reqField.value = '';
+      return;
+    }
+
+    summary.style.display = 'block';
+    reqField.value = 'ok';
+
+    let rows = '', sum = 0;
+    checks.forEach(c => {
+      const price = parseFloat(c.dataset.price) || 0;
+      sum += price;
+      rows += `<div style="display:flex;justify-content:space-between;padding:0.15rem 0;">
+        <span>${c.value}</span>
+        ${price > 0 ? `<span style="color:var(--gold);">$${price.toFixed(2)}</span>` : ''}
+      </div>`;
+    });
+
+    list.innerHTML  = rows;
+    total.textContent = sum > 0 ? `$${sum.toFixed(2)}+` : 'Price TBD';
+  }
+
+  // ── Payment label swap ────────────────────────────────────────────────
+  function updatePaymentLabel(radio) {
+    const lbl = document.getElementById('paymentUsernameLabel');
+    const inp = document.getElementById('f_payment_username');
+    if (radio.value === 'CashApp') {
+      lbl.textContent = 'Your Cash App $Cashtag *';
+      inp.placeholder = 'e.g. $YourCashtag';
+    } else {
+      lbl.textContent = 'Your PayPal Email *';
+      inp.placeholder = 'e.g. you@paypal.com';
+    }
+  }
+
+  // ── Show review panel ─────────────────────────────────────────────────
+  function showReview(e) {
+    e.preventDefault();
+
+    // Validate at least one commission checked
+    const checks = document.querySelectorAll('.comm-check:checked');
+    if (checks.length === 0) {
+      alert('Please select at least one commission type.');
+      document.querySelector('.comm-check').closest('.card').scrollIntoView({behavior:'smooth'});
+      return;
+    }
+
+    // Gather values
+    const name      = document.getElementById('f_name').value.trim();
+    const discord   = document.getElementById('f_discord').value.trim();
+    const instagram = document.getElementById('f_instagram').value.trim();
+    const email     = document.getElementById('f_email').value.trim();
+    const desc      = document.getElementById('f_description').value.trim();
+    const payInput  = document.getElementById('f_payment_username').value.trim();
+    const payRadio  = document.querySelector('input[name="payment_method"]:checked');
+    const payMethod = payRadio ? payRadio.value : '';
+
+    // Build selected types + total
+    let types = [], total = 0;
+    checks.forEach(c => {
+      types.push(c.value);
+      total += parseFloat(c.dataset.price) || 0;
+    });
+
+    // Fill review panel
+    document.getElementById('rv_name').textContent = name;
+
+    let contactParts = [];
+    if (discord)   contactParts.push('💬 ' + discord);
+    if (instagram) contactParts.push('📸 ' + instagram);
+    if (email)     contactParts.push('✉️ '  + email);
+    document.getElementById('rv_contact').textContent = contactParts.join('  ·  ') || '(none provided)';
+
+    document.getElementById('rv_types').innerHTML = types.map(t =>
+      `<div style="padding:0.1rem 0;">• ${t}</div>`
+    ).join('');
+    document.getElementById('rv_estimate').textContent =
+      total > 0 ? `Estimated total: $${total.toFixed(2)}+` : '';
+
+    document.getElementById('rv_description').textContent = desc;
+    document.getElementById('rv_payment').textContent =
+      payMethod ? `${payMethod === 'CashApp' ? '💵' : '🅿️'} ${payMethod} — ${payInput}` : '(not selected)';
+
+    // Show review, hide form
+    document.getElementById('formSection').style.display  = 'none';
+    document.getElementById('reviewSection').style.display = 'block';
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  function goBack() {
+    document.getElementById('reviewSection').style.display = 'none';
+    document.getElementById('formSection').style.display   = 'block';
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  // ── Actually submit ───────────────────────────────────────────────────
+  function submitForm() {
+    const srcForm  = document.getElementById('commissionForm');
+    const realForm = document.getElementById('realForm');
+
+    // Copy all form data into the hidden form and POST it
+    realForm.innerHTML = '';
+    const data = new FormData(srcForm);
+    for (const [key, value] of data.entries()) {
+      const inp = document.createElement('input');
+      inp.type  = 'hidden';
+      inp.name  = key;
+      inp.value = value;
+      realForm.appendChild(inp);
+    }
+    realForm.submit();
+  }
+
+  // ── Discount code validation ─────────────────────────────────────────────
+  let discountTimer = null;
+  function checkDiscount(code) {
+    const badge = document.getElementById('discountBadge');
+    clearTimeout(discountTimer);
+    if (!code || code.length < 3) { badge.style.display='none'; return; }
+    discountTimer = setTimeout(async () => {
+      try {
+        const res  = await fetch('/api/discount', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({code})
+        });
+        const d = await res.json();
+        badge.style.display = 'block';
+        if (d.valid) {
+          badge.textContent = '✓ ' + d.label;
+          badge.style.background = 'rgba(34,197,94,.12)';
+          badge.style.border = '1px solid rgba(34,197,94,.3)';
+          badge.style.color  = 'var(--success)';
+        } else {
+          badge.textContent = '✕ ' + d.error;
+          badge.style.background = 'rgba(239,68,68,.08)';
+          badge.style.border = '1px solid rgba(239,68,68,.25)';
+          badge.style.color  = 'var(--danger)';
+        }
+      } catch(e) { badge.style.display='none'; }
+    }, 500);
+  }
+
+  // ── Reference image upload logic ─────────────────────────────────────────
+
+  const REF_CONFIG = {{ ref_config_json | safe }};
+  let refMaxAllowed = 0;
+
+  function updateRefSection() {
+    const checks  = [...document.querySelectorAll('.comm-check:checked')];
+    const section = document.getElementById('refImagesSection');
+    const maxLbl  = document.getElementById('refMaxLabel');
+    let showRef   = false;
+    let maxRef    = 0;
+    checks.forEach(c => {
+      const cfg = REF_CONFIG[c.value];
+      if (cfg && cfg.allow) { showRef = true; maxRef = Math.max(maxRef, cfg.max); }
+    });
+    refMaxAllowed = maxRef;
+    section.style.display = showRef ? 'block' : 'none';
+    if (showRef) {
+      maxLbl.textContent = `Up to ${maxRef} image${maxRef !== 1 ? 's' : ''} allowed.`;
+      // Enforce max on existing input
+      const inp = document.getElementById('refFileInput');
+      inp.multiple = maxRef > 1;
+    } else {
+      // Clear ref uploads if no eligible type selected
+      document.getElementById('refFileInput').value = '';
+      document.getElementById('refPreview').innerHTML = '';
+    }
+  }
+
+  function previewRefImages(files) {
+    const max      = refMaxAllowed || 3;
+    const preview  = document.getElementById('refPreview');
+    preview.innerHTML = '';
+    const capped = [...files].slice(0, max);
+    capped.forEach(file => {
+      const url = URL.createObjectURL(file);
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:relative;display:inline-block;';
+      const img = document.createElement('img');
+      img.src = url;
+      img.style.cssText = 'width:70px;height:70px;object-fit:cover;border-radius:8px;
+                            border:1px solid var(--border);display:block;';
+      wrap.appendChild(img);
+      preview.appendChild(wrap);
+    });
+  }
+
+  function handleRefDrop(e) {
+    e.preventDefault();
+    document.getElementById('refDropZone').style.borderColor = 'var(--border)';
+    const dt  = e.dataTransfer;
+    const inp = document.getElementById('refFileInput');
+    if (dt.files.length) {
+      inp.files = dt.files;
+      previewRefImages(dt.files);
+    }
+  }
+
+  // Hook into commission checkbox changes
+  document.querySelectorAll('.comm-check').forEach(cb => {
+    cb.addEventListener('change', updateRefSection);
+  });
+  updateRefSection();
+</script>
+{% endblock %}

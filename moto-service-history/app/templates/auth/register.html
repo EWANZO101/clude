@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import field, btn_primary %}
+{% block title %}Sign up — {{ site_name|default('Moto Service History') }}{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto mt-8">
+  <h1 class="font-bold text-2xl mb-6 text-center">Create your garage</h1>
+  <div class="card p-6">
+    <form method="post" class="space-y-4">
+      {{ form.hidden_tag() }}
+      {{ field(form.username) }}
+      {{ field(form.email) }}
+      {{ field(form.password) }}
+      {{ field(form.confirm) }}
+      <div class="pt-2">{{ btn_primary("Create account") }}</div>
+    </form>
+  </div>
+  <p class="text-center text-sm text-ink-muted mt-4">Already have an account? <a href="{{ url_for('auth.login') }}" class="text-gauge hover:underline">Log in</a></p>
+</div>
+{% endblock %}

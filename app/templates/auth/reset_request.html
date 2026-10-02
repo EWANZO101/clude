@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Reset password — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto bg-panel border border-border rounded-lg p-6">
+  <h1 class="text-lg font-semibold text-gray-100 mb-4">Reset your password</h1>
+  <form method="POST" novalidate class="space-y-4">
+    {{ form.hidden_tag() }}
+    <div>
+      {{ form.email.label(class="block text-sm text-gray-400 mb-1") }}
+      {{ form.email(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+    </div>
+    {{ form.submit(class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md py-2 mt-2") }}
+  </form>
+</div>
+{% endblock %}

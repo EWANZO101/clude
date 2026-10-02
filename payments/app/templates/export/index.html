@@ -1,0 +1,26 @@
+{% extends "layout/base.html" %}
+{% block title %}Export data{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between flex-wrap gap-2">
+    <h1 class="text-xl font-semibold">Export your data</h1>
+    <a href="{{ url_for('export.download_all') }}" class="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 rounded-lg">Download everything (.zip)</a>
+  </div>
+  <p class="text-sm text-slate-500">Exports cover your own data only. CSVs are best for spreadsheets; JSON preserves full structure for re-import elsewhere.</p>
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    <div class="p-4 flex items-center justify-between text-sm">
+      <span>Account (profile, dashboard layout)</span>
+      <a href="{{ url_for('export.download_module', key='account') }}" class="text-xs text-accent hover:underline">Download</a>
+    </div>
+    {% for key, entry in exporters.items() %}
+      <div class="p-4 flex items-center justify-between text-sm">
+        <span>{{ entry.label }}</span>
+        <a href="{{ url_for('export.download_module', key=key) }}" class="text-xs text-accent hover:underline">Download</a>
+      </div>
+    {% else %}
+      <p class="p-4 text-sm text-slate-500">No installed modules have registered an exporter yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

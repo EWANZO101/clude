@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Settings — {{ tenant_name }}{% endblock %}
+{% block content %}
+<style>
+  .inv-checkline { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13.5px; }
+  .inv-checkline input { width:auto; }
+</style>
+<h1>Settings</h1>
+
+<div class="panel">
+  <h2 style="margin-top:0; font-size:15px;">General</h2>
+  <form method="post" action="{{ url_for('settings.update_toggles') }}">
+    <label>Business / tenant name</label>
+    <input type="text" name="tenant_name" value="{{ settings.tenant_name }}">
+
+    <div class="inv-checkline">
+      <input type="checkbox" name="auth_enabled" id="auth_enabled" {% if settings.auth_enabled %}checked{% endif %}>
+      <label for="auth_enabled" style="margin:0;">Require login</label>
+    </div>
+    <p class="muted" style="font-size:12px; margin:4px 0 0 26px;">
+      Off: anyone with access to this app can view/edit inventory with no login screen — changes are logged under "shared".
+    </p>
+
+    <div class="inv-checkline">
+      <input type="checkbox" name="signup_enabled" id="signup_enabled" {% if settings.signup_enabled %}checked{% endif %}>
+      <label for="signup_enabled" style="margin:0;">Allow self-service signup</label>
+    </div>
+    <p class="muted" style="font-size:12px; margin:4px 0 0 26px;">
+      Only relevant while login is required. Otherwise, create accounts below yourself.
+    </p>
+
+    <div class="inv-checkline">
+      <input type="checkbox" name="barcode_enabled" id="barcode_enabled" {% if settings.barcode_enabled %}checked{% endif %}>
+      <label for="barcode_enabled" style="margin:0;">Barcode / QR labels</label>
+    </div>
+    <p class="muted" style="font-size:12px; margin:4px 0 0 26px;">
+      Adds a scannable Code128 barcode and QR code to each item's page.
+    </p>
+
+    <button type="submit" style="margin-top:18px;">Save</button>
+  </form>
+</div>
+
+{% if settings.auth_enabled %}
+<div class="panel">
+  <h2 style="margin-top:0; font-size:15px;">Users</h2>
+  <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
+    <thead>
+      <tr><th style="padding:8px; text-align:left;">Username</th><th style="padding:8px; text-align:left;">Role</th><th style="padding:8px; text-align:left;">Status</th><th style="padding:8px;"></th></tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr style="border-top:1px solid var(--panel-border);">
+        <td style="padding:8px;">{{ u.username }}</td>
+        <td style="padding:8px;" class="muted">{{ u.role }}</td>
+        <td style="padding:8px;" class="muted">{{ 'active' if u.is_active else 'inactive' }}</td>
+        <td style="padding:8px;">
+          <div class="row-actions">
+            <form method="post" action="{{ url_for('settings.toggle_user_active', user_id=u.id) }}">
+              <button type="submit" style="background:transparent; border:1px solid var(--panel-border); padding:6px 10px; font-size:12.5px;">
+                {{ 'Deactivate' if u.is_active else 'Activate' }}
+              </button>
+            </form>
+            <details style="display:inline-block;">
+              <summary style="cursor:pointer; display:inline-block; padding:6px 10px; font-size:12.5px; border:1px solid var(--panel-border); border-radius:7px;">Reset password</summary>
+              <form method="post" action="{{ url_for('settings.reset_user_password', user_id=u.id) }}" style="margin-top:8px; display:flex; gap:6px;">
+                <input type="password" name="password" placeholder="new password" required>
+                <button type="submit">Set</button>
+              </form>
+            </details>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <details>
+    <summary style="cursor:pointer; color:var(--accent); font-size:13px;">+ Add a user</summary>
+    <form method="post" action="{{ url_for('settings.add_user') }}" style="margin-top:10px;">
+      <label>Username</label>
+      <input type="text" name="username" required>
+      <label>Password</label>
+      <input type="password" name="password" required>
+      <label>Role</label>
+      <select name="role" class="inv-select" style="width:100%; padding:10px 12px; border-radius:7px; border:1px solid var(--panel-border); background:var(--bg); color:var(--text);">
+        <option value="staff">staff</option>
+        <option value="admin">admin</option>
+      </select>
+      <button type="submit" style="margin-top:14px;">Create User</button>
+    </form>
+  </details>
+</div>
+{% endif %}
+{% endblock %}

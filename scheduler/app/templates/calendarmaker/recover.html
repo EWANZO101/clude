@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Recover Calendar · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center px-4 py-12">
+
+  <div class="mb-8 text-center">
+    <h1 class="font-display text-2xl font-semibold text-ink">Find your calendar</h1>
+    <p class="mt-1.5 max-w-xs text-sm text-ink-muted">Enter the email you registered with and we'll show any calendars you have access to.</p>
+  </div>
+
+  {% include "partials/flash.html" %}
+
+  <div class="card w-full p-6 sm:p-7">
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="mb-5">
+        <label class="field-label" for="{{ form.email.id }}">Email</label>
+        {{ form.email(class_="field-input", placeholder="you@example.com", autocomplete="email", autofocus=true) }}
+        {% for error in form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <button type="submit" class="btn-primary w-full">Search</button>
+    </form>
+  </div>
+
+  {% if results %}
+  <div class="mt-6 w-full space-y-2">
+    <p class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Found {{ results|length }} calendar{% if results|length != 1 %}s{% endif %}</p>
+    {% for access in results %}
+    <a href="{{ url_for('calendarmaker.recover_use', access_id=access.id) }}" class="card flex items-center justify-between p-4 hover:border-ink-faint transition-colors">
+      <span class="font-medium text-ink">{{ access.calendar.name }}</span>
+      <span class="text-sm text-accent">Enter PIN &rarr;</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <a href="{{ url_for('calendarmaker.welcome') }}" class="mt-6 text-sm text-ink-muted hover:text-ink">&larr; Back</a>
+</div>
+{% endblock %}

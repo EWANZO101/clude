@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Items — {{ tenant_name }}{% endblock %}
+{% block content %}
+{% if low_stock_count %}
+<div class="flash flash-warning">
+  {{ low_stock_count }} item(s) low on stock. <a href="{{ url_for('items.low_stock') }}">View low stock</a>
+</div>
+{% endif %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+  <h1 style="margin:0;">Items</h1>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    {% if uncategorized_count and current_user.role in ('super_admin', 'admin') %}
+      <form method="post" action="{{ url_for('items.auto_categorize') }}"
+            onsubmit="return confirm('Auto-categorize {{ uncategorized_count }} uncategorized item(s) by name? Items already categorized are never touched.');">
+        <button type="submit" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text);">
+          Auto-categorize ({{ uncategorized_count }})
+        </button>
+      </form>
+    {% endif %}
+    <a href="{{ url_for('items.export_csv') }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text);">Export CSV</a>
+    <a href="{{ url_for('items.import_csv') }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text);">Import CSV</a>
+    <a href="{{ url_for('items.add_item') }}" class="btn">+ Add Item</a>
+  </div>
+</div>
+
+<form method="get" style="margin:16px 0;">
+  <input type="text" name="q" value="{{ q }}" placeholder="Search items by name or SKU..." style="max-width:320px;">
+</form>
+
+{% if items %}
+  {% for category_label, rows in items_by_category %}
+    <details class="category-group">
+      <summary>{{ category_label }} <span class="muted" style="font-weight:400;">({{ rows|length }})</span></summary>
+      <div class="category-body">
+      <div class="table-scroll">
+      <table style="width:100%; border-collapse:collapse;">
+        <tbody>
+          {% for item in rows %}
+            <tr style="border-bottom:1px solid var(--panel-border);">
+              <td style="padding:14px;">
+                <a href="{{ url_for('items.view_item', item_id=item.id) }}" style="font-weight:600; color:var(--text); text-decoration:none;">{{ item.name }}</a>
+                <div class="muted" style="font-size:12.5px;">
+                  {{ item.sku or '' }} — qty {{ item.quantity }} {{ item.unit or '' }}
+                  {% if item.quantity < 5 %}<span style="color:var(--orange);">● low stock</span>{% endif %}
+                  — code <code>{{ item.barcode_code }}</code>
+                </div>
+              </td>
+              <td style="padding:14px;">
+                <div class="row-actions">
+                  <form method="post" action="{{ url_for('items.adjust_item', item_id=item.id) }}">
+                    <input type="hidden" name="delta" value="-1">
+                    <button type="submit" style="background:transparent; border:1px solid var(--panel-border); padding:6px 10px;">−1</button>
+                  </form>
+                  <form method="post" action="{{ url_for('items.adjust_item', item_id=item.id) }}">
+                    <input type="hidden" name="delta" value="1">
+                    <button type="submit" style="background:transparent; border:1px solid var(--panel-border); padding:6px 10px;">+1</button>
+                  </form>
+                  <a href="{{ url_for('items.view_barcode', item_id=item.id) }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text); padding:6px 10px; font-size:12.5px;">Barcode</a>
+                  <a href="{{ url_for('items.edit_item', item_id=item.id) }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text); padding:6px 10px; font-size:12.5px;">Edit</a>
+                  <form method="post" action="{{ url_for('items.delete_item', item_id=item.id) }}" onsubmit="return confirm('Delete this item?');">
+                    <button type="submit" style="background:var(--red); padding:6px 10px; font-size:12.5px;">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      </div>
+    </details>
+  {% endfor %}
+{% else %}
+  <div class="panel"><p class="muted" style="margin:0;">No items yet.</p></div>
+{% endif %}
+{% endblock %}

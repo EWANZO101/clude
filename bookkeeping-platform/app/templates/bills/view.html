@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Bill {{ bill.bill_number or bill.id[:8] }}{% endblock %}
+{% block content %}
+<div class="page-header" style="align-items:flex-start;">
+  <div>
+    <h1 class="page-title">Bill {{ bill.bill_number or bill.id[:8] }}</h1>
+    <p class="text-muted text-sm">{{ bill.supplier.name }} — status: <span class="capitalize">{{ bill.status.replace('_',' ') }}</span></p>
+  </div>
+  {% if bill.status == 'draft' %}
+  <form method="POST" action="{{ url_for('bills.approve_bill', bill_id=bill.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-primary btn-sm">Approve &amp; post to ledger</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto mb-6">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">Description</th><th class="p-3 text-right">Amount</th></tr></thead>
+    <tbody>
+      {% for line in bill.lines %}
+      <tr class="row-border"><td class="p-3">{{ line.description }}</td><td class="p-3 text-right">{{ "%.2f"|format(line.amount) }}</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="table-foot-total"><td class="p-3">Total</td><td class="p-3 text-right">{{ "%.2f"|format(bill.total()) }}</td></tr>
+      <tr><td class="p-3">Balance due</td><td class="p-3 text-right">{{ "%.2f"|format(bill.balance_due()) }}</td></tr>
+    </tfoot>
+  </table>
+</div>
+
+{% if bill.status in ['open', 'partially_paid', 'overdue'] %}
+<div class="card card-padded max-w-md">
+  <h2 class="section-title mb-4">Record a payment</h2>
+  <form method="POST" action="{{ url_for('bills.record_bill_payment', bill_id=bill.id) }}" class="space-y-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div><label class="label-field">Amount</label><input name="amount" required class="input-field w-full"></div>
+    <div><label class="label-field">Paid from</label>
+      <select name="paid_from_account_id" class="input-field w-full">
+        {% for a in accounts %}<option value="{{ a.id }}">{{ a.code }} {{ a.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div><label class="label-field">Payment date</label><input type="date" name="payment_date" class="input-field w-full"></div>
+    <button class="bg-green-600 text-white px-4 py-2 rounded text-sm">Record payment</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

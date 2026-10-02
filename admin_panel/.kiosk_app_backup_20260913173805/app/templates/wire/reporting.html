@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Wire Reporting — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('wire.list_spools') }}">← Welding Wire</a></p>
+<h1>Wire Reporting</h1>
+
+<div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin:18px 0;">
+  <div class="stat-card">
+    <div class="value">{{ stock_count }}</div>
+    <div class="label">Spools In Stock</div>
+  </div>
+  <div class="stat-card">
+    <div class="value">${{ "%.2f"|format(stock_value) }}</div>
+    <div class="label">Stock Value</div>
+  </div>
+  <div class="stat-card">
+    <div class="value">{{ outcome_counts.emptied }}</div>
+    <div class="label">Spools Emptied</div>
+  </div>
+  <div class="stat-card">
+    <div class="value">{{ outcome_counts.scrapped }}</div>
+    <div class="label">Spools Scrapped</div>
+  </div>
+  <div class="stat-card">
+    <div class="value">{{ "%.2f"|format(total_weight_lbs) }}</div>
+    <div class="label">Total Welding Weight (lbs)</div>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+  <div class="panel">
+    <h2 style="margin-top:0; font-size:15px;">Consumption by Project</h2>
+    {% if by_project %}
+      {% for name, count in by_project %}
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--panel-border);">
+          <span>{{ name }}</span><span class="muted">{{ count }} spool{{ 's' if count != 1 }}</span>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">No resolved issuances yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0; font-size:15px;">Consumption by Welder</h2>
+    {% if by_welder %}
+      {% for name, count in by_welder %}
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--panel-border);">
+          <span>{{ name }}</span><span class="muted">{{ count }} spool{{ 's' if count != 1 }}</span>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">No resolved issuances yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0; font-size:15px;">Consumption by Wire Type</h2>
+    {% if by_type %}
+      {% for name, count in by_type %}
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--panel-border);">
+          <span>{{ name }}</span><span class="muted">{{ count }} spool{{ 's' if count != 1 }}</span>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">No resolved issuances yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0; font-size:15px;">Currently Issued ({{ open_issuances|length }})</h2>
+    {% if open_issuances %}
+      {% for e in open_issuances %}
+        <div style="padding:6px 0; border-bottom:1px solid var(--panel-border); font-size:13px;">
+          <strong>{{ e.spool.wire_label() if e.spool else '(deleted spool)' }}</strong> —
+          {{ e.issued_to }}{% if e.project %} for {{ e.project }}{% endif %}
+          <span class="muted">({{ e.issued_at.strftime('%Y-%m-%d %H:%M') }})</span>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">Nothing currently issued.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

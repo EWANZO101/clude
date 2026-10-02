@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}Export {{ export.id[:8] }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-lg font-semibold text-gray-100">Export {{ export.id[:8] }}</h1>
+  {% set badge = {
+    'complete': 'bg-green-900/40 border-green-700 text-green-300',
+    'failed': 'bg-red-900/40 border-red-700 text-red-300',
+    'running': 'bg-blue-900/40 border-blue-700 text-blue-300',
+    'pending': 'bg-yellow-900/40 border-yellow-700 text-yellow-300',
+    'expired': 'bg-gray-800 border-gray-700 text-gray-400',
+  } %}
+  <span class="text-xs px-2 py-1 rounded border {{ badge.get(export.status, badge['pending']) }}">
+    {{ export.status }}
+  </span>
+</div>
+
+<div class="grid sm:grid-cols-2 gap-4 mb-6">
+  <div class="bg-panel border border-border rounded-lg p-4">
+    <p class="text-xs text-gray-500">Created</p>
+    <p class="text-sm text-gray-200">{{ export.created_at }}</p>
+  </div>
+  <div class="bg-panel border border-border rounded-lg p-4">
+    <p class="text-xs text-gray-500">Source OS</p>
+    <p class="text-sm text-gray-200">{{ export.source_os or "—" }}</p>
+  </div>
+  <div class="bg-panel border border-border rounded-lg p-4">
+    <p class="text-xs text-gray-500">Size</p>
+    <p class="text-sm text-gray-200">{{ "%.2f MB"|format(export.file_size_bytes / 1048576) if export.file_size_bytes else "—" }}</p>
+  </div>
+  <div class="bg-panel border border-border rounded-lg p-4">
+    <p class="text-xs text-gray-500">SHA-256</p>
+    <p class="text-xs text-gray-400 break-all font-mono">{{ export.sha256 or "—" }}</p>
+  </div>
+</div>
+
+{% if export.status == "failed" %}
+  <div class="bg-red-900/30 border border-red-800 rounded-lg p-4 mb-6">
+    <p class="text-sm text-red-300 font-mono break-words">{{ export.error_message }}</p>
+  </div>
+{% endif %}
+
+{% if export.status == "complete" %}
+  <a href="{{ url_for('exports.download', export_id=export.id) }}"
+     class="inline-block px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-500 mb-6">
+     Download archive
+  </a>
+{% endif %}
+
+{% if manifest %}
+<div class="bg-panel border border-border rounded-lg p-4">
+  <h2 class="text-sm font-semibold text-gray-200 mb-3">Manifest ({{ manifest.item_count }} items)</h2>
+  {% if manifest.warnings %}
+    <div class="mb-3 space-y-1">
+      {% for warning in manifest.warnings %}
+        <p class="text-xs text-yellow-400">⚠ {{ warning }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+  <table class="w-full text-xs">
+    <thead>
+      <tr class="text-left text-gray-500 border-b border-border">
+        <th class="py-2">Category</th>
+        <th class="py-2">Path</th>
+        <th class="py-2">Size</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in manifest['items'] %}
+      <tr class="border-b border-border/50">
+        <td class="py-1.5 text-gray-400">{{ item.category }}</td>
+        <td class="py-1.5 text-gray-300 font-mono">{{ item.archive_path }}</td>
+        <td class="py-1.5 text-gray-400">{{ item.size_bytes }} B</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if export.status == "complete" %}
+<div class="bg-panel border border-border rounded-lg p-4 mb-6">
+  <h2 class="text-sm font-semibold text-gray-200 mb-1">Share this export</h2>
+  <p class="text-xs text-gray-500 mb-4">
+    Hand this off to a hosting provider or someone helping with the migration — no
+    account needed on their end. They'll need the link AND the PIN.
+  </p>
+
+  <form method="POST" action="{{ url_for('exports.create_share', export_id=export.id) }}"
+        class="flex flex-wrap items-end gap-3 mb-2">
+    {{ share_form.hidden_tag() }}
+    {% with form=share_form %}{% include "_form_errors.html" %}{% endwith %}
+    <div>
+      {{ share_form.duration.label(class="block text-xs text-gray-500 mb-1") }}
+      {{ share_form.duration(class="bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200", id="share_duration") }}
+    </div>
+    <div id="custom_hours_field" class="hidden">
+      {{ share_form.custom_hours.label(class="block text-xs text-gray-500 mb-1") }}
+      {{ share_form.custom_hours(class="w-32 bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200", placeholder="hours") }}
+    </div>
+    {{ share_form.submit(class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-500") }}
+  </form>
+  <p class="text-xs text-gray-600">{{ share_form.custom_hours.description }}</p>
+
+  {% if share_links %}
+  <table class="w-full text-xs mt-4">
+    <thead>
+      <tr class="text-left text-gray-500 border-b border-border">
+        <th class="py-2">Created</th>
+        <th class="py-2">Expires</th>
+        <th class="py-2">Status</th>
+        <th class="py-2">Downloads</th>
+        <th class="py-2"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for link in share_links %}
+      <tr class="border-b border-border/50">
+        <td class="py-1.5 text-gray-300">{{ link.created_at }}</td>
+        <td class="py-1.5 text-gray-400">{{ link.expires_at }}</td>
+        <td class="py-1.5">
+          {% if link.revoked %}
+            <span class="text-gray-500">Revoked</span>
+          {% elif not link.approved %}
+            <span class="text-yellow-400">Awaiting approval</span>
+          {% elif link.is_expired %}
+            <span class="text-gray-500">Expired</span>
+          {% elif link.is_locked %}
+            <span class="text-red-400">Locked (too many wrong PINs)</span>
+          {% else %}
+            <span class="text-green-400">Active</span>
+          {% endif %}
+        </td>
+        <td class="py-1.5 text-gray-400">{{ link.download_count }}</td>
+        <td class="py-1.5 text-right">
+          {% if not link.revoked %}
+          <form method="POST" action="{{ url_for('shares.revoke', link_id=link.id) }}" class="inline"
+                onsubmit="return confirm('Turn off this share link?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="text-red-400 hover:text-red-300 text-xs">Turn off</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+
+<script>
+  const shareDuration = document.getElementById('share_duration');
+  const customHoursField = document.getElementById('custom_hours_field');
+  function toggleCustomHours() {
+    customHoursField.classList.toggle('hidden', shareDuration.value !== 'custom');
+  }
+  if (shareDuration) {
+    shareDuration.addEventListener('change', toggleCustomHours);
+    toggleCustomHours();
+  }
+</script>
+
+<div class="bg-panel border border-border rounded-lg p-4 mb-6">
+  <h2 class="text-sm font-semibold text-gray-200 mb-1">Data retention</h2>
+  <p class="text-xs text-gray-500 mb-4">
+    Standard retention is {{ standard_retention_days }} days from creation. Need longer? Submit a
+    request below — anything past standard needs admin approval.
+  </p>
+
+  {% set pending_request = extension_requests | selectattr("status", "equalto", "pending") | list | first %}
+  {% set approved_request = extension_requests | selectattr("status", "equalto", "approved") | list | first %}
+
+  {% if approved_request %}
+    <div class="border border-green-800 bg-green-900/20 rounded-md px-4 py-3 text-sm text-green-300 mb-3">
+      ✓ Approved — retained for {{ approved_request.requested_days }} days from creation.
+    </div>
+  {% elif pending_request %}
+    <div class="border border-yellow-800 bg-yellow-900/20 rounded-md px-4 py-3 text-sm text-yellow-300 mb-3">
+      Extension request pending admin review — requested {{ pending_request.requested_days }} days.
+    </div>
+  {% else %}
+    <details class="text-sm">
+      <summary class="cursor-pointer text-blue-400 hover:text-blue-300">Request longer retention →</summary>
+      <form method="POST" action="{{ url_for('exports.request_extension', export_id=export.id) }}" class="mt-4 space-y-4">
+        {{ extension_form.hidden_tag() }}
+        {% with form=extension_form %}{% include "_form_errors.html" %}{% endwith %}
+
+        <div>
+          {{ extension_form.reason.label(class="block text-xs text-gray-500 mb-1") }}
+          {{ extension_form.reason(rows=3, class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+        </div>
+        <div>
+          {{ extension_form.requested_days.label(class="block text-xs text-gray-500 mb-1") }}
+          {{ extension_form.requested_days(class="w-32 bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+          <p class="text-xs text-gray-600 mt-1">{{ extension_form.requested_days.description }}</p>
+        </div>
+
+        <div class="border border-border rounded-md p-4 space-y-2 bg-surface/50">
+          <p class="text-xs font-semibold text-gray-400 mb-2">Extended Data Retention Terms</p>
+          <label class="flex items-start gap-2 text-xs text-gray-400">
+            {{ extension_form.consent_no_guarantee(class="mt-0.5") }}
+            <span>{{ extension_form.consent_no_guarantee.label.text }}</span>
+          </label>
+          <label class="flex items-start gap-2 text-xs text-gray-400">
+            {{ extension_form.consent_increases_period(class="mt-0.5") }}
+            <span>{{ extension_form.consent_increases_period.label.text }}</span>
+          </label>
+          <label class="flex items-start gap-2 text-xs text-gray-400">
+            {{ extension_form.consent_not_responsible(class="mt-0.5") }}
+            <span>{{ extension_form.consent_not_responsible.label.text }}</span>
+          </label>
+          <label class="flex items-start gap-2 text-xs text-gray-400">
+            {{ extension_form.consent_remove_asap(class="mt-0.5") }}
+            <span>{{ extension_form.consent_remove_asap.label.text }}</span>
+          </label>
+          <label class="flex items-start gap-2 text-xs text-gray-400">
+            {{ extension_form.consent_accept_terms(class="mt-0.5") }}
+            <span>{{ extension_form.consent_accept_terms.label.text }}</span>
+          </label>
+        </div>
+
+        {{ extension_form.submit(class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-500") }}
+      </form>
+    </details>
+  {% endif %}
+
+  {% if extension_requests %}
+    <table class="w-full text-xs mt-4">
+      <thead>
+        <tr class="text-left text-gray-500 border-b border-border">
+          <th class="py-2">Requested</th>
+          <th class="py-2">Days</th>
+          <th class="py-2">Status</th>
+          <th class="py-2">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in extension_requests %}
+        <tr class="border-b border-border/50">
+          <td class="py-1.5 text-gray-300">{{ req.created_at }}</td>
+          <td class="py-1.5 text-gray-400">{{ req.requested_days }}</td>
+          <td class="py-1.5">
+            {% if req.status == "approved" %}<span class="text-green-400">Approved</span>
+            {% elif req.status == "declined" %}<span class="text-red-400">Declined</span>
+            {% else %}<span class="text-yellow-400">Pending</span>{% endif %}
+          </td>
+          <td class="py-1.5 text-gray-500">{{ req.admin_notes or "—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+{% endif %}
+
+<form method="POST" action="{{ url_for('exports.delete', export_id=export.id) }}" class="mt-6"
+      onsubmit="return confirm('Delete this export permanently?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit" class="text-xs px-3 py-1.5 rounded-md bg-border text-gray-300 hover:bg-red-900/40 hover:text-red-300">
+    Delete export
+  </button>
+</form>
+{% endblock %}

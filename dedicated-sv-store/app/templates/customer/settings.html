@@ -1,0 +1,38 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}Account Settings — {{ app_name }}{% endblock %}
+{% block page_title %}Account settings{% endblock %}
+{% block content %}
+<form method="POST" class="max-w-2xl space-y-6">
+  {{ form.hidden_tag() }}
+  <div class="card p-6">
+    <h2 class="font-semibold text-text-primary mb-4">Profile</h2>
+    <div class="grid sm:grid-cols-2 gap-x-4">
+      {{ field(form.first_name) }}
+      {{ field(form.last_name) }}
+      {{ field(form.phone) }}
+    </div>
+    <p class="text-xs text-text-muted mt-1">Email: {{ current_user.email }} &middot; <a href="{{ url_for('auth.change_password') }}" class="text-brand-400 hover:text-brand-300">Change password</a></p>
+  </div>
+
+  <div class="card p-6">
+    <h2 class="font-semibold text-text-primary mb-4">Billing details</h2>
+    <div class="grid sm:grid-cols-2 gap-x-4">
+      {{ field(form.company_name) }}
+      {{ field(form.vat_number) }}
+      <div class="sm:col-span-2">{{ field(form.billing_address_line1) }}</div>
+      <div class="sm:col-span-2">{{ field(form.billing_address_line2) }}</div>
+      {{ field(form.billing_city) }}
+      {{ field(form.billing_region) }}
+      {{ field(form.billing_postal_code) }}
+      {{ field(form.billing_country, placeholder="GB") }}
+    </div>
+  </div>
+
+  <div class="card p-6">
+    {{ checkbox(form.marketing_opt_in) }}
+  </div>
+
+  <button type="submit" class="btn-primary">Save settings</button>
+</form>
+{% endblock %}

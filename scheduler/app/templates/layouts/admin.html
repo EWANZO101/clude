@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="min-h-full lg:flex">
+
+  <!-- Mobile topbar -->
+  <header class="vm-topbar lg:hidden sticky top-0 z-30 flex items-center justify-between border-b border-border bg-base/95 backdrop-blur px-4 py-3">
+    <a href="{{ url_for('admin.dashboard') }}" class="flex items-center gap-2 font-display font-semibold text-ink">
+      <span class="status-dot bg-accent"></span>
+      {{ app_name }}
+    </a>
+    <div class="flex items-center gap-1">
+      <button id="view-mode-trigger" type="button" aria-label="Change display mode" title="Display" class="btn-ghost !px-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="1.5"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </button>
+      <button id="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" class="btn-ghost !px-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="vm-sidebar fixed inset-y-0 left-0 z-40 w-72 -translate-x-full border-r border-border bg-surface p-5 transition-transform duration-200 lg:static lg:translate-x-0 lg:flex lg:w-64 lg:flex-col lg:shrink-0">
+    <div class="flex items-center justify-between mb-8">
+      <a href="{{ url_for('admin.dashboard') }}" class="flex items-center gap-2 font-display text-lg font-semibold text-ink">
+        <span class="status-dot bg-accent"></span>
+        {{ app_name }}
+      </a>
+      <button id="nav-close" type="button" aria-label="Close menu" class="lg:hidden btn-ghost !px-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <nav class="flex-1 space-y-1">
+      <a href="{{ url_for('admin.dashboard') }}" class="{{ 'nav-link-active' if active_page == 'dashboard' else 'nav-link' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Dashboard
+      </a>
+
+      <p class="px-3 pt-5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Schedule</p>
+
+      <a href="{{ url_for('admin.calendar_view') }}" class="{{ 'nav-link-active' if active_page == 'calendar' else 'nav-link' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3M16 2v3M3.5 8.5h17M4 5h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z"/></svg>
+        Calendar
+      </a>
+
+      <a href="{{ url_for('admin.availability') }}" class="{{ 'nav-link-active' if active_page == 'availability' else 'nav-link' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v5l3 2M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg>
+        Availability
+      </a>
+
+      <a href="{{ url_for('admin.time_off') }}" class="{{ 'nav-link-active' if active_page == 'time_off' else 'nav-link' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4zM4 9h16M9 4v5"/></svg>
+        Time Off
+      </a>
+
+      <a href="{{ url_for('admin.bookings') }}" class="{{ 'nav-link-active' if active_page == 'bookings' else 'nav-link' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Bookings
+      </a>
+
+      <a href="{{ url_for('isp_support.admin_list') }}" class="{{ 'nav-link-active' if active_page == 'isp_support' else 'nav-link' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.362 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+        ISP Support
+      </a>
+
+      <p class="px-3 pt-5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Configure</p>
+
+      <a href="{{ url_for('admin.booking_types') }}" class="{{ 'nav-link-active' if active_page == 'booking_types' else 'nav-link' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41L11 22l-8-8L21.59 4.41A2 2 0 0122 6v6a1 1 0 01-.29.7z"/></svg>
+        Booking Types
+      </a>
+
+      <span class="nav-link cursor-not-allowed opacity-60" title="Coming in a later phase">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+        Notifications
+        <span class="ml-auto text-[10px] font-medium uppercase tracking-wide text-ink-faint border border-border rounded px-1.5 py-0.5">Soon</span>
+      </span>
+
+      <a href="{{ url_for('admin.settings') }}" class="{{ 'nav-link-active' if active_page == 'settings' else 'nav-link' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009.6 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 8.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.51.19 1.19.51 1.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Settings
+      </a>
+    </nav>
+
+    <div class="mt-6 border-t border-border pt-4">
+      <div class="flex items-center gap-3 px-1">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-raised border border-border font-display text-sm font-semibold text-ink">
+          {{ current_user.name[:1]|upper }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-medium text-ink">{{ current_user.name }}</p>
+          <p class="truncate text-xs text-ink-muted">{{ current_user.email }}</p>
+        </div>
+        <button id="view-mode-trigger-desktop" type="button" class="btn-ghost !px-2" title="Display" aria-label="Change display mode">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="1.5"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </button>
+        <a href="{{ url_for('auth.logout') }}" class="btn-ghost !px-2" title="Sign out" aria-label="Sign out">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div id="sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-black/50 lg:hidden"></div>
+
+  <!-- Content -->
+  <main class="vm-main flex-1 min-w-0 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+    <div class="mx-auto max-w-6xl">
+      {% include "partials/flash.html" %}
+      {% block page_content %}{% endblock %}
+    </div>
+  </main>
+</div>
+
+{% include "partials/view_mode_modal.html" %}
+{% endblock %}

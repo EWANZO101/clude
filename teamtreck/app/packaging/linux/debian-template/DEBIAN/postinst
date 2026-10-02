@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+
+echo ""
+echo "TeamTreck Agent installed."
+echo "Run 'teamtreck-agent setup' to enter your server URL and token."
+echo ""
+echo "URL tracking: the browser extension at"
+echo "  /usr/share/teamtreck-agent/browser-extension"
+echo "is the recommended method - load it via chrome://extensions -> Developer"
+echo "mode -> Load unpacked. See BUILD_STATUS.txt for why it's preferred over"
+echo "the OS-level fallback."
+echo ""
+echo "To start the agent automatically on login, copy the autostart entry:"
+echo "  mkdir -p ~/.config/autostart"
+echo "  cp /usr/share/teamtreck-agent/teamtreck-agent-autostart.desktop ~/.config/autostart/"
+echo "(not done automatically - same opt-in approach as the Windows/macOS installers)"
+echo ""
+
+exit 0

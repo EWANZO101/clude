@@ -1,0 +1,55 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ merchant.display_name }}{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center gap-3">
+    <span class="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center text-lg font-semibold">{{ merchant.logo_initials }}</span>
+    <div>
+      <h1 class="text-xl font-semibold">{{ merchant.display_name }}</h1>
+      <p class="text-xs text-slate-500">{{ merchant.category.name if merchant.category else '' }} {% if merchant.company %}· {{ merchant.company.company_name }}{% endif %}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+    {% for key, label in [('today','Today'),('this_week','This week'),('this_month','This month'),('this_year','This year'),('all_time','All time')] %}
+      <div class="bg-surface-card border border-surface-border rounded-2xl p-4">
+        <p class="text-xs text-slate-500 mb-1">{{ label }}</p>
+        <p class="text-lg font-semibold">{{ summary[key] | money }}</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="grid grid-cols-3 gap-4 text-sm">
+    <div><p class="text-xs text-slate-500">Transactions</p><p>{{ summary.transaction_count }}</p></div>
+    <div><p class="text-xs text-slate-500">Average purchase</p><p>{{ summary.average_minor | money }}</p></div>
+    <div><p class="text-xs text-slate-500">Largest purchase</p><p>{{ summary.largest_minor | money }}</p></div>
+  </div>
+
+  <h2 class="text-lg font-semibold">12-month history</h2>
+  <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+    <div class="flex items-end gap-2 h-32">
+      {% for m in history %}
+        <div class="flex-1 flex flex-col items-center justify-end gap-1">
+          <div class="w-full bg-accent/70 rounded-t" style="height: {{ m.bar_pct }}%"></div>
+          <span class="text-[10px] text-slate-500">{{ m.label[:3] }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <h2 class="text-lg font-semibold">Aliases</h2>
+  <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-3">
+    <div class="flex flex-wrap gap-2">
+      {% for a in merchant.aliases %}
+        <span class="text-xs px-2 py-1 rounded-full bg-surface border border-surface-border text-slate-400">{{ a.alias_text }}</span>
+      {% else %}
+        <span class="text-xs text-slate-500">No aliases yet.</span>
+      {% endfor %}
+    </div>
+    <form method="POST" action="{{ url_for('merchant.add_alias', merchant_id=merchant.id) }}" class="flex gap-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input name="alias_text" placeholder="Add alias e.g. TESCO STORES 2931" class="flex-1 bg-surface border border-surface-border rounded-lg px-3 py-2 text-xs">
+      <button class="bg-accent text-white text-xs px-4 rounded-lg">Add</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "layout/base.html" %}
+{% block title %}Module logs{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <h1 class="text-xl font-semibold">{{ record.name if record else 'Module' }} — logs</h1>
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border font-mono text-xs">
+    {% for l in logs %}
+      <div class="p-3 flex gap-3 {{ 'text-red-400' if l.level == 'error' else 'text-slate-400' }}">
+        <span>{{ l.created_at.strftime('%H:%M:%S') }}</span>
+        <span>{{ l.message }}</span>
+      </div>
+    {% else %}
+      <p class="p-4 text-slate-500">No log entries yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

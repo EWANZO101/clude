@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Clients — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <h1>Clients</h1>
+    <div class="page-sub muted">
+      Client Portal accounts — a customer's own end users, outside the Company system entirely.
+      They sign themselves up at <code>/client/signup</code>; nothing here creates an account for them.
+      Assign each one to the specific instance(s) they should be able to operate.
+    </div>
+  </div>
+</div>
+
+<div class="panel" style="padding:8px 22px 20px;">
+  <form method="get" style="margin:14px 0 4px;">
+    <input type="text" name="q" value="{{ q or '' }}" placeholder="Search by name or email…" style="max-width:320px;">
+  </form>
+
+  {% if clients %}
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Instances assigned</th><th>Last login</th><th>Signed up</th><th></th></tr></thead>
+      <tbody>
+        {% for c in clients %}
+          <tr>
+            <td style="font-weight:600;">{{ c.full_name }}</td>
+            <td class="muted">{{ c.email }}</td>
+            <td>
+              {% if c.is_active %}
+                <span class="pill pill-green">Active</span>
+              {% else %}
+                <span class="pill pill-red">Disabled</span>
+              {% endif %}
+            </td>
+            <td class="muted mono">{{ assignment_counts.get(c.id, 0) }}</td>
+            <td>{{ c.last_login_at | friendly_dt if c.last_login_at else 'never' }}</td>
+            <td class="muted">{{ c.created_at | friendly_date }}</td>
+            <td><a href="{{ url_for('platform.client_detail', client_id=c.public_id) }}" class="btn btn-secondary btn-sm">Open →</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="empty">
+      {% if q %}No clients match "{{ q }}".{% else %}No one has signed up for the Client Portal yet.{% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

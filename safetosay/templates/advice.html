@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Advice Forum — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div class="hero" style="border-bottom-color:rgba(227,179,65,.25)">
+  <div style="display:inline-flex;align-items:center;gap:.5rem;padding:.3rem .8rem;background:rgba(227,179,65,.1);border:1px solid rgba(227,179,65,.25);border-radius:6px;font-size:.8rem;color:var(--warn);margin-bottom:.75rem">
+    ⚡ Advice Forum — For Active Cases
+  </div>
+  <h1>{{ get_text('advice','hero_title','Advice Forum') }}</h1>
+  <p>{{ get_text('advice','hero_subtitle','Seeking or offering guidance on active situations.') }}</p>
+  <p style="margin-top:.5rem;color:var(--muted);font-size:.9rem">{{ get_text('advice','intro_text','If your case is still active, this is the right place to seek advice. For closed cases, visit the main Stories forum.') }}</p>
+  <div style="margin-top:1rem;padding:.85rem 1.1rem;background:rgba(227,179,65,.07);border:1px solid rgba(227,179,65,.2);border-radius:8px;font-size:.875rem;color:#ffe8a0;max-width:640px">
+    ⚠ <strong>Remember:</strong> Do not post real full legal names. Use initials or pseudonyms only. This protects both you and others from doxxing and GDPR violations.
+  </div>
+  <div style="margin-top:1.25rem;display:flex;gap:.75rem;flex-wrap:wrap">
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('create_advice') }}" class="btn btn-warn" style="background:rgba(227,179,65,.15);color:var(--warn);border:1px solid rgba(227,179,65,.3)">+ Post for Advice</a>
+    {% else %}
+      <a href="{{ url_for('register') }}" class="btn btn-primary">Register to Post</a>
+    {% endif %}
+    <a href="{{ url_for('index') }}" class="btn btn-ghost">← Back to Stories</a>
+  </div>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+  <h2 style="font-size:1.1rem;font-weight:600;color:var(--text)">Advice Posts</h2>
+  <span style="font-size:.85rem;color:var(--muted)">{{ posts.total }} posts</span>
+</div>
+
+{% if posts.items %}
+  <div style="display:flex;flex-direction:column;gap:1rem">
+    {% for post in posts.items %}
+    <div class="post-card" style="border-left:3px solid rgba(227,179,65,.35)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.4rem">
+            <span class="post-id" style="border-color:rgba(227,179,65,.2);background:rgba(227,179,65,.07);color:var(--warn)">{{ post.post_id }}</span>
+            {% if post.tag %}<span class="post-tag">{{ post.tag }}</span>{% endif %}
+          </div>
+          <a href="{{ url_for('advice_detail', post_id=post.post_id) }}" class="post-title" style="display:block">{{ post.title }}</a>
+          <p class="post-excerpt">{{ post.content[:250] }}</p>
+          <div class="post-meta" style="margin-top:.6rem">
+            <span>by <a href="{{ url_for('profile', username=post.author.username) }}" style="color:var(--accent);text-decoration:none">{{ post.author.username }}</a></span>
+            <span>{{ post.created_at.strftime('%d %b %Y') }}</span>
+            <span>{{ post.comments|length }} comment{{ 's' if post.comments|length != 1 }}</span>
+          </div>
+        </div>
+        <button onclick="openReportModal('{{ post.post_id }}')" class="btn btn-ghost btn-sm" style="flex-shrink:0" title="Report">⚑ Report</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% if posts.pages > 1 %}
+  <div class="pagination">
+    {% if posts.has_prev %}<a href="{{ url_for('advice', page=posts.prev_num) }}" class="page-btn">← Prev</a>{% endif %}
+    {% for p in posts.iter_pages(left_edge=1,right_edge=1,left_current=2,right_current=2) %}
+      {% if p %}<a href="{{ url_for('advice', page=p) }}" class="page-btn {% if p==posts.page %}active{% endif %}">{{ p }}</a>
+      {% else %}<span class="page-btn">…</span>{% endif %}
+    {% endfor %}
+    {% if posts.has_next %}<a href="{{ url_for('advice', page=posts.next_num) }}" class="page-btn">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+{% else %}
+  <div class="card" style="text-align:center;padding:3rem">
+    <p style="font-size:2rem;margin-bottom:.75rem">💬</p>
+    <p style="color:var(--muted)">No advice posts yet.</p>
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('create_advice') }}" class="btn btn-primary" style="margin-top:1rem">Post for Advice</a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

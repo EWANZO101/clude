@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Cioda's Commissions{% endblock %}
+
+{% block drawer_title %}<span class="nav-logo" style="font-size:1rem;">Cioda's <span>Commissions</span></span>{% endblock %}
+{% block drawer_nav %}
+<div style="padding:1rem;display:flex;flex-direction:column;gap:0.65rem;">
+  <a href="/queue/waiting" class="btn btn-primary" style="justify-content:center;">✦ Commission Me</a>
+  <a href="/giveaways" class="btn btn-ghost" style="justify-content:center;">🎁 Giveaways</a>
+  <a href="/find-order" class="btn btn-ghost" style="justify-content:center;">🔍 Find My Order</a>
+  <a href="/contact/verify" class="btn btn-ghost" style="justify-content:center;">✉ Contact</a>
+  <a href="/admin" class="btn btn-ghost" style="justify-content:center;">Admin</a>
+</div>
+{% endblock %}
+
+{% block body %}
+<nav class="nav-bar">
+  <a class="nav-logo" href="/">Cioda's <span>Commissions</span></a>
+  <div class="public-nav-links">
+    <a href="/queue/waiting" class="btn btn-primary btn-sm">✦ Commission Me</a>
+    <a href="/giveaways" class="btn btn-ghost btn-sm">🎁 Giveaways</a>
+    <a href="/find-order" class="btn btn-ghost btn-sm">🔍 Find My Order</a>
+    <a href="/contact/verify" class="btn btn-ghost btn-sm">✉ Contact</a>
+    <a href="/admin" class="btn btn-ghost btn-sm">Admin</a>
+  </div>
+  <button class="hamburger-btn public-nav-hamburger" onclick="openDrawer()" aria-label="Open menu">☰</button>
+</nav>
+
+<main style="max-width:1000px;margin:0 auto;padding:3rem 1.5rem;">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Homepage Banner -->
+  {% if settings.banner_enabled and settings.banner_text %}
+  {% set banner_colors = {
+    'info':    ('var(--accent-glow)', 'var(--accent)',  'var(--accent)'),
+    'success': ('rgba(34,197,94,.1)', 'rgba(34,197,94,.35)', 'var(--success)'),
+    'warning': ('rgba(245,158,11,.1)','rgba(245,158,11,.35)','var(--gold)'),
+    'danger':  ('rgba(239,68,68,.1)', 'rgba(239,68,68,.35)', 'var(--danger)')
+  } %}
+  {% set bg, border, color = banner_colors.get(settings.banner_style, banner_colors['info']) %}
+  <div role="alert" style="background:{{ bg }};border:1px solid {{ border }};
+       color:{{ color }};border-radius:10px;padding:0.75rem 1.1rem;
+       margin-bottom:1.5rem;font-size:0.95rem;display:flex;
+       align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+    <span>{{ settings.banner_text }}</span>
+    {% if settings.banner_link and settings.banner_link_text %}
+    <a href="{{ settings.banner_link }}" target="_blank"
+       style="color:{{ color }};font-family:'Cinzel',serif;font-size:0.8rem;
+              font-weight:700;letter-spacing:.04em;white-space:nowrap;
+              border:1px solid {{ border }};padding:0.25rem 0.75rem;border-radius:6px;
+              text-decoration:none;">
+      {{ settings.banner_link_text }} →
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Hero -->
+  <div style="text-align:center;margin-bottom:4rem;padding-top:2rem;">
+    <div class="glow-gold font-display" style="font-size:1.3rem;letter-spacing:0.2em;margin-bottom:1rem;">⭐ ✨ ⭐</div>
+    <h1 class="font-display" style="font-size:clamp(2.2rem,6vw,4rem);margin-bottom:1rem;line-height:1.15;">
+      <span style="background:linear-gradient(135deg,#e8e6f0,#c084fc,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+        Cioda's Commissions
+      </span>
+    </h1>
+    <p style="font-size:1.2rem;color:var(--text-secondary);font-style:italic;max-width:500px;margin:0 auto 2rem;">
+      Custom digital artwork crafted with care. Characters, references, and more.
+    </p>
+    {% if settings.commissions_open %}
+      <a href="/queue/waiting" class="btn btn-primary" style="font-size:1rem;padding:0.75rem 2rem;">
+        ✦ Request a Commission
+      </a>
+    {% else %}
+      <div style="background:#450a0a22;border:1px solid #7f1d1d;border-radius:12px;
+                  display:inline-block;padding:1rem 2rem;max-width:460px;margin:0 auto;text-align:left;">
+        <div style="color:#fca5a5;font-size:1rem;margin-bottom:{% if settings.reopen_date %}0.5rem{% else %}0{% endif %};text-align:center;">
+          {{ settings.closed_message }}
+        </div>
+        {% if settings.reopen_date %}
+        <div style="font-size:0.88rem;color:var(--success);font-family:'Cinzel',serif;text-align:center;margin-bottom:0.75rem;">
+          📅 Reopening: {{ settings.reopen_date }}
+        </div>
+        {% endif %}
+        <div style="border-top:1px solid #7f1d1d;margin-top:0.85rem;padding-top:0.85rem;">
+          <div class="font-display" style="font-size:0.7rem;color:var(--text-muted);letter-spacing:.05em;
+                      text-transform:uppercase;margin-bottom:0.6rem;text-align:center;">🔔 Get Notified When We Reopen</div>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+            <a href="/notify-me/discord/join" class="btn btn-ghost btn-sm"
+               style="flex:1;min-width:180px;justify-content:center;border-color:#5865F2;color:#5865F2;font-size:0.85rem;">
+              🔗 Join Discord
+            </a>
+            <form method="POST" action="/notify-me" style="display:flex;gap:0.35rem;flex:1;min-width:180px;">
+              <input type="hidden" name="method" value="email">
+              <input type="hidden" name="next" value="/">
+              <input type="email" name="contact" class="input" placeholder="you@example.com" required style="flex:1;font-size:0.85rem;">
+              <button type="submit" class="btn btn-ghost btn-sm">✉</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Price List — pulled live from DB, edit at /admin/commission-types -->
+  <div class="card fade-in" style="margin-bottom:2rem;">
+    <h2 class="font-display" style="font-size:1.4rem;color:var(--gold);margin-bottom:0.25rem;">Commission Prices</h2>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.5rem;">Additional characters are +55% of the original price.</p>
+
+    {% if presets %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+      {% for cat, items in presets | groupby('category') %}
+      <div class="card-elevated" style="padding:1.25rem;">
+        <div class="font-display" style="font-size:0.9rem;color:var(--accent);margin-bottom:0.75rem;letter-spacing:0.05em;">
+          {{ cat }}
+        </div>
+        {% for item in items %}
+        <div style="display:flex;justify-content:space-between;padding:0.3rem 0;
+                    border-bottom:1px solid var(--border);font-size:0.95rem;">
+          <span style="color:var(--text-secondary);">
+            {{ item.type.split(' - ')[-1] if ' - ' in item.type else item.type }}
+          </span>
+          <span style="color:var(--gold);font-weight:600;">${{ "%.2f"|format(item.price) }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted);font-style:italic;text-align:center;padding:1rem 0;">
+      Prices coming soon — check back shortly!
+    </p>
+    {% endif %}
+  </div>
+
+  <!-- Gallery Carousel (Flowbite native component) -->
+  {% if gallery %}
+  <div class="card fade-in" style="margin-bottom:2rem;padding:1.25rem;">
+    <h2 class="font-display" style="font-size:1.2rem;color:var(--gold);margin-bottom:1rem;">✦ Gallery</h2>
+
+    <div id="gallery" class="relative w-full" data-carousel="slide" data-carousel-interval="5000">
+      <!-- Carousel wrapper -->
+      <div class="relative overflow-hidden rounded-lg" style="height:clamp(220px,50vw,480px);background:var(--bg-elevated);">
+        {% for img in gallery %}
+        <div class="hidden duration-700 ease-in-out" data-carousel-item="{{ 'active' if loop.first else '' }}">
+          <img src="/gallery/{{ img.filename }}"
+               class="absolute block w-auto h-auto max-w-full max-h-full -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2"
+               alt="{{ img.caption or 'Gallery image' }}">
+          {% if img.caption %}
+          <div class="absolute bottom-0 left-0 right-0"
+               style="background:linear-gradient(transparent,rgba(0,0,0,.7));
+                      padding:1rem;font-size:0.9rem;color:#e8e6f0;text-align:center;">
+            {{ img.caption }}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if gallery|length > 1 %}
+      <!-- Slider indicators -->
+      <div class="absolute z-30 flex -translate-x-1/2 bottom-5 left-1/2 space-x-3 rtl:space-x-reverse">
+        {% for img in gallery %}
+        <button type="button" class="w-3 h-3 rounded-full" aria-current="{{ 'true' if loop.first else 'false' }}"
+                aria-label="Slide {{ loop.index }}" data-carousel-slide-to="{{ loop.index0 }}"></button>
+        {% endfor %}
+      </div>
+
+      <!-- Slider controls -->
+      <button type="button" class="absolute top-0 start-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none" data-carousel-prev>
+        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/30 dark:bg-gray-800/30 group-hover:bg-white/50 dark:group-hover:bg-gray-800/60 group-focus:ring-4 group-focus:ring-white dark:group-focus:ring-gray-800/70 group-focus:outline-none">
+          <svg class="w-4 h-4 text-white rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 19-7-7 7-7"/>
+          </svg>
+          <span class="sr-only">Previous</span>
+        </span>
+      </button>
+      <button type="button" class="absolute top-0 end-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none" data-carousel-next>
+        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/30 dark:bg-gray-800/30 group-hover:bg-white/50 dark:group-hover:bg-gray-800/60 group-focus:ring-4 group-focus:ring-white dark:group-focus:ring-gray-800/70 group-focus:outline-none">
+          <svg class="w-4 h-4 text-white rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 5 7 7-7 7"/>
+          </svg>
+          <span class="sr-only">Next</span>
+        </span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Track order / Contact -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;">
+    <div class="card">
+      <div class="font-display" style="color:var(--accent);margin-bottom:0.5rem;">📦 Track Your Order</div>
+      <p style="color:var(--text-secondary);font-size:0.95rem;margin-bottom:1rem;">If you have a unique order link, you can view your order status and details there.</p>
+      <p style="font-size:0.85rem;color:var(--text-muted);font-style:italic;">Your link was sent to you when your order was created.</p>
+    </div>
+    <div class="card">
+      <div class="font-display" style="color:var(--accent);margin-bottom:0.5rem;">💬 Need Help?</div>
+      <p style="color:var(--text-secondary);font-size:0.95rem;margin-bottom:0.5rem;">
+        Discord DM: <strong style="color:var(--text-primary);">totallynotcioda</strong>
+      </p>
+      <p style="color:var(--text-secondary);font-size:0.95rem;">
+        Email: <a href="mailto:cioda@ciodrawz.space" style="color:var(--accent);">cioda@ciodrawz.space</a>
+      </p>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);">
+    <p style="font-size:0.85rem;color:var(--text-muted);font-style:italic;">
+      &copy; Cioda's Commissions
+    </p>
+  </div>
+</main>
+{% endblock %}

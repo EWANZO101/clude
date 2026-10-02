@@ -1,0 +1,111 @@
+{% extends "layouts/public.html" %}
+{% from "components/_server_card.html" import server_card with context %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Browse Servers — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+  <h1 class="text-2xl font-semibold text-text-primary mb-6">Browse servers</h1>
+
+  <div class="grid lg:grid-cols-4 gap-8">
+    <aside class="lg:col-span-1">
+      <form method="GET" class="card p-5 space-y-4">
+        <div>
+          <label class="field-label">Search</label>
+          <input type="text" name="q" value="{{ args.q }}" placeholder="CPU, title…" class="input-field">
+        </div>
+        <div>
+          <label class="field-label">Category</label>
+          <select name="category" class="input-field">
+            <option value="">All categories</option>
+            {% for c in categories %}
+            <option value="{{ c.slug }}" {{ "selected" if args.category == c.slug }}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="field-label">Min price</label>
+            <input type="number" name="min_price" value="{{ args.min_price or '' }}" class="input-field">
+          </div>
+          <div>
+            <label class="field-label">Max price</label>
+            <input type="number" name="max_price" value="{{ args.max_price or '' }}" class="input-field">
+          </div>
+        </div>
+        <div>
+          <label class="field-label">Min CPU cores</label>
+          <input type="number" name="min_cores" value="{{ args.min_cores or '' }}" class="input-field">
+        </div>
+        <div>
+          <label class="field-label">Min RAM (GB)</label>
+          <input type="number" name="min_ram" value="{{ args.min_ram or '' }}" class="input-field">
+        </div>
+        <div>
+          <label class="field-label">Min storage (GB)</label>
+          <input type="number" name="min_storage" value="{{ args.min_storage or '' }}" class="input-field">
+        </div>
+        <div>
+          <label class="field-label">Storage type</label>
+          <select name="storage_type" class="input-field">
+            <option value="">Any</option>
+            <option value="nvme" {{ "selected" if args.storage_type == "nvme" }}>NVMe</option>
+            <option value="sata_ssd" {{ "selected" if args.storage_type == "sata_ssd" }}>SATA SSD</option>
+            <option value="hdd" {{ "selected" if args.storage_type == "hdd" }}>HDD</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Min bandwidth (Mbps)</label>
+          <input type="number" name="min_bandwidth" value="{{ args.min_bandwidth or '' }}" class="input-field">
+        </div>
+        <label class="flex items-center gap-2 text-sm text-text-secondary">
+          <input type="checkbox" name="gpu_only" value="1" {{ "checked" if args.gpu_only }} class="rounded border-border bg-surface-800 text-brand-600">
+          GPU only
+        </label>
+        <label class="flex items-center gap-2 text-sm text-text-secondary">
+          <input type="checkbox" name="availability_only" value="1" {{ "checked" if args.availability_only }} class="rounded border-border bg-surface-800 text-brand-600">
+          Available now only
+        </label>
+        <button type="submit" class="btn-primary w-full">Apply filters</button>
+        <a href="{{ url_for('marketplace.servers') }}" class="block text-center text-sm text-text-secondary hover:text-text-primary">Clear filters</a>
+      </form>
+    </aside>
+
+    <div class="lg:col-span-3">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-text-secondary">{{ pagination.total }} servers found</p>
+        <form method="GET" class="flex items-center gap-2">
+          {% for key, value in args.items() %}
+            {% if value and key != "sort" %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}
+          {% endfor %}
+          <label class="text-sm text-text-secondary">Sort</label>
+          <select name="sort" onchange="this.form.submit()" class="input-field !py-1.5">
+            <option value="newest" {{ "selected" if sort == "newest" }}>Newest</option>
+            <option value="price_asc" {{ "selected" if sort == "price_asc" }}>Price: low to high</option>
+            <option value="price_desc" {{ "selected" if sort == "price_desc" }}>Price: high to low</option>
+            <option value="cores_desc" {{ "selected" if sort == "cores_desc" }}>Most CPU cores</option>
+          </select>
+        </form>
+      </div>
+
+      {% if pagination.items %}
+      <div x-data="{ compareIds: [] }" class="relative">
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-6">
+          {% for server in pagination.items %}
+          {{ server_card(server, server.id in favourite_ids, comparable=True) }}
+          {% endfor %}
+        </div>
+        <div x-show="compareIds.length > 1" x-transition style="display:none" class="sticky bottom-4 flex justify-center">
+          <div class="card px-4 py-3 flex items-center gap-3 shadow-panel">
+            <span class="text-sm text-text-secondary" x-text="compareIds.length + ' selected'"></span>
+            <button class="btn-primary !py-1.5" @click="window.location.href = '{{ url_for('marketplace.compare') }}?' + compareIds.map(id => 'id=' + id).join('&')">Compare</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">{{ render_pagination(pagination, "marketplace.servers", **args) }}</div>
+      {% else %}
+      <div class="card p-10 text-center text-text-secondary">No servers match your filters. Try broadening your search.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

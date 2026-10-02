@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Roles — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.index') }}">← Admin Panel</a></p>
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+  <h1 style="margin:0;">Roles &amp; Permissions</h1>
+  <a href="{{ url_for('admin.add_role') }}" class="btn">+ Add Custom Role</a>
+</div>
+
+<div class="panel" style="margin-top:16px; padding:0;">
+  <div class="table-scroll">
+  <table style="width:100%; border-collapse:collapse;">
+    <tbody>
+      {% for role in roles %}
+        <tr style="border-bottom:1px solid var(--panel-border);">
+          <td style="padding:14px;">
+            <div style="font-weight:600;">
+              {{ role }}
+              {% if role not in custom_names %}<span class="muted" style="font-weight:400;">(built-in)</span>{% endif %}
+            </div>
+            <div class="muted" style="font-size:12.5px;">{{ counts[role] }} user{{ 's' if counts[role] != 1 }}</div>
+          </td>
+          <td style="padding:14px;">
+            <div class="row-actions">
+            <a href="{{ url_for('admin.role_detail', role_name=role) }}" class="btn" style="padding:6px 10px; font-size:12.5px;">Permissions &amp; Sidebar</a>
+            {% if role in custom_names %}
+              <form method="post" action="{{ url_for('admin.delete_role', role_name=role) }}" onsubmit="return confirm('Delete role {{ role }}?');">
+                <button type="submit" style="background:var(--red); padding:6px 10px; font-size:12.5px;">Delete</button>
+              </form>
+            {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

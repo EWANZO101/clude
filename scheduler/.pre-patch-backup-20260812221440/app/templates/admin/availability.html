@@ -1,0 +1,186 @@
+{% extends "layouts/admin.html" %}
+{% block title %}Availability · {{ app_name }}{% endblock %}
+{% block page_content %}
+
+<div class="mb-8">
+  <h1 class="font-display text-2xl font-semibold text-ink">Availability</h1>
+  <p class="mt-1 text-sm text-ink-muted">Set which days you work, your hours, and any recurring breaks.</p>
+</div>
+
+<form id="working-hours-form"
+      method="POST"
+      action="{{ url_for('admin.availability') }}">
+  {{ csrf_form.hidden_tag() }}
+</form>
+
+<div class="card divide-y divide-border">
+  {% for wh in working_hours %}
+  {% set fs = form_state[wh.day_of_week] if form_state and wh.day_of_week in form_state else None %}
+  {% set day_enabled = fs.enabled if fs else wh.enabled %}
+  {% set day_start = fs.start if (fs and fs.start) else (wh.start_time.strftime('%H:%M') if wh.start_time else '09:00') %}
+  {% set day_end = fs.end if (fs and fs.end) else (wh.end_time.strftime('%H:%M') if wh.end_time else '17:00') %}
+  <div class="p-5 sm:p-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+      <label class="flex w-40 shrink-0 items-center gap-3">
+        <input
+          type="checkbox"
+          form="working-hours-form"
+          name="day_{{ wh.day_of_week }}_enabled"
+          {{ 'checked' if day_enabled }}
+          class="h-4 w-4 rounded border-border bg-surface-raised text-accent focus:ring-accent focus:ring-offset-base day-toggle"
+          data-day="{{ wh.day_of_week }}"
+        >
+        <span class="font-medium text-ink">{{ wh.day_name }}</span>
+      </label>
+
+      <div
+        class="flex flex-1 flex-wrap items-center gap-3"
+        id="day-{{ wh.day_of_week }}-times"
+      >
+        <input
+          type="time"
+          form="working-hours-form"
+          name="day_{{ wh.day_of_week }}_start"
+          value="{{ day_start }}"
+          class="field-input w-32"
+          {{ 'disabled' if not day_enabled }}
+        >
+
+        <span class="text-ink-faint">to</span>
+
+        <input
+          type="time"
+          form="working-hours-form"
+          name="day_{{ wh.day_of_week }}_end"
+          value="{{ day_end }}"
+          class="field-input w-32"
+          {{ 'disabled' if not day_enabled }}
+        >
+      </div>
+    </div>
+
+    {% if wh.breaks %}
+    <div class="mt-4 ml-0 sm:ml-[10.5rem] space-y-2">
+      {% for b in wh.breaks %}
+      <div class="flex items-center gap-3 text-sm text-ink-muted">
+        <span class="status-dot bg-ink-faint"></span>
+
+        <span>
+          {{ b.label }} ·
+          {{ b.start_time.strftime('%H:%M') }} –
+          {{ b.end_time.strftime('%H:%M') }}
+        </span>
+
+        <form
+          method="POST"
+          action="{{ url_for('admin.delete_break', break_id=b.id) }}"
+          class="inline"
+        >
+          {{ csrf_form.hidden_tag() }}
+
+          <button
+            type="submit"
+            class="text-ink-faint hover:text-status-busy"
+            aria-label="Remove break"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <details class="mt-4 ml-0 sm:ml-[10.5rem]">
+      <summary class="cursor-pointer text-sm font-medium text-accent hover:underline w-fit">
+        + Add a break
+      </summary>
+
+      <form
+        method="POST"
+        action="{{ url_for('admin.add_break') }}"
+        class="mt-3 flex flex-wrap items-end gap-3"
+      >
+        {{ break_form.hidden_tag() }}
+
+        <input
+          type="hidden"
+          name="day_of_week"
+          value="{{ wh.day_of_week }}"
+        >
+
+        <div>
+          <label class="field-label">Label</label>
+          <input
+            type="text"
+            name="label"
+            placeholder="Lunch"
+            class="field-input w-32"
+          >
+        </div>
+
+        <div>
+          <label class="field-label">Starts</label>
+          <input
+            type="time"
+            name="start_time"
+            value="12:00"
+            class="field-input w-28"
+          >
+        </div>
+
+        <div>
+          <label class="field-label">Ends</label>
+          <input
+            type="time"
+            name="end_time"
+            value="13:00"
+            class="field-input w-28"
+          >
+        </div>
+
+        <button type="submit" class="btn-secondary">
+          Add break
+        </button>
+      </form>
+    </details>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="mt-6">
+  <button
+    type="submit"
+    form="working-hours-form"
+    class="btn-primary"
+  >
+    Save working hours
+  </button>
+</div>
+
+<script>
+  document.querySelectorAll(".day-toggle").forEach((toggle) => {
+    toggle.addEventListener("change", () => {
+      const day = toggle.dataset.day;
+      const inputs = document.querySelectorAll(`#day-${day}-times input`);
+
+      inputs.forEach((input) => {
+        input.disabled = !toggle.checked;
+      });
+    });
+  });
+</script>
+
+{% endblock %}

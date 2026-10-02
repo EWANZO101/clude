@@ -1,0 +1,131 @@
+{% extends "admin/_layout.html" %}
+{% block admin_title %}Settings{% endblock %}
+
+{% block admin_content %}
+
+<div class="page-head">
+  <div>
+    <div class="eyebrow">System</div>
+    <h1>Settings</h1>
+    <p class="text-sm text-gray-400 mt-2">
+      Brand, integrations, and feature flags for the whole platform.
+    </p>
+  </div>
+</div>
+
+<!-- Category tabs -->
+<div class="tabs">
+  {% for cat in category_order %}
+    {% set title, _ = category_titles[cat] %}
+    <a href="?category={{ cat }}"
+       class="tab {% if active == cat %}active{% endif %}">
+      {{ title }}
+      <span class="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md bg-ink-900/80 text-gray-400">
+        {{ (grouped.get(cat) or [])|length }}
+      </span>
+    </a>
+  {% endfor %}
+</div>
+
+<form id="settings-form">
+  {% for cat in category_order %}
+    {% set title, desc = category_titles[cat] %}
+    <div class="tab-panel {% if active == cat %}active{% endif %}" data-cat="{{ cat }}">
+
+      <div class="a-card mb-5">
+        <div class="a-card-bd">
+          <div class="text-sm font-bold">{{ title }}</div>
+          <p class="text-xs text-gray-400 mt-1">{{ desc }}</p>
+        </div>
+      </div>
+
+      <div class="a-card">
+        <div class="a-card-bd">
+          {% set rows = grouped.get(cat) or [] %}
+          {% if rows %}
+            {% for s in rows %}
+            <div class="field-row">
+              <div>
+                <div class="field-label">{{ s.display_label }}</div>
+                {% if s.help_text %}<div class="field-help">{{ s.help_text }}</div>{% endif %}
+                <div class="field-help font-mono opacity-60">{{ s.key }}</div>
+              </div>
+              <div class="field-input">
+                {% if s.kind == 'bool' %}
+                  <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="{{ s.key }}" value="1" data-kind="bool"
+                           {% if s.value == '1' %}checked{% endif %}
+                           class="w-4 h-4 rounded bg-ink-900 border-ink-600 text-ops-500 focus:ring-ops-500 focus:ring-1">
+                    <span class="text-xs text-gray-400">Enabled</span>
+                  </label>
+                {% elif s.kind == 'color' %}
+                  <div class="flex items-center gap-2">
+                    <input type="color" name="{{ s.key }}" value="{{ s.value or '#3b82f6' }}" data-kind="color"
+                           class="w-12 h-9 rounded-md cursor-pointer bg-ink-900 border border-ink-600">
+                    <input type="text" value="{{ s.value or '' }}" data-kind="color-text"
+                           oninput="this.previousElementSibling.value=this.value"
+                           class="form-input px-3 py-2 text-sm font-mono w-32">
+                  </div>
+                {% elif s.kind == 'int' %}
+                  <input type="number" name="{{ s.key }}" value="{{ s.value or '' }}" data-kind="int"
+                         class="form-input px-3 py-2 text-sm w-40">
+                {% else %}
+                  {% if s.value and s.value|length > 80 %}
+                    <textarea name="{{ s.key }}" rows="3" data-kind="string"
+                              class="form-textarea px-3 py-2 text-sm">{{ s.value or '' }}</textarea>
+                  {% else %}
+                    <input type="text" name="{{ s.key }}" value="{{ s.value or '' }}" data-kind="string"
+                           class="form-input px-3 py-2 text-sm">
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-sm text-gray-500 text-center py-8">No settings in this category yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+
+  <div class="save-bar">
+    <div class="text-xs text-gray-500" id="save-status">Edit any setting then click Save.</div>
+    <button type="submit" class="btn btn-primary">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      Save changes
+    </button>
+  </div>
+</form>
+
+<script>
+document.getElementById('settings-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const status = document.getElementById('save-status');
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  status.textContent = 'Saving…';
+
+  const items = [];
+  document.querySelectorAll('#settings-form [name]').forEach(el => {
+    const key = el.name;
+    if (!key) return;
+    let value;
+    if (el.dataset.kind === 'bool') value = el.checked ? '1' : '0';
+    else value = el.value;
+    items.push({ key, value });
+  });
+
+  try {
+    await adminFetch('/admin/settings/save', { body: { items }});
+    status.textContent = '✓ Saved ' + new Date().toLocaleTimeString();
+    toast('Settings saved');
+  } catch (err) {
+    status.textContent = 'Save failed: ' + err.message;
+    toast('Save failed: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+{% endblock %}

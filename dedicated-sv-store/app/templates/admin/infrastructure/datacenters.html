@@ -1,0 +1,51 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}Datacenters — Admin{% endblock %}
+{% block page_title %}Datacenters{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Name</th><th>Code</th><th>Location</th><th>Racks</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for dc in datacenters %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ dc.name }}</td>
+          <td class="text-text-secondary font-mono text-xs">{{ dc.code }}</td>
+          <td class="text-text-secondary">{{ dc.city }}{{ ", " ~ dc.country if dc.city and dc.country }}</td>
+          <td class="text-text-secondary">{{ dc.racks|length }}</td>
+          <td>{% if dc.is_active %}<span class="badge-success">Active</span>{% else %}<span class="badge-neutral">Disabled</span>{% endif %}</td>
+          <td class="whitespace-nowrap">
+            <a href="{{ url_for('admin.datacenter_edit', datacenter_id=dc.id) }}" class="text-brand-400 hover:text-brand-300 text-sm mr-3">Edit</a>
+            <form method="POST" action="{{ url_for('admin.datacenter_toggle_active', datacenter_id=dc.id) }}" class="inline mr-3">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-text-secondary hover:text-text-primary text-sm">{{ "Disable" if dc.is_active else "Enable" }}</button>
+            </form>
+            <form method="POST" action="{{ url_for('admin.datacenter_delete', datacenter_id=dc.id) }}" class="inline"
+                  onsubmit="return confirm('Permanently delete this datacenter? This cannot be undone.');">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-status-danger hover:opacity-80 text-sm">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-text-muted py-8">No datacenters yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Add datacenter</h2>
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      {{ field(form.name) }}
+      {{ field(form.code, placeholder="LON1") }}
+      {{ field(form.country, placeholder="GB") }}
+      {{ field(form.city) }}
+      {{ field(form.address) }}
+      {{ checkbox(form.is_active) }}
+      <button type="submit" class="btn-primary w-full">Add datacenter</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

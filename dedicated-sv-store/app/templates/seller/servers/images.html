@@ -1,0 +1,35 @@
+{% extends "layouts/seller_dashboard.html" %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}Images — {{ server.title }}{% endblock %}
+{% block page_title %}{{ server.title }} — Images{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2">
+    <div class="grid sm:grid-cols-2 gap-4">
+      {% for image in server.images %}
+      <div class="card overflow-hidden">
+        <img src="{{ url_for('static', filename=image.image_path) }}" class="w-full h-40 object-cover" alt="{{ image.alt_text or server.title }}">
+        <div class="p-3 flex items-center justify-between">
+          <span class="text-xs text-text-muted">{{ "Primary" if image.is_primary else "" }}</span>
+          <form method="POST" action="{{ url_for('seller.server_image_delete', server_id=server.id, image_id=image.id) }}">
+            {% include "components/_csrf.html" %}
+            <button type="submit" class="text-status-danger hover:opacity-80 text-sm">Remove</button>
+          </form>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-text-muted col-span-2">No images uploaded yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Upload image</h2>
+    <form method="POST" enctype="multipart/form-data">
+      {{ form.hidden_tag() }}
+      {{ field(form.image) }}
+      {{ field(form.alt_text) }}
+      <button type="submit" class="btn-primary w-full">Upload</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Post for Advice' if forum_type=='advice' else 'Share Your Story' }} — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div style="max-width:760px;margin:0 auto">
+  <div style="margin-bottom:1.1rem">
+    <a href="{{ url_for('advice') if forum_type=='advice' else url_for('index') }}" style="color:var(--muted);text-decoration:none;font-size:.85rem">← Back</a>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:1.2rem;flex-wrap:wrap">
+    <h1 style="font-size:1.35rem;font-weight:700;margin:0">{{ 'Post for Advice' if forum_type=='advice' else 'Share Your Story' }}</h1>
+    {% if forum_type == 'advice' %}
+    <span style="padding:.22rem .62rem;background:rgba(227,179,65,.1);border:1px solid rgba(227,179,65,.25);border-radius:6px;font-size:.76rem;color:var(--warn)">ADVICE FORUM</span>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="POST" enctype="multipart/form-data" id="post-form">
+        <div class="form-group">
+          <label class="form-label">Title <span style="color:var(--danger)">*</span></label>
+          <input type="text" name="title" class="form-input" required placeholder="Give your post a clear, descriptive title" maxlength="200">
+          <p class="form-hint">Do not include full real names in the title.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">{{ 'Your Situation' if forum_type=='advice' else 'Your Story' }} <span style="color:var(--danger)">*</span></label>
+          <textarea name="content" class="form-input" rows="11" required placeholder="Share your experience here. Use initials (e.g. 'referred to as J.S.') instead of full real names..."></textarea>
+          <p class="form-hint">Avoid full legal names, specific addresses, or unnecessary identifying information.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Attachments (optional — photos or documents, max 5 files)</label>
+          {% if forum_type == 'advice' and not current_user.advice_media_approved %}
+          <div style="padding:.55rem .8rem;background:rgba(227,179,65,.07);border:1px solid rgba(227,179,65,.18);border-radius:6px;font-size:.8rem;color:var(--warn);margin-bottom:.45rem">
+            ⚠ Advice post attachments require admin approval before being shown publicly.
+          </div>
+          {% endif %}
+          <input type="file" name="photos" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.doc,.docx" class="form-input" id="file-input">
+          <div id="file-preview" style="margin-top:.45rem;display:flex;flex-wrap:wrap;gap:.4rem"></div>
+        </div>
+
+        <!-- Accept rules checkbox -->
+        <div style="padding:.9rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:1.1rem">
+          <div style="display:flex;align-items:flex-start;gap:.65rem">
+            <input type="checkbox" name="rules_accepted" value="1" id="rules-check" required style="margin-top:.2rem;accent-color:var(--accent);width:17px;height:17px;flex-shrink:0">
+            <label for="rules-check" style="font-size:.85rem;color:var(--text);cursor:pointer;line-height:1.55">
+              <strong>I Accept</strong> — I have read and agree to the
+              <button type="button" onclick="openRulesModal()" style="color:var(--accent);background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline">Community Rules</button>.
+              I will not use full real legal names. {% if forum_type != 'advice' %}My case has been officially closed. If your case is still active, please use the <a href="{{ url_for('advice') }}" style="color:var(--accent)">Advice Forum</a> instead.{% endif %}
+            </label>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:.65rem;justify-content:flex-end;flex-wrap:wrap">
+          <a href="{{ url_for('advice') if forum_type=='advice' else url_for('index') }}" class="btn btn-ghost">Cancel</a>
+          <button type="submit" class="btn btn-primary" id="submit-btn" disabled>Publish Post</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── Rules auto-popup modal ── -->
+<div id="rules-gate-modal" style="
+  position:fixed;inset:0;z-index:99999;
+  background:rgba(0,0,0,.75);
+  backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;
+  padding:1rem;
+  overflow-y:auto;
+">
+  <div style="
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    width:100%;max-width:600px;
+    box-shadow:0 32px 80px rgba(0,0,0,.7);
+    animation:slideUp .25s ease;
+  ">
+    <!-- Header -->
+    <div style="padding:1.25rem 1.4rem;border-bottom:1px solid var(--border);background:rgba(248,81,73,.06);border-radius:14px 14px 0 0">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.3rem">
+        <span style="font-size:1.3rem">🔒</span>
+        <h2 style="font-size:1.1rem;font-weight:700;color:var(--text);margin:0">{{ get_text('rules','title','Community Rules') }}</h2>
+      </div>
+      <p style="font-size:.83rem;color:var(--muted);margin:0">You must read and accept these rules before posting.</p>
+    </div>
+
+    <!-- Rules body -->
+    <div style="padding:1.2rem 1.4rem;max-height:45vh;overflow-y:auto">
+      <div style="white-space:pre-wrap;line-height:1.85;font-size:.875rem;color:var(--muted)">{{ get_text('rules','body','• DO NOT use real full legal names — use initials (e.g. J.S.) or pseudonyms only.\n• This platform is for cases that have been officially closed.\n• Do not post to gain sympathy or manipulate public opinion.\n• Do not post content that harasses or targets any individual.\n• Violations may result in a permanent ban and referral to authorities.') }}</div>
+    </div>
+
+    <!-- Advice redirect notice -->
+    <div style="margin:0 1.4rem;padding:.75rem 1rem;background:rgba(227,179,65,.07);border:1px solid rgba(227,179,65,.22);border-radius:8px">
+      <p style="font-size:.84rem;color:#ffe8a0;margin:0">
+        ⚠ <strong>Is your case still active?</strong> Do not post here.
+        <a href="{{ url_for('advice') }}" style="color:var(--warn);font-weight:600;text-decoration:underline">→ Go to the Advice Forum instead</a>
+        — it is a safe space to discuss ongoing situations.
+      </p>
+    </div>
+
+    <!-- Accept / decline -->
+    <div style="padding:1.1rem 1.4rem;display:flex;gap:.65rem;justify-content:flex-end;flex-wrap:wrap;border-top:1px solid var(--border);margin-top:1.1rem">
+      <a href="{{ url_for('advice') if forum_type=='advice' else url_for('index') }}" class="btn btn-ghost">← Go Back</a>
+      <button type="button" onclick="acceptGateRules()" class="btn btn-primary" style="padding:.5rem 1.25rem">
+        ✓ I Accept — Continue to Post
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Gate modal — shown on page load, must accept to proceed
+function acceptGateRules(){
+  document.getElementById('rules-gate-modal').style.display='none';
+  document.body.style.overflow='';
+  // Tick the checkbox automatically since they already accepted
+  document.getElementById('rules-check').checked=true;
+  updateSubmitBtn();
+}
+
+// Block scroll while gate is showing
+document.body.style.overflow='hidden';
+
+// Submit button toggle
+function updateSubmitBtn(){
+  document.getElementById('submit-btn').disabled=!document.getElementById('rules-check').checked;
+}
+document.getElementById('rules-check').addEventListener('change',updateSubmitBtn);
+
+// File preview
+document.getElementById('file-input').addEventListener('change',function(){
+  const p=document.getElementById('file-preview');p.innerHTML='';
+  Array.from(this.files).slice(0,5).forEach(f=>{
+    const s=document.createElement('span');
+    s.style.cssText='display:inline-flex;align-items:center;gap:.3rem;padding:.22rem .55rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;font-size:.76rem;color:var(--muted)';
+    s.textContent=(f.type.startsWith('image/')?'🖼 ':'📄 ')+f.name.substring(0,28);
+    p.appendChild(s);
+  });
+});
+</script>
+{% endblock %}

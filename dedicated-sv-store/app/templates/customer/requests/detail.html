@@ -1,0 +1,117 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_request_badge.html" import request_status_badge with context %}
+{% from "components/_progress_stepper.html" import progress_stepper with context %}
+{% block title %}{{ req.request_number }} — {{ app_name }}{% endblock %}
+{% block page_title %}{{ req.request_number }}{% endblock %}
+{% block header_actions %}
+<a href="{{ url_for('customer.request_chat', request_id=req.id) }}" class="btn-secondary">Message us</a>
+<a href="{{ url_for('customer.request_manifest', request_id=req.id) }}" class="btn-secondary">Manifest</a>
+{{ request_status_badge(req.status) }}
+{% endblock %}
+{% block content %}
+
+{% set progress = req.progress_info %}
+<div class="card p-5 mb-6">
+  {{ progress_stepper(progress.steps, progress.current_index, progress.percent, stopped=progress.stopped, stopped_label=progress.stopped_label) }}
+</div>
+
+{% if req.status.value == "information_required" and req.information_requested %}
+<div class="card p-4 mb-6 border-status-warning/40">
+  <p class="text-sm font-medium text-status-warning mb-1">Additional information requested</p>
+  <p class="text-sm text-text-secondary">{{ req.information_requested }}</p>
+</div>
+{% endif %}
+{% if req.status.value == "rejected" and req.rejection_reason %}
+<div class="card p-4 mb-6 border-status-danger/40">
+  <p class="text-sm font-medium text-status-danger mb-1">Request rejected</p>
+  <p class="text-sm text-text-secondary">{{ req.rejection_reason }}</p>
+</div>
+{% endif %}
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-6">
+    <div class="card">
+      <div class="p-4 border-b border-border flex items-center justify-between">
+        <h2 class="font-semibold text-text-primary">Equipment ({{ req.total_item_count }})</h2>
+        {% if req.is_editable %}
+        <a href="{{ url_for('customer.request_item_new', request_id=req.id) }}" class="btn-secondary !px-3 !py-1.5 text-sm">+ Add equipment</a>
+        {% endif %}
+      </div>
+      <table class="table-base">
+        <thead><tr><th>Type</th><th>Manufacturer / Model</th><th>Qty</th><th>Declared value</th><th></th></tr></thead>
+        <tbody>
+          {% for item in req.items %}
+          <tr>
+            <td class="text-text-secondary">{{ item.equipment_type.name }}</td>
+            <td class="font-medium text-text-primary">{{ item.manufacturer }} {{ item.model }}</td>
+            <td>{{ item.quantity }}</td>
+            <td class="text-text-secondary">{{ ("£" ~ item.declared_value) if item.declared_value else "—" }}</td>
+            <td class="whitespace-nowrap">
+              <a href="{{ url_for('customer.request_item_attachments', request_id=req.id, item_id=item.id) }}" class="text-brand-400 hover:text-brand-300 text-sm mr-3">Photos</a>
+              {% if req.is_editable %}
+              <a href="{{ url_for('customer.request_item_edit', request_id=req.id, item_id=item.id) }}" class="text-brand-400 hover:text-brand-300 text-sm mr-3">Edit</a>
+              <form method="POST" action="{{ url_for('customer.request_item_delete', request_id=req.id, item_id=item.id) }}" class="inline">
+                {% include "components/_csrf.html" %}
+                <button type="submit" class="text-status-danger hover:opacity-80 text-sm">Remove</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-center text-text-muted py-8">No equipment added yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card p-5">
+      <h2 class="font-semibold text-text-primary mb-4">Timeline</h2>
+      <div class="space-y-3">
+        {% for entry in req.history %}
+        <div class="flex gap-3 text-sm">
+          <span class="text-text-muted whitespace-nowrap">{{ entry.created_at.strftime("%d %b %Y %H:%M") }}</span>
+          <span class="text-text-secondary">
+            {% if entry.field_name == "status" %}Status changed to {{ entry.new_value }}
+            {% elif entry.field_name == "item_added" %}Added {{ entry.new_value }}
+            {% elif entry.field_name == "item_removed" %}Removed {{ entry.old_value }}
+            {% else %}{{ entry.field_name }}: {{ entry.old_value }} &rarr; {{ entry.new_value }}{% endif %}
+          </span>
+        </div>
+        {% else %}
+        <p class="text-text-muted text-sm">No activity yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if req.is_locked %}
+    <div class="card p-5">
+      <h2 class="font-semibold text-text-primary mb-4">Change requests</h2>
+      {% for cr in req.change_requests %}
+      <div class="border-b border-border py-3 last:border-0">
+        <p class="text-sm text-text-primary">{{ cr.message }}</p>
+        <p class="text-xs text-text-muted mt-1">{{ cr.created_at.strftime("%d %b %Y") }} &middot; {{ cr.status.value|title }}</p>
+        {% if cr.admin_response %}<p class="text-sm text-text-secondary mt-1">{{ cr.admin_response }}</p>{% endif %}
+      </div>
+      {% else %}
+      <p class="text-text-muted text-sm mb-3">No change requests yet.</p>
+      {% endfor %}
+      <a href="{{ url_for('customer.request_change_request', request_id=req.id) }}" class="btn-secondary mt-3 inline-flex">Request a change</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card p-5 space-y-4">
+    <dl class="space-y-2 text-sm">
+      <div class="flex justify-between"><dt class="text-text-muted">Declared value</dt><dd class="text-text-primary">£{{ req.declared_value_total }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Replacement value</dt><dd class="text-text-primary">£{{ req.replacement_value_total }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Created</dt><dd class="text-text-primary">{{ req.created_at.strftime("%d %b %Y") }}</dd></div>
+    </dl>
+    {% if req.status.value in ("draft", "information_required") %}
+    <form method="POST" action="{{ url_for('customer.request_submit', request_id=req.id) }}">
+      {% include "components/_csrf.html" %}
+      <button type="submit" class="btn-primary w-full">Submit for review</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

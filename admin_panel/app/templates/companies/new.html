@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}New company — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('dashboard.index') }}" class="crumb">← Companies</a>
+    <h1>Create your company</h1>
+  </div>
+</div>
+
+<div class="panel" style="max-width:520px;">
+  <p class="muted">You'll be set as the owner. You can invite teammates afterwards.</p>
+  <form method="post">
+    <label>Company name</label>
+    <input type="text" name="name" required autofocus>
+    <label>Contact email (optional)</label>
+    <input type="email" name="contact_email">
+    <label>Contact phone (optional)</label>
+    <input type="tel" name="contact_phone">
+    <label>Address (optional)</label>
+    <textarea name="address" rows="3" style="font-family:inherit; font-size:13.5px;"></textarea>
+
+    {% if active_products %}
+      <label style="margin-top:18px;">Products (optional)</label>
+      <p class="muted" style="font-size:12.5px; margin:0 0 8px;">
+        Your company gets no product access automatically — tick anything you'd like now and a request
+        goes to a platform admin for approval. You can request others later from Company home.
+      </p>
+      {% for p in active_products %}
+        <label class="checkline">
+          <input type="checkbox" name="request_product_id" value="{{ p.id }}"> {{ p.name }}
+          {% if p.description %}<span class="muted"> — {{ p.description }}</span>{% endif %}
+        </label>
+      {% endfor %}
+    {% endif %}
+
+    <button type="submit" style="margin-top:18px;">Create company</button>
+  </form>
+</div>
+{% endblock %}

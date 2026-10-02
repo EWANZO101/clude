@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}User: {{ u.username }} — Admin — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div class="admin-layout">
+{% include "admin/_sidebar.html" %}
+<div>
+  <div style="margin-bottom:1rem">
+    <a href="{{ url_for('admin_users') }}" style="color:var(--muted);text-decoration:none;font-size:.875rem">← Back to Users</a>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start">
+
+  <!-- User Info -->
+  <div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem">
+          <div style="width:52px;height:52px;border-radius:50%;background:rgba(88,166,255,.15);border:2px solid rgba(88,166,255,.3);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:var(--accent);flex-shrink:0">
+            {{ u.username[0].upper() }}
+          </div>
+          <div>
+            <h1 style="font-size:1.25rem;font-weight:700">{{ u.username }}</h1>
+            <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.25rem">
+              {% if u.is_admin %}<span class="status-badge badge-verified">⚙ Admin</span>{% endif %}
+              {% if u.is_banned %}<span class="status-badge badge-removed">Banned</span>{% else %}<span class="status-badge badge-active">Active</span>{% endif %}
+              {% if u.advice_media_approved %}<span class="status-badge badge-verified">Media Approved</span>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:.875rem">
+          {% set rows = [
+            ('Email', u.email),
+            ('IP Address', u.ip_address or '—'),
+            ('Support PIN', u.pin),
+            ('Joined', u.created_at.strftime('%d %B %Y at %H:%M')),
+            ('Posts', u.posts|length),
+            ('Proof uploaded', 'Yes' if u.proof_file else 'No'),
+          ] %}
+          {% for label, value in rows %}
+          <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border)">
+            <span style="color:var(--muted)">{{ label }}</span>
+            <span style="color:var(--text);font-family:{% if label=='IP Address' or label=='Support PIN' %}'IBM Plex Mono',monospace{% else %}inherit{% endif %};font-size:{% if label=='IP Address' or label=='Support PIN' %}.82rem{% else %}.875rem{% endif %}">{{ value }}</span>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if u.is_banned and u.ban_reason %}
+        <div style="margin-top:.75rem;padding:.6rem .85rem;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.25);border-radius:6px;font-size:.85rem;color:var(--danger)">
+          Ban reason: {{ u.ban_reason }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Proof file -->
+    {% if u.proof_file %}
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-body">
+        <h3 style="font-size:.85rem;font-weight:600;margin-bottom:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Proof of Innocence</h3>
+        {% if u.proof_type == 'image' %}
+          <a href="{{ url_for('uploaded_file', filename=u.proof_file) }}" target="_blank">
+            <img src="{{ url_for('uploaded_file', filename=u.proof_file) }}" alt="Proof" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+          </a>
+        {% else %}
+          <a href="{{ url_for('uploaded_file', filename=u.proof_file) }}" target="_blank" class="btn btn-success" style="width:100%;justify-content:center">📄 View Document</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Ban IP -->
+    <div class="card">
+      <div class="card-body">
+        <h3 style="font-size:.85rem;font-weight:600;margin-bottom:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Ban IP Address</h3>
+        <form method="POST" action="{{ url_for('admin_ban_ip') }}" style="display:flex;flex-direction:column;gap:.5rem">
+          <input type="hidden" name="ip_address" value="{{ u.ip_address }}">
+          <input type="text" name="reason" class="form-input" placeholder="Reason for IP ban" value="Account ban: {{ u.username }}">
+          <button type="submit" class="btn btn-danger btn-sm">🔒 Ban IP {{ u.ip_address }}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Actions -->
+  <div>
+    <!-- Ban / Unban -->
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-body">
+        <h3 style="font-size:.85rem;font-weight:600;margin-bottom:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Account Status</h3>
+        {% if u.is_banned %}
+        <form method="POST" action="{{ url_for('admin_unban_user', user_id=u.id) }}" style="margin-bottom:.75rem">
+          <button type="submit" class="btn btn-success" style="width:100%;justify-content:center">✓ Unban {{ u.username }}</button>
+        </form>
+        {% else %}
+        <form method="POST" action="{{ url_for('admin_ban_user', user_id=u.id) }}">
+          <div class="form-group">
+            <label class="form-label">Ban Reason</label>
+            <input type="text" name="reason" class="form-input" placeholder="Reason for ban" required>
+          </div>
+          <button type="submit" class="btn btn-danger" style="width:100%;justify-content:center">🚫 Ban {{ u.username }}</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Reset password -->
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-body">
+        <h3 style="font-size:.85rem;font-weight:600;margin-bottom:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Reset Password</h3>
+        <form method="POST" action="{{ url_for('admin_reset_password', user_id=u.id) }}">
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input type="text" name="new_password" class="form-input" placeholder="Minimum 6 characters" required minlength="6">
+          </div>
+          <button type="submit" class="btn btn-warn" style="width:100%;justify-content:center">🔑 Reset Password</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toggles -->
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-body">
+        <h3 style="font-size:.85rem;font-weight:600;margin-bottom:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Permissions</h3>
+        <div style="display:flex;flex-direction:column;gap:.5rem">
+          <form method="POST" action="{{ url_for('admin_toggle_media', user_id=u.id) }}">
+            <button type="submit" class="btn {% if u.advice_media_approved %}btn-warn{% else %}btn-success{% endif %} btn-sm" style="width:100%;justify-content:center">
+              {{ '🚫 Revoke Advice Media Approval' if u.advice_media_approved else '✓ Approve Advice Media Uploads' }}
+            </button>
+          </form>
+          {% if not u.id == current_user.id %}
+          <form method="POST" action="{{ url_for('admin_make_admin', user_id=u.id) }}">
+            <button type="submit" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center">
+              {{ '⬇ Remove Admin' if u.is_admin else '⬆ Make Admin' }}
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete user -->
+    {% if not u.id == current_user.id %}
+    <div class="card">
+      <div class="card-body">
+        <h3 style="font-size:.85rem;font-weight:600;margin-bottom:.75rem;color:var(--danger);text-transform:uppercase;letter-spacing:.05em">Danger Zone</h3>
+        <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}" onsubmit="return confirm('Permanently delete {{ u.username }}? Their posts will be anonymised. This cannot be undone.')">
+          <button type="submit" class="btn btn-danger" style="width:100%;justify-content:center">🗑 Delete Account</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  </div>
+
+  <!-- User Posts -->
+  {% if posts %}
+  <div style="margin-top:1.5rem">
+    <h2 style="font-size:1rem;font-weight:600;margin-bottom:.85rem">Posts by {{ u.username }} ({{ posts|length }})</h2>
+    <div style="display:flex;flex-direction:column;gap:.6rem">
+      {% for post in posts %}
+      <div class="card" style="padding:.75rem 1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.25rem">
+              <span class="post-id" style="font-size:.75rem">{{ post.post_id }}</span>
+              <span style="font-size:.75rem;color:var(--muted)">{{ post.forum_type }}</span>
+              <span class="status-badge {% if post.status=='active' %}badge-active{% elif post.status=='hidden' %}badge-hidden{% else %}badge-removed{% endif %}" style="font-size:.72rem">{{ post.status }}</span>
+            </div>
+            <a href="{{ url_for('admin_posts') }}?q={{ post.post_id }}" style="color:var(--text);text-decoration:none;font-size:.9rem;font-weight:500">{{ post.title }}</a>
+          </div>
+          <span style="font-size:.78rem;color:var(--muted);flex-shrink:0">{{ post.created_at.strftime('%d %b %Y') }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

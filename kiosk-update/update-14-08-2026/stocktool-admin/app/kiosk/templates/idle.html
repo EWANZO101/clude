@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Scan Your Badge{% endblock %}
+{% block content %}
+<div class="kiosk-screen idle-screen" id="idleScreen">
+  <div class="idle-center">
+    <i class="fas fa-id-badge idle-icon"></i>
+    <h1 class="idle-title">Scan Your Badge</h1>
+    <p class="idle-subtitle">Or type your badge code below</p>
+
+    <input type="text" id="scanInput" class="scan-input" autocomplete="off"
+           autocapitalize="off" spellcheck="false" placeholder="Waiting for scan…" />
+
+    <div id="idleError" class="scan-error" style="display:none;"></div>
+  </div>
+
+  <button id="pairPhoneBtn" class="pair-phone-btn" title="Use your phone as a scanner">
+    <i class="fas fa-mobile-screen-button"></i>
+  </button>
+</div>
+
+<!-- Phone pairing modal -->
+<div class="kiosk-modal" id="pairingModal">
+  <div class="kiosk-modal-card">
+    <div class="qty-item-name" style="margin-bottom:6px;">Scan With Your Phone</div>
+    <div class="qty-item-stock" style="margin-bottom:16px;">Open your phone's camera and point it at this code</div>
+    <img id="pairingQrImage" src="" alt="Pairing QR code"
+         style="width:220px;height:220px;background:#fff;border-radius:12px;padding:10px;margin:0 auto 16px;display:block;" />
+    <div id="pairingCountdown" style="font-size:12px;color:#6b7280;margin-bottom:16px;"></div>
+    <button class="btn-cancel" id="pairingCloseBtn" style="width:100%;">Close</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  Kiosk.initIdleScreen();
+  Kiosk.initPairing();
+  Kiosk.initLiveUpdates({ onLogin: () => window.location.reload() });
+</script>
+{% endblock %}

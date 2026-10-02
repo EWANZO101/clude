@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Build Kiosk release — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('releases.list_releases') }}" class="crumb">← Releases</a>
+    <h1>Build Kiosk release from source</h1>
+  </div>
+</div>
+
+<div class="panel" style="max-width:580px;">
+  <p class="muted">
+    Builds the package directly from <code>kiosk_app/</code> — the Kiosk
+    App's own source tree — instead of a hand-picked ZIP file. This is the
+    preferred way to cut a release: it can't accidentally package the wrong
+    application, because it only ever zips <code>kiosk_app/</code> itself.
+    Prefer this over
+    <a href="{{ url_for('releases.upload') }}">manual upload</a> unless
+    you're offering a package built outside this repo.
+  </p>
+  <form method="post">
+    <label>Version</label>
+    <input type="text" name="version" placeholder="e.g. 1.0.3" value="{{ version or '' }}" required>
+    <label>Release notes (optional)</label>
+    <textarea name="release_notes" rows="4" style="font-family:inherit; font-size:13.5px;">{{ release_notes or '' }}</textarea>
+    <button type="submit" style="margin-top:18px;">Build &amp; validate</button>
+  </form>
+</div>
+{% endblock %}

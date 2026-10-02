@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Log in — {{ tenant_name }}{% endblock %}
+{% block body %}
+<div style="max-width:360px; margin:80px auto; padding:0 16px;">
+  <h1 style="text-align:center;">{{ tenant_name }}</h1>
+  <div class="panel">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <form method="post">
+      <label>Username</label>
+      <input type="text" name="username" required autofocus>
+      <label>Password</label>
+      <input type="password" name="password" required>
+      <button type="submit" style="margin-top:16px; width:100%;">Log in</button>
+    </form>
+  </div>
+  <p class="muted" style="text-align:center; font-size:13px;">
+    <a href="{{ url_for('auth.signup') }}">Need an account?</a>
+  </p>
+</div>
+{% endblock %}

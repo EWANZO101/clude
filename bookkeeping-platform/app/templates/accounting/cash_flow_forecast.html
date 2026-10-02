@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Cash flow forecast{% endblock %}
+{% block content %}
+<h1 class="page-title mb-2">Cash flow forecast (90 days)</h1>
+<p class="page-subtitle">A transparent projection from today's cash balance plus known invoice due dates (money in) and bill due dates (money out). Not a prediction model — every number traces back to a real invoice or bill.</p>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">Week of</th><th class="p-3 text-right">Expected in</th><th class="p-3 text-right">Expected out</th><th class="p-3 text-right">Projected cash</th></tr></thead>
+    <tbody>
+      <tr class="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"><td class="p-3" colspan="3">Starting cash (today)</td><td class="p-3 text-right font-medium">{{ "%.2f"|format(starting_cash) }}</td></tr>
+      {% for point in weekly_points %}
+      <tr class="row-border">
+        <td class="p-3">{{ point.week_of }}</td>
+        <td class="p-3 text-right text-green-600">{{ "%.2f"|format(point.expected_in) }}</td>
+        <td class="p-3 text-right text-red-600">{{ "%.2f"|format(point.expected_out) }}</td>
+        <td class="p-3 text-right font-medium">{{ "%.2f"|format(point.projected_cash) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

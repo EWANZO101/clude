@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>StockTool Kiosk — Admin AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #14161a; color: #e6e6e6;
+  }
+  header {
+    padding: 14px 20px; background: #1c1f26; border-bottom: 1px solid #2a2e37;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  #status-pill {
+    font-size: 12px; padding: 3px 10px; border-radius: 999px; background: #333; color: #ccc;
+  }
+  #status-pill.ready { background: #1e4620; color: #7be08a; }
+  #status-pill.disabled, #status-pill.no_model, #status-pill.model_missing,
+  #status-pill.engine_unavailable { background: #4a2323; color: #f28b8b; }
+  #status-pill.not_loaded { background: #4a3d1e; color: #f0c96a; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 20px; display: grid; gap: 20px; }
+  section {
+    background: #1c1f26; border: 1px solid #2a2e37; border-radius: 10px; padding: 16px 18px;
+  }
+  section h2 { font-size: 14px; margin: 0 0 12px; color: #a9b2c3; text-transform: uppercase; letter-spacing: .04em; }
+
+  label { display: block; font-size: 12px; color: #a9b2c3; margin: 10px 0 4px; }
+  input[type=text], input[type=password], input[type=number], select, textarea {
+    width: 100%; padding: 8px 10px; background: #101216; border: 1px solid #2a2e37;
+    border-radius: 6px; color: #e6e6e6; font-size: 13px;
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 140px; }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
+  .checkbox-row input { width: auto; }
+
+  button {
+    background: #3a6df0; color: white; border: none; border-radius: 6px;
+    padding: 8px 14px; font-size: 13px; cursor: pointer; font-weight: 500;
+  }
+  button:hover { background: #2f5ad1; }
+  button.secondary { background: #2a2e37; }
+  button.secondary:hover { background: #363b47; }
+  button.danger { background: #7a2e2e; }
+  button.danger:hover { background: #922; }
+  button:disabled { opacity: .5; cursor: default; }
+
+  #chat-log { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; margin-bottom: 12px; }
+  .msg { padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 13px; line-height: 1.4; white-space: pre-wrap; }
+  .msg.user { align-self: flex-end; background: #3a6df0; color: white; }
+  .msg.assistant { align-self: flex-start; background: #2a2e37; }
+  .msg.system { align-self: center; background: transparent; color: #888; font-size: 12px; }
+
+  .chat-input-row { display: flex; gap: 8px; }
+  .chat-input-row textarea { flex: 1; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #2a2e37; }
+  th { color: #a9b2c3; font-weight: 500; }
+
+  .proposal-actions { display: flex; gap: 6px; }
+  .muted { color: #888; font-size: 12px; }
+  .toast {
+    position: fixed; bottom: 16px; right: 16px; background: #2a2e37; color: #e6e6e6;
+    padding: 10px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>StockTool Kiosk — Admin AI</h1>
+  <span id="status-pill">checking…</span>
+</header>
+
+<main>
+
+  <section id="auth-section">
+    <h2>Access</h2>
+    <p class="muted">Log in the same way as the kiosk touch screen — badge code or username, no password.</p>
+    <div class="row">
+      <input type="text" id="badge-input" placeholder="Badge code or username" autocomplete="off">
+      <button id="login-btn" style="flex: 0 0 auto;">Log in</button>
+    </div>
+    <p class="muted" id="whoami" style="display:none;"></p>
+  </section>
+
+  <section id="settings-section" style="display:none;">
+    <h2>Settings</h2>
+    <div class="checkbox-row">
+      <input type="checkbox" id="set-enabled"><label for="set-enabled" style="margin:0;">Enabled</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="set-readonly"><label for="set-readonly" style="margin:0;">Read-only (no write actions allowed)</label>
+    </div>
+    <label>Model file</label>
+    <div class="row">
+      <select id="set-model-select"></select>
+      <button id="refresh-models-btn" class="secondary" style="flex: 0 0 auto;">Refresh list</button>
+    </div>
+    <label>Model label (display name)</label>
+    <input type="text" id="set-model-label" placeholder="e.g. Qwen2.5-0.5B-Instruct (Q4)">
+    <div class="row">
+      <div>
+        <label>Context tokens</label>
+        <input type="number" id="set-context" min="512" step="512">
+      </div>
+      <div>
+        <label>Max response tokens</label>
+        <input type="number" id="set-maxtokens" min="32" step="32">
+      </div>
+      <div>
+        <label>Temperature</label>
+        <input type="number" id="set-temperature" min="0" max="2" step="0.1">
+      </div>
+    </div>
+    <label>Database access level</label>
+    <select id="set-db-level">
+      <option value="none">none — AI can't read any data</option>
+      <option value="summary">summary — counts/totals only</option>
+      <option value="detail">detail — full read access</option>
+    </select>
+    <div style="margin-top:14px; display:flex; gap:8px;">
+      <button id="save-settings-btn">Save settings</button>
+      <button id="reindex-btn" class="secondary">Rebuild knowledge index</button>
+    </div>
+  </section>
+
+  <section id="chat-section" style="display:none;">
+    <h2>Chat</h2>
+    <div id="chat-log"></div>
+    <div class="chat-input-row">
+      <textarea id="chat-input" rows="2" placeholder="Ask the Admin AI…"></textarea>
+      <button id="chat-send-btn" style="flex: 0 0 auto;">Send</button>
+    </div>
+  </section>
+
+  <section id="proposals-section" style="display:none;">
+    <h2>Pending actions</h2>
+    <table>
+      <thead><tr><th>Summary</th><th>Action</th><th></th></tr></thead>
+      <tbody id="proposals-body"></tbody>
+    </table>
+    <p class="muted" id="proposals-empty">Nothing pending.</p>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let TOKEN = localStorage.getItem("stocktool_ai_token") || "";
+let CURRENT_CONVERSATION_ID = null;
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+async function api(path, options = {}) {
+  const resp = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${TOKEN}`,
+      ...(options.headers || {}),
+    },
+  });
+  let body = null;
+  try { body = await resp.json(); } catch (e) { /* no body */ }
+  if (resp.status === 401) {
+    TOKEN = "";
+    localStorage.removeItem("stocktool_ai_token");
+    ["settings-section", "chat-section", "proposals-section"].forEach(id => $(id).style.display = "none");
+    $("whoami").style.display = "none";
+  }
+  if (!resp.ok) {
+    throw new Error((body && body.error) || `Request failed (${resp.status})`);
+  }
+  return body;
+}
+
+function setStatusPill(state) {
+  const pill = $("status-pill");
+  pill.textContent = state;
+  pill.className = state;
+}
+
+async function refreshStatus() {
+  try {
+    const s = await api("/api/ai/status");
+    setStatusPill(s.state);
+  } catch (e) {
+    setStatusPill("unreachable");
+  }
+}
+
+async function loadSettings() {
+  try {
+    const s = await api("/api/ai/settings");
+    $("set-enabled").checked = !!s.enabled;
+    $("set-readonly").checked = !!s.read_only;
+    $("set-model-label").value = s.model_label || "";
+    $("set-context").value = s.context_tokens;
+    $("set-maxtokens").value = s.max_response_tokens;
+    $("set-temperature").value = s.temperature;
+    $("set-db-level").value = s.db_access_level;
+    await loadModels(s.model_path);
+    ["settings-section", "chat-section", "proposals-section"].forEach(id => $(id).style.display = "block");
+    refreshStatus();
+    refreshProposals();
+  } catch (e) {
+    toast(`Couldn't load settings: ${e.message}`);
+  }
+}
+
+async function loadModels(selectedPath) {
+  const sel = $("set-model-select");
+  sel.innerHTML = "";
+  const noneOpt = document.createElement("option");
+  noneOpt.value = ""; noneOpt.textContent = "(none)";
+  sel.appendChild(noneOpt);
+  try {
+    const r = await api("/api/ai/models");
+    for (const m of r.models) {
+      const opt = document.createElement("option");
+      opt.value = m.path;
+      opt.textContent = `${m.filename} (${m.size_mb} MB)`;
+      sel.appendChild(opt);
+    }
+    if (selectedPath) sel.value = selectedPath;
+    if (r.models.length === 0) toast(`No .gguf files found in ${r.models_dir}`);
+  } catch (e) {
+    toast(`Couldn't list models: ${e.message}`);
+  }
+}
+
+async function saveSettings() {
+  try {
+    await api("/api/ai/settings", {
+      method: "PUT",
+      body: JSON.stringify({
+        enabled: $("set-enabled").checked,
+        read_only: $("set-readonly").checked,
+        model_path: $("set-model-select").value || null,
+        model_label: $("set-model-label").value || null,
+        context_tokens: parseInt($("set-context").value, 10),
+        max_response_tokens: parseInt($("set-maxtokens").value, 10),
+        temperature: parseFloat($("set-temperature").value),
+        db_access_level: $("set-db-level").value,
+      }),
+    });
+    toast("Settings saved.");
+    refreshStatus();
+  } catch (e) {
+    toast(`Save failed: ${e.message}`);
+  }
+}
+
+function appendMsg(sender, content) {
+  const log = $("chat-log");
+  const div = document.createElement("div");
+  div.className = `msg ${sender}`;
+  div.textContent = content;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function sendChat() {
+  const input = $("chat-input");
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = "";
+  appendMsg("user", message);
+  const btn = $("chat-send-btn");
+  btn.disabled = true;
+  try {
+    const r = await api("/api/ai/chat", {
+      method: "POST",
+      body: JSON.stringify({ message, conversation_id: CURRENT_CONVERSATION_ID }),
+    });
+    CURRENT_CONVERSATION_ID = r.conversation_id || CURRENT_CONVERSATION_ID;
+    appendMsg("assistant", r.answer);
+  } catch (e) {
+    appendMsg("system", `Error: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function refreshProposals() {
+  try {
+    const r = await api("/api/ai/proposals");
+    const body = $("proposals-body");
+    body.innerHTML = "";
+    $("proposals-empty").style.display = r.proposals.length ? "none" : "block";
+    for (const p of r.proposals) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${p.summary}</td>
+        <td class="muted">${p.action}</td>
+        <td class="proposal-actions">
+          <button data-id="${p.id}" data-act="approve">Approve</button>
+          <button data-id="${p.id}" data-act="reject" class="secondary">Reject</button>
+        </td>`;
+      body.appendChild(tr);
+    }
+    body.querySelectorAll("button").forEach(b => b.addEventListener("click", async () => {
+      try {
+        await api(`/api/ai/proposals/${b.dataset.id}/${b.dataset.act}`, { method: "POST" });
+        toast(`Proposal ${b.dataset.act}d.`);
+        refreshProposals();
+      } catch (e) {
+        toast(`Failed: ${e.message}`);
+      }
+    }));
+  } catch (e) {
+    // Non-admin tokens can't see proposals -- fail quietly here, the
+    // rest of the page still works.
+  }
+}
+
+$("login-btn").addEventListener("click", async () => {
+  const raw = $("badge-input").value.trim();
+  if (!raw) { toast("Enter a badge code or username."); return; }
+  try {
+    const resp = await fetch("/api/ai/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ badge_code: raw }),
+    });
+    const body = await resp.json();
+    if (!resp.ok) throw new Error(body.error || "Login failed.");
+    TOKEN = body.token;
+    localStorage.setItem("stocktool_ai_token", TOKEN);
+    const who = $("whoami");
+    who.textContent = `Logged in as ${body.user.username} (${body.user.role}).`;
+    who.style.display = "block";
+    if (body.user.role !== "admin") {
+      toast("Logged in, but AI Settings/proposals need an admin account.");
+    }
+    loadSettings();
+  } catch (e) {
+    toast(`Login failed: ${e.message}`);
+  }
+});
+$("save-settings-btn").addEventListener("click", saveSettings);
+$("refresh-models-btn").addEventListener("click", () => loadModels($("set-model-select").value));
+$("reindex-btn").addEventListener("click", async () => {
+  try {
+    const r = await api("/api/ai/reindex", { method: "POST" });
+    toast(`Index rebuilt (${r.dynamic_doc_count} dynamic docs).`);
+  } catch (e) {
+    toast(`Reindex failed: ${e.message}`);
+  }
+});
+$("chat-send-btn").addEventListener("click", sendChat);
+$("chat-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+$("badge-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); $("login-btn").click(); }
+});
+
+if (TOKEN) {
+  loadSettings();
+} else {
+  refreshStatus();
+}
+setInterval(refreshStatus, 15000);
+</script>
+
+</body>
+</html>

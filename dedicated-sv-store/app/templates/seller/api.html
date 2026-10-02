@@ -1,0 +1,50 @@
+{% extends "layouts/seller_dashboard.html" %}
+{% block title %}API — Seller Portal{% endblock %}
+{% block page_title %}API{% endblock %}
+{% block header_actions %}
+<a href="{{ url_for('api_v1.api_docs') }}" target="_blank" class="btn-secondary">View API docs</a>
+{% endblock %}
+{% block content %}
+{% if new_raw_key %}
+<div class="card p-4 mb-6 border-status-success/40">
+  <p class="text-sm font-medium text-status-success mb-1">New API key created</p>
+  <p class="font-mono text-xs text-text-primary break-all">{{ new_raw_key }}</p>
+  <p class="text-xs text-text-muted mt-1">Copy this now — it will not be shown again.</p>
+</div>
+{% endif %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Name</th><th>Prefix</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for key in keys %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ key.name }}</td>
+          <td class="text-text-muted font-mono text-xs">{{ key.key_prefix }}…</td>
+          <td>{% if key.is_valid() %}<span class="badge-success">Active</span>{% else %}<span class="badge-danger">Revoked</span>{% endif %}</td>
+          <td>
+            {% if key.is_valid() %}
+            <form method="POST" action="{{ url_for('seller.api_key_revoke', key_id=key.id) }}">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-status-danger hover:opacity-80 text-sm">Revoke</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-text-muted py-8">No API keys yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Create API key</h2>
+    <form method="POST" class="space-y-3">
+      {% include "components/_csrf.html" %}
+      <input type="text" name="name" class="input-field" placeholder="Key name">
+      <button type="submit" class="btn-primary w-full">Generate key</button>
+    </form>
+    <p class="text-xs text-text-muted mt-3">Use <code>X-API-Key</code> header to authenticate against <code>/api/v1/servers</code>, <code>/api/v1/orders</code> and <code>/api/v1/inventory</code>.</p>
+  </div>
+</div>
+{% endblock %}

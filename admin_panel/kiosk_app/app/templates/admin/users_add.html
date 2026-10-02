@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Add User — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.list_users') }}">← Users</a></p>
+<div class="panel" style="max-width:480px;">
+  <h1>Add User</h1>
+  <form method="post">
+    <label>Username</label>
+    <input type="text" name="username" required autofocus>
+    <label>Role</label>
+    <select name="role" style="width:100%; padding:10px 12px; border-radius:7px; border:1px solid var(--panel-border); background:var(--bg); color:var(--text);">
+      {% for role in roles %}<option value="{{ role }}">{{ role }}</option>{% endfor %}
+    </select>
+    <label>Badge code (optional — leave blank to auto-generate)</label>
+    <input type="text" name="badge_code">
+    <label>Password (optional — leave blank for badge/username-only login)</label>
+    <input type="password" name="password">
+    <button type="submit" style="margin-top:18px;">Create</button>
+  </form>
+</div>
+{% endblock %}

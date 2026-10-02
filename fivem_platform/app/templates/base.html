@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ config.SITE_NAME }}{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f1115'/%3E%3Cpath d='M9 20a5 5 0 0 1 1-9.9A7 7 0 0 1 23 12a4.5 4.5 0 0 1-1 8.9H9z' fill='%23C41E6B'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            surface: { DEFAULT: '#0d0f13', card: '#151822', border: '#252a38' },
+            brand: { DEFAULT: '#C41E6B', hover: '#CC2672' }
+          },
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Subtle elevation on every card surface - flat blocks read as an
+       unstyled template; a soft shadow gives the whole app a sense of
+       depth without touching every individual template. */
+    .bg-surface-card {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.24), 0 4px 12px -4px rgba(0, 0, 0, 0.35);
+    }
+    /* Interactive cards (anything that already opted into the
+       hover:border-brand pattern) get a lift + glow on hover - ties every
+       clickable surface in the app to the same felt interaction without
+       editing each template individually. */
+    a[class*="hover:border-brand"] {
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    a[class*="hover:border-brand"]:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.24), 0 12px 24px -8px rgba(196, 30, 107, 0.28);
+    }
+    /* Primary buttons get a subtle gradient instead of a flat fill, plus
+       a soft glow on hover - the one place the accent color gets to be a
+       little louder, since it's the thing you're meant to click. */
+    .bg-brand {
+      background-image: linear-gradient(135deg, #D42872 0%, #A8145A 100%);
+    }
+    a[class*="bg-brand"], button[class*="bg-brand"] {
+      transition: box-shadow 0.15s ease, transform 0.15s ease, background-color 0.15s ease;
+    }
+    a[class*="bg-brand"]:hover, button[class*="bg-brand"]:hover {
+      box-shadow: 0 4px 20px -4px rgba(196, 30, 107, 0.55);
+      transform: translateY(-1px);
+    }
+    /* Ambient glow behind the top of the page - fixed, very low opacity,
+       purely atmospheric. Sits behind everything (z-index -1) so it never
+       interferes with readability or interaction. */
+    body::before {
+      content: "";
+      position: fixed;
+      top: -10%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 500px;
+      background: radial-gradient(ellipse at center, rgba(196, 30, 107, 0.16) 0%, rgba(196, 30, 107, 0) 70%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    /* Logo mark: subtle gradient text instead of flat white - a small,
+       contained signature touch on the one piece of text that's on every
+       single page. */
+    .brand-mark {
+      background: linear-gradient(135deg, #ffffff 0%, #f0a8c8 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    /* Visible keyboard focus, kept understated but real - quality floor
+       regardless of how someone navigates the app. */
+    a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 2px solid #CC2672;
+      outline-offset: 2px;
+    }
+    ::selection { background: #C41E6B; color: white; }
+  </style>
+</head>
+<body class="bg-surface text-gray-200 min-h-screen font-sans antialiased">
+
+  <nav class="bg-transparent backdrop-blur-sm relative z-20">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="{{ url_for('dashboard.index') }}" class="flex items-center gap-2 font-bold tracking-tight brand-mark">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="h-5 w-5 flex-shrink-0" style="color: #C41E6B">
+          <path d="M7 16a4 4 0 0 1 0.6-7.96A5.5 5.5 0 0 1 18 10a3.5 3.5 0 0 1-0.6 6.95H7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+        {{ config.SITE_NAME }}
+      </a>
+
+      <!-- Desktop nav -->
+      <div class="hidden sm:flex items-center gap-2 text-sm">
+        <a href="{{ url_for('marketplace.browse') }}" class="text-gray-300 hover:text-white hover:border-brand transition px-3 py-1.5 rounded-md border border-surface-border bg-surface-card/70">Marketplace</a>
+        <a href="{{ url_for('cloudloader.info') }}" class="text-gray-300 hover:text-white hover:border-brand transition px-3 py-1.5 rounded-md border border-surface-border bg-surface-card/70">CloudLoader</a>
+        {% if current_user.is_authenticated %}
+          {% if current_user.is_admin %}
+            <a href="{{ url_for('admin.dashboard') }}" class="text-gray-300 hover:text-white hover:border-brand transition px-3 py-1.5 rounded-md border border-surface-border bg-surface-card/70">Admin</a>
+          {% endif %}
+          <a href="{{ url_for('portal.my_licenses') }}" class="text-gray-300 hover:text-white hover:border-brand transition px-3 py-1.5 rounded-md border border-surface-border bg-surface-card/70">My Licenses</a>
+          <a href="{{ url_for('developer.overview') }}" class="text-gray-300 hover:text-white hover:border-brand transition px-3 py-1.5 rounded-md border border-surface-border bg-surface-card/70">Developer</a>
+          <span class="text-gray-400 px-3 py-1.5 rounded-md border border-surface-border bg-surface-card/40">{{ current_user.username }}</span>
+          <a href="{{ url_for('auth.logout') }}" class="text-gray-300 hover:text-white hover:border-red-800 transition px-3 py-1.5 rounded-md border border-surface-border bg-surface-card/70">Log out</a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="text-gray-300 hover:text-white hover:border-brand transition px-3 py-1.5 rounded-md border border-surface-border bg-surface-card/70">Log in</a>
+          <a href="{{ url_for('auth.register') }}" class="bg-brand hover:bg-brand-hover text-white px-3 py-1.5 rounded-md transition">Sign up</a>
+        {% endif %}
+      </div>
+
+      <!-- Mobile menu toggle -->
+      <button id="mobile-menu-btn" class="sm:hidden text-gray-300 hover:text-white p-1.5 rounded-md border border-surface-border bg-surface-card/70" aria-label="Menu">
+        <svg id="icon-open" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        <svg id="icon-close" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile menu panel -->
+    <div id="mobile-menu" class="hidden sm:hidden px-4 pb-4">
+      <div class="max-w-5xl mx-auto flex flex-wrap gap-2 text-sm bg-surface-card/90 backdrop-blur border border-surface-border rounded-lg p-3">
+        <a href="{{ url_for('marketplace.browse') }}" class="text-gray-300 hover:text-white transition px-3 py-1.5 rounded-md border border-surface-border bg-surface/60">Marketplace</a>
+        <a href="{{ url_for('cloudloader.info') }}" class="text-gray-300 hover:text-white transition px-3 py-1.5 rounded-md border border-surface-border bg-surface/60">CloudLoader</a>
+        {% if current_user.is_authenticated %}
+          {% if current_user.is_admin %}
+            <a href="{{ url_for('admin.dashboard') }}" class="text-gray-300 hover:text-white transition px-3 py-1.5 rounded-md border border-surface-border bg-surface/60">Admin</a>
+          {% endif %}
+          <a href="{{ url_for('portal.my_licenses') }}" class="text-gray-300 hover:text-white transition px-3 py-1.5 rounded-md border border-surface-border bg-surface/60">My Licenses</a>
+          <a href="{{ url_for('developer.overview') }}" class="text-gray-300 hover:text-white transition px-3 py-1.5 rounded-md border border-surface-border bg-surface/60">Developer</a>
+          <a href="{{ url_for('auth.logout') }}" class="text-gray-300 hover:text-white transition px-3 py-1.5 rounded-md border border-surface-border bg-surface/60">Log out</a>
+          <span class="w-full text-xs text-gray-500 px-1 pt-1">{{ current_user.username }}</span>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="text-gray-300 hover:text-white transition px-3 py-1.5 rounded-md border border-surface-border bg-surface/60">Log in</a>
+          <a href="{{ url_for('auth.register') }}" class="bg-brand hover:bg-brand-hover text-white px-3 py-1.5 rounded-md transition">Sign up</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-4 py-10">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-6 space-y-2">
+          {% for category, message in messages %}
+            <div class="rounded-md px-4 py-3 text-sm border
+              {% if category == 'error' %} bg-red-950/40 border-red-800 text-red-300
+              {% elif category == 'success' %} bg-emerald-950/40 border-emerald-800 text-emerald-300
+              {% else %} bg-surface-card border-surface-border text-gray-300 {% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    (function() {
+      var btn = document.getElementById('mobile-menu-btn');
+      var menu = document.getElementById('mobile-menu');
+      var iconOpen = document.getElementById('icon-open');
+      var iconClose = document.getElementById('icon-close');
+      if (!btn) return;
+      btn.addEventListener('click', function() {
+        menu.classList.toggle('hidden');
+        iconOpen.classList.toggle('hidden');
+        iconClose.classList.toggle('hidden');
+      });
+    })();
+  </script>
+
+</body>
+</html>

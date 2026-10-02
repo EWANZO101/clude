@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}New journal entry{% endblock %}
+{% block content %}
+<h1 class="page-title mb-6">New journal entry</h1>
+<form method="POST" class="card card-padded space-y-4 max-w-2xl">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div>
+    <label class="label-field">Date</label>
+    <input type="date" name="entry_date" required class="input-field w-full">
+  </div>
+  <div>
+    <label class="label-field">Description</label>
+    <input name="description" class="input-field w-full">
+  </div>
+
+  <div class="space-y-2" id="lines">
+    {% for i in range(2) %}
+    <div class="grid grid-cols-3 gap-2">
+      <select name="account_id" class="input-field">
+        {% for account in accounts %}
+        <option value="{{ account.id }}">{{ account.code }} — {{ account.name }}</option>
+        {% endfor %}
+      </select>
+      <input name="debit" placeholder="Debit" class="input-field">
+      <input name="credit" placeholder="Credit" class="input-field">
+    </div>
+    {% endfor %}
+  </div>
+
+  <p class="text-muted text-xs">Total debits must equal total credits. Add more account rows by duplicating a line in future phases' richer UI.</p>
+  <button class="btn btn-primary">Post entry</button>
+</form>
+{% endblock %}

@@ -1,0 +1,674 @@
+[
+  {
+    "id": 1,
+    "server_id": null,
+    "username": "Admin1",
+    "badge_code": "KIOSK01",
+    "role": "admin",
+    "is_active": true
+  },
+  {
+    "id": 3,
+    "server_id": null,
+    "username": "simon",
+    "badge_code": "GSS027",
+    "role": "supervisor",
+    "is_active": true
+  },
+  {
+    "id": 4,
+    "server_id": null,
+    "username": "jc gouws",
+    "badge_code": "RW006",
+    "role": "supervisor",
+    "is_active": true
+  },
+  {
+    "id": 5,
+    "server_id": null,
+    "username": "zhelinzina aaron baba",
+    "badge_code": "GEW0002",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 6,
+    "server_id": null,
+    "username": "randell brandon barden",
+    "badge_code": "GMW087",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 7,
+    "server_id": null,
+    "username": "manelisi silver benama",
+    "badge_code": "GMW022",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 8,
+    "server_id": null,
+    "username": "justin botes",
+    "badge_code": "GMW077",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 9,
+    "server_id": null,
+    "username": "tavonga chidzanira",
+    "badge_code": "GMW005",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 10,
+    "server_id": null,
+    "username": "marvelous maphios chirairo",
+    "badge_code": "GMW004",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 11,
+    "server_id": null,
+    "username": "beer johan de",
+    "badge_code": "GMW008",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 12,
+    "server_id": null,
+    "username": "arnold thembinkosi dintsi",
+    "badge_code": "GEW0007",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 13,
+    "server_id": null,
+    "username": "jacolene du toit",
+    "badge_code": "GSS011",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 14,
+    "server_id": null,
+    "username": "gidion johannes erxleben",
+    "badge_code": "GEW0010",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 15,
+    "server_id": null,
+    "username": "goodman fihlani",
+    "badge_code": "GMW007",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 16,
+    "server_id": null,
+    "username": "david francios gates",
+    "badge_code": "GSS006",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 17,
+    "server_id": null,
+    "username": "jaco gouws",
+    "badge_code": "RW007",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 18,
+    "server_id": null,
+    "username": "jc hendrik gouws",
+    "badge_code": "RW006",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 19,
+    "server_id": null,
+    "username": "eli louis greeff",
+    "badge_code": "GSS008",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 20,
+    "server_id": null,
+    "username": "abraham carel greyling",
+    "badge_code": "GMW073",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 21,
+    "server_id": null,
+    "username": "christiaan frederick groenewald",
+    "badge_code": "GMW083",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 22,
+    "server_id": null,
+    "username": "nkanyezi gxagxisa",
+    "badge_code": "GEW0012",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 23,
+    "server_id": null,
+    "username": "timothy hlabiso",
+    "badge_code": "GEW0038",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 24,
+    "server_id": null,
+    "username": "bongani john hlubi",
+    "badge_code": "GEW0003",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 25,
+    "server_id": null,
+    "username": "michael thabo hlubi",
+    "badge_code": "GMW038",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 26,
+    "server_id": null,
+    "username": "michael janse van rensburg",
+    "badge_code": "GMW074",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 27,
+    "server_id": null,
+    "username": "cornelius joubert",
+    "badge_code": "GRE016",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 28,
+    "server_id": null,
+    "username": "marthinus stephanus joubert",
+    "badge_code": "GEW0020",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 29,
+    "server_id": null,
+    "username": "jacobus cornelius koekemoer",
+    "badge_code": "GMW050",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 30,
+    "server_id": null,
+    "username": "innocent tshokolo koto",
+    "badge_code": "GMW059",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 31,
+    "server_id": null,
+    "username": "sefooatse gabriel kuleile",
+    "badge_code": "GEW0032",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 32,
+    "server_id": null,
+    "username": "tshidiso maximillian lebele",
+    "badge_code": "GSS013",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 33,
+    "server_id": null,
+    "username": "daddy leqola",
+    "badge_code": "GMW011",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 34,
+    "server_id": null,
+    "username": "justice kelebohile leteha",
+    "badge_code": "GMW012",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 35,
+    "server_id": null,
+    "username": "kabelo thato leteha",
+    "badge_code": "GEW0053",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 36,
+    "server_id": null,
+    "username": "reuben lewis",
+    "badge_code": "GMW084",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 37,
+    "server_id": null,
+    "username": "obed maduna",
+    "badge_code": "GMW019",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 38,
+    "server_id": null,
+    "username": "paseka joseph makume",
+    "badge_code": "GMW085",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 39,
+    "server_id": null,
+    "username": "albert thotho malokase",
+    "badge_code": "GMW015",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 40,
+    "server_id": null,
+    "username": "agrippa thokozani manqele",
+    "badge_code": "GMW064",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 41,
+    "server_id": null,
+    "username": "thabo amos mapharisa",
+    "badge_code": "GMW001",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 42,
+    "server_id": null,
+    "username": "siphesihle (sizwe) masangane",
+    "badge_code": "GMW062",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 43,
+    "server_id": null,
+    "username": "mike mashindi",
+    "badge_code": "GSS015",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 44,
+    "server_id": null,
+    "username": "lesego rudolph matebesi",
+    "badge_code": "GMW018",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 45,
+    "server_id": null,
+    "username": "jabulani shadrack mavuso",
+    "badge_code": "GMW025",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 46,
+    "server_id": null,
+    "username": "lindelani isaac mdladla",
+    "badge_code": "GMW017",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 47,
+    "server_id": null,
+    "username": "steven mkwanazi",
+    "badge_code": "GMW060",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 48,
+    "server_id": null,
+    "username": "sabelo tsaka mnyandu",
+    "badge_code": "GEW0056",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 49,
+    "server_id": null,
+    "username": "samuel mosimanegape moeketsi",
+    "badge_code": "GMW086",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 50,
+    "server_id": null,
+    "username": "petrose monnamoholo mofokeng",
+    "badge_code": "GEW0027",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 51,
+    "server_id": null,
+    "username": "kleinbooi motsamai mokhomo",
+    "badge_code": "GEW0045",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 52,
+    "server_id": null,
+    "username": "tadime simon moloi",
+    "badge_code": "GSS027",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 53,
+    "server_id": null,
+    "username": "talame esau more",
+    "badge_code": "GEW0021",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 54,
+    "server_id": null,
+    "username": "siyabonga shayangezakhe mthethwa",
+    "badge_code": "GMW023",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 55,
+    "server_id": null,
+    "username": "nomsa constance mtolo",
+    "badge_code": "GSS018",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 56,
+    "server_id": null,
+    "username": "corn\u00e8 muller",
+    "badge_code": "RW019",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 57,
+    "server_id": null,
+    "username": "felix musa",
+    "badge_code": "GMW024",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 58,
+    "server_id": null,
+    "username": "monesa koos mzizi",
+    "badge_code": "RW030",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 59,
+    "server_id": null,
+    "username": "siphiwe gift ncala",
+    "badge_code": "GMW028",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 60,
+    "server_id": null,
+    "username": "alfred thamsanqa ndam",
+    "badge_code": "GEW0001",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 61,
+    "server_id": null,
+    "username": "simphiwe ngema",
+    "badge_code": "GEW0034",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 62,
+    "server_id": null,
+    "username": "samson ngobeni",
+    "badge_code": "GMW065",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 63,
+    "server_id": null,
+    "username": "phumlani robert ngobese",
+    "badge_code": "GMW075",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 64,
+    "server_id": null,
+    "username": "njabulo emmanuel ngwenya",
+    "badge_code": "GMW055",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 65,
+    "server_id": null,
+    "username": "sabelo ntshapheka",
+    "badge_code": "GMW080",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 66,
+    "server_id": null,
+    "username": "mzojani hycenth nxumalo",
+    "badge_code": "GMW081",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 67,
+    "server_id": null,
+    "username": "ahmed phiri",
+    "badge_code": "GMW088",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 68,
+    "server_id": null,
+    "username": "lehlohonolo pillip pudumo",
+    "badge_code": "GEW0026",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 69,
+    "server_id": null,
+    "username": "simphiwe victor qutu",
+    "badge_code": "GMW036",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 70,
+    "server_id": null,
+    "username": "louis andries hermanus roestorff",
+    "badge_code": "GEW0047",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 71,
+    "server_id": null,
+    "username": "alvin garth cadwalleda sandamela",
+    "badge_code": "GSS024",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 72,
+    "server_id": null,
+    "username": "motlalepula johannes sejake",
+    "badge_code": "GEW0016",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 73,
+    "server_id": null,
+    "username": "stephen tshepe selepe",
+    "badge_code": "GMW079",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 74,
+    "server_id": null,
+    "username": "lucky howard sesele",
+    "badge_code": "GMW014",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 75,
+    "server_id": null,
+    "username": "ravin sewlal",
+    "badge_code": "GMW030",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 76,
+    "server_id": null,
+    "username": "sandile cosmos sibiya",
+    "badge_code": "GEW0058",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 77,
+    "server_id": null,
+    "username": "vusimuzi michael sithole",
+    "badge_code": "GEW0036",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 78,
+    "server_id": null,
+    "username": "george siyanda",
+    "badge_code": "GMW033",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 79,
+    "server_id": null,
+    "username": "barend andreas strydom",
+    "badge_code": "GMW072",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 80,
+    "server_id": null,
+    "username": "gideon swanepoel",
+    "badge_code": "GMW068",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 81,
+    "server_id": null,
+    "username": "thabo tsoametsi",
+    "badge_code": "GMW052",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 82,
+    "server_id": null,
+    "username": "michael bafana tsotetsi",
+    "badge_code": "GSS017",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 83,
+    "server_id": null,
+    "username": "clinten vermaak",
+    "badge_code": "GSS001",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 84,
+    "server_id": null,
+    "username": "roan white",
+    "badge_code": "GMW071",
+    "role": "Stock user",
+    "is_active": true
+  },
+  {
+    "id": 85,
+    "server_id": null,
+    "username": "themba zwane",
+    "badge_code": "GMW040",
+    "role": "Stock user",
+    "is_active": true
+  }
+]

@@ -1,0 +1,87 @@
+.browse-screen {
+  min-height: 100vh; background: #0b1120; color: #f3f4f6;
+  padding: 20px 20px 90px; box-sizing: border-box;
+}
+.preview-banner {
+  background: #78350f; color: #fde68a; border: 1px solid #92400e;
+  padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+}
+.browse-components { display: flex; flex-direction: column; gap: 22px; }
+
+/* ── Section wrapper shared by every component ───────────────────────── */
+.b-section { width: 100%; }
+.b-section-title { font-size: 15px; font-weight: 700; color: #9ca3af; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .04em; }
+
+/* ── Header component ─────────────────────────────────────────────────── */
+.b-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px 16px; border-bottom: 1px solid #1f2937; }
+.b-header-title { font-size: 26px; font-weight: 800; color: #f9fafb; }
+.b-header-subtitle { font-size: 14px; color: #6b7280; margin-top: 2px; }
+.b-logout-btn { background: #1f2937; color: #d1d5db; border: 1px solid #374151; border-radius: 10px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
+
+/* ── Scan panel ────────────────────────────────────────────────────────── */
+.b-scan-panel { display: flex; align-items: center; gap: 14px; background: #111827; border: 1px dashed #374151; border-radius: 14px; padding: 18px; }
+.b-scan-panel i { font-size: 26px; color: #2563eb; }
+.b-scan-input { flex: 1; background: transparent; border: none; color: #f3f4f6; font-size: 16px; outline: none; }
+
+/* ── Category grid ────────────────────────────────────────────────────── */
+.b-grid { display: grid; gap: 14px; }
+.b-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.b-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.b-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.b-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+.b-cat-tile {
+  background: #1f2937; border-radius: 16px; padding: 18px; text-align: center;
+  border: 1px solid #374151; cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; gap: 8px;
+}
+.b-cat-tile i { font-size: 26px; }
+.b-cat-tile .b-cat-name { font-weight: 700; color: #f3f4f6; }
+.b-cat-tile .b-cat-count { font-size: 12px; color: #6b7280; }
+
+/* ── Item / tool cards ─────────────────────────────────────────────────── */
+.b-card {
+  background: #1f2937; border: 1px solid #374151; border-radius: 14px;
+  padding: 14px; display: flex; flex-direction: column; gap: 6px; cursor: pointer;
+}
+.b-card-name { font-weight: 700; color: #f3f4f6; font-size: 15px; }
+.b-card-meta { font-size: 12px; color: #6b7280; }
+.b-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; width: fit-content; }
+.b-badge-low { background: #78350f; color: #fde68a; }
+.b-badge-out { background: #7f1d1d; color: #fecaca; }
+.b-badge-ok { background: #064e3b; color: #6ee7b7; }
+
+/* ── Stock summary KPI band ───────────────────────────────────────────── */
+.b-kpi-row { display: flex; gap: 12px; }
+.b-kpi { flex: 1; background: #1f2937; border-radius: 14px; padding: 16px; text-align: center; border: 1px solid #374151; }
+.b-kpi-value { font-size: 26px; font-weight: 800; color: #f9fafb; }
+.b-kpi-label { font-size: 12px; color: #6b7280; margin-top: 2px; }
+
+/* ── Button row ────────────────────────────────────────────────────────── */
+.b-button-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.b-action-btn { background: #1f2937; border: 1px solid #374151; color: #f3f4f6; border-radius: 12px; padding: 14px 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+
+/* ── Text block ────────────────────────────────────────────────────────── */
+.b-text-heading { font-size: 18px; font-weight: 700; color: #f3f4f6; margin-bottom: 4px; }
+.b-text-body { font-size: 14px; color: #9ca3af; line-height: 1.5; }
+
+/* ── Footer nav ────────────────────────────────────────────────────────── */
+.browse-footer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: #111827; border-top: 1px solid #1f2937;
+  display: flex; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  gap: 12px;
+}
+.footer-link {
+  flex: 1; background: #1f2937; color: #d1d5db; border: 1px solid #374151;
+  border-radius: 12px; padding: 14px; font-size: 14px; font-weight: 700;
+  text-align: center; text-decoration: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+/* size hints — full always spans, sm/md/lg constrain width for larger screens */
+@media (min-width: 900px) {
+  .b-section.size-sm { max-width: 360px; }
+  .b-section.size-md { max-width: 620px; }
+  .b-section.size-lg { max-width: 900px; }
+}

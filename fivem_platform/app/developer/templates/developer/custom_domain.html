@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Custom Domain — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-2">Custom domain</h1>
+  <p class="text-sm text-gray-400 mb-6">
+    Use your own domain instead of {{ site_url }} in every file your
+    customers install. Your license/module/update API calls get routed
+    through it once verified.
+  </p>
+
+  {% if profile.custom_domain %}
+    <div class="bg-surface-card border border-surface-border rounded-lg p-5 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="font-mono text-white text-sm break-all">{{ profile.custom_domain }}</div>
+        <span class="text-xs px-2 py-0.5 rounded-full flex-shrink-0 {{ 'bg-emerald-950 text-emerald-400' if profile.custom_domain_verified else 'bg-amber-950 text-amber-400' }}">
+          {{ 'verified' if profile.custom_domain_verified else 'not verified yet' }}
+        </span>
+      </div>
+
+      {% if not profile.custom_domain_verified %}
+        <p class="text-xs text-gray-500 mb-4">
+          Until this is verified, newly generated files still use the
+          default domain ({{ site_url }}) - so nothing breaks for your
+          customers while you're setting this up.
+        </p>
+      {% elif profile.custom_domain_checked_at %}
+        <p class="text-xs text-gray-500 mb-4">Last checked {{ profile.custom_domain_checked_at.strftime('%Y-%m-%d %H:%M') }}.</p>
+      {% endif %}
+
+      <div class="flex gap-3">
+        <form method="POST" action="{{ url_for('developer.verify_custom_domain') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="text-sm bg-brand hover:bg-brand-hover text-white rounded-md px-3 py-1.5 transition">
+            {{ 'Re-verify' if profile.custom_domain_verified else 'Verify now' }}
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('developer.clear_custom_domain') }}" onsubmit="return confirm('Remove this custom domain?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="text-sm text-red-400 hover:text-red-300 border border-surface-border rounded-md px-3 py-1.5 transition">
+            Remove
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="bg-surface-card border border-surface-border rounded-lg p-5">
+      <h2 class="text-sm font-medium text-gray-300 mb-3">Setup steps</h2>
+      <ol class="space-y-3 text-sm text-gray-400">
+        <li>
+          <span class="text-gray-300">1. Add a CNAME record</span> at your
+          DNS provider (Cloudflare or otherwise) pointing
+          <code class="text-gray-300 font-mono">{{ profile.custom_domain }}</code>
+          at <code class="text-gray-300 font-mono">{{ site_url.replace('https://', '').replace('http://', '') }}</code>.
+        </li>
+        <li>
+          <span class="text-gray-300">2. If you're using Cloudflare</span> and the
+          record is proxied (orange cloud), set SSL/TLS mode to
+          <span class="text-gray-300">Flexible</span> or
+          <span class="text-gray-300">Full</span> in your Cloudflare
+          dashboard - Cloudflare handles HTTPS for your domain automatically,
+          no certificate setup needed on our end.
+        </li>
+        <li>
+          <span class="text-gray-300">3. Wait for DNS to propagate</span>
+          (usually a few minutes, sometimes longer), then click
+          "Verify now" above.
+        </li>
+      </ol>
+    </div>
+  {% else %}
+    <form method="POST" action="{{ url_for('developer.set_custom_domain') }}" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Your domain</label>
+        <input type="text" name="domain" placeholder="scripts.yourbrand.com" required
+          class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+      </div>
+      <button type="submit" class="bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition">
+        Save domain
+      </button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

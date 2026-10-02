@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Import {{ job.id[:8] }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-lg font-semibold text-gray-100">Import {{ job.id[:8] }}</h1>
+  {% set badge = {
+    'complete': 'bg-green-900/40 border-green-700 text-green-300',
+    'failed': 'bg-red-900/40 border-red-700 text-red-300',
+    'running': 'bg-blue-900/40 border-blue-700 text-blue-300',
+    'pending': 'bg-yellow-900/40 border-yellow-700 text-yellow-300',
+  } %}
+  <span class="text-xs px-2 py-1 rounded border {{ badge.get(job.status, badge['pending']) }}">
+    {{ job.status }}
+  </span>
+</div>
+
+<div class="grid sm:grid-cols-3 gap-4 mb-6">
+  <div class="bg-panel border border-border rounded-lg p-4">
+    <p class="text-xs text-gray-500">Source package</p>
+    <p class="text-sm text-gray-200 break-all">{{ job.source_filename or "—" }}</p>
+  </div>
+  <div class="bg-panel border border-border rounded-lg p-4">
+    <p class="text-xs text-gray-500">Target path</p>
+    <p class="text-sm text-gray-200 break-all">{{ job.target_path or "—" }}</p>
+  </div>
+  <div class="bg-panel border border-border rounded-lg p-4">
+    <p class="text-xs text-gray-500">Target OS</p>
+    <p class="text-sm text-gray-200">{{ job.target_os or "—" }}</p>
+  </div>
+</div>
+
+{% if job.status == "failed" %}
+  <div class="bg-red-900/30 border border-red-800 rounded-lg p-4 mb-6">
+    <p class="text-sm text-red-300 font-mono break-words">{{ job.error_message }}</p>
+  </div>
+{% endif %}
+
+{% if warnings %}
+  <div class="bg-yellow-900/20 border border-yellow-800 rounded-lg p-4 mb-6 space-y-1">
+    {% for w in warnings %}
+      <p class="text-xs text-yellow-400">⚠ {{ w }}</p>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if log_lines %}
+<div class="bg-panel border border-border rounded-lg p-4">
+  <h2 class="text-sm font-semibold text-gray-200 mb-3">Progress log</h2>
+  <div class="space-y-1 font-mono text-xs text-gray-400">
+    {% for line in log_lines %}
+      <p>› {{ line }}</p>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<form method="POST" action="{{ url_for('imports.delete', import_id=job.id) }}" class="mt-6"
+      onsubmit="return confirm('Delete this import record?');">
+  <button type="submit" class="text-xs px-3 py-1.5 rounded-md bg-border text-gray-300 hover:bg-red-900/40 hover:text-red-300">
+    Delete record
+  </button>
+</form>
+{% endblock %}

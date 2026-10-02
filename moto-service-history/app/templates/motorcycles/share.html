@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import field, btn_primary, btn_secondary %}
+{% block title %}Share — {{ m.display_name }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <p class="text-xs font-mono text-ink-faint mb-2 uppercase tracking-wide">{{ m.display_name }}</p>
+  <h1 class="font-bold text-2xl mb-2">Public share link</h1>
+  <p class="text-sm text-ink-muted mb-6">Give a potential buyer a professional history page for this bike. Choose exactly what's visible — anything not ticked stays private.</p>
+
+  {% if m.share_enabled %}
+  <div class="bg-odometer/10 border border-odometer/40 rounded-xl p-5 mb-6">
+    <p class="text-xs text-ink-faint mb-2 uppercase tracking-wide">Public link</p>
+    <div class="flex items-center gap-3 flex-wrap">
+      <code class="text-sm text-odometer font-mono break-all">{{ request.url_root.rstrip('/') }}{{ url_for('public.profile', token=m.share_token) }}</code>
+    </div>
+    <div class="mt-4 flex gap-3">
+      <a href="{{ url_for('public.profile', token=m.share_token) }}" target="_blank" class="text-xs text-ink-muted hover:text-ink underline">Preview public page</a>
+      <form method="post" action="{{ url_for('moto.share_regenerate', moto_id=m.id) }}" onsubmit="return confirm('Generate a new link? The old link will stop working.');">
+        <button class="text-xs text-danger hover:text-danger/80">Regenerate link</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="post" class="card p-6 space-y-5">
+    {{ form.hidden_tag() }}
+    {{ field(form.share_enabled, help="Anyone with the link can view the public page") }}
+    <div class="border-t border-asphalt-border pt-5">
+      <p class="text-sm font-medium text-ink mb-3">Visible on the public page</p>
+      <div class="space-y-3">
+        {{ field(form.share_show_service, help="Service & maintenance history") }}
+        {{ field(form.share_show_mods, help="Modifications & upgrades") }}
+        {{ field(form.share_show_parts, help="Parts purchased / in stock") }}
+        {{ field(form.share_show_accidents, help="Accident history") }}
+        {{ field(form.share_show_mot, help="MOT history") }}
+        {{ field(form.share_show_purchase_info, help="Purchase date & price") }}
+        {{ field(form.share_show_documents, help="Documents & receipts marked public") }}
+      </div>
+    </div>
+    <div class="flex items-center gap-3 pt-4 border-t border-asphalt-border">
+      {{ btn_primary('Save sharing settings') }}
+      {{ btn_secondary('Back', url_for('moto.view', moto_id=m.id)) }}
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{
+  "ticket_id": "TICK-0031",
+  "ticket_type": "whitelist",
+  "opened_by": "Biggy Small",
+  "opened_at": "2026-04-18 10:40:57",
+  "closed_by": "IMPI CHAPLIN",
+  "closed_at": "2026-04-18 11:20 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-18T10:40:58.523000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-18T11:00:08.782000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "<@1121919376334016632> jump to interview if you are avalible please let me know",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-18T11:01:37.677000+00:00",
+      "author": "Biggy Small",
+      "author_id": "1121919376334016632",
+      "role": "",
+      "content": "IM AVALIBLE NOW",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-18T11:02:25.611000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "could you join a interview call please",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-18T11:03:18.054000+00:00",
+      "author": "Biggy Small",
+      "author_id": "1121919376334016632",
+      "role": "",
+      "content": "IM HERE",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-18T11:18:30.988000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@1121919376334016632>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-18T11:18:56.003000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@580405393650483232>",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  {% call ui.page_header("Your companies", "Keep company details, directors, and statutory filings up to date.") %}
+    {{ ui.button("Add company", href=url_for('main.lookup_company'), variant="primary", icon_name="plus") }}
+  {% endcall %}
+
+  {% if upcoming %}
+    <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+      <p class="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 flex items-center gap-1.5">
+        {{ ui.icon('alarm-clock', 'w-3.5 h-3.5') }} Upcoming across all companies
+      </p>
+      {% for company, d in upcoming %}
+        <a href="{{ url_for('main.company_detail', company_id=company.id) }}" class="p-3 px-4 flex items-center justify-between text-sm hover:bg-surface-hover transition-colors gap-3">
+          <div class="min-w-0">
+            <p class="text-slate-100 truncate">{{ d.display_label }} <span class="text-slate-500">· {{ company.company_name }}</span></p>
+            <p class="text-xs text-slate-500 mt-0.5">Due {{ d.due_date.strftime('%d %b %Y') }}</p>
+          </div>
+          {% if d.urgency == 'overdue' %}{{ ui.badge('Overdue', 'danger') }}
+          {% elif d.urgency == 'soon' %}{{ ui.badge('Due soon', 'warning') }}
+          {% else %}{{ ui.badge('On track', 'success') }}{% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for c in companies %}
+      <a href="{{ url_for('main.company_detail', company_id=c.id) }}" class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-3 hover:border-slate-700 transition-colors block">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="font-medium text-slate-100 truncate">{{ c.company_name }}</p>
+            <p class="text-xs text-slate-500 mt-0.5">{{ c.company_number or 'No company number on record' }}</p>
+          </div>
+          {% if c.company_status == 'active' %}{{ ui.badge('Active', 'success') }}
+          {% elif c.company_status == 'dormant' %}{{ ui.badge('Dormant', 'neutral') }}
+          {% else %}{{ ui.badge(c.company_status | title, 'danger') }}{% endif %}
+        </div>
+        <div class="flex items-center gap-1.5 text-xs text-slate-500">
+          {{ ui.icon('users', 'w-3.5 h-3.5') }} {{ c.active_directors | length }} active director(s)
+        </div>
+        {% set nd = c.next_deadline %}
+        {% if nd %}
+          <div class="flex items-center gap-1.5 text-xs">
+            {{ ui.icon('alarm-clock', 'w-3.5 h-3.5 text-slate-500') }}
+            <span class="text-slate-400">Next: {{ nd.display_label }} — {{ nd.due_date.strftime('%d %b %Y') }}</span>
+            {% if nd.urgency == 'overdue' %}{{ ui.badge('Overdue', 'danger') }}{% elif nd.urgency == 'soon' %}{{ ui.badge('Soon', 'warning') }}{% endif %}
+          </div>
+        {% else %}
+          <p class="text-xs text-slate-600">No deadlines tracked yet</p>
+        {% endif %}
+      </a>
+    {% else %}
+      <div class="col-span-full">
+        {% call ui.empty_state("No companies yet", "Add your first company to start tracking its details and statutory deadlines.", "building") %}
+          {{ ui.button("Add company", href=url_for('main.lookup_company'), variant="primary", icon_name="plus") }}
+        {% endcall %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

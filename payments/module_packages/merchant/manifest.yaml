@@ -1,0 +1,22 @@
+id: merchant
+name: Merchants
+version: "1.0.0"
+author: OpsLab Systems
+description: UK company/brand/merchant directory, matching, aliases, logos and spending stats.
+core_compatibility: "0.x"
+dependencies: []
+permissions:
+  - merchant.view
+  - merchant.edit
+navigation:
+  - label: Merchants
+    icon: store
+    url: /merchants/
+    position: 20
+  - label: Companies
+    icon: building
+    url: /merchants/companies
+    position: 21
+dashboard_widgets:
+  - key: top_merchants
+    label: Top merchants

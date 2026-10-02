@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Search{% endblock %}
+{% block content %}
+<form method="GET" class="mb-6 max-w-lg">
+  <input name="q" value="{{ query }}" placeholder="Search customers, suppliers, invoices, bills, accounts…" class="input-field w-full">
+</form>
+
+{% if query %}
+<p class="page-subtitle">{{ total }} result{{ 's' if total != 1 else '' }} for "{{ query }}"</p>
+
+{% if results.customers %}
+<h2 class="section-title">Customers</h2>
+<div class="card divide-list mb-6">
+  {% for c in results.customers %}<a href="{{ url_for('customers.view_customer', customer_id=c.id) }}" class="divide-list-item">{{ c.name }} <span class="text-muted">{{ c.email or '' }}</span></a>{% endfor %}
+</div>
+{% endif %}
+
+{% if results.suppliers %}
+<h2 class="section-title">Suppliers</h2>
+<div class="card divide-list mb-6">
+  {% for s in results.suppliers %}<a href="{{ url_for('suppliers.view_supplier', supplier_id=s.id) }}" class="divide-list-item">{{ s.name }} <span class="text-muted">{{ s.email or '' }}</span></a>{% endfor %}
+</div>
+{% endif %}
+
+{% if results.invoices %}
+<h2 class="section-title">Invoices</h2>
+<div class="card divide-list mb-6">
+  {% for i in results.invoices %}<a href="{{ url_for('invoices.view_invoice', invoice_id=i.id) }}" class="divide-list-item">{{ i.invoice_number }} — {{ i.customer.name }}</a>{% endfor %}
+</div>
+{% endif %}
+
+{% if results.bills %}
+<h2 class="section-title">Bills</h2>
+<div class="card divide-list mb-6">
+  {% for b in results.bills %}<a href="{{ url_for('bills.view_bill', bill_id=b.id) }}" class="divide-list-item">{{ b.bill_number }} — {{ b.supplier.name }}</a>{% endfor %}
+</div>
+{% endif %}
+
+{% if results.accounts %}
+<h2 class="section-title">Accounts</h2>
+<div class="card divide-list mb-6">
+  {% for a in results.accounts %}<div class="p-3 text-sm">{{ a.code }} — {{ a.name }}</div>{% endfor %}
+</div>
+{% endif %}
+
+{% if results.journal_entries %}
+<h2 class="section-title">Journal entries</h2>
+<div class="card divide-list mb-6">
+  {% for e in results.journal_entries %}<div class="p-3 text-sm">{{ e.entry_date }} — {{ e.description }}</div>{% endfor %}
+</div>
+{% endif %}
+
+{% if total == 0 %}
+<div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow text-center text-gray-500">No results.</div>
+{% endif %}
+{% endif %}
+{% endblock %}

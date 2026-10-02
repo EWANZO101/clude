@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Upload document{% endblock %}
+{% block content %}
+<h1 class="page-title mb-6">Upload a document</h1>
+<form method="POST" enctype="multipart/form-data" class="card card-padded space-y-4 max-w-lg">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div><label class="label-field">File</label><input type="file" name="file" required class="w-full text-sm"></div>
+  <div><label class="label-field">Related record type (optional)</label>
+    <select name="related_type" class="input-field w-full">
+      <option value="">—</option>
+      <option value="expense">Expense</option>
+      <option value="invoice">Invoice</option>
+      <option value="bill">Bill</option>
+    </select>
+  </div>
+  <p class="text-muted text-xs">The original file is always retained unmodified.</p>
+  <button class="btn btn-primary">Upload</button>
+</form>
+{% endblock %}

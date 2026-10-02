@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Create user — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('platform.list_users') }}" class="crumb">← Users</a>
+    <h1>Create user</h1>
+  </div>
+</div>
+
+<div class="panel" style="max-width:480px;">
+  <p class="muted">Creates the account directly, already active and email-verified — no invite email is sent.</p>
+  <form method="post">
+    <label>Full name</label>
+    <input type="text" name="full_name" value="{{ full_name or '' }}" required autofocus>
+    <label>Email</label>
+    <input type="email" name="email" value="{{ email or '' }}" required>
+    <label>Temporary password</label>
+    <input type="password" name="password" required minlength="10">
+    <p class="field-hint">At least 10 characters. Share it with them directly — they can change it from their profile afterwards.</p>
+    <label class="checkline">
+      <input type="checkbox" name="platform_admin">
+      Grant platform admin (releases, cross-company dashboard, user management)
+    </label>
+    <button type="submit" style="margin-top:18px;">Create user</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}SSL Certificate — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">Nginx</p>
+    <h1 class="page-title">Issue SSL certificate</h1>
+    <p class="page-sub">Uses certbot with the nginx plugin.</p>
+  </div>
+</div>
+
+<div class="card" style="max-width:480px;">
+  <form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="field">
+      {{ form.domain.label }}
+      {{ form.domain(placeholder="app.opslabsystems.cloud") }}
+      {% for e in form.domain.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.email.label }}
+      {{ form.email(placeholder="admin@opslabsystems.cloud") }}
+      {% for e in form.email.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field field-inline">
+      {{ form.force_https() }}
+      {{ form.force_https.label }}
+    </div>
+
+    <button class="btn btn-primary" type="submit">Issue certificate</button>
+  </form>
+</div>
+{% endblock %}

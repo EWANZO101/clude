@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — {{ panel_name }}{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow"><span class="status-dot ok live"></span>Live telemetry</p>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-sub"><span id="server-hostname">{{ snapshot.server.hostname }}</span> · <span id="server-uptime">uptime --</span></p>
+  </div>
+  <div class="topbar-actions">
+  {% if security %}
+  <span class="badge {{ 'badge-ok' if security.health.level == 'healthy' else ('badge-warn' if security.health.level == 'warning' else 'badge-danger') }}" id="health-badge" title="{{ security.health.reasons | join(' · ') }}">
+    {{ security.health.level | capitalize }}
+  </span>
+  {% endif %}
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card stat">
+    <div class="card-header">
+      <div class="card-label" style="margin:0;">CPU Usage</div>
+      <span class="trend-chip flat" id="cpu-trend">--</span>
+    </div>
+    <div class="card-value"><span id="cpu-percent">{{ snapshot.cpu.percent | round(1) }}</span><small>%</small></div>
+    <div class="progress-track"><div class="progress-fill" id="cpu-bar" style="width:{{ snapshot.cpu.percent }}%"></div></div>
+    <div class="card-meta" id="cpu-meta">
+      {{ snapshot.cpu.cores_logical }} cores · load {{ "%.2f"|format(snapshot.cpu.load_avg['1m']) }}
+    </div>
+  </div>
+
+  <div class="card stat">
+    <div class="card-header">
+      <div class="card-label" style="margin:0;">Memory</div>
+      <span class="trend-chip flat" id="mem-trend">--</span>
+    </div>
+    <div class="card-value"><span id="mem-percent">{{ snapshot.memory.percent | round(1) }}</span><small>%</small></div>
+    <div class="progress-track"><div class="progress-fill" id="mem-bar" style="width:{{ snapshot.memory.percent }}%"></div></div>
+    <div class="card-meta" id="mem-meta">-- / --</div>
+  </div>
+
+  <div class="card stat">
+    <div class="card-header">
+      <div class="card-label" style="margin:0;">Disk (/)</div>
+      <span class="trend-chip flat" id="disk-trend">--</span>
+    </div>
+    <div class="card-value"><span id="disk-percent">--</span><small>%</small></div>
+    <div class="progress-track"><div class="progress-fill" id="disk-bar" style="width:0%"></div></div>
+    <div class="card-meta" id="disk-meta">-- / --</div>
+  </div>
+
+  <div class="card stat">
+    <div class="card-header">
+      <div class="card-label" style="margin:0;">Network</div>
+      <span class="badge badge-muted" id="net-conn-badge">-- conns</span>
+    </div>
+    <div class="card-value mono line">
+      <span id="net-up">↑ --</span><br>
+      <span id="net-down">↓ --</span>
+    </div>
+    <div class="card-meta" id="net-meta">live throughput</div>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-top:16px;">
+  <div class="card chart-card">
+    <div class="card-header">
+      <div class="card-label" style="margin:0;">Traffic Overview</div>
+      <div class="chart-legend">
+        <span><i class="dot" style="background:var(--accent-glow);"></i>Download</span>
+        <span><i class="dot" style="background:var(--accent-bright);"></i>Upload</span>
+      </div>
+    </div>
+    <div class="chart-svg-wrap">
+      <svg id="traffic-chart" viewBox="0 0 600 180" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="trafficFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent-glow)" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="var(--accent-glow)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path id="traffic-area" d="" fill="url(#trafficFill)" stroke="none"></path>
+        <path id="traffic-down-line" d="" fill="none" stroke="var(--accent-glow)" stroke-width="2"></path>
+        <path id="traffic-up-line" d="" fill="none" stroke="var(--accent-bright)" stroke-width="2" stroke-dasharray="4 3"></path>
+      </svg>
+    </div>
+    <div class="card-meta">last 60s, live · peak <span id="traffic-peak" class="mono">--</span></div>
+  </div>
+
+  <div class="card chart-card">
+    <div class="card-header">
+      <div class="card-label" style="margin:0;">Per-Core CPU</div>
+      <span class="badge badge-muted" id="core-count-badge">{{ snapshot.cpu.cores_logical }} cores</span>
+    </div>
+    <div class="chart-svg-wrap">
+      <svg id="cores-chart" viewBox="0 0 600 180" preserveAspectRatio="none"></svg>
+    </div>
+    <div class="card-meta">per-thread load, refreshed every second</div>
+  </div>
+</div>
+
+<div class="grid" style="margin-top:16px;">
+  <div class="card" style="grid-column: span 2;">
+    <div class="card-label">Server Info</div>
+    <div class="card-meta" style="margin-top:6px;">
+      Hostname: {{ snapshot.server.hostname }}<br>
+      Private IP: {{ snapshot.server.private_ip }}<br>
+      OS: {{ snapshot.server.os_version }}<br>
+      Python: {{ snapshot.server.python_version }}
+    </div>
+  </div>
+
+  {% if security %}
+  <div class="card">
+    <div class="card-label">SSH Sessions</div>
+    <div class="card-value"><span id="dash-ssh-count">{{ security.ssh_session_count }}</span></div>
+    <div class="card-meta"><a href="{{ url_for('security.index') }}">view sessions →</a></div>
+  </div>
+  <div class="card">
+    <div class="card-label">DDoS Protection</div>
+    <div class="card-value line">
+      <span class="badge {{ 'badge-ok' if security.ddos_status.state == 'normal' else ('badge-warn' if security.ddos_status.state == 'elevated' else 'badge-danger') }}" id="dash-ddos-badge">
+        {{ security.ddos_status.state | replace('_', ' ') | capitalize }}
+      </span>
+    </div>
+    <div class="card-meta">
+      <span id="dash-blocked-count">{{ security.blocked_ip_count }}</span> IP{{ 's' if security.blocked_ip_count != 1 }} blocked ·
+      <a href="{{ url_for('security.index') }}">details →</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  function fmtBytes(bytes) {
+    if (bytes === null || bytes === undefined) return '--';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0, val = bytes;
+    while (val >= 1024 && i < units.length - 1) { val /= 1024; i++; }
+    return val.toFixed(1) + ' ' + units[i];
+  }
+
+  function fmtRate(bytesPerSec) {
+    return fmtBytes(bytesPerSec) + '/s';
+  }
+
+  function fmtUptime(seconds) {
+    const d = Math.floor(seconds / 86400);
+    const h = Math.floor((seconds % 86400) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return `${d}d ${h}h ${m}m`;
+  }
+
+  function barClass(pct) {
+    if (pct >= 90) return 'danger';
+    if (pct >= 70) return 'warn';
+    return 'ok';
+  }
+
+  // Trend chips compare this sample to the previous one — a genuine
+  // second-over-second delta, not a fabricated stat.
+  const lastValues = { cpu: null, mem: null, disk: null };
+  function updateTrend(id, current, previous) {
+    const el = document.getElementById(id);
+    if (previous === null || previous === undefined) {
+      el.className = 'trend-chip flat';
+      el.textContent = '--';
+      return;
+    }
+    const delta = current - previous;
+    if (Math.abs(delta) < 0.1) {
+      el.className = 'trend-chip flat';
+      el.textContent = '±0.0%';
+    } else if (delta > 0) {
+      el.className = 'trend-chip up';
+      el.textContent = '▲ ' + delta.toFixed(1) + '%';
+    } else {
+      el.className = 'trend-chip down';
+      el.textContent = '▼ ' + Math.abs(delta).toFixed(1) + '%';
+    }
+  }
+
+  // ---- Traffic Overview chart (rolling live buffer, no fabricated history) ----
+  const TRAFFIC_POINTS = 60;
+  const trafficDown = [];
+  const trafficUp = [];
+
+  function pathFromSeries(series, w, h, maxVal) {
+    if (series.length < 2) return '';
+    const stepX = w / (TRAFFIC_POINTS - 1);
+    const offset = TRAFFIC_POINTS - series.length;
+    return series.map((v, i) => {
+      const x = (offset + i) * stepX;
+      const y = h - (maxVal > 0 ? (v / maxVal) * (h - 10) : 0) - 2;
+      return (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+  }
+
+  function renderTrafficChart() {
+    const w = 600, h = 180;
+    const maxVal = Math.max(1, ...trafficDown, ...trafficUp);
+    const downPath = pathFromSeries(trafficDown, w, h, maxVal);
+    const upPath = pathFromSeries(trafficUp, w, h, maxVal);
+    document.getElementById('traffic-down-line').setAttribute('d', downPath);
+    document.getElementById('traffic-up-line').setAttribute('d', upPath);
+    if (downPath) {
+      const offset = TRAFFIC_POINTS - trafficDown.length;
+      const stepX = w / (TRAFFIC_POINTS - 1);
+      const startX = (offset * stepX).toFixed(1);
+      const endX = ((offset + trafficDown.length - 1) * stepX).toFixed(1);
+      document.getElementById('traffic-area').setAttribute('d', `${downPath} L${endX},${h} L${startX},${h} Z`);
+    }
+    document.getElementById('traffic-peak').textContent = fmtRate(maxVal);
+  }
+
+  // ---- Per-core CPU bar chart ----
+  function renderCoresChart(perCore) {
+    const w = 600, h = 180;
+    const n = perCore.length;
+    if (!n) return;
+    const gap = 4;
+    const barW = Math.max(2, (w - gap * (n - 1)) / n);
+    const svg = document.getElementById('cores-chart');
+    svg.innerHTML = perCore.map((pct, i) => {
+      const barH = Math.max(2, (pct / 100) * (h - 16));
+      const x = i * (barW + gap);
+      const y = h - barH;
+      const color = pct >= 90 ? 'var(--danger)' : pct >= 70 ? 'var(--warn)' : 'var(--accent-glow)';
+      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="${color}" opacity="0.9"></rect>`;
+    }).join('');
+  }
+
+  const socket = io('/dashboard');
+
+  socket.on('stats_update', (data) => {
+    // CPU
+    document.getElementById('cpu-percent').textContent = data.cpu.percent.toFixed(1);
+    const cpuBar = document.getElementById('cpu-bar');
+    cpuBar.style.width = data.cpu.percent + '%';
+    cpuBar.className = 'progress-fill ' + barClass(data.cpu.percent);
+    document.getElementById('cpu-meta').textContent =
+      `${data.cpu.cores_logical} cores · load ${data.cpu.load_avg['1m'].toFixed(2)}`;
+    updateTrend('cpu-trend', data.cpu.percent, lastValues.cpu);
+    lastValues.cpu = data.cpu.percent;
+    if (data.cpu.per_core) renderCoresChart(data.cpu.per_core);
+
+    // Memory
+    document.getElementById('mem-percent').textContent = data.memory.percent.toFixed(1);
+    const memBar = document.getElementById('mem-bar');
+    memBar.style.width = data.memory.percent + '%';
+    memBar.className = 'progress-fill ' + barClass(data.memory.percent);
+    document.getElementById('mem-meta').textContent =
+      `${fmtBytes(data.memory.used)} / ${fmtBytes(data.memory.total)}`;
+    updateTrend('mem-trend', data.memory.percent, lastValues.mem);
+    lastValues.mem = data.memory.percent;
+
+    // Disk (primary mount)
+    if (data.disk && data.disk.length) {
+      const root = data.disk.find(d => d.mountpoint === '/') || data.disk[0];
+      document.getElementById('disk-percent').textContent = root.percent.toFixed(1);
+      const diskBar = document.getElementById('disk-bar');
+      diskBar.style.width = root.percent + '%';
+      diskBar.className = 'progress-fill ' + barClass(root.percent);
+      document.getElementById('disk-meta').textContent =
+        `${fmtBytes(root.used)} / ${fmtBytes(root.total)}`;
+      updateTrend('disk-trend', root.percent, lastValues.disk);
+      lastValues.disk = root.percent;
+    }
+
+    // Network
+    document.getElementById('net-up').textContent = '↑ ' + fmtRate(data.network.upload_rate_bps);
+    document.getElementById('net-down').textContent = '↓ ' + fmtRate(data.network.download_rate_bps);
+    document.getElementById('net-conn-badge').textContent = (data.network.connections ?? '--') + ' conns';
+
+    trafficDown.push(data.network.download_rate_bps);
+    trafficUp.push(data.network.upload_rate_bps);
+    if (trafficDown.length > TRAFFIC_POINTS) trafficDown.shift();
+    if (trafficUp.length > TRAFFIC_POINTS) trafficUp.shift();
+    renderTrafficChart();
+
+    // Uptime
+    document.getElementById('server-uptime').textContent = 'uptime ' + fmtUptime(data.server.uptime_seconds);
+  });
+
+  // Security widgets (if the security summary cards are present) piggyback
+  // on the security module's own slower-interval namespace, rather than
+  // spawning who/ss on every 1s dashboard tick.
+  if (document.getElementById('dash-ssh-count')) {
+    const secSocket = io('/security');
+
+    secSocket.on('sessions_update', (data) => {
+      document.getElementById('dash-ssh-count').textContent = data.ssh_sessions.length;
+      document.getElementById('dash-blocked-count').textContent = data.blocked_ips.length;
+    });
+
+    secSocket.on('ddos_update', (data) => {
+      const badge = document.getElementById('dash-ddos-badge');
+      badge.className = 'badge ' + (data.state === 'normal' ? 'badge-ok' : data.state === 'elevated' ? 'badge-warn' : 'badge-danger');
+      badge.textContent = data.state.replace('_', ' ').replace(/^./, c => c.toUpperCase());
+
+      const healthBadge = document.getElementById('health-badge');
+      if (healthBadge && data.state !== 'normal') {
+        healthBadge.className = 'badge ' + (data.state === 'elevated' ? 'badge-warn' : 'badge-danger');
+        healthBadge.textContent = data.state === 'elevated' ? 'Warning' : 'Critical';
+      }
+    });
+  }
+</script>
+{% endblock %}

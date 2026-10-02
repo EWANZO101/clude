@@ -1,0 +1,151 @@
+{% extends "admin/_layout.html" %}
+{% block admin_content %}
+
+<!-- Breadcrumb -->
+<nav class="flex items-center gap-2 text-xs text-gray-500 mb-5">
+  <a href="{{ url_for('admin.users') }}" class="hover:text-ops-400">Users</a>
+  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+  <span class="text-gray-400">{{ user.username if user else 'New user' }}</span>
+</nav>
+
+<div class="mb-8 flex items-start gap-4">
+  {% if user %}
+  <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-ops-400 to-ops-700 flex items-center justify-center text-xl font-extrabold flex-shrink-0">{{ user.username[0].upper() }}</div>
+  {% endif %}
+  <div>
+    <h1 class="text-3xl font-extrabold tracking-tight">{{ user.username if user else 'New User' }}</h1>
+    <p class="text-sm text-gray-400 mt-1">{% if user %}{{ user.email }}{% else %}Create a new account.{% endif %}</p>
+    {% if user %}
+    <div class="flex flex-wrap items-center gap-2 mt-2 text-xs">
+      <span class="pill pill-{{ user.role }}">{{ user.role }}</span>
+      {% if user.is_active %}
+        <span class="inline-flex items-center gap-1 text-green-300"><span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> Active</span>
+      {% else %}
+        <span class="inline-flex items-center gap-1 text-red-300"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Disabled</span>
+      {% endif %}
+      <span class="text-gray-500">· Joined {{ user.created_at.strftime('%b %d, %Y') }}</span>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid {% if user %}lg:grid-cols-2{% endif %} gap-6">
+
+  <!-- ===== Main form ===== -->
+  <form method="post" class="bg-ink-800/60 backdrop-blur-xl border border-ink-600 rounded-2xl p-6 space-y-5">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-gray-300 pb-2 border-b border-ink-600/60">Account Details</h2>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">Username</label>
+        <input name="username" value="{{ user.username if user else '' }}" required class="form-input w-full px-4 py-2.5 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">Email</label>
+        <input name="email" type="email" value="{{ user.email if user else '' }}" required class="form-input w-full px-4 py-2.5 text-sm">
+      </div>
+    </div>
+
+    {% if not user %}
+    <div>
+      <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">Initial Password</label>
+      <input name="password" type="text" required class="form-input w-full px-4 py-2.5 text-sm" placeholder="set the user's first password">
+    </div>
+    {% endif %}
+
+    <div>
+      <label class="block text-xs font-semibold text-gray-300 mb-2 uppercase tracking-wider">Role</label>
+      <div class="grid grid-cols-3 gap-2">
+        {% set roles = [('user','Client','👤'),('staff','Staff','🎫'),('admin','Admin','🛡️')] %}
+        {% for val, label, emoji in roles %}
+        <label class="cursor-pointer">
+          <input type="radio" name="role" value="{{ val }}" {% if (user and user.role == val) or (not user and val == 'user') %}checked{% endif %} class="peer sr-only">
+          <div class="flex flex-col items-center gap-1 p-3 rounded-xl border border-ink-600 bg-ink-900/40
+                      peer-checked:border-ops-500 peer-checked:bg-ops-500/10 peer-checked:shadow-glow-sm
+                      hover:bg-white/5 transition">
+            <span class="text-lg">{{ emoji }}</span>
+            <span class="text-xs font-semibold">{{ label }}</span>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if user %}
+    <div class="pt-2 border-t border-ink-600/40">
+      <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Discord Link</h3>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">Discord ID</label>
+          <input name="discord_id" value="{{ user.discord_id or '' }}" class="form-input w-full px-4 py-2.5 text-sm font-mono" placeholder="e.g. 123456789012345678">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">Discord Username</label>
+          <input name="discord_username" value="{{ user.discord_username or '' }}" class="form-input w-full px-4 py-2.5 text-sm">
+        </div>
+      </div>
+    </div>
+
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-ink-900/40 border border-ink-600 cursor-pointer">
+      <input type="checkbox" name="is_active" {% if user.is_active %}checked{% endif %} class="w-4 h-4 rounded bg-ink-900 border-ink-600 text-ops-500 focus:ring-ops-500 focus:ring-2">
+      <div>
+        <div class="text-sm font-semibold text-white">Active account</div>
+        <div class="text-xs text-gray-400">Disabled users can't sign in or open tickets.</div>
+      </div>
+    </label>
+    {% endif %}
+
+    <div class="flex items-center justify-between pt-3 border-t border-ink-600/40">
+      <a href="{{ url_for('admin.users') }}" class="text-sm text-gray-400 hover:text-white">Cancel</a>
+      <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">
+        {{ 'Save changes' if user else 'Create user' }}
+      </button>
+    </div>
+  </form>
+
+  {% if user %}
+  <!-- ===== Password reset + danger zone ===== -->
+  <div class="space-y-5">
+
+    <!-- Manual reset -->
+    <form method="post" action="{{ url_for('admin.user_reset_password', uid=user.id) }}" class="bg-ink-800/60 backdrop-blur-xl border border-ink-600 rounded-2xl p-6">
+      <input type="hidden" name="mode" value="manual">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-gray-300 pb-2 border-b border-ink-600/60 mb-4">Reset password — manual</h2>
+      <p class="text-xs text-gray-400 mb-4">Set a new password directly. User won't be notified.</p>
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">New password</label>
+        <input name="new_password" type="text" class="form-input w-full px-4 py-2.5 text-sm font-mono" placeholder="e.g. NewSecurePass123">
+      </div>
+      <button class="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-white/5 border border-ink-600 rounded-xl hover:bg-white/10 hover:border-ops-500/30 transition">
+        Set password manually
+      </button>
+    </form>
+
+    <!-- Email reset -->
+    <form method="post" action="{{ url_for('admin.user_reset_password', uid=user.id) }}" class="bg-ink-800/60 backdrop-blur-xl border border-ink-600 rounded-2xl p-6">
+      <input type="hidden" name="mode" value="email">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-gray-300 pb-2 border-b border-ink-600/60 mb-4">Reset password — email</h2>
+      <p class="text-xs text-gray-400 mb-4">Send a secure reset link to <span class="text-white font-mono">{{ user.email }}</span>. Expires in 2 hours.</p>
+      <button class="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        Send reset link
+      </button>
+    </form>
+
+    <!-- Danger -->
+    <div class="bg-red-500/5 border border-red-500/30 rounded-2xl p-6">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-red-300 pb-2 border-b border-red-500/20 mb-4 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        Danger Zone
+      </h2>
+      <p class="text-xs text-gray-400 mb-4">Permanent deletion. This cannot be undone.</p>
+      <form method="post" action="{{ url_for('admin.user_delete', uid=user.id) }}" onsubmit="return confirm('Permanently delete {{ user.username }}? This cannot be undone.')">
+        <button class="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-semibold text-red-200 bg-red-500/10 border border-red-500/40 rounded-xl hover:bg-red-500/20 transition">
+          Delete user permanently
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

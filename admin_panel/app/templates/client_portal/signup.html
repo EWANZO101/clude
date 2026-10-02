@@ -1,0 +1,29 @@
+{% extends "client_portal/_base.html" %}
+{% block title %}Sign up — Client Portal{% endblock %}
+{% block content %}
+<div class="auth-main">
+  <div class="auth-card">
+    <div class="panel">
+      <h1 style="margin-bottom:6px;">Create your account</h1>
+      <p class="muted" style="margin-bottom:20px; font-size:13px;">
+        For customers operating a specific kiosk instance. After you sign up, an admin needs to
+        assign you to that instance before you'll see anything here.
+      </p>
+      <form method="post">
+        <label>Full name</label>
+        <input type="text" name="full_name" value="{{ full_name or '' }}" required autofocus>
+        <label>Email</label>
+        <input type="email" name="email" value="{{ email or '' }}" required>
+        <label>Password (at least 10 characters)</label>
+        <input type="password" name="password" required minlength="10">
+        <label>Confirm password</label>
+        <input type="password" name="password_confirm" required minlength="10">
+        <button type="submit" class="btn-block" style="margin-top:18px;">Sign up</button>
+      </form>
+      <p class="muted" style="margin-top:16px; margin-bottom:0; font-size:12.5px; text-align:center;">
+        Already have an account? <a href="{{ url_for('client_portal.login') }}">Log in</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

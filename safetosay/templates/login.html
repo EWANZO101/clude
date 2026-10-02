@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Login — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div style="max-width:420px;margin:3rem auto">
+  <div style="text-align:center;margin-bottom:2rem">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:1.4rem;font-weight:600;color:var(--accent);margin-bottom:.4rem">Clear<span style="color:var(--muted)">Voice</span></div>
+    <h1 style="font-size:1.5rem;font-weight:700">Welcome Back</h1>
+    <p style="color:var(--muted);font-size:.9rem;margin-top:.35rem">{{ get_text('login','intro','Please log in to continue.') }}</p>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <form method="POST">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" name="username" class="form-input" required autofocus placeholder="Your username">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-input" required placeholder="Your password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:.65rem;margin-top:.25rem">Log In</button>
+      </form>
+    </div>
+  </div>
+  <p style="text-align:center;margin-top:1rem;font-size:.875rem;color:var(--muted)">
+    Don't have an account? <a href="{{ url_for('register') }}" style="color:var(--accent)">Register</a>
+  </p>
+  <p style="text-align:center;margin-top:.5rem;font-size:.8rem;color:var(--muted)">
+    Need to report something? <a href="{{ url_for('portal_login') }}" style="color:var(--muted);text-decoration:underline">Report Portal</a>
+  </p>
+</div>
+{% endblock %}

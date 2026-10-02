@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Scan — {{ instance.display_name() }}</title>
+<meta name="theme-color" content="#0a0d17">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OpsLab Scan">
+<link rel="manifest" href="{{ url_for('scan_portal.manifest', token=scan_token.token) }}">
+<link rel="apple-touch-icon" href="{{ url_for('scan_portal.icon') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0d17; --surface:#0e1220; --surface-2:#141828; --surface-3:#191e33;
+    --border:#242a3d; --border-soft:#1b2032; --text:#e9ebf3; --muted:#8a91a8; --muted-2:#5e6479;
+    --accent:#7c6cf6; --accent-hover:#8f81f8; --accent-dim:rgba(124,108,246,.14);
+    --green:#34c98a; --green-dim:rgba(52,201,138,.14);
+    --amber:#e3a83f; --amber-dim:rgba(227,168,63,.14);
+    --red:#f0605c; --red-dim:rgba(240,96,92,.14);
+    --radius:12px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+    padding-bottom:env(safe-area-inset-bottom, 0);
+  }
+  code, .mono{font-family:'JetBrains Mono',ui-monospace,monospace;}
+  .wrap{max-width:480px; margin:0 auto; padding:18px 16px 40px;}
+  .topbar{text-align:center; margin-bottom:16px; position:relative;}
+  .topbar .brand{font-size:12.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+  .topbar h1{font-size:19px; margin:4px 0 0; letter-spacing:-.01em;}
+  .install-hint-btn{
+    position:absolute; right:0; top:0; background:var(--surface-2); border:1px solid var(--border);
+    color:var(--muted); border-radius:20px; padding:6px 12px; font-size:11.5px; cursor:pointer; font-family:inherit;
+  }
+
+  .panel{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:14px;}
+  h2{font-size:13px; font-weight:600; margin:0 0 10px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;}
+
+  #reader{border-radius:8px; overflow:hidden;}
+  /* html5-qrcode's own generated buttons/select/links — reskinned to
+     match rather than showing its default light-theme browser chrome. */
+  #reader select, #reader button{
+    font-family:inherit; font-size:13.5px; background:var(--surface-3); color:var(--text);
+    border:1px solid var(--border); border-radius:8px; padding:9px 12px; cursor:pointer; margin:4px 4px 4px 0;
+  }
+  #reader button:hover{background:var(--accent); border-color:var(--accent);}
+  #reader a{color:var(--accent); font-size:12.5px;}
+  #reader__dashboard_section_csr span{color:var(--muted); font-size:12.5px;}
+  #reader__scan_region img{border-radius:8px;}
+  #reader__header_message{color:var(--muted); font-size:12.5px; border:none !important; padding:8px 0 !important;}
+  #reader__status_span{background:transparent !important; color:var(--muted) !important;}
+
+  .manual-row{display:flex; gap:8px;}
+  input[type=text]{
+    flex:1; background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    padding:13px 14px; color:var(--text); font-size:16px; font-family:'JetBrains Mono',monospace;
+  }
+  input[type=text]:focus{outline:none; border-color:var(--accent);}
+  input[type=text]::placeholder{color:var(--muted-2);}
+  .btn{
+    background:var(--accent); color:#fff; border:none; border-radius:8px; padding:13px 18px;
+    font-size:14px; font-weight:600; cursor:pointer; font-family:inherit;
+  }
+  .btn:hover{background:var(--accent-hover);}
+  .btn-block{width:100%;}
+  .hint{font-size:12px; color:var(--muted-2); margin-top:8px;}
+
+  .result-card{border-radius:10px; padding:16px; border:1px solid; margin-top:2px;}
+  .result-card.found{background:var(--green-dim); border-color:rgba(52,201,138,.35);}
+  .result-card.not-found{background:var(--red-dim); border-color:rgba(240,96,92,.35); font-size:14px;}
+  .result-kind{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted);}
+  .result-name{font-size:19px; font-weight:700; margin-top:2px;}
+  .result-sub{font-size:13.5px; color:var(--text); margin-top:6px;}
+  .result-sub.muted{color:var(--muted);}
+  .result-empty{color:var(--muted); font-size:13.5px; text-align:center; padding:10px 0;}
+
+  .footer-note{text-align:center; font-size:11.5px; color:var(--muted-2); margin-top:18px;}
+
+  /* First-visit "add to home screen" sheet */
+  .install-overlay{
+    position:fixed; inset:0; background:rgba(4,6,14,.72); display:flex; align-items:flex-end;
+    justify-content:center; z-index:50; padding:0;
+  }
+  .install-overlay[hidden]{display:none;}
+  .install-sheet{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:16px 16px 0 0;
+    width:100%; max-width:480px; padding:20px 18px calc(20px + env(safe-area-inset-bottom, 0));
+  }
+  .install-sheet h3{margin:0 0 4px; font-size:16px;}
+  .install-sheet p{margin:0 0 14px; font-size:13.5px; color:var(--muted);}
+  .install-steps{margin:0 0 16px; padding:0; list-style:none; font-size:13.5px;}
+  .install-steps li{display:flex; gap:10px; align-items:flex-start; margin-bottom:10px;}
+  .install-steps .num{
+    flex-shrink:0; width:22px; height:22px; border-radius:50%; background:var(--accent-dim); color:var(--accent);
+    font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+  .install-sheet .btn-row{display:flex; gap:8px;}
+  .btn-secondary{background:var(--surface-3); color:var(--text); border:1px solid var(--border);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">OpsLab Scan</div>
+    <h1>{{ instance.display_name() }}</h1>
+    <button type="button" class="install-hint-btn" id="show-install-hint">Add to Home Screen</button>
+  </div>
+
+  <div class="panel">
+    <h2>Camera</h2>
+    <div id="reader"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Or type a code</h2>
+    <div class="manual-row">
+      <input type="text" id="manual-code" placeholder="Barcode value" autocomplete="off" autocapitalize="off" autocorrect="off" inputmode="text">
+      <button type="button" class="btn" id="manual-go">Go</button>
+    </div>
+    <div class="hint">A USB or Bluetooth barcode scanner also works anywhere on this page — just point and scan.</div>
+  </div>
+
+  <div class="panel">
+    <h2>Result</h2>
+    <div id="result"><div class="result-empty">Scan a code to see what it is.</div></div>
+  </div>
+
+  <div class="footer-note">Read-only lookup for this instance's Items &amp; Tools. Nothing here can be edited.</div>
+</div>
+
+<div class="install-overlay" id="install-overlay" hidden>
+  <div class="install-sheet">
+    <h3>Add this to your Home Screen</h3>
+    <p>Opens like an app next time — full screen, one tap, no browser bar.</p>
+    <ol class="install-steps" id="install-steps"></ol>
+    <div class="btn-row">
+      <button type="button" class="btn btn-secondary btn-block" id="install-dismiss">Maybe later</button>
+      <button type="button" class="btn btn-block" id="install-android-btn" hidden>Install</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function () {
+  var LOOKUP_URL = {{ url_for('scan_portal.lookup', token=scan_token.token)|tojson }};
+  var resultBox = document.getElementById('result');
+  var manualInput = document.getElementById('manual-code');
+  var manualGo = document.getElementById('manual-go');
+
+  var lastCode = null;
+  var lastAt = 0;
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function vibrate(ms) {
+    if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} }
+  }
+
+  function renderResult(data) {
+    if (!data.found) {
+      resultBox.innerHTML = '<div class="result-card not-found">No item or tool found for code <code>' +
+        escapeHtml(data.code) + '</code> on this instance.</div>';
+      vibrate([60, 60, 60]);
+      return;
+    }
+    var it = data.item;
+    var statusLine = '';
+    if (it.kind === 'tool') {
+      if (it.tool_status) statusLine = 'Status: ' + it.tool_status.replace(/_/g, ' ');
+      if (it.tool_status === 'checked_out' && it.checked_out_by_name) {
+        statusLine += ' — checked out to ' + it.checked_out_by_name;
+      }
+      if (it.current_project) statusLine += (statusLine ? ' · ' : '') + 'Project: ' + it.current_project;
+    } else {
+      if (it.quantity !== null && it.quantity !== undefined) {
+        statusLine = 'Qty: ' + it.quantity + (it.unit ? ' ' + it.unit : '');
+      }
+    }
+    resultBox.innerHTML =
+      '<div class="result-card found">' +
+        '<div class="result-kind">' + (it.kind === 'tool' ? 'Tool' : 'Item') + '</div>' +
+        '<div class="result-name">' + escapeHtml(it.name) + '</div>' +
+        (it.sku ? '<div class="result-sub">SKU: ' + escapeHtml(it.sku) + '</div>' : '') +
+        (statusLine ? '<div class="result-sub">' + escapeHtml(statusLine) + '</div>' : '') +
+        (it.category ? '<div class="result-sub muted">' + escapeHtml(it.category) + '</div>' : '') +
+        (it.description ? '<div class="result-sub muted">' + escapeHtml(it.description) + '</div>' : '') +
+      '</div>';
+    vibrate(120);
+  }
+
+  function lookupCode(code) {
+    code = (code || '').trim();
+    if (!code) return;
+    // Debounce: the camera fires this repeatedly while the same code
+    // stays in frame — ignore an identical code seen again within 3s.
+    var now = Date.now();
+    if (code === lastCode && (now - lastAt) < 3000) return;
+    lastCode = code;
+    lastAt = now;
+
+    resultBox.innerHTML = '<div class="result-empty">Looking up <code>' + escapeHtml(code) + '</code>…</div>';
+    fetch(LOOKUP_URL + '?code=' + encodeURIComponent(code))
+      .then(function (r) { return r.json(); })
+      .then(renderResult)
+      .catch(function () {
+        resultBox.innerHTML = '<div class="result-card not-found">Lookup failed — check your connection and try again.</div>';
+      });
+  }
+
+  manualGo.addEventListener('click', function () {
+    lookupCode(manualInput.value);
+    manualInput.value = '';
+  });
+  manualInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      lookupCode(manualInput.value);
+      manualInput.value = '';
+    }
+  });
+
+  // Physical USB/Bluetooth scanner support — deliberately NOT done by
+  // keeping a text input permanently focused: on a phone that pops the
+  // on-screen keyboard up over the camera view every time the page loads
+  // or the person taps anywhere (the actual bug in the previous version
+  // of this page). A scanner is a HID keyboard that types a whole code in
+  // well under the ~50ms/char a human manages, then Enter — buffering
+  // keydown events at the document level catches that rhythm regardless
+  // of what (if anything) has focus, with zero on-screen keyboard.
+  var scanBuffer = '';
+  var lastKeyAt = 0;
+  var SCANNER_KEY_GAP_MS = 40;
+  document.addEventListener('keydown', function (e) {
+    if (e.target === manualInput) return;  // has its own Enter handler above
+    var now = Date.now();
+    if (now - lastKeyAt > SCANNER_KEY_GAP_MS) scanBuffer = '';
+    lastKeyAt = now;
+    if (e.key === 'Enter') {
+      if (scanBuffer.length >= 3) lookupCode(scanBuffer);
+      scanBuffer = '';
+    } else if (e.key.length === 1) {
+      scanBuffer += e.key;
+    }
+  });
+
+  if (window.Html5QrcodeScanner) {
+    var scanner = new Html5QrcodeScanner('reader', {
+      fps: 15,
+      // Wide and short, not square — a 1D barcode is a horizontal strip,
+      // and a tight square box was forcing people to hold a barcode
+      // (which is much wider than tall) awkwardly to fit it in frame.
+      qrbox: { width: 300, height: 110 },
+      aspectRatio: 1.333,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.ITF,
+      ],
+      rememberLastUsedCamera: true,
+      // Prefer the phone's own native barcode decoder (Android Chrome/
+      // Samsung Internet ship one) over the bundled JS decoder when the
+      // device has one — meaningfully faster and more accurate at
+      // reading a small/blurry 1D barcode than the pure-JS fallback.
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+      // A barcode sticker is usually smaller in frame than a QR code
+      // people are used to scanning — a bit of zoom and a torch for low
+      // light both make a real difference for a device that supports them
+      // (ignored harmlessly on ones that don't).
+      showTorchButtonIfSupported: true,
+      showZoomSliderIfSupported: true,
+      defaultZoomValueIfSupported: 2,
+      videoConstraints: {
+        facingMode: 'environment',
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+      },
+    }, false);
+    scanner.render(function onScanSuccess(decodedText) {
+      lookupCode(decodedText);
+    }, function onScanFailure() {
+      // Fires continuously while no code is in view — expected, ignore.
+    });
+  } else {
+    document.getElementById('reader').innerHTML =
+      '<div class="result-empty">Camera scanning couldn\'t load — use the box below instead.</div>';
+  }
+
+  // --- Add to Home Screen onboarding -----------------------------------
+  var DISMISS_KEY = 'opslab_scan_install_dismissed';
+  var overlay = document.getElementById('install-overlay');
+  var stepsList = document.getElementById('install-steps');
+  var androidBtn = document.getElementById('install-android-btn');
+  var dismissBtn = document.getElementById('install-dismiss');
+  var showBtn = document.getElementById('show-install-hint');
+  var deferredPrompt = null;
+
+  var ua = navigator.userAgent || '';
+  var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var isAndroid = /Android/.test(ua);
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+  function stepsHtml(steps) {
+    return steps.map(function (s, i) {
+      return '<li><span class="num">' + (i + 1) + '</span><span>' + s + '</span></li>';
+    }).join('');
+  }
+
+  function buildSteps() {
+    if (isIOS) {
+      stepsList.innerHTML = stepsHtml([
+        'Tap the <strong>Share</strong> button (the square with an arrow) in Safari’s toolbar.',
+        'Scroll down and tap <strong>“Add to Home Screen”</strong>.',
+        'Tap <strong>Add</strong> in the top-right corner.',
+      ]);
+      androidBtn.hidden = true;
+    } else if (isAndroid) {
+      stepsList.innerHTML = stepsHtml([
+        'Tap <strong>Install</strong> below, or open your browser’s <strong>⋮</strong> menu.',
+        'Choose <strong>“Install app”</strong> or <strong>“Add to Home screen”</strong>.',
+        'Confirm — it’ll appear on your home screen like any other app.',
+      ]);
+      androidBtn.hidden = !deferredPrompt;
+    } else {
+      stepsList.innerHTML = stepsHtml([
+        'Open this page on your phone (not a desktop computer).',
+        'Use your browser’s menu to find <strong>“Add to Home Screen”</strong> or <strong>“Install”</strong>.',
+      ]);
+      androidBtn.hidden = true;
+    }
+  }
+
+  function showOverlay() {
+    buildSteps();
+    overlay.hidden = false;
+  }
+  function hideOverlay() {
+    overlay.hidden = true;
+    try { localStorage.setItem(DISMISS_KEY, '1'); } catch (e) {}
+  }
+
+  showBtn.addEventListener('click', showOverlay);
+  dismissBtn.addEventListener('click', hideOverlay);
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) hideOverlay();
+  });
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!overlay.hidden) androidBtn.hidden = false;
+  });
+  androidBtn.addEventListener('click', function () {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.finally(function () {
+      deferredPrompt = null;
+      hideOverlay();
+    });
+  });
+
+  if (!isStandalone) {
+    var alreadyDismissed = false;
+    try { alreadyDismissed = localStorage.getItem(DISMISS_KEY) === '1'; } catch (e) {}
+    if (!alreadyDismissed) {
+      setTimeout(showOverlay, 900);  // let the camera prompt settle first
+    }
+  } else {
+    showBtn.hidden = true;  // already running as an installed app
+  }
+})();
+</script>
+</body>
+</html>

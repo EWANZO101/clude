@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}New supplier{% endblock %}
+{% block content %}
+<h1 class="page-title mb-6">New supplier</h1>
+<form method="POST" class="card card-padded space-y-4 max-w-lg">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div><label class="label-field">Name</label><input name="name" required class="input-field w-full"></div>
+  <div><label class="label-field">Email</label><input name="email" type="email" class="input-field w-full"></div>
+  <div><label class="label-field">Phone</label><input name="phone" class="input-field w-full"></div>
+  <div><label class="label-field">Address</label><textarea name="address" class="input-field w-full"></textarea></div>
+  <div><label class="label-field">Tax number</label><input name="tax_number" class="input-field w-full"></div>
+  <button class="btn btn-primary">Save supplier</button>
+</form>
+{% endblock %}

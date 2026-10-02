@@ -1,0 +1,25 @@
+{% extends "layout/base.html" %}
+{% block title %}Top merchants{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <h1 class="text-xl font-semibold">Top merchants</h1>
+  <div class="flex gap-2 text-sm">
+    {% for p in ['this_week','this_month','last_month','this_year','all_time'] %}
+      <a href="{{ url_for('merchant.top', period=p) }}" class="px-3 py-1.5 rounded-lg {{ 'bg-accent text-white' if period == p else 'bg-surface-card border border-surface-border text-slate-300' }}">{{ p.replace('_',' ') }}</a>
+    {% endfor %}
+  </div>
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    {% for row in results %}
+      <a href="{{ url_for('merchant.detail', merchant_id=row.merchant.id) }}" class="p-4 flex items-center justify-between text-sm hover:bg-surface">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 rounded-full bg-accent/20 text-accent flex items-center justify-center text-xs font-semibold">{{ row.merchant.logo_initials }}</span>
+          <span>{{ row.merchant.display_name }}</span>
+        </div>
+        <span class="text-slate-300">{{ row.total_minor | money }} · {{ row.transaction_count }} txns</span>
+      </a>
+    {% else %}
+      <p class="p-4 text-sm text-slate-500">Nothing for this period yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

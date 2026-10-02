@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_macros.html" import loc_picker with context %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+<p class="eyebrow mb-1">Update your record</p>
+<h1 class="font-display font-800 text-3xl text-chalk mb-5">Edit bike details</h1>
+<form method="post" enctype="multipart/form-data" class="space-y-4 card p-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div><label class="label">Registration</label>
+    <input name="reg_number" value="{{ v.reg_number or '' }}" placeholder="Reg number" class="input uppercase font-mono tracking-wider"></div>
+
+  <div class="grid grid-cols-2 gap-3">
+    <div><label class="label">Make</label><input name="make" value="{{ v.make or '' }}" class="input"></div>
+    <div><label class="label">Model</label><input name="model" value="{{ v.model or '' }}" class="input"></div>
+    <div><label class="label">Year</label><input name="year" value="{{ v.year or '' }}" class="input"></div>
+    <div><label class="label">Colour</label><input name="color" value="{{ v.color or '' }}" class="input"></div>
+    <div class="col-span-2"><label class="label">VIN / frame number</label><input name="vin" value="{{ v.vin or '' }}" class="input"></div>
+  </div>
+
+  <div><label class="label">Distinguishing features</label><textarea name="description" rows="3" class="input">{{ v.description or '' }}</textarea></div>
+
+  <div><label class="label">Home / usual location</label>
+    {{ loc_picker('edit', 'last_city', 'last_region', 'last_country', 'last_lat', 'last_lng',
+       v.last_city or '', v.last_region or '', v.last_country or '', v.last_lat or '', v.last_lng or '') }}</div>
+
+  <div><label class="label">Visibility</label>
+    <select name="privacy" class="input">
+      <option value="public_when_stolen" {{ 'selected' if v.privacy=='public_when_stolen' }}>Show publicly only if stolen (recommended)</option>
+      <option value="public" {{ 'selected' if v.privacy=='public' }}>Always public</option>
+      <option value="private" {{ 'selected' if v.privacy=='private' }}>Private</option>
+    </select>
+  </div>
+
+  {% if v.photos %}
+  <div>
+    <label class="label">Current photos — tick to remove</label>
+    <div class="grid grid-cols-3 gap-2">
+      {% for p in v.photos %}
+      <label class="relative block cursor-pointer">
+        <img src="{{ url_for('static', filename='uploads/' ~ p.filename) }}" class="rounded-lg w-full h-24 object-cover">
+        <span class="absolute top-1 right-1 bg-asphalt/80 rounded px-1.5 py-0.5 text-xs flex items-center gap-1">
+          <input type="checkbox" name="delete_photo" value="{{ p.id }}"> remove
+        </span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div><label class="label">Add more photos</label><input type="file" name="photos" multiple accept="image/*" class="text-sm text-mute file:btn file:btn-ghost file:btn-sm file:mr-3"></div>
+
+  <div class="flex gap-2">
+    <button class="btn btn-primary flex-1">Save changes</button>
+    <a href="{{ url_for('vehicles.detail', vehicle_id=v.id) }}" class="btn btn-ghost">Cancel</a>
+  </div>
+</form>
+</div>
+{% endblock %}

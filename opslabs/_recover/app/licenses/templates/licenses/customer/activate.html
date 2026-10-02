@@ -1,0 +1,55 @@
+{% extends "customer/base.html" %}
+{% block title %}Activate License - Customer Portal{% endblock %}
+
+{% block body %}
+<div class="min-h-screen">
+    <header class="bg-dark-800 border-b border-dark-600">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
+            <a href="{{ url_for('lic_customer.dashboard') }}" class="text-gray-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <span class="font-bold">Activate License</span>
+        </div>
+    </header>
+    
+    <main class="max-w-xl mx-auto px-4 py-12">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-500/10 text-red-400{% else %}bg-green-500/10 text-green-400{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="bg-dark-800 border border-dark-600 rounded-xl p-8">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                    </svg>
+                </div>
+                <h1 class="text-xl font-bold">Activate a License Key</h1>
+                <p class="text-gray-500 mt-1">Enter your license key to add it to your account</p>
+            </div>
+            
+            <form method="POST" class="space-y-4">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">License Key</label>
+                    <input type="text" name="license_key" required
+                        class="w-full px-4 py-3 bg-dark-700 border border-dark-500 rounded-lg font-mono text-center text-lg tracking-wider focus:outline-none focus:border-emerald-500"
+                        placeholder="XXXX-XXXX-XXXX-XXXX"
+                        style="text-transform: uppercase;">
+                </div>
+                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg">
+                    Activate License
+                </button>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}

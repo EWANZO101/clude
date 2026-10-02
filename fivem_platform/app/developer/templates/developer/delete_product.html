@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Delete {{ product.name }} — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-6">Delete product</h1>
+
+  {% if ever_had_licenses %}
+    <div class="bg-red-950/40 border border-red-800 rounded-lg p-5 text-sm text-red-300">
+      <p class="mb-3">
+        "{{ product.name }}" has licenses on record — even revoked ones
+        mean a real transaction happened at some point. It can't be
+        deleted.
+      </p>
+      <p>Use "Disable product" on the product page instead — that stops any new activity without erasing the history.</p>
+    </div>
+  {% else %}
+    <div class="bg-red-950/40 border border-red-800 rounded-lg p-5 mb-6 text-sm text-red-300">
+      <p class="mb-2">This permanently deletes "{{ product.name }}" — its modules, config, script uploads, and Tebex integration. This cannot be undone.</p>
+      <p>No licenses have ever been issued for this product, so nothing else depends on it.</p>
+    </div>
+
+    <form method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Type the product name to confirm</label>
+        <input type="text" name="confirm_text" required placeholder="{{ product.name }}"
+          class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand">
+      </div>
+      <button type="submit" class="w-full bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 rounded-md py-2 text-sm font-medium transition">
+        Permanently delete "{{ product.name }}"
+      </button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

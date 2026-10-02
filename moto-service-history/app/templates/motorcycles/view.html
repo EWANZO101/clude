@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import btn_secondary, btn_danger_form %}
+{% block title %}{{ m.display_name }}{% endblock %}
+{% block content %}
+
+<div class="flex flex-wrap items-start justify-between gap-4 mb-8">
+  <div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <h1 class="font-bold text-3xl">{{ m.display_name }}</h1>
+      {% if m.registration %}<span class="plate text-xs"><span class="plate-blue-strip mr-1">GB</span>{{ m.registration }}</span>{% endif %}
+    </div>
+    <div class="flex items-center gap-4 mt-2 text-sm text-ink-muted font-mono">
+      <span>{{ m.mileage|commas if m.mileage else '—' }} mi</span>
+      {% if m.colour %}<span>{{ m.colour }}</span>{% endif %}
+      {% if m.vin %}<span class="text-ink-faint">VIN {{ m.vin }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {{ btn_secondary('Timeline', url_for('moto.timeline', moto_id=m.id)) }}
+    {{ btn_secondary('MOT history', url_for('moto.mot', moto_id=m.id)) }}
+    {{ btn_secondary('Share', url_for('moto.share', moto_id=m.id)) }}
+    {{ btn_secondary('Edit', url_for('moto.edit', moto_id=m.id)) }}
+  </div>
+</div>
+
+<nav class="flex gap-1 overflow-x-auto pb-2 mb-6 border-b border-asphalt-border text-sm">
+  {% for anchor, label in [('overview','Overview'),('service','Service'),('mods','Modifications'),('parts','Parts stock'),('accidents','Accidents'),('photos','Photos'),('documents','Documents')] %}
+  <a href="#{{ anchor }}" class="px-3 py-2 rounded-t-md text-ink-muted hover:text-ink hover:bg-asphalt-alt whitespace-nowrap transition">{{ label }}</a>
+  {% endfor %}
+</nav>
+
+<section id="overview" class="scroll-mt-24 mb-10">
+  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    {% for label, value in [
+      ('Make / model', ((m.make or '') + ' ' + (m.model or ''))|trim or '—'),
+      ('Year', m.year or '—'),
+      ('Engine', m.engine_info or '—'),
+      ('Purchased', m.purchase_date.strftime('%d %b %Y') if m.purchase_date else '—'),
+    ] %}
+    <div class="card p-4">
+      <p class="text-xs text-ink-faint uppercase tracking-wide mb-1">{{ label }}</p>
+      <p class="font-mono text-sm text-ink">{{ value }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% if m.previous_owners %}
+  <div class="card p-4 mb-4">
+    <p class="text-xs text-ink-faint uppercase tracking-wide mb-1">Previous owners</p>
+    <p class="text-sm text-ink-muted whitespace-pre-line">{{ m.previous_owners }}</p>
+  </div>
+  {% endif %}
+  {% if m.notes %}
+  <div class="card p-4">
+    <p class="text-xs text-ink-faint uppercase tracking-wide mb-1">Notes</p>
+    <p class="text-sm text-ink-muted whitespace-pre-line">{{ m.notes }}</p>
+  </div>
+  {% endif %}
+</section>
+
+<section id="service" class="scroll-mt-24 mb-10">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="font-semibold text-lg">Service &amp; maintenance history</h2>
+    <a href="{{ url_for('moto.service_new', moto_id=m.id) }}" class="text-sm text-gauge hover:underline">+ Add service record</a>
+  </div>
+  {% if m.service_records.count() %}
+  <div class="space-y-3">
+    {% for r in m.service_records %}
+    <div class="card p-4">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-3">
+          <span class="font-mono text-sm text-ink">{{ r.date.strftime('%d %b %Y') if r.date else '' }}</span>
+          <span class="text-sm text-ink-muted">{{ r.work_type or 'Service' }}</span>
+        </div>
+        <div class="flex items-center gap-3">
+          {% if r.total_cost %}<span class="font-mono text-sm text-ink-muted">{{ r.total_cost|money }}</span>{% endif %}
+          <a href="{{ url_for('moto.service_edit', moto_id=m.id, record_id=r.id) }}" class="text-xs text-odometer hover:underline">Edit</a>
+          {{ btn_danger_form(url_for('moto.service_delete', moto_id=m.id, record_id=r.id), confirm='Remove this service record?') }}
+        </div>
+      </div>
+      {% if r.description %}<p class="text-sm text-ink-muted mt-2">{{ r.description }}</p>{% endif %}
+      <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-ink-faint font-mono">
+        {% if r.garage %}<span>{{ r.garage }}</span>{% endif %}
+        {% if r.mileage %}<span>{{ r.mileage|commas }} mi</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-sm text-ink-muted">No service records yet.</p>
+  {% endif %}
+</section>
+
+<section id="mods" class="scroll-mt-24 mb-10">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="font-semibold text-lg">Modifications &amp; upgrades</h2>
+    <a href="{{ url_for('moto.mod_new', moto_id=m.id) }}" class="text-sm text-gauge hover:underline">+ Add modification</a>
+  </div>
+  {% if m.modifications.count() %}
+  <div class="space-y-3">
+    {% for mod in m.modifications %}
+    <div class="card p-4">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-3">
+          <span class="font-mono text-sm text-ink">{{ mod.date_fitted.strftime('%d %b %Y') if mod.date_fitted else '' }}</span>
+          <span class="text-sm text-ink font-medium">{{ mod.name }}</span>
+        </div>
+        <div class="flex items-center gap-3">
+          {% set total = (mod.cost or 0) + (mod.installation_cost or 0) %}
+          {% if total %}<span class="font-mono text-sm text-ink-muted">{{ total|money }}</span>{% endif %}
+          <a href="{{ url_for('moto.mod_edit', moto_id=m.id, record_id=mod.id) }}" class="text-xs text-odometer hover:underline">Edit</a>
+          {{ btn_danger_form(url_for('moto.mod_delete', moto_id=m.id, record_id=mod.id), confirm='Remove this modification?') }}
+        </div>
+      </div>
+      {% if mod.description %}<p class="text-sm text-ink-muted mt-2">{{ mod.description }}</p>{% endif %}
+      <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-ink-faint font-mono">
+        {% if mod.manufacturer %}<span>{{ mod.manufacturer }}</span>{% endif %}
+        {% if mod.fitted_by %}<span>Fitted by {{ mod.fitted_by }}</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-sm text-ink-muted">No modifications recorded yet.</p>
+  {% endif %}
+</section>
+
+<section id="parts" class="scroll-mt-24 mb-10">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="font-semibold text-lg">Parts purchased, not yet fitted</h2>
+    <a href="{{ url_for('moto.part_new', moto_id=m.id) }}" class="text-sm text-gauge hover:underline">+ Add part</a>
+  </div>
+  {% set stock_parts = m.parts_stock.filter_by(status='in_stock').all() %}
+  {% if stock_parts %}
+  <div class="space-y-3">
+    {% for p in stock_parts %}
+    <div class="card p-4">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <span class="text-sm text-ink font-medium">{{ p.part_name }}</span>
+        <div class="flex items-center gap-3">
+          {% if p.purchase_price %}<span class="font-mono text-sm text-ink-muted">{{ p.purchase_price|money }}</span>{% endif %}
+          <a href="{{ url_for('moto.part_fit', moto_id=m.id, record_id=p.id) }}" class="text-xs text-gauge hover:underline">Mark as fitted</a>
+          <a href="{{ url_for('moto.part_edit', moto_id=m.id, record_id=p.id) }}" class="text-xs text-odometer hover:underline">Edit</a>
+          {{ btn_danger_form(url_for('moto.part_delete', moto_id=m.id, record_id=p.id), confirm='Remove this part?') }}
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-ink-faint font-mono">
+        {% if p.manufacturer %}<span>{{ p.manufacturer }}</span>{% endif %}
+        {% if p.supplier %}<span>{{ p.supplier }}</span>{% endif %}
+        {% if p.quantity %}<span>Qty {{ p.quantity }}</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-sm text-ink-muted">No parts in stock right now.</p>
+  {% endif %}
+</section>
+
+<section id="accidents" class="scroll-mt-24 mb-10">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="font-semibold text-lg">Accident &amp; damage history</h2>
+    <a href="{{ url_for('moto.accident_new', moto_id=m.id) }}" class="text-sm text-gauge hover:underline">+ Add accident record</a>
+  </div>
+  {% if m.accidents.count() %}
+  <div class="space-y-3">
+    {% for a in m.accidents %}
+    <div class="card border-danger/40 p-4">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <span class="font-mono text-sm text-ink">{{ a.date.strftime('%d %b %Y') if a.date else '' }}</span>
+        <div class="flex items-center gap-3">
+          {% if a.repair_cost %}<span class="font-mono text-sm text-ink-muted">{{ a.repair_cost|money }}</span>{% endif %}
+          <a href="{{ url_for('moto.accident_edit', moto_id=m.id, record_id=a.id) }}" class="text-xs text-odometer hover:underline">Edit</a>
+          {{ btn_danger_form(url_for('moto.accident_delete', moto_id=m.id, record_id=a.id), confirm='Remove this accident record?') }}
+        </div>
+      </div>
+      {% if a.description %}<p class="text-sm text-ink-muted mt-2">{{ a.description }}</p>{% endif %}
+      {% if a.repairs_carried_out %}<p class="text-xs text-ink-faint mt-2">Repairs: {{ a.repairs_carried_out }}</p>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-sm text-ink-muted">No accidents recorded.</p>
+  {% endif %}
+</section>
+
+<section id="photos" class="scroll-mt-24 mb-10">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="font-semibold text-lg">Photos</h2>
+    <a href="{{ url_for('moto.edit', moto_id=m.id) }}#" class="text-sm text-gauge hover:underline">+ Add photos (via Edit)</a>
+  </div>
+  {% if m.photos.count() %}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    {% for photo in m.photos %}
+    <div class="relative group">
+      <img src="{{ url_for('main.serve_upload', filename=photo.filename) }}" class="w-full aspect-square object-cover rounded-lg border border-asphalt-border" alt="{{ photo.caption or '' }}">
+      <form method="post" action="{{ url_for('moto.delete_photo', moto_id=m.id, photo_id=photo.id) }}" onsubmit="return confirm('Remove this photo?');" class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition">
+        <button class="text-[10px] bg-asphalt/90 text-danger rounded px-1.5 py-0.5">Remove</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-sm text-ink-muted">No photos uploaded yet.</p>
+  {% endif %}
+</section>
+
+<section id="documents" class="scroll-mt-24 mb-10">
+  <h2 class="font-semibold text-lg mb-4">Documents &amp; receipts</h2>
+  {% if m.documents.count() %}
+  <div class="card divide-y divide-asphalt-border">
+    {% for doc in m.documents %}
+    <div class="flex items-center justify-between gap-3 p-4 flex-wrap">
+      <div>
+        <a href="{{ url_for('main.serve_upload', filename=doc.filename) }}" target="_blank" class="text-sm text-odometer hover:underline font-mono">{{ doc.filename.split('/')[-1] }}</a>
+        <span class="text-xs text-ink-faint ml-2 uppercase">{{ doc.doc_type or 'other' }}</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <form method="post" action="{{ url_for('moto.document_toggle_public', moto_id=m.id, doc_id=doc.id) }}">
+          <button class="text-xs {{ 'text-okay' if doc.is_public else 'text-ink-faint' }} hover:underline">{{ 'Public' if doc.is_public else 'Private' }}</button>
+        </form>
+        {{ btn_danger_form(url_for('moto.document_delete', moto_id=m.id, doc_id=doc.id), text='Remove', confirm='Remove this document?') }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-sm text-ink-muted">No documents uploaded yet. Attach receipts and invoices from the Service, Modifications, Parts or Accidents sections.</p>
+  {% endif %}
+</section>
+
+<div class="pt-6 border-t border-asphalt-border">
+  {{ btn_danger_form(url_for('moto.delete', moto_id=m.id), text='Delete this motorcycle profile', confirm='This permanently deletes ' + m.display_name + ' and all its history. Continue?') }}
+</div>
+
+{% endblock %}

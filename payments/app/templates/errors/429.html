@@ -1,0 +1,9 @@
+{% extends "layout/base.html" %}
+{% block title %}Too many attempts{% endblock %}
+{% block content %}
+<div class="text-center py-24">
+  <p class="text-3xl font-semibold mb-2">429</p>
+  <p class="text-slate-400">Too many attempts — please wait a bit and try again.</p>
+  {% if description %}<p class="text-xs text-slate-600 mt-2">{{ description }}</p>{% endif %}
+</div>
+{% endblock %}

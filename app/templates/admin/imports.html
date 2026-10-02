@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Imports — Admin — {{ app_name }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+
+<div class="bg-panel border border-border rounded-lg p-4">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-gray-500 border-b border-border">
+        <th class="py-2">Created</th>
+        <th class="py-2">User</th>
+        <th class="py-2">Source</th>
+        <th class="py-2">Status</th>
+        <th class="py-2"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for job in imports %}
+      <tr class="border-b border-border/50">
+        <td class="py-2 text-gray-300">{{ job.created_at }}</td>
+        <td class="py-2 text-gray-300">{{ job.user.email if job.user else "—" }}</td>
+        <td class="py-2 text-gray-400">{{ job.source_filename }}</td>
+        <td class="py-2 text-gray-400">{{ job.status }}</td>
+        <td class="py-2 text-right">
+          <a href="{{ url_for('imports.detail', import_id=job.id) }}"
+             class="text-blue-400 hover:text-blue-300 text-xs">View</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="py-4 text-center text-gray-500">No imports found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

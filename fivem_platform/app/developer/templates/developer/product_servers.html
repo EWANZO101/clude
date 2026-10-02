@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Servers — {{ product.name }} — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold text-white mb-1">Servers</h1>
+  <p class="text-sm text-gray-500 mb-6">{{ product.name }} · {{ product.product_id }} — every customer server with this product attached.</p>
+
+  <div class="grid grid-cols-2 gap-3 mb-8 text-sm">
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Online now</div>
+      <div class="text-emerald-400 text-lg font-semibold">{{ online_count }}</div>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Total attached</div>
+      <div class="text-white text-lg font-semibold">{{ total_count }}</div>
+    </div>
+  </div>
+
+  {% if rows %}
+    <div class="space-y-2">
+      {% for r in rows %}
+        <div class="flex items-center justify-between gap-3 flex-wrap bg-surface-card border border-surface-border rounded-lg px-4 py-3">
+          <div class="min-w-0 flex-1">
+            <div class="text-white text-sm font-medium truncate">{{ r.server_name }}</div>
+            <div class="text-gray-500 text-xs font-mono truncate">{{ r.license_key }} · {{ r.channel }}</div>
+          </div>
+          <div class="flex items-center gap-3 flex-shrink-0">
+            <span class="text-xs text-gray-500">{{ r.last_seen_text }}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full {{ 'bg-emerald-950 text-emerald-400' if r.online else 'bg-gray-800 text-gray-500' }}">
+              {{ 'online' if r.online else 'offline' }}
+            </span>
+            {% if r.license_status != 'active' %}
+              <span class="text-xs px-2 py-0.5 rounded-full bg-red-950 text-red-400">{{ r.license_status }}</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500">No customer servers have this product attached yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Request received · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto max-w-2xl px-4 py-12 sm:py-16">
+  <div class="card p-6 sm:p-8 text-center mb-10">
+    <span class="status-dot bg-status-available inline-block mb-3"></span>
+    <h1 class="font-display text-2xl font-semibold text-ink">Request received</h1>
+    <p class="mt-2 text-sm text-ink-muted">
+      Thanks — I'll review what you've sent and be in touch about next steps. If your ISP
+      needs you to complete verification yourself (for example a text or email code), I'll
+      let you know so we can arrange a time.
+    </p>
+  </div>
+
+  <div id="privacy" class="space-y-6 text-sm text-ink-muted leading-relaxed">
+    <h2 class="font-display text-lg font-semibold text-ink">Privacy notice</h2>
+
+    <div>
+      <h3 class="font-medium text-ink mb-1">What we collect and why</h3>
+      <p>
+        We collect only the account-verification details your ISP specifically requires to
+        discuss your account with us — for example your account number, full name, or a
+        security question your ISP uses. We never ask for your ISP password, online banking
+        details, payment-card security information, or one-time verification codes.
+      </p>
+    </div>
+
+    <div>
+      <h3 class="font-medium text-ink mb-1">How it's protected</h3>
+      <p>
+        The form is served over an encrypted (HTTPS) connection. Sensitive fields — account and
+        customer numbers, date of birth, address, and any security question answers — are
+        encrypted at rest in our database, separately from the rest of the record. Access to
+        your request is limited to staff who need it to help with your issue, and every time
+        someone opens your request it's recorded in an access log.
+      </p>
+    </div>
+
+    <div>
+      <h3 class="font-medium text-ink mb-1">How long we keep it</h3>
+      <p>
+        Requests are kept only as long as needed to resolve your issue and for a reasonable
+        period afterwards in case the same problem recurs. You can ask us to delete your
+        request at any time using the contact details you submitted it through.
+      </p>
+    </div>
+
+    <div>
+      <h3 class="font-medium text-ink mb-1">Who can access it</h3>
+      <p>
+        Only staff handling ISP support requests can view submitted information, and only for
+        the purpose of contacting your ISP and assisting with your issue.
+      </p>
+    </div>
+
+    <div>
+      <h3 class="font-medium text-ink mb-1">Your rights</h3>
+      <p>
+        You can request a copy of the information we hold about your request, ask us to
+        correct it, or ask us to delete it, subject to any legal requirement to keep records.
+      </p>
+    </div>
+  </div>
+
+  <div class="mt-10 text-center">
+    <a href="{{ url_for('isp_support.request_form') }}" class="text-sm text-accent hover:underline">&larr; Back to the form</a>
+  </div>
+</div>
+{% endblock %}

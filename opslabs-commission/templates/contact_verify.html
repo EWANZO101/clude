@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+{% block title %}Verify — Cioda's Commissions{% endblock %}
+
+{% block head %}
+<style>
+  /* ── Page layout ── */
+  .verify-wrap {
+    min-height: calc(100vh - 60px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 2rem 1rem; position: relative; overflow: hidden;
+  }
+
+  /* ── Orbs ── */
+  .orb {
+    position: absolute; border-radius: 50%;
+    filter: blur(90px); pointer-events: none; opacity: 0.15;
+  }
+
+  /* ── Card ── */
+  .verify-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-accent);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    width: 100%; max-width: 460px;
+    position: relative; z-index: 1;
+    box-shadow: 0 0 60px rgba(168,85,247,0.08);
+    animation: fadeIn 0.4s ease both;
+  }
+
+  /* ── Shield icon ── */
+  .shield-ring {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: rgba(168,85,247,0.12);
+    border: 2px solid var(--accent-dim);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.7rem; margin: 0 auto 1.25rem;
+    animation: pulse-ring 2.5s ease infinite;
+  }
+  @keyframes pulse-ring {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(168,85,247,0.3); }
+    50%       { box-shadow: 0 0 0 10px rgba(168,85,247,0); }
+  }
+
+  /* ── Steps indicator ── */
+  .steps {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0.4rem; margin-bottom: 1.75rem;
+  }
+  .step-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border-accent); transition: all 0.3s;
+  }
+  .step-dot.active  { background: var(--accent); transform: scale(1.3); }
+  .step-dot.done    { background: var(--success); }
+
+  /* ── Symbol grid ── */
+  .symbol-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem; margin: 1.25rem 0;
+  }
+  .symbol-cell {
+    aspect-ratio: 1; border-radius: 10px;
+    background: var(--bg-elevated); border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.75rem; cursor: pointer;
+    transition: all 0.15s; user-select: none;
+    position: relative; overflow: hidden;
+  }
+  .symbol-cell:hover { border-color: var(--accent-dim); background: var(--accent-glow); }
+  .symbol-cell.selected {
+    border-color: var(--accent);
+    background: rgba(168,85,247,0.2);
+    box-shadow: 0 0 12px rgba(168,85,247,0.3);
+  }
+  .symbol-cell.selected::after {
+    content: '✓';
+    position: absolute; top: 4px; right: 6px;
+    font-size: 0.7rem; color: var(--accent);
+    font-family: 'Cinzel', serif; font-weight: 700;
+  }
+  .symbol-cell.wrong {
+    border-color: var(--danger);
+    background: rgba(239,68,68,0.15);
+    animation: shake 0.4s ease;
+  }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)}
+  }
+
+  /* ── Target display ── */
+  .target-box {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-accent);
+    border-radius: 10px; padding: 0.75rem 1rem;
+    display: flex; align-items: center; gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .target-emoji { font-size: 2rem; }
+  .target-text  { font-family: 'Cinzel', serif; font-size: 0.82rem;
+                  color: var(--text-secondary); line-height: 1.4; }
+  .target-name  { color: var(--accent); font-weight: 700; font-size: 0.95rem; }
+
+  /* ── Progress bar (timing) ── */
+  .progress-bar-wrap {
+    background: var(--bg-elevated); border-radius: 999px;
+    height: 4px; margin-bottom: 1.25rem; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    width: 0%; transition: width 0.1s linear;
+  }
+
+  /* ── Submit button ── */
+  .verify-btn {
+    width: 100%; padding: 0.8rem;
+    font-size: 0.95rem; justify-content: center;
+    opacity: 0.4; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .verify-btn.ready { opacity: 1; pointer-events: all; }
+
+  /* ── Error/hint ── */
+  .hint-msg {
+    font-size: 0.82rem; text-align: center;
+    margin-top: 0.6rem; min-height: 1.2rem;
+    transition: color 0.2s;
+  }
+  .hint-msg.error { color: var(--danger); }
+  .hint-msg.ok    { color: var(--success); }
+
+  /* ── Counter badge ── */
+  .sel-count {
+    font-family: 'Cinzel', serif; font-size: 0.72rem;
+    color: var(--text-muted); text-align: center; margin-top: 0.3rem;
+  }
+
+  /* ── Success overlay ── */
+  .success-overlay {
+    display: none; text-align: center; padding: 1rem 0;
+  }
+  .success-overlay.show { display: block; animation: fadeIn 0.4s ease both; }
+  .success-ring {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: rgba(34,197,94,.12); border: 2px solid var(--success);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; margin: 0 auto 1rem;
+  }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+</style>
+{% endblock %}
+
+{% block drawer_title %}<span class="nav-logo" style="font-size:1rem;">Cioda's <span>Commissions</span></span>{% endblock %}
+{% block drawer_nav %}
+<div style="padding:1rem;display:flex;flex-direction:column;gap:0.65rem;">
+  <a href="/queue/waiting" class="btn btn-primary" style="justify-content:center;">✦ Commission Me</a>
+  <a href="/contact/verify" class="btn btn-ghost" style="justify-content:center;border-color:var(--accent);color:var(--accent);">✉ Contact</a>
+  <a href="/admin" class="btn btn-ghost" style="justify-content:center;">Admin</a>
+</div>
+{% endblock %}
+
+{% block body %}
+<nav class="nav-bar">
+  <a class="nav-logo" href="/">Cioda's <span>Commissions</span></a>
+  <div class="public-nav-links">
+    <a href="/queue/waiting" class="btn btn-primary btn-sm">✦ Commission Me</a>
+    <a href="/contact/verify" class="btn btn-ghost btn-sm" style="border-color:var(--accent);color:var(--accent);">✉ Contact</a>
+    <a href="/admin" class="btn btn-ghost btn-sm">Admin</a>
+  </div>
+  <button class="hamburger-btn public-nav-hamburger" onclick="openDrawer()" aria-label="Open menu">☰</button>
+</nav>
+
+<div class="verify-wrap">
+  <!-- Orbs -->
+  <div class="orb" style="background:#a855f7;width:380px;height:380px;top:-100px;left:-120px;"></div>
+  <div class="orb" style="background:#f59e0b;width:260px;height:260px;bottom:-60px;right:-80px;"></div>
+
+  <div class="verify-card">
+
+    <!-- Header -->
+    <div class="shield-ring">🛡️</div>
+    <h1 class="font-display" style="text-align:center;font-size:1.35rem;margin-bottom:0.3rem;">
+      <span style="background:linear-gradient(135deg,#e8e6f0,#c084fc);-webkit-background-clip:text;
+                   -webkit-text-fill-color:transparent;background-clip:text;">
+        Human Verification
+      </span>
+    </h1>
+    <p style="text-align:center;color:var(--text-muted);font-size:0.88rem;margin-bottom:1.5rem;">
+      Quick check before you contact us
+    </p>
+
+    <!-- Steps -->
+    <div class="steps">
+      <div class="step-dot active" id="dot1"></div>
+      <div style="width:24px;height:2px;background:var(--border-accent);border-radius:1px;"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div style="width:24px;height:2px;background:var(--border-accent);border-radius:1px;"></div>
+      <div class="step-dot" id="dot3"></div>
+    </div>
+
+    <!-- Timing progress bar -->
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+
+    <!-- Main challenge -->
+    <div id="challengeArea">
+
+      <!-- Target instruction -->
+      <div class="target-box">
+        <div class="target-emoji">{{ target_emoji }}</div>
+        <div class="target-text">
+          Select all the <span class="target-name">{{ target_name }}</span> from the grid below.
+          <br><span style="font-size:0.76rem;color:var(--text-muted);">Click every matching symbol — there may be more than one.</span>
+        </div>
+      </div>
+
+      <!-- 3×3 symbol grid -->
+      <div class="symbol-grid" id="symbolGrid">
+        {% for i in range(9) %}
+        <div class="symbol-cell" data-index="{{ i }}" onclick="toggleCell(this)">
+          {{ grid[i] }}
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="sel-count" id="selCount">0 selected</div>
+
+      <!-- Honeypot hidden fields (bots fill these) -->
+      <input type="text" id="hp1" name="fullname"  style="display:none;" tabindex="-1" autocomplete="off">
+      <input type="text" id="hp2" name="firstname" style="display:none;" tabindex="-1" autocomplete="off">
+
+      <div class="hint-msg" id="hintMsg">Waiting for verification to unlock…</div>
+
+      <button class="btn btn-primary verify-btn" id="verifyBtn" onclick="submitVerify()" style="margin-top:1rem;">
+        ✦ Continue to Contact Form
+      </button>
+    </div>
+
+    <!-- Success state (shown after redirect delay) -->
+    <div class="success-overlay" id="successOverlay">
+      <div class="success-ring">✓</div>
+      <div class="font-display" style="color:var(--success);font-size:1.2rem;margin-bottom:0.5rem;">Verified!</div>
+      <p style="color:var(--text-muted);font-size:0.9rem;">Redirecting to the contact form…</p>
+    </div>
+
+    <p style="text-align:center;font-size:0.75rem;color:var(--text-muted);margin-top:1.25rem;">
+      🔒 Protected by CioDrawz Bot Shield
+    </p>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ── Config (injected server-side) ────────────────────────────
+  const CORRECT_INDICES = {{ correct_indices | tojson }};
+  const CHALLENGE_TOKEN = "{{ token }}";
+  const REQUIRED_SECS   = 3;    // minimum seconds before allow submit
+  const REQUIRED_MOVES  = 5;    // minimum mouse move events
+
+  // ── State ─────────────────────────────────────────────────────
+  let selected      = new Set();
+  let mouseMoves    = 0;
+  let startTime     = Date.now();
+  let timerReady    = false;
+  let mouseReady    = false;
+  let verified      = false;
+
+  // ── Timing progress bar ───────────────────────────────────────
+  const progressBar = document.getElementById('progressBar');
+  const verifyBtn   = document.getElementById('verifyBtn');
+  const hintMsg     = document.getElementById('hintMsg');
+  const dot1 = document.getElementById('dot1');
+  const dot2 = document.getElementById('dot2');
+  const dot3 = document.getElementById('dot3');
+
+  function updateProgress() {
+    const elapsed = (Date.now() - startTime) / 1000;
+    const pct = Math.min(100, (elapsed / REQUIRED_SECS) * 100);
+    progressBar.style.width = pct + '%';
+    if (elapsed >= REQUIRED_SECS && !timerReady) {
+      timerReady = true;
+      dot1.classList.remove('active'); dot1.classList.add('done');
+      dot2.classList.add('active');
+      checkReady();
+    }
+  }
+  const timerInterval = setInterval(updateProgress, 80);
+
+  // ── Mouse movement tracking ───────────────────────────────────
+  document.addEventListener('mousemove', function() {
+    mouseMoves++;
+    if (mouseMoves >= REQUIRED_MOVES && !mouseReady) {
+      mouseReady = true;
+      dot2.classList.remove('active'); dot2.classList.add('done');
+      dot3.classList.add('active');
+      checkReady();
+    }
+  });
+  // Touch devices — count touches as movement
+  document.addEventListener('touchstart', function() {
+    mouseMoves += REQUIRED_MOVES;
+    if (!mouseReady) {
+      mouseReady = true;
+      dot2.classList.remove('active'); dot2.classList.add('done');
+      dot3.classList.add('active');
+      checkReady();
+    }
+  });
+
+  // ── Grid interaction ──────────────────────────────────────────
+  function toggleCell(el) {
+    const idx = parseInt(el.dataset.index);
+    el.classList.remove('wrong');
+    if (selected.has(idx)) {
+      selected.delete(idx);
+      el.classList.remove('selected');
+    } else {
+      selected.add(idx);
+      el.classList.add('selected');
+    }
+    document.getElementById('selCount').textContent =
+      selected.size + ' selected';
+    checkReady();
+  }
+
+  // ── Readiness check ───────────────────────────────────────────
+  function checkReady() {
+    const allGood = timerReady && mouseReady && selected.size > 0;
+    verifyBtn.classList.toggle('ready', allGood);
+    if (!timerReady) {
+      hintMsg.textContent = 'Please wait a moment…';
+      hintMsg.className = 'hint-msg';
+    } else if (!mouseReady) {
+      hintMsg.textContent = 'Move your mouse to continue.';
+      hintMsg.className = 'hint-msg';
+    } else if (selected.size === 0) {
+      hintMsg.textContent = 'Select the matching symbols above.';
+      hintMsg.className = 'hint-msg';
+    } else {
+      hintMsg.textContent = 'Looking good — click Continue when ready!';
+      hintMsg.className = 'hint-msg ok';
+    }
+  }
+
+  // ── Submit & server validation ────────────────────────────────
+  function submitVerify() {
+    if (verified) return;
+
+    // Honeypot check client-side
+    if (document.getElementById('hp1').value || document.getElementById('hp2').value) {
+      return;
+    }
+
+    const elapsed = (Date.now() - startTime) / 1000;
+    const payload = {
+      token:    CHALLENGE_TOKEN,
+      selected: Array.from(selected),
+      elapsed:  elapsed,
+      moves:    mouseMoves,
+    };
+
+    verifyBtn.disabled = true;
+    verifyBtn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;"></span> Verifying…';
+
+    fetch('/contact/verify', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        verified = true;
+        clearInterval(timerInterval);
+        dot3.classList.remove('active'); dot3.classList.add('done');
+        document.getElementById('challengeArea').style.display = 'none';
+        document.getElementById('successOverlay').classList.add('show');
+        setTimeout(() => { window.location.href = '/contact'; }, 1200);
+      } else if (data.lockout) {
+        // Too many failures — redirect to lockout page
+        document.getElementById('challengeArea').style.display = 'none';
+        document.getElementById('successOverlay').style.display = 'none';
+        document.querySelector('.verify-card').innerHTML = `
+          <div style="text-align:center;padding:1rem 0;animation:fadeIn 0.4s ease both;">
+            <div style="width:64px;height:64px;border-radius:50%;background:rgba(239,68,68,.12);
+                        border:2px solid var(--danger);display:flex;align-items:center;
+                        justify-content:center;font-size:2rem;margin:0 auto 1rem;">🚫</div>
+            <div class="font-display" style="color:var(--danger);font-size:1.2rem;margin-bottom:0.5rem;">
+              Access Restricted
+            </div>
+            <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:0.5rem;">
+              Too many failed attempts detected.
+            </p>
+            <p style="color:var(--text-muted);font-size:0.85rem;">Redirecting you now…</p>
+          </div>`;
+        setTimeout(() => { window.location.href = 'https://lockout.ciodrawz.space/'; }, 1500);
+      } else {
+        // Highlight wrong cells
+        selected.forEach(idx => {
+          if (!CORRECT_INDICES.includes(idx)) {
+            document.querySelector(`[data-index="${idx}"]`).classList.add('wrong');
+          }
+        });
+        hintMsg.textContent = data.reason || 'Incorrect — try again.';
+        hintMsg.className = 'hint-msg error';
+        verifyBtn.disabled = false;
+        verifyBtn.innerHTML = '✦ Continue to Contact Form';
+        // Refresh the grid visually for new puzzle
+        setTimeout(() => location.reload(), 1800);
+      }
+    })
+    .catch(() => {
+      hintMsg.textContent = 'Network error — please try again.';
+      hintMsg.className = 'hint-msg error';
+      verifyBtn.disabled = false;
+      verifyBtn.innerHTML = '✦ Continue to Contact Form';
+    });
+  }
+
+  // Kick off readiness check
+  setTimeout(checkReady, 100);
+</script>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+{% endblock %}

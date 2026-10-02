@@ -1,0 +1,49 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Planned purchases{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  {{ ui.page_header("Things I want to buy") }}
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl p-5 grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
+    <div><p class="text-xs text-slate-500 mb-1">Current money</p><p class="tabular-nums">{{ safe_balance.current_money_minor | money }}</p></div>
+    <div><p class="text-xs text-slate-500 mb-1">Upcoming bills</p><p class="tabular-nums">-{{ safe_balance.upcoming_bills_minor | money }}</p></div>
+    <div><p class="text-xs text-slate-500 mb-1">Subscriptions</p><p class="tabular-nums">-{{ safe_balance.upcoming_subscriptions_minor | money }}</p></div>
+    <div><p class="text-xs text-slate-500 mb-1">Planned purchases</p><p class="tabular-nums">-{{ safe_balance.planned_purchases_minor | money }}</p></div>
+    <div><p class="text-xs text-slate-500 mb-1">Safe to spend</p><p class="tabular-nums font-semibold {{ 'text-red-400' if safe_balance.safe_discretionary_minor < 0 else 'text-white' }}">{{ safe_balance.safe_discretionary_minor | money }}</p></div>
+  </div>
+
+  <form method="POST" action="{{ url_for('finance.new_purchase') }}" class="flex flex-wrap gap-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input name="name" placeholder="Item name" required class="bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    <input name="price" placeholder="Price" class="w-24 bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    <input name="quantity" placeholder="Qty" value="1" class="w-16 bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    <input name="url" placeholder="URL (optional)" class="bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    <select name="priority" class="bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      <option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option>
+    </select>
+    <input type="date" name="desired_date" class="bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    {{ ui.button("Add", type="submit", variant="primary") }}
+  </form>
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    {% for p in items %}
+      <div class="p-4 flex items-center justify-between gap-3 text-sm hover:bg-surface-hover/40 transition-colors">
+        <div>
+          <p class="text-slate-100">{{ p.name }} {% if p.quantity > 1 %}× {{ p.quantity }}{% endif %}</p>
+          <p class="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
+            {% if p.priority == 'high' %}{{ ui.badge('High', 'danger') }}{% elif p.priority == 'medium' %}{{ ui.badge('Medium', 'warning') }}{% else %}{{ ui.badge('Low', 'neutral') }}{% endif %}
+            {% if p.desired_date %}wanted by {{ p.desired_date }}{% endif %}
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-slate-200 tabular-nums font-medium">{{ p.total_price_minor | money }}</span>
+          <form method="POST" action="{{ url_for('finance.mark_purchased', purchase_id=p.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-xs text-accent hover:text-accent-hover">Bought it</button></form>
+          <form method="POST" action="{{ url_for('finance.delete_purchase', purchase_id=p.id) }}" onsubmit="return confirm('Remove this from your list?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-xs text-red-400 hover:text-red-300">Remove</button></form>
+        </div>
+      </div>
+    {% else %}
+      {% call ui.empty_state("Nothing on the list yet", icon_name="shopping-cart") %}{% endcall %}
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

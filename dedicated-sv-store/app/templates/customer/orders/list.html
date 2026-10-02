@@ -1,0 +1,32 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_order_badges.html" import status_badge with context %}
+{% from "components/_progress_stepper.html" import progress_bar_compact with context %}
+{% block title %}My Orders — {{ app_name }}{% endblock %}
+{% block page_title %}My orders{% endblock %}
+{% block content %}
+{% if orders %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Order #</th><th>Items</th><th>Total</th><th>Status</th><th>Progress</th><th>Placed</th><th></th></tr></thead>
+    <tbody>
+      {% for order in orders %}
+      {% set progress = order.progress_info %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ order.order_number }}</td>
+        <td class="text-text-secondary">{{ order.items|length }}</td>
+        <td class="text-text-primary">£{{ order.total }}</td>
+        <td>{{ status_badge(order.status) }}</td>
+        <td>{{ progress_bar_compact(progress.percent, stopped=progress.stopped) }}</td>
+        <td class="text-text-muted">{{ order.created_at.strftime("%d %b %Y") }}</td>
+        <td><a href="{{ url_for('customer.order_detail', order_id=order.id) }}" class="text-brand-400 hover:text-brand-300">View</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card p-10 text-center text-text-secondary">
+  You haven't placed any orders yet. <a href="{{ url_for('marketplace.servers') }}" class="text-brand-400 hover:text-brand-300">Browse servers</a>.
+</div>
+{% endif %}
+{% endblock %}

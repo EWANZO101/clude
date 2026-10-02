@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Tools{% endblock %}
+{% block content %}
+{% import "_layout_blocks.html" as blocks with context %}
+{% for c in layout_components %}
+  {% if c.visible != false %}
+    {% if c.type == 'page_header' %}
+      {{ blocks.render_page_header(c, 'Tools', tools|length ~ ' tool' ~ ('s' if tools|length != 1 else ''), 'fas fa-wrench', url_for('tools.add'), tools|length ~ ' tools') }}
+    {% elif c.type == 'stat_cards' %}
+      {{ blocks.render_stat_cards(c, stats) }}
+    {% elif c.type == 'filter_bar' %}
+      {{ blocks.render_filter_bar(c, 'tools', search, category, categories, status_filter, ToolStatus, url_for('tools.index')) }}
+    {% elif c.type == 'data_table' %}
+      {{ blocks.render_data_table(c, 'tools', tools, 'tools.view', column_meta, ToolStatus) }}
+    {% elif c.type == 'button_row' %}
+      {{ blocks.render_button_row(c) }}
+    {% elif c.type == 'text_block' %}
+      {{ blocks.render_text_block(c) }}
+    {% elif c.type == 'spacer' %}
+      {{ blocks.render_spacer(c) }}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% endblock %}

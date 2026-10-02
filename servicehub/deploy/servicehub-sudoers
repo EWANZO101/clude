@@ -1,0 +1,4 @@
+# Install with:  sudo install -m 0440 servicehub-sudoers /etc/sudoers.d/servicehub
+# Lets the servicehub app user run ONLY the svcmgr.sh helper as root, no password.
+# Replace "svchub" with whatever user the servicehub Flask app actually runs as.
+svchub ALL=(root) NOPASSWD: /usr/local/bin/svcmgr.sh

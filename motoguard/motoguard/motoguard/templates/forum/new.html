@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+<p class="eyebrow mb-1">Community</p>
+<h1 class="font-display font-800 text-2xl text-chalk mb-5">New post</h1>
+<form method="post" class="space-y-4 card p-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div><label class="label">Category</label><select name="category_id" class="input">{% for c in cats %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+  <div><label class="label">Title</label><input name="title" placeholder="Give it a clear headline" class="input" required></div>
+  <div><label class="label">Body</label><textarea name="body" rows="6" placeholder="Write your post…" class="input"></textarea></div>
+  {% if my_bikes %}
+  <div><label class="label">Link a bike (optional)</label><select name="vehicle_id" class="input"><option value="">None</option>{% for b in my_bikes %}<option value="{{ b.id }}">{{ b.title }} — {{ b.reg_number or 'no reg' }}</option>{% endfor %}</select></div>
+  {% endif %}
+  <input name="website" class="hidden" tabindex="-1" autocomplete="off">
+  <button class="btn btn-primary">Post to community</button>
+</form>
+</div>
+{% endblock %}

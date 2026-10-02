@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Website Activity - TeamTreck{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <h1 class="text-2xl font-bold">Website Activity{% if view_user.id != current_user.id %} — {{ view_user.name }}{% endif %}</h1>
+    {% if current_user.is_manager and team_members %}
+    <form method="GET" class="flex items-center gap-2">
+        <select name="user_id" onchange="this.form.submit()" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+            <option value="{{ current_user.id }}" {{ 'selected' if view_user.id == current_user.id }}>Me</option>
+            {% for m in team_members %}
+                {% if m.id != current_user.id %}
+                <option value="{{ m.id }}" {{ 'selected' if view_user.id == m.id }}>{{ m.name }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </form>
+    {% endif %}
+</div>
+<p class="text-xs text-gray-400 mb-6">{{ range_start }} → {{ range_end }} · Private/incognito browsing is never tracked.</p>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Browsing Time</div>
+        <div class="text-2xl font-mono font-bold">{{ total_seconds|hms }}</div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Productivity Score</div>
+        <div class="text-2xl font-bold {{ 'text-green-500' if productivity_score and productivity_score >= 60 else ('text-yellow-500' if productivity_score and productivity_score >= 30 else 'text-gray-400') }}">
+            {{ productivity_score if productivity_score is not none else '—' }}{% if productivity_score is not none %}%{% endif %}
+        </div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Sites Visited</div>
+        <div class="text-2xl font-bold">{{ most_visited|length }}</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+        <h2 class="font-semibold mb-3">Most Visited</h2>
+        {% for domain, secs in most_visited %}
+        <div class="flex justify-between text-sm py-1.5 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
+            <span class="truncate">{{ domain }}</span>
+            <span class="font-mono text-gray-500 dark:text-gray-400">{{ secs|hms }}</span>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-400">No data yet.</p>
+        {% endfor %}
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+        <h2 class="font-semibold mb-3">By Category</h2>
+        {% for cat, secs in by_category %}
+        <div class="flex justify-between text-sm py-1.5 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
+            <span>{{ cat }}</span>
+            <span class="font-mono text-gray-500 dark:text-gray-400">{{ secs|hms }}</span>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-400">No data yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<h2 class="text-lg font-semibold mb-3">Recent Log</h2>
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-800 text-left text-gray-500 dark:text-gray-400">
+                <th class="px-4 py-3">Time</th>
+                <th class="px-4 py-3">Domain</th>
+                <th class="px-4 py-3">Category</th>
+                <th class="px-4 py-3">Duration</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr class="border-b border-gray-100 dark:border-gray-800/50">
+                <td class="px-4 py-2 text-gray-500 dark:text-gray-400">{{ log.visited_at.strftime('%d %b %H:%M') }}</td>
+                <td class="px-4 py-2">{{ log.domain }}</td>
+                <td class="px-4 py-2">
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300">{{ log.category }}</span>
+                </td>
+                <td class="px-4 py-2 font-mono">{{ log.duration_seconds|hms }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">No URL activity logged yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

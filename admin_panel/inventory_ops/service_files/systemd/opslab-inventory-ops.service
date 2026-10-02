@@ -1,0 +1,30 @@
+# inventory-ops — systemd unit
+#
+# Independent of opslab-agent.service and the Instance Agent it supervises —
+# this unit runs inventory_ops/run.py directly. inventory-ops is a
+# standalone product with no dependency on admin_panel/the Agent at all; it
+# is controlled the same way kiosk_app is at the OS level (start/stop/
+# restart via systemctl, versioned releases via update.sh) without going
+# through the Agent's process-supervision/update pipeline, which only
+# manages one app per machine.
+#
+# Not installed/enabled automatically — copy to /etc/systemd/system/,
+# adjust WorkingDirectory/ExecStart/User below to match where this was
+# actually deployed, then `systemctl daemon-reload && systemctl enable
+# --now opslab-inventory-ops`.
+
+[Unit]
+Description=inventory-ops
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/admin_panel/inventory_ops
+ExecStart=/root/admin_panel/inventory_ops/venv/bin/python run.py
+Restart=on-failure
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

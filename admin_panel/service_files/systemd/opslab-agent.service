@@ -1,0 +1,58 @@
+# OpsLab Instance Agent — systemd unit
+#
+# Installed by Part 5's install script to /etc/systemd/system/opslab-agent.service.
+#
+# This supervises the AGENT process itself (spec Section 52: "Instance Agent
+# crashes -> Operating system service manager restarts it") — the Agent, in
+# turn, supervises the Kiosk Application as its own subprocess via
+# agent/process_supervisor.py. Two independent layers of restart, matching
+# the spec's recovery hierarchy (Admin Panel -> Instance Agent -> Rescue ->
+# Kiosk Application): if the Kiosk Application crashes, the Agent's watchdog
+# handles it; if the Agent itself crashes, systemd handles that.
+
+[Unit]
+Description=OpsLab Instance Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust to wherever Part 5's installer actually places the venv/checkout.
+WorkingDirectory=/opt/opslab-agent
+ExecStart=/opt/opslab-agent/venv/bin/python -m agent.main
+Restart=always
+RestartSec=5
+
+# Settings/identity live under /etc/opslab-agent by default (see
+# agent/config.py::default_data_dir) — no environment variables needed here
+# once the machine has been registered once.
+Environment=PYTHONUNBUFFERED=1
+
+# Run as a dedicated low-privilege user in production rather than root —
+# Part 5's installer is responsible for creating it and ensuring it can
+# write to /etc/opslab-agent and the configured app_install_dir/recovery_dir.
+User=opslab-agent
+Group=opslab-agent
+
+# Structural hardening — loosen only if a specific integration genuinely
+# needs it (e.g. the Kiosk Application binding privileged ports).
+#
+# Real bug found 2026-09-13: this used to be ProtectSystem=strict, which
+# makes the ENTIRE file system read-only except ReadWritePaths= below (only
+# /etc/opslab-agent). But install.sh's own settings.json points
+# app_install_dir/download_dir/recovery_dir at $INSTALL_DIR (/opt/opslab-agent)
+# — not under /etc/opslab-agent at all — and self_update.py rewrites
+# /opt/opslab-agent/agent itself in place. Under strict, every one of those
+# writes (Kiosk App install/update, Agent self-update, recovery backups)
+# would fail with "Read-only file system", while heartbeat/registration
+# (which only writes settings.json under /etc/opslab-agent) kept working —
+# so this was invisible until an actual update was pushed. `full` only
+# makes /usr, /boot, and /etc read-only (the last covered by
+# ReadWritePaths= below), leaving /opt genuinely writable — verified with a
+# throwaway systemd-run transient unit reproducing both directives.
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=/etc/opslab-agent
+
+[Install]
+WantedBy=multi-user.target

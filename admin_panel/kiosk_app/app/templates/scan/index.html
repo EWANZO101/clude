@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+{% block title %}Scan — {{ tenant_name }}{% endblock %}
+{% block content %}
+<style>
+  /* Scoped to this page: a two-card "scanner | details" layout, styled to
+     match the StockPro desktop-app mockup this was reskinned from --
+     dark cards, a monospace barcode display box, a colored status dot,
+     label/value detail rows, and a stat box for anything with a real
+     numeric stock figure. Reuses the app's existing --panel/--panel-2/
+     --panel-border tokens rather than a separate palette, so it stays in
+     sync with the dark/light theme toggle in base.html for free. */
+  .scan-layout{display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; max-width:900px; margin:0 auto;}
+  .scan-card{flex:1; min-width:340px;}
+  .scan-card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .scan-card-head h2{margin:0; font-size:18px;}
+  .scan-status-pill{font-size:12.5px; font-weight:700;}
+  .scan-barcode-box{
+    background:var(--panel-2); border:1px solid var(--panel-border); border-radius:var(--radius);
+    min-height:220px; display:flex; flex-direction:column; justify-content:center;
+    padding:20px; margin-bottom:14px; box-sizing:border-box;
+  }
+  /* The barcode text is its own full-width block (not the flex box's
+     anonymous text node) so text-align:center measures against the box's
+     real width, not the width of its widest line (the barcode-bar row) --
+     a shrink-wrapped anonymous flex item centers on itself first, which
+     visually reads as centered on the barcode rather than the box. */
+  .scan-barcode-text{
+    width:100%; margin:0; padding:0; position:static; text-align:center;
+    font-family:ui-monospace,Consolas,monospace; font-size:15px; line-height:1.9; white-space:pre-wrap;
+  }
+  .scan-product-name{font-size:22px; font-weight:700; margin:0 0 2px;}
+  .scan-detail-rows{margin:14px 0;}
+  .scan-detail-row{
+    display:flex; justify-content:space-between; gap:12px; padding:7px 0;
+    border-bottom:1px solid var(--panel-border); font-size:13.5px;
+  }
+  .scan-detail-row:last-child{border-bottom:none;}
+  .scan-stat-box{
+    background:var(--panel-2); border:1px solid var(--panel-border); border-radius:var(--radius-sm);
+    text-align:center; padding:14px; margin:14px 0;
+  }
+  .scan-stat-box .scan-stat-value{font-size:26px; font-weight:700;}
+  .scan-stat-box .scan-stat-label{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
+  .scan-action-row{display:flex; gap:10px; margin-top:16px;}
+  .scan-action-row form{flex:1; display:flex;}
+  .scan-action-row button{width:100%;}
+</style>
+
+{% if active_project %}
+  <div class="panel" style="border-color:var(--accent); display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <div class="muted" style="font-size:11.5px; text-transform:uppercase; letter-spacing:.05em;">Active project</div>
+      <div style="font-size:18px; font-weight:700; color:var(--accent);">{{ active_project.name }}</div>
+    </div>
+    <form method="post" action="{{ url_for('scan.clear_project') }}">
+      <button type="submit" style="background:transparent; border:1px solid var(--panel-border); color:var(--text);">Clear</button>
+    </form>
+  </div>
+{% else %}
+  <div class="panel muted">
+    No active project set. Scan a project barcode first to attribute item issues and tool checkouts to it,
+    or continue scanning items/tools without one.
+  </div>
+{% endif %}
+
+<div class="scan-layout">
+
+  <!-- ───────────────────────── Scanner card ───────────────────────── -->
+  <div class="panel scan-card">
+    <div class="scan-card-head">
+      <h2>📷 Scan Barcode</h2>
+      <span class="scan-status-pill" id="scanner-status-pill"
+            style="color:{{ 'var(--red)' if result and result.kind == 'not_found' else 'var(--green)' }};">
+        ● {{ 'Barcode Not Found' if result and result.kind == 'not_found' else 'Scanner Ready' }}
+      </span>
+    </div>
+
+    <div class="scan-barcode-box"><div class="scan-barcode-text">{%- if result and result.kind == 'not_found' -%}
+BARCODE NOT FOUND
+
+┃█║▌│║▌║ ┃│║▌║▌ ┃│
+
+{{ result.code }}
+{%- elif result and result.kind not in ('not_found', none) -%}
+SCANNED
+
+┃█║▌│║▌║ ┃│║▌║▌ ┃│
+
+{{ result.item.barcode_code if result.item else result.tool.barcode_code if result.tool else result.spool.barcode_code }}
+{%- else -%}
+SCAN BARCODE HERE
+
+┃█║▌│║▌║ ┃│║▌║▌ ┃│
+{%- endif -%}</div></div>
+
+    <p class="muted" style="font-size:12.5px; margin:-6px 0 10px;">
+      USB/Bluetooth scanners type directly into the field below — just scan and press Enter.
+    </p>
+
+    <form method="post" action="{{ url_for('scan.submit') }}" id="scan-form">
+      <input type="text" name="code" id="scan-input" autofocus autocomplete="off"
+             style="font-size:20px; letter-spacing:2px; text-align:center;">
+      <button type="submit" style="margin-top:14px; width:100%;">Search Barcode</button>
+    </form>
+    <button type="button" id="camera-toggle"
+            style="margin-top:10px; width:100%; background:transparent; border:1px solid var(--panel-border); color:var(--text);">
+      📷 Scan with camera
+    </button>
+    <div id="camera-reader" style="margin-top:14px; display:none;"></div>
+    <div id="camera-error" class="muted" style="margin-top:8px; font-size:12.5px; display:none;"></div>
+  </div>
+
+  <!-- ───────────────────────── Details card ───────────────────────── -->
+  <div class="panel scan-card">
+    <div class="scan-card-head">
+      <h2>▣ Item Details</h2>
+    </div>
+
+    {% if result is none %}
+      <p class="scan-product-name">No Product Scanned</p>
+      <div class="muted" style="font-size:12.5px; font-weight:700;">● WAITING FOR SCAN</div>
+
+    {% elif result.kind == 'not_found' %}
+      <p class="scan-product-name">Product Not Found</p>
+      <div style="font-size:12.5px; font-weight:700; color:var(--red);">● UNKNOWN BARCODE</div>
+      <div class="scan-detail-rows">
+        <div class="scan-detail-row"><span class="muted">Barcode</span><span>{{ result.code }}</span></div>
+      </div>
+
+    {% else %}
+      <p class="scan-product-name">{{ result.name }}</p>
+      <div style="font-size:12.5px; font-weight:700;
+                  color:{{ 'var(--green)' if result.status_color == 'green'
+                            else 'var(--orange)' if result.status_color == 'orange'
+                            else 'var(--red)' if result.status_color == 'red' else 'var(--muted)' }};">
+        ● {{ result.status_label }}
+      </div>
+
+      <div class="scan-detail-rows">
+        {% for label, value in result.rows %}
+          <div class="scan-detail-row"><span class="muted">{{ label }}</span><span>{{ value }}</span></div>
+        {% endfor %}
+      </div>
+
+      {% if result.stock_value is defined %}
+      <div class="scan-stat-box">
+        <div class="scan-stat-value">{{ result.stock_value }} {{ result.stock_unit }}</div>
+        <div class="scan-stat-label">{{ 'Current Weight' if result.kind == 'wire' else 'Current Stock' }}</div>
+      </div>
+      {% endif %}
+
+      {# ── Item actions: issue/add stock, transfer, full detail link ── #}
+      {% if result.kind == 'item' %}
+        <form method="post" action="{{ url_for('items.adjust_item', item_id=result.item.id) }}">
+          <input type="hidden" name="next" value="scan">
+          <label>Project</label>
+          <input type="text" name="project" value="{{ active_project.name if active_project else '' }}"
+                 placeholder="No active project — optional">
+          <label>Quantity</label>
+          <input type="text" name="qty" id="qty-input" value="1" style="max-width:100px;">
+          <div class="scan-action-row">
+            <button type="submit" name="delta" id="issue-btn" value="-1">Issue (−)</button>
+            <button type="submit" name="delta" id="add-btn" value="1"
+                    style="background:transparent; border:1px solid var(--panel-border); color:var(--text);">Add stock (+)</button>
+          </div>
+        </form>
+
+        <form method="post" action="{{ url_for('items.transfer_item', item_id=result.item.id) }}" style="margin-top:14px; display:flex; gap:8px;">
+          <input type="hidden" name="next" value="scan">
+          <input type="text" name="location" placeholder="Transfer to location…" required style="flex:1;">
+          <button type="submit" style="background:transparent; border:1px solid var(--panel-border); color:var(--text);">Transfer</button>
+        </form>
+
+        <a href="{{ url_for('items.view_item', item_id=result.item.id) }}" class="btn"
+           style="display:block; text-align:center; margin-top:14px; background:var(--panel-2); border:1px solid var(--panel-border); color:var(--text);">
+          View Stock History
+        </a>
+
+      {# ── Tool actions ── #}
+      {% elif result.kind == 'tool' %}
+        {% if result.tool.status == 'available' %}
+          <form method="post" action="{{ url_for('tools.checkout_tool', tool_id=result.tool.id) }}">
+            <input type="hidden" name="next" value="scan">
+            <label>Project</label>
+            <input type="text" name="project" value="{{ active_project.name if active_project else '' }}"
+                   placeholder="No active project — optional">
+            <button type="submit" style="margin-top:14px; width:100%;">Check Out</button>
+          </form>
+        {% elif result.tool.status == 'checked_out' %}
+          <form method="post" action="{{ url_for('tools.checkin_tool', tool_id=result.tool.id) }}">
+            <input type="hidden" name="next" value="scan">
+            <button type="submit" style="width:100%;">Check In</button>
+          </form>
+        {% else %}
+          <p class="muted" style="margin-top:14px;">
+            This tool can't be checked out or in from the scan screen while in maintenance.
+            <a href="{{ url_for('tools.list_tools') }}">Manage it from the Tools page</a>.
+          </p>
+        {% endif %}
+
+      {# ── Wire spool actions ── #}
+      {% elif result.kind == 'wire' %}
+        {% if result.spool.status == 'in_stock' %}
+          <form method="post" action="{{ url_for('wire.issue_spool', spool_id=result.spool.id) }}">
+            <input type="hidden" name="next" value="scan">
+            <label>Project</label>
+            <input type="text" name="project" value="{{ active_project.name if active_project else '' }}"
+                   placeholder="No active project — optional">
+            <button type="submit" style="margin-top:14px; width:100%;">Issue</button>
+          </form>
+        {% elif result.spool.status == 'issued' %}
+          <div class="scan-action-row">
+            <form method="post" action="{{ url_for('wire.empty_spool', spool_id=result.spool.id) }}">
+              <input type="hidden" name="next" value="scan">
+              <button type="submit">Mark Empty</button>
+            </form>
+            <form method="post" action="{{ url_for('wire.return_spool', spool_id=result.spool.id) }}"
+                  onsubmit="return wireReturnSubmit(this, {{ 'true' if result.spool.current_weight_lbs is not none else 'false' }});">
+              <input type="hidden" name="next" value="scan">
+              <input type="hidden" name="finishing_weight_lbs" value="">
+              <button type="submit" style="background:transparent; border:1px solid var(--panel-border); color:var(--text);">Return to Stock</button>
+            </form>
+          </div>
+        {% else %}
+          <p class="muted" style="margin-top:14px;">This spool has already been {{ 'consumed' if result.spool.status == 'empty' else 'scrapped' }}.</p>
+        {% endif %}
+      {% endif %}
+
+      <a href="{{ url_for('scan.index') }}" class="btn"
+         style="display:block; text-align:center; margin-top:14px; background:var(--accent); color:#fff;">
+        Scan Next Product
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  // Kiosk hardware scanners type the code then send Enter — the form
+  // submits natively on Enter from within the text input, no extra JS
+  // needed for that. This just keeps focus on the field between scans so
+  // staff never have to click back into it.
+  var input = document.getElementById('scan-input');
+  if (input) { input.focus(); }
+
+  // The item adjust route takes a single signed `delta` -- the buttons'
+  // own submitted values get overwritten with the (signed) quantity just
+  // before submit, rather than duplicating quantity-parsing logic here.
+  var qtyInput = document.getElementById('qty-input');
+  var issueBtn = document.getElementById('issue-btn');
+  var addBtn = document.getElementById('add-btn');
+  if (qtyInput && issueBtn && addBtn) {
+    function syncQty() {
+      var n = Math.abs(parseInt(qtyInput.value, 10)) || 1;
+      issueBtn.value = String(-n);
+      addBtn.value = String(n);
+    }
+    qtyInput.addEventListener('input', syncQty);
+    syncQty();
+  }
+
+  // Weighed wire spools need the finishing weight before a Return can go
+  // through -- can't be scanned/read automatically, so this is the one
+  // step in the whole flow that genuinely needs a human to weigh the
+  // spool and key in what's left.
+  function wireReturnSubmit(form, hasWeight) {
+    if (!hasWeight) return true;
+    var raw = window.prompt('Finishing weight (lbs):');
+    if (raw === null) return false;
+    var weight = parseFloat(raw);
+    if (isNaN(weight) || weight < 0) {
+      window.alert('Enter a valid finishing weight in lbs.');
+      return false;
+    }
+    form.finishing_weight_lbs.value = weight;
+    return true;
+  }
+</script>
+<script src="{{ url_for('static', filename='vendor/html5-qrcode.min.js') }}"></script>
+<script>
+(function () {
+  // Phone camera / laptop webcam scanning, additive to the hardware-
+  // scanner/manual-entry path above -- decodes into the same #scan-input
+  // and submits through the same #scan-form, so every downstream lookup
+  // (item/tool/wire/project) behaves identically no matter how the code
+  // got typed in.
+  var toggleBtn = document.getElementById('camera-toggle');
+  var readerDiv = document.getElementById('camera-reader');
+  var errorDiv = document.getElementById('camera-error');
+  var form = document.getElementById('scan-form');
+  var codeInput = document.getElementById('scan-input');
+  var html5QrCode = null;
+  var running = false;
+
+  function showError(msg) {
+    errorDiv.textContent = msg;
+    errorDiv.style.display = 'block';
+  }
+
+  function stopCamera() {
+    if (html5QrCode && running) {
+      html5QrCode.stop().catch(function () {});
+    }
+    running = false;
+    readerDiv.style.display = 'none';
+    toggleBtn.textContent = '📷 Scan with camera';
+  }
+
+  function onDecoded(decodedText) {
+    stopCamera();
+    codeInput.value = decodedText;
+    form.submit();
+  }
+
+  function startCamera() {
+    if (typeof Html5Qrcode === 'undefined') {
+      showError('Camera scanning isn\'t available on this device/browser.');
+      return;
+    }
+    errorDiv.style.display = 'none';
+    readerDiv.style.display = 'block';
+    toggleBtn.textContent = 'Stop camera';
+    html5QrCode = new Html5Qrcode('camera-reader');
+    html5QrCode.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 250, height: 150 } },
+      onDecoded,
+      function () { /* per-frame "nothing decoded yet" -- not an error */ }
+    ).then(function () {
+      running = true;
+    }).catch(function (err) {
+      readerDiv.style.display = 'none';
+      toggleBtn.textContent = '📷 Scan with camera';
+      showError('Could not start the camera: ' + err + '. Check camera permissions for this page.');
+    });
+  }
+
+  toggleBtn.addEventListener('click', function () {
+    if (running) {
+      stopCamera();
+    } else {
+      startCamera();
+    }
+  });
+
+  window.addEventListener('beforeunload', function () {
+    if (running && html5QrCode) html5QrCode.stop().catch(function () {});
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% import "_icons.html" as icons %}
+
+{# Renders `groups` (the output of app.datetime_utils.group_by_month_week)
+   as a month/week disclosure list, calling row_renderer(rows) for each
+   week's actual content. Always shows the month/week grouping, even with
+   just one group, so the categorization is visible from day one instead of
+   only appearing once history has piled up. #}
+{% macro grouped_history(groups, row_renderer) %}
+  {% if groups %}
+    <div class="ug">
+      {% for month in groups %}
+        <details class="ug-month" {{ 'open' if loop.first }}>
+          <summary>
+            <span class="ug-chevron">{{ icons.icon('chevron', 12) }}</span>
+            <span>{{ month.label }}</span>
+            <span class="ug-count">{{ month.count }}</span>
+          </summary>
+          <div class="ug-month-body">
+            {% for week in month.weeks %}
+              <details class="ug-week" {{ 'open' if week.open }}>
+                <summary>
+                  <span class="ug-chevron">{{ icons.icon('chevron', 10) }}</span>
+                  <span>{{ week.label }}</span>
+                  <span class="ug-count">{{ week.rows|length }}</span>
+                </summary>
+                <div class="ug-week-body">
+                  {{ row_renderer(week.rows) }}
+                </div>
+              </details>
+            {% endfor %}
+          </div>
+        </details>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endmacro %}

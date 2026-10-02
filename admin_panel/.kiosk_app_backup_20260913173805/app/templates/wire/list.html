@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Welding Wire — {{ tenant_name }}{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+  <h1 style="margin:0;">Welding Wire</h1>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <a href="{{ url_for('wire.bulk_add') }}" class="btn">+ Bulk Add</a>
+    <a href="{{ url_for('wire.add_spool') }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text);">+ Single Spool</a>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:12px; margin:16px 0;">
+  {% for s, label in [('in_stock', 'In Stock'), ('issued', 'Issued'), ('empty', 'Empty'), ('scrapped', 'Scrapped')] %}
+    <a href="{{ url_for('wire.list_spools', status=s) }}" style="text-decoration:none;">
+      <div class="stat-card" style="{{ 'border-color:var(--accent);' if status == s else '' }}">
+        <div class="value">{{ counts[s] }}</div>
+        <div class="label">{{ label }}</div>
+      </div>
+    </a>
+  {% endfor %}
+</div>
+<p>
+  {% if status %}
+    <a href="{{ url_for('wire.list_spools') }}">← Clear filter</a>
+  {% endif %}
+  <a href="{{ url_for('wire.list_batches') }}" style="float:right;">View batches</a>
+  <a href="{{ url_for('wire.reporting') }}" style="float:right; margin-right:16px;">Reporting</a>
+</p>
+
+<div class="panel" style="margin-top:8px; padding:0;">
+  {% if spools %}
+    <div class="table-scroll">
+    <table style="width:100%; border-collapse:collapse;">
+      <tbody>
+        {% for spool in spools %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:14px;">
+              <div style="font-weight:600;">{{ spool.wire_label() }}</div>
+              <div class="muted" style="font-size:12.5px;">
+                {% if spool.status == 'in_stock' %}
+                  <span style="color:var(--green);">● In Stock</span>
+                {% elif spool.status == 'issued' %}
+                  <span style="color:var(--orange);">● Issued — {{ spool.issued_to }}{% if spool.current_project %} for {{ spool.current_project }}{% endif %}</span>
+                {% elif spool.status == 'empty' %}
+                  <span style="color:var(--muted);">● Empty</span>
+                {% else %}
+                  <span style="color:var(--red);">● Scrapped{% if spool.scrap_reason %} — {{ spool.scrap_reason }}{% endif %}</span>
+                {% endif %}
+                — code <code>{{ spool.barcode_code }}</code>
+                {% if spool.batch %} — batch {{ spool.batch.label }}{% endif %}
+              </div>
+            </td>
+            <td style="padding:14px;">
+              <div class="row-actions">
+              {% if spool.status == 'in_stock' %}
+                <button type="button" class="btn" style="padding:6px 10px; font-size:12.5px;"
+                        onclick="document.getElementById('issue-{{ spool.id }}').style.display='table-row';">Issue</button>
+              {% elif spool.status == 'issued' %}
+                <form method="post" action="{{ url_for('wire.empty_spool', spool_id=spool.id) }}">
+                  <button type="submit" class="btn" style="padding:6px 10px; font-size:12.5px;">Mark Empty</button>
+                </form>
+                <form method="post" action="{{ url_for('wire.return_spool', spool_id=spool.id) }}"
+                      onsubmit="return wireReturnSubmit(this, {{ 'true' if spool.current_weight_lbs is not none else 'false' }});">
+                  <input type="hidden" name="finishing_weight_lbs" value="">
+                  <button type="submit" style="background:transparent; border:1px solid var(--panel-border); padding:6px 10px; font-size:12.5px;">Return</button>
+                </form>
+              {% endif %}
+              <a href="{{ url_for('wire.view_barcode', spool_id=spool.id) }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text); padding:6px 10px; font-size:12.5px;">Barcode</a>
+              <a href="{{ url_for('wire.edit_spool', spool_id=spool.id) }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text); padding:6px 10px; font-size:12.5px;">Edit</a>
+              {% if spool.status != 'scrapped' %}
+                <form method="post" action="{{ url_for('wire.scrap_spool', spool_id=spool.id) }}" onsubmit="return confirm('Scrap this spool?');">
+                  <button type="submit" style="background:var(--red); padding:6px 10px; font-size:12.5px;">Scrap</button>
+                </form>
+              {% endif %}
+              {% if spool.status != 'issued' %}
+                <form method="post" action="{{ url_for('wire.delete_spool', spool_id=spool.id) }}" onsubmit="return confirm('Delete this spool?');">
+                  <button type="submit" style="background:transparent; border:1px solid var(--panel-border); color:var(--muted); padding:6px 10px; font-size:12.5px;">Delete</button>
+                </form>
+              {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% if spool.status == 'in_stock' %}
+          <tr id="issue-{{ spool.id }}" style="display:none; background:var(--bg);">
+            <td colspan="2" style="padding:12px 14px;">
+              <form method="post" action="{{ url_for('wire.issue_spool', spool_id=spool.id) }}" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <input type="text" name="project" placeholder="Project (optional)" style="flex:1; min-width:160px;">
+                <button type="submit" class="btn" style="padding:8px 14px;">Confirm Issue</button>
+              </form>
+            </td>
+          </tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted" style="padding:20px;">No {{ status.replace('_', ' ') + ' ' if status else '' }}spools.</p>
+  {% endif %}
+</div>
+<script>
+// Weighed spools need the finishing weight before a Return can go
+// through -- can't be scanned/read automatically, so this is the one
+// step in the whole flow that genuinely needs a human to weigh the
+// spool and key in what's left (mirrors the kiosk-side checkin pop-up).
+function wireReturnSubmit(form, hasWeight) {
+  if (!hasWeight) return true;
+  var raw = window.prompt('Finishing weight (lbs):');
+  if (raw === null) return false; // cancelled
+  var weight = parseFloat(raw);
+  if (isNaN(weight) || weight < 0) {
+    window.alert('Enter a valid finishing weight in lbs.');
+    return false;
+  }
+  form.finishing_weight_lbs.value = weight;
+  return true;
+}
+</script>
+{% endblock %}

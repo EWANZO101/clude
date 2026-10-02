@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}New product — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-6">New product</h1>
+
+  <form method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Product name</label>
+      <input type="text" name="name" required value="{{ name or '' }}"
+        class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+    </div>
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Version</label>
+      <input type="text" name="version" value="{{ version or '1.0.0' }}"
+        class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+    </div>
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Type</label>
+      <select name="product_type" class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+        <option value="FiveM Resource">FiveM Resource</option>
+        <option value="FiveM Module">FiveM Module</option>
+        <option value="Standalone Script">Standalone Script</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Description (optional)</label>
+      <textarea name="description" rows="3"
+        class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">{{ description or '' }}</textarea>
+    </div>
+    <button type="submit" class="w-full bg-brand hover:bg-brand-hover text-white rounded-md py-2 text-sm font-medium transition">
+      Create product
+    </button>
+  </form>
+</div>
+{% endblock %}

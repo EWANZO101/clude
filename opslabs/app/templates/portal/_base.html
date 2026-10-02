@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}{% block portal_title %}Portal{% endblock %} · OpsLab Systems{% endblock %}
+
+{% block head_extra %}
+<style>
+  .pcard { background:#0c0c0e; border:1px solid rgba(255,255,255,.07); border-radius:10px; }
+  .pcard-h { background:#0c0c0e; border:1px solid rgba(255,255,255,.07); border-radius:10px; transition:border-color .15s, background .15s; }
+  .pcard-h:hover { border-color:rgba(255,255,255,.14); background:#111113; }
+  .pnav-link { display:flex; align-items:center; gap:.6rem; padding:.4rem .65rem; border-radius:6px; font-size:.875rem; font-weight:500; color:#a1a1aa; transition:background .12s, color .12s; white-space:nowrap; border:1px solid transparent; }
+  .pnav-link:hover { background:rgba(255,255,255,.04); color:#ededef; }
+  .pnav-link.active { background:rgba(255,255,255,.07); color:#fff; }
+  .pnav-link svg { width:16px; height:16px; color:#71717a; flex-shrink:0; }
+  .pnav-link.active svg, .pnav-link:hover svg { color:#d4d4d8; }
+  .pbadge { font-size:11px; padding:1px 7px; border-radius:6px; font-weight:500; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set _u = url_for %}
+{% set active = active_page|default('') %}
+
+<!-- Announcement banners -->
+{% if portal_announcements %}
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-4 space-y-2">
+    {% for a in portal_announcements %}
+    <div class="flex items-start gap-3 p-4 rounded-xl border
+      {% if a.level=='success' %}bg-green-500/10 border-green-500/30 text-green-200
+      {% elif a.level=='warning' %}bg-yellow-500/10 border-yellow-500/30 text-yellow-200
+      {% elif a.level=='danger' %}bg-red-500/10 border-red-500/30 text-red-200
+      {% else %}bg-ops-500/10 border-ops-500/30 text-ops-200{% endif %}">
+      <div><div class="font-semibold text-sm">{{ a.title }}</div>{% if a.body %}<div class="text-sm opacity-90 mt-0.5">{{ a.body }}</div>{% endif %}</div>
+    </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+  <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+
+    <!-- Sidebar (desktop) -->
+    <aside class="hidden lg:block lg:col-span-3 xl:col-span-2">
+      <div class="sticky top-20 space-y-0.5">
+        <a href="{{ _u('portal.dashboard') }}"     class="pnav-link {{ 'active' if active=='dashboard' }}"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zm10-3a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1v-6z"/></svg><span>Dashboard</span></a>
+        <a href="{{ _u('portal.projects') }}"       class="pnav-link {{ 'active' if active=='projects' }}"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><span>Projects</span></a>
+        <a href="{{ _u('portal.appointments') }}"   class="pnav-link {{ 'active' if active=='appointments' }}"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><span>Appointments</span></a>
+        <a href="{{ _u('portal.invoices') }}"        class="pnav-link {{ 'active' if active=='invoices' }}"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg><span>Invoices</span></a>
+        <a href="{{ _u('tickets.index') }}"          class="pnav-link"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg><span>Support tickets</span></a>
+        <a href="{{ _u('portal.notifications') }}"   class="pnav-link {{ 'active' if active=='notifications' }}">
+          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg><span>Notifications</span>
+          {% if portal_unread %}<span class="ml-auto pbadge bg-white/10 text-gray-200">{{ portal_unread }}</span>{% endif %}
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="lg:col-span-9 xl:col-span-10">
+      <!-- Mobile horizontal nav -->
+      <div class="lg:hidden -mx-1 mb-5 overflow-x-auto">
+        <div class="flex gap-2 px-1 pb-1">
+          <a href="{{ _u('portal.dashboard') }}"   class="pnav-link {{ 'active' if active=='dashboard' }}">Dashboard</a>
+          <a href="{{ _u('portal.projects') }}"     class="pnav-link {{ 'active' if active=='projects' }}">Projects</a>
+          <a href="{{ _u('portal.appointments') }}" class="pnav-link {{ 'active' if active=='appointments' }}">Appointments</a>
+          <a href="{{ _u('portal.invoices') }}"      class="pnav-link {{ 'active' if active=='invoices' }}">Invoices</a>
+          <a href="{{ _u('portal.notifications') }}" class="pnav-link {{ 'active' if active=='notifications' }}">Alerts{% if portal_unread %} ({{ portal_unread }}){% endif %}</a>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 pb-5 mb-6 border-b border-white/[.06]">
+        <h1 class="text-2xl font-semibold tracking-tight text-white">{% block portal_heading %}{{ self.portal_title() }}{% endblock %}</h1>
+        <div>{% block portal_actions %}{% endblock %}</div>
+      </div>
+
+      {% block portal_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

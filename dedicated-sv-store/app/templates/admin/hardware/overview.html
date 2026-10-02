@@ -1,0 +1,16 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% block title %}Hardware — Admin{% endblock %}
+{% block page_title %}Hardware catalog{% endblock %}
+{% block header_actions %}
+<a href="{{ url_for('admin.hardware_brands') }}" class="btn-secondary">Manage brands ({{ brand_count }})</a>
+{% endblock %}
+{% block content %}
+<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for slug, entry in registry.items() %}
+  <a href="{{ url_for('admin.hardware_list', type_slug=slug) }}" class="card p-5 hover:border-brand-500/50 transition-colors">
+    <p class="text-2xl font-semibold text-text-primary">{{ counts[slug] }}</p>
+    <p class="text-sm text-text-secondary mt-1">{{ entry.label }}</p>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

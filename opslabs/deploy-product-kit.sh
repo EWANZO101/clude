@@ -1,0 +1,679 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────
+# OpsLabs Licenses — Product Integration Kit page
+#
+# Adds /licenses/admin/products/<id>/kit — shows a copy-paste integration
+# kit (license_check.py snippet) for each product. The view function
+# already exists; this drops the template that powers it.
+#
+# Usage:    chmod +x deploy-product-kit.sh && ./deploy-product-kit.sh
+# Override: TARGET=/path/to/opslabs ./deploy-product-kit.sh
+# ─────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+TARGET="${TARGET:-/root/opslabs}"
+STAMP=$(date +%Y%m%d-%H%M%S)
+BACKUP_DIR="$TARGET/.deploy-backup/$STAMP"
+
+GREEN=$(tput setaf 2 2>/dev/null || echo "")
+YELLOW=$(tput setaf 3 2>/dev/null || echo "")
+RED=$(tput setaf 1 2>/dev/null || echo "")
+RESET=$(tput sgr0 2>/dev/null || echo "")
+
+say()  { printf "%s▸%s %s\n" "$GREEN"  "$RESET" "$*"; }
+warn() { printf "%s!%s %s\n" "$YELLOW" "$RESET" "$*"; }
+die()  { printf "%s✗%s %s\n" "$RED"    "$RESET" "$*" >&2; exit 1; }
+
+[ -d "$TARGET/app/licenses/templates/admin" ] || die "License Manager not deployed at $TARGET — run deploy-licenses.sh first."
+
+DST="$TARGET/app/licenses/templates/admin/product_kit.html"
+
+say "Target:   $DST"
+say "Backups → $BACKUP_DIR"
+echo ""
+
+# Back up existing file if present
+mkdir -p "$BACKUP_DIR/app/licenses/templates/admin"
+if [ -f "$DST" ]; then
+    cp "$DST" "$BACKUP_DIR/app/licenses/templates/admin/product_kit.html"
+fi
+
+say "Writing product_kit.html"
+cat > "$DST" << 'OPSLAB_KIT_EOF__4e9a82c1'
+{% extends "licenses/base.html" %}
+{% block title %}Integration Kit — {{ product.name }} — {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-6 max-w-4xl">
+
+  <!-- Header -->
+  <div class="flex items-center gap-3">
+    <a href="{{ url_for('lic_admin.products') }}"
+       class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </a>
+    <div class="flex-1">
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl font-bold text-white">Integration Kit</h1>
+        <span class="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono rounded-lg">{{ product.code }}</span>
+      </div>
+      <p class="text-sm text-gray-500 mt-0.5">{{ product.name }} — copy this into your project and it's ready to go</p>
+    </div>
+    <a href="{{ url_for('lic_admin.edit_product', id=product.id) }}"
+       class="px-4 py-2 bg-dark-700 hover:bg-dark-600 text-gray-300 rounded-xl text-sm font-medium transition-colors">
+      Edit Product
+    </a>
+    <a href="{{ url_for('lic_admin.edit_tiers', id=product.id) }}"
+       class="px-4 py-2 bg-dark-700 hover:bg-dark-600 text-gray-300 rounded-xl text-sm font-medium transition-colors">
+      Edit Tiers
+    </a>
+  </div>
+
+  <!-- Info bar -->
+  <div class="bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3 flex items-start gap-3">
+    <svg class="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p class="text-sm text-emerald-300">
+      Drop <code class="bg-dark-700 px-1.5 py-0.5 rounded font-mono text-xs">license_check.py</code> into your project root,
+      create a <code class="bg-dark-700 px-1.5 py-0.5 rounded font-mono text-xs">license.txt</code> with the customer's licence key,
+      then call <code class="bg-dark-700 px-1.5 py-0.5 rounded font-mono text-xs">init_license(app)</code> in your app startup. That's it.
+    </p>
+  </div>
+
+  <!-- Language tabs -->
+  <div class="bg-dark-800 border border-dark-700/50 rounded-2xl overflow-hidden">
+    <div class="flex items-center justify-between px-5 pt-4 pb-0 border-b border-dark-700/50">
+      <div class="flex gap-1">
+        <button onclick="showTab('python')" id="tab-python"
+                class="tab-btn tab-active px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-all">
+          🐍 Python
+        </button>
+        <button onclick="showTab('js')" id="tab-js"
+                class="tab-btn px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-all">
+          🟨 JavaScript / Node
+        </button>
+        <button onclick="showTab('curl')" id="tab-curl"
+                class="tab-btn px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-all">
+          ⬛ cURL / Shell
+        </button>
+        <button onclick="showTab('activation')" id="tab-activation"
+                class="tab-btn px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-all">
+          🔑 Activation Page
+        </button>
+      </div>
+      <button onclick="copyCode()" id="copyBtn"
+              class="mb-2 flex items-center gap-2 px-3 py-1.5 bg-dark-700 hover:bg-dark-600 text-gray-300 hover:text-white rounded-lg text-xs font-medium transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        </svg>
+        Copy
+      </button>
+    </div>
+
+    <!-- Python -->
+    <div id="code-python" class="code-panel">
+      <pre id="pre-python" class="p-5 text-xs font-mono text-green-300 leading-relaxed overflow-x-auto whitespace-pre"><span class="text-gray-500">"""
+{{ product.name }} — License Check
+Generated by {{ site_name }} for product {{ product.code }}
+Drop this file into your project root.
+"""</span>
+
+import os, json, threading, time, socket, requests
+from datetime import datetime, timedelta
+
+<span class="text-gray-500"># ── Config ────────────────────────────────────────────────────────</span>
+LICENSE_SERVER  = <span class="text-amber-300">"{{ base_url }}"</span>
+PRODUCT_CODE    = <span class="text-amber-300">"{{ product.code }}"</span>
+LICENSE_FILE    = os.path.join(os.path.dirname(__file__), <span class="text-amber-300">"license.txt"</span>)
+HEARTBEAT_EVERY = 3600    <span class="text-gray-500"># seconds between heartbeats</span>
+VALIDATE_TIMEOUT= 8       <span class="text-gray-500"># seconds before giving up on server</span>
+GRACE_PERIOD    = 86400   <span class="text-gray-500"># 24h grace if server unreachable</span>
+CACHE_FILE      = os.path.join(os.path.dirname(__file__), <span class="text-amber-300">"instance/.lc_{{ product.code|lower }}"</span>)
+
+<span class="text-gray-500"># ── State ─────────────────────────────────────────────────────────</span>
+_state = {
+    <span class="text-amber-300">"valid"</span>: False, <span class="text-amber-300">"checked"</span>: False, <span class="text-amber-300">"license_key"</span>: None,
+    <span class="text-amber-300">"activation_id"</span>: None, <span class="text-amber-300">"customer"</span>: None, <span class="text-amber-300">"tier"</span>: None,
+    <span class="text-amber-300">"features"</span>: [], <span class="text-amber-300">"expires_at"</span>: None, <span class="text-amber-300">"days_left"</span>: None,
+    <span class="text-amber-300">"error"</span>: None, <span class="text-amber-300">"last_ok"</span>: None, <span class="text-amber-300">"server_down"</span>: False,
+}
+_lock = threading.Lock()
+
+def _read_key():
+    if not os.path.exists(LICENSE_FILE): return None
+    try:
+        for line in open(LICENSE_FILE):
+            line = line.strip()
+            if line and not line.startswith(<span class="text-amber-300">"#"</span>): return line.upper()
+    except: pass
+    return None
+
+def _hardware_id():
+    try:
+        import uuid
+        mac = <span class="text-amber-300">':'</span>.join([<span class="text-amber-300">'{:02x}'</span>.format((uuid.getnode() >> i) & 0xff)
+                        for i in range(0,48,8)][::-1])
+        return f<span class="text-amber-300">"{socket.gethostname()}-{mac}"</span>
+    except: return socket.gethostname()
+
+def _save_cache(data):
+    try:
+        os.makedirs(os.path.dirname(CACHE_FILE), exist_ok=True)
+        json.dump({**data, <span class="text-amber-300">"_cached_at"</span>: datetime.utcnow().isoformat()}, open(CACHE_FILE,<span class="text-amber-300">"w"</span>))
+    except: pass
+
+def _load_cache():
+    try:
+        data = json.load(open(CACHE_FILE))
+        if datetime.utcnow() - datetime.fromisoformat(data[<span class="text-amber-300">"_cached_at"</span>]) < timedelta(seconds=GRACE_PERIOD):
+            return data
+    except: pass
+    return None
+
+def validate_license(key=None):
+    global _state
+    key = key or _read_key()
+    if not key:
+        with _lock: _state.update({<span class="text-amber-300">"valid"</span>:False,<span class="text-amber-300">"checked"</span>:True,<span class="text-amber-300">"error"</span>:<span class="text-amber-300">"No licence key found in license.txt"</span>})
+        return False
+    payload = {<span class="text-amber-300">"license_key"</span>: key, <span class="text-amber-300">"hardware_id"</span>: _hardware_id(), <span class="text-amber-300">"domain"</span>: socket.gethostname()}
+    try:
+        data = requests.post(f<span class="text-amber-300">"{LICENSE_SERVER}/api/validate"</span>, json=payload, timeout=VALIDATE_TIMEOUT).json()
+        if data.get(<span class="text-amber-300">"valid"</span>):
+            act_id = None
+            try:
+                ar = requests.post(f<span class="text-amber-300">"{LICENSE_SERVER}/api/activate"</span>,
+                                   json={**payload,<span class="text-amber-300">"hostname"</span>:socket.gethostname()}, timeout=VALIDATE_TIMEOUT).json()
+                act_id = ar.get(<span class="text-amber-300">"activation_id"</span>)
+            except: pass
+            with _lock:
+                _state.update({<span class="text-amber-300">"valid"</span>:True,<span class="text-amber-300">"checked"</span>:True,<span class="text-amber-300">"license_key"</span>:key,
+                               <span class="text-amber-300">"activation_id"</span>:act_id,<span class="text-amber-300">"customer"</span>:data.get(<span class="text-amber-300">"customer"</span>),
+                               <span class="text-amber-300">"tier"</span>:data.get(<span class="text-amber-300">"tier_name"</span>),<span class="text-amber-300">"features"</span>:data.get(<span class="text-amber-300">"features"</span>,[]),
+                               <span class="text-amber-300">"expires_at"</span>:data.get(<span class="text-amber-300">"expires_at"</span>),<span class="text-amber-300">"days_left"</span>:data.get(<span class="text-amber-300">"days_until_expiry"</span>),
+                               <span class="text-amber-300">"error"</span>:None,<span class="text-amber-300">"last_ok"</span>:datetime.utcnow(),<span class="text-amber-300">"server_down"</span>:False})
+            _save_cache(data)
+            print(f<span class="text-amber-300">"[{{ product.code }}] ✓ Valid — {data.get('customer','?')} · {data.get('tier_name','')} · features: {data.get('features',[])}"</span>)
+            return True
+        err = data.get(<span class="text-amber-300">"error"</span>,<span class="text-amber-300">"Licence invalid"</span>)
+        with _lock: _state.update({<span class="text-amber-300">"valid"</span>:False,<span class="text-amber-300">"checked"</span>:True,<span class="text-amber-300">"error"</span>:err})
+        print(f<span class="text-amber-300">"[{{ product.code }}] ✗ {err}"</span>)
+        return False
+    except requests.exceptions.ConnectionError:
+        return _grace(<span class="text-amber-300">"Cannot reach licence server"</span>)
+    except requests.exceptions.Timeout:
+        return _grace(<span class="text-amber-300">"Licence server timed out"</span>)
+    except Exception as e:
+        return _grace(str(e))
+
+def _grace(reason):
+    cache = _load_cache()
+    if cache and cache.get(<span class="text-amber-300">"valid"</span>):
+        h = round((timedelta(seconds=GRACE_PERIOD)-(datetime.utcnow()-datetime.fromisoformat(cache[<span class="text-amber-300">"_cached_at"</span>]))).total_seconds()/3600,1)
+        with _lock:
+            _state.update({<span class="text-amber-300">"valid"</span>:True,<span class="text-amber-300">"checked"</span>:True,
+                           <span class="text-amber-300">"features"</span>:cache.get(<span class="text-amber-300">"features"</span>,[]),
+                           <span class="text-amber-300">"error"</span>:f<span class="text-amber-300">"⚠ Server offline — grace period ({h}h left)"</span>,<span class="text-amber-300">"server_down"</span>:True})
+        return True
+    with _lock: _state.update({<span class="text-amber-300">"valid"</span>:False,<span class="text-amber-300">"checked"</span>:True,<span class="text-amber-300">"error"</span>:f<span class="text-amber-300">"Server unreachable: {reason}"</span>,<span class="text-amber-300">"server_down"</span>:True})
+    return False
+
+def send_heartbeat():
+    with _lock: key, act_id = _state.get(<span class="text-amber-300">"license_key"</span>), _state.get(<span class="text-amber-300">"activation_id"</span>)
+    if not key: return
+    try:
+        data = requests.post(f<span class="text-amber-300">"{LICENSE_SERVER}/api/heartbeat"</span>,
+                             json={<span class="text-amber-300">"license_key"</span>:key,<span class="text-amber-300">"activation_id"</span>:act_id}, timeout=VALIDATE_TIMEOUT).json()
+        if data.get(<span class="text-amber-300">"valid"</span>):
+            with _lock: _state[<span class="text-amber-300">"last_ok"</span>] = datetime.utcnow(); _state[<span class="text-amber-300">"server_down"</span>] = False
+    except: pass
+
+def _heartbeat_loop():
+    time.sleep(HEARTBEAT_EVERY)
+    while True:
+        try: send_heartbeat()
+        except: pass
+        time.sleep(HEARTBEAT_EVERY)
+
+def is_valid():
+    with _lock: return _state[<span class="text-amber-300">"valid"</span>]
+
+def get_state():
+    with _lock: return dict(_state)
+
+def has_feature(code):
+    <span class="text-gray-500">"""Check if a specific feature is enabled for this licence."""</span>
+    with _lock: return code in _state.get(<span class="text-amber-300">"features"</span>, [])
+
+def init_license(app=None):
+    <span class="text-gray-500">"""Call this on startup. Pass your Flask app to block if invalid."""</span>
+    ok = validate_license()
+    t = threading.Thread(target=_heartbeat_loop, daemon=True, name=<span class="text-amber-300">"LicenceHeartbeat_{{ product.code }}"</span>)
+    t.start()
+    if app and not ok:
+        @app.before_request
+        def _block():
+            from flask import render_template
+            return render_template(<span class="text-amber-300">"license_invalid.html"</span>, error=get_state().get(<span class="text-amber-300">"error"</span>)), 403
+    return ok</pre>
+    </div>
+
+    <!-- JavaScript -->
+    <div id="code-js" class="code-panel hidden">
+      <pre id="pre-js" class="p-5 text-xs font-mono text-blue-300 leading-relaxed overflow-x-auto whitespace-pre"><span class="text-gray-500">/**
+ * {{ product.name }} — Licence Check (Node.js)
+ * Generated by {{ site_name }} for product {{ product.code }}
+ * npm install axios
+ */</span>
+
+const axios = require(<span class="text-amber-300">'axios'</span>);
+const fs    = require(<span class="text-amber-300">'fs'</span>);
+const os    = require(<span class="text-amber-300">'os'</span>);
+const path  = require(<span class="text-amber-300">'path'</span>);
+
+const LICENSE_SERVER  = <span class="text-amber-300">'{{ base_url }}'</span>;
+const PRODUCT_CODE    = <span class="text-amber-300">'{{ product.code }}'</span>;
+const LICENSE_FILE    = path.join(__dirname, <span class="text-amber-300">'license.txt'</span>);
+const HEARTBEAT_MS    = 3600 * 1000;
+const VALIDATE_TIMEOUT= 8000;
+
+let _state = {
+  valid: false, checked: false, licenseKey: null,
+  activationId: null, customer: null, tier: null,
+  features: [], expiresAt: null, error: null,
+};
+
+function readKey() {
+  try {
+    return fs.readFileSync(LICENSE_FILE, <span class="text-amber-300">'utf8'</span>)
+      .split(<span class="text-amber-300">'\n'</span>).map(l => l.trim())
+      .find(l => l && !l.startsWith(<span class="text-amber-300">'#'</span>))?.toUpperCase() || null;
+  } catch { return null; }
+}
+
+async function validateLicense(key) {
+  key = key || readKey();
+  if (!key) {
+    _state = { ..._state, valid: false, checked: true, error: <span class="text-amber-300">'No licence key found in license.txt'</span> };
+    return false;
+  }
+  const payload = { license_key: key, hardware_id: os.hostname(), domain: os.hostname() };
+  try {
+    const { data } = await axios.post(`${LICENSE_SERVER}/api/validate`, payload, { timeout: VALIDATE_TIMEOUT });
+    if (data.valid) {
+      let activationId = null;
+      try {
+        const ar = await axios.post(`${LICENSE_SERVER}/api/activate`,
+          { ...payload, hostname: os.hostname() }, { timeout: VALIDATE_TIMEOUT });
+        activationId = ar.data.activation_id;
+      } catch {}
+      _state = { valid: true, checked: true, licenseKey: key, activationId,
+                 customer: data.customer, tier: data.tier_name,
+                 features: data.features || [], expiresAt: data.expires_at, error: null };
+      console.log(`[{{ product.code }}] ✓ Valid — ${data.customer} · ${data.tier_name} · features: ${data.features}`);
+      return true;
+    }
+    _state = { ..._state, valid: false, checked: true, error: data.error || <span class="text-amber-300">'Licence invalid'</span> };
+    console.error(`[{{ product.code }}] ✗ ${_state.error}`);
+    return false;
+  } catch (e) {
+    _state = { ..._state, valid: false, checked: true, error: e.message };
+    return false;
+  }
+}
+
+function hasFeature(code) { return _state.features.includes(code); }
+function getState()       { return { ..._state }; }
+function isValid()        { return _state.valid; }
+
+async function initLicense() {
+  const ok = await validateLicense();
+  setInterval(async () => {
+    try {
+      await axios.post(`${LICENSE_SERVER}/api/heartbeat`,
+        { license_key: _state.licenseKey, activation_id: _state.activationId },
+        { timeout: VALIDATE_TIMEOUT });
+    } catch {}
+  }, HEARTBEAT_MS);
+  return ok;
+}
+
+module.exports = { initLicense, isValid, hasFeature, getState };</pre>
+    </div>
+
+    <!-- Activation Page -->
+    <div id="code-activation" class="code-panel hidden">
+      <div class="p-5 space-y-4">
+        <p class="text-xs text-gray-500 leading-relaxed">
+          This gives you <strong class="text-white">two files</strong> to add to your project.
+          When a user visits your app with no licence (or an invalid one), they see a branded activation page where they can paste their key — it saves instantly and unlocks the app without any server restart.
+        </p>
+
+        <!-- File 1: license_invalid.html -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-xs font-bold text-amber-400 uppercase tracking-wider">File 1 — templates/license_invalid.html</p>
+            <button onclick="copyById('act-html')" class="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 bg-dark-700 rounded-lg transition-colors">Copy</button>
+          </div>
+          <pre id="act-html" class="text-xs font-mono text-blue-300 leading-relaxed overflow-x-auto bg-dark-900 rounded-xl p-4 whitespace-pre">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+  &lt;title&gt;Licence Required — {{ product.name }}&lt;/title&gt;
+  &lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;
+  &lt;style&gt;body{background:#0f0f14;font-family:system-ui,sans-serif}&lt;/style&gt;
+&lt;/head&gt;
+&lt;body class="min-h-screen flex items-center justify-center p-6"&gt;
+  &lt;div class="w-full max-w-md"&gt;
+
+    &lt;!-- Logo / branding --&gt;
+    &lt;div class="text-center mb-8"&gt;
+      &lt;div class="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4"&gt;
+        &lt;svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"&gt;
+          &lt;path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/&gt;
+        &lt;/svg&gt;
+      &lt;/div&gt;
+      &lt;h1 class="text-2xl font-bold text-white"&gt;Licence Required&lt;/h1&gt;
+      &lt;p class="text-sm text-gray-500 mt-1"&gt;{{ product.name }} needs a valid licence key to run&lt;/p&gt;
+    &lt;/div&gt;
+
+    &lt;!-- Error message if present --&gt;
+    {% raw %}{% if error %}{% endraw %}
+    &lt;div class="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-5"&gt;
+      &lt;p class="text-sm text-red-300"&gt;{% raw %}{{ error }}{% endraw %}&lt;/p&gt;
+    &lt;/div&gt;
+    {% raw %}{% endif %}{% endraw %}
+
+    &lt;!-- Activation form --&gt;
+    &lt;div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4"&gt;
+      &lt;div&gt;
+        &lt;label class="block text-sm font-medium text-gray-300 mb-2"&gt;Licence Key&lt;/label&gt;
+        &lt;input type="text" id="licenceKey" placeholder="XXXX-XXXX-XXXX-XXXX"
+               class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white font-mono text-sm placeholder-gray-600 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition uppercase"
+               oninput="this.value=this.value.toUpperCase()"&gt;
+        &lt;p class="text-xs text-gray-600 mt-1"&gt;Contact your administrator if you don't have a key&lt;/p&gt;
+      &lt;/div&gt;
+
+      &lt;button onclick="activateLicence()"
+              class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-xl transition-colors text-sm"&gt;
+        Activate Licence
+      &lt;/button&gt;
+
+      &lt;div id="activateMsg" class="hidden text-center text-sm py-2 rounded-xl"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;p class="text-center text-xs text-gray-600 mt-6"&gt;
+      Powered by {{ product.name }}
+    &lt;/p&gt;
+  &lt;/div&gt;
+
+&lt;script&gt;
+async function activateLicence() {
+  const key = document.getElementById('licenceKey').value.trim();
+  const msg = document.getElementById('activateMsg');
+  if (!key || key.length &lt; 10) {
+    showMsg('Please enter a valid licence key', false);
+    return;
+  }
+  showMsg('Validating...', null);
+  try {
+    const r = await fetch('/licence-activate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({license_key: key})
+    });
+    const data = await r.json();
+    if (data.success) {
+      showMsg('✓ ' + data.message + ' — reloading...', true);
+      setTimeout(() => location.href = '/', 1500);
+    } else {
+      showMsg('✗ ' + (data.error || 'Invalid licence key'), false);
+    }
+  } catch(e) {
+    showMsg('✗ Could not reach server: ' + e.message, false);
+  }
+}
+function showMsg(text, ok) {
+  const el = document.getElementById('activateMsg');
+  el.classList.remove('hidden','bg-emerald-500/10','bg-red-500/10','bg-dark-700','text-emerald-300','text-red-300','text-gray-400');
+  if (ok === true)  el.classList.add('bg-emerald-500/10','text-emerald-300');
+  if (ok === false) el.classList.add('bg-red-500/10','text-red-300');
+  if (ok === null)  el.classList.add('bg-dark-700','text-gray-400');
+  el.textContent = text;
+}
+document.getElementById('licenceKey').addEventListener('keydown', e => { if(e.key==='Enter') activateLicence(); });
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+        </div>
+
+        <!-- File 2: the /licence-activate route to add to license_check.py -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-xs font-bold text-amber-400 uppercase tracking-wider">File 2 — add to license_check.py (or your app's routes)</p>
+            <button onclick="copyById('act-route')" class="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 bg-dark-700 rounded-lg transition-colors">Copy</button>
+          </div>
+          <pre id="act-route" class="text-xs font-mono text-green-300 leading-relaxed overflow-x-auto bg-dark-900 rounded-xl p-4 whitespace-pre"><span class="text-gray-500"># Add this route to your Flask app (e.g. in app.py or license_check.py)</span>
+<span class="text-gray-500"># It receives the key from the activation page, saves it, and re-validates.</span>
+
+from flask import request, jsonify
+
+@app.route(<span class="text-amber-300">'/licence-activate'</span>, methods=[<span class="text-amber-300">'POST'</span>])
+def licence_activate():
+    <span class="text-amber-300">"""Web endpoint — lets users enter their licence key via the browser."""</span>
+    data = request.get_json() or {}
+    key  = data.get(<span class="text-amber-300">'license_key'</span>, <span class="text-amber-300">''</span>).strip().upper()
+
+    if not key or len(key) &lt; 10:
+        return jsonify({<span class="text-amber-300">'success'</span>: False, <span class="text-amber-300">'error'</span>: <span class="text-amber-300">'Invalid key format'</span>}), 400
+
+    <span class="text-gray-500"># Save to license.txt</span>
+    try:
+        with open(LICENSE_FILE, <span class="text-amber-300">'w'</span>) as f:
+            f.write(<span class="text-amber-300">f"# {{ product.name }} Licence Key\n{key}\n"</span>)
+    except Exception as e:
+        return jsonify({<span class="text-amber-300">'success'</span>: False, <span class="text-amber-300">'error'</span>: f<span class="text-amber-300">'Could not save key: {e}'</span>}), 500
+
+    <span class="text-gray-500"># Re-validate immediately</span>
+    ok = validate_license(key=key)
+    if ok:
+        return jsonify({
+            <span class="text-amber-300">'success'</span>: True,
+            <span class="text-amber-300">'message'</span>: f<span class="text-amber-300">'Licence activated for {get_state().get("customer", "your account")}'</span>,
+            <span class="text-amber-300">'tier'</span>: get_state().get(<span class="text-amber-300">'tier'</span>),
+            <span class="text-amber-300">'features'</span>: get_state().get(<span class="text-amber-300">'features'</span>, []),
+        }), 200
+
+    return jsonify({
+        <span class="text-amber-300">'success'</span>: False,
+        <span class="text-amber-300">'error'</span>: get_state().get(<span class="text-amber-300">'error'</span>, <span class="text-amber-300">'Licence validation failed'</span>),
+    }), 200</pre>
+        </div>
+
+        <!-- How it works -->
+        <div class="bg-dark-700/40 rounded-xl p-4 space-y-2">
+          <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">How it works</p>
+          <div class="space-y-1.5 text-xs text-gray-500">
+            <p>1. User visits your app with no licence → sees <code class="text-emerald-400">license_invalid.html</code></p>
+            <p>2. They paste their key and click Activate</p>
+            <p>3. Page calls <code class="text-emerald-400">POST /licence-activate</code> on your app</p>
+            <p>4. Your app saves the key to <code class="text-emerald-400">license.txt</code> and calls the licence server</p>
+            <p>5. If valid → user is redirected to <code class="text-emerald-400">/</code> and the app unlocks immediately</p>
+            <p>6. If invalid → error is shown inline, they can try again</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+      <pre id="pre-curl" class="p-5 text-xs font-mono text-yellow-300 leading-relaxed overflow-x-auto whitespace-pre"><span class="text-gray-500"># {{ product.name }} — Quick test commands
+# Product: {{ product.code }}
+# Server:  {{ base_url }}</span>
+
+<span class="text-gray-500"># 1. Health check — confirm server is up</span>
+curl {{ base_url }}/api/health
+
+<span class="text-gray-500"># 2. Check your server's IP (important for IP-lock)</span>
+curl {{ base_url }}/api/my-ip
+
+<span class="text-gray-500"># 3. Validate a licence key</span>
+curl -X POST {{ base_url }}/api/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "license_key": "XXXX-XXXX-XXXX-XXXX",
+    "hardware_id": "my-server-hostname",
+    "domain":      "example.com"
+  }'
+
+<span class="text-gray-500"># 4. Activate a licence</span>
+curl -X POST {{ base_url }}/api/activate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "license_key": "XXXX-XXXX-XXXX-XXXX",
+    "hardware_id": "my-server-hostname",
+    "hostname":    "my-server"
+  }'
+
+<span class="text-gray-500"># 5. Heartbeat (keep activation alive)</span>
+curl -X POST {{ base_url }}/api/heartbeat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "license_key":   "XXXX-XXXX-XXXX-XXXX",
+    "activation_id": 1
+  }'
+
+<span class="text-gray-500"># Expected validate response for {{ product.code }}:
+# {
+#   "valid": true,
+#   "product": "{{ product.code }}",
+#   "tier": "pro",
+#   "features": ["dispatch", "mdt", "citizens"],
+#   "expires_at": "2026-12-31T00:00:00",
+#   "customer": "Acme PD"
+# }</span></pre>
+    </div>
+  </div>
+
+  <!-- Quick setup steps -->
+  <div class="bg-dark-800 border border-dark-700/50 rounded-2xl p-6 space-y-4">
+    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Quick Setup — 3 Steps</h2>
+    <div class="grid grid-cols-3 gap-4">
+
+      <div class="bg-dark-700/40 rounded-xl p-4 space-y-2">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
+          <p class="text-sm font-semibold text-white">Copy the file</p>
+        </div>
+        <p class="text-xs text-gray-500">Copy <code class="text-emerald-400">license_check.py</code> into your project root folder</p>
+      </div>
+
+      <div class="bg-dark-700/40 rounded-xl p-4 space-y-2">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
+          <p class="text-sm font-semibold text-white">Add license.txt</p>
+        </div>
+        <p class="text-xs text-gray-500">Create <code class="text-emerald-400">license.txt</code> in the same folder and paste the customer's licence key on one line</p>
+      </div>
+
+      <div class="bg-dark-700/40 rounded-xl p-4 space-y-2">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">3</span>
+          <p class="text-sm font-semibold text-white">Call init_license()</p>
+        </div>
+        <p class="text-xs text-gray-500">In your app startup: <code class="text-emerald-400">from license_check import init_license, has_feature</code> then <code class="text-emerald-400">init_license(app)</code></p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Feature gating example -->
+  <div class="bg-dark-800 border border-dark-700/50 rounded-2xl p-6 space-y-3">
+    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Feature Gating Example</h2>
+    <p class="text-xs text-gray-500">Use <code class="text-emerald-400">has_feature()</code> anywhere in your app to show/hide functionality based on what the licence includes:</p>
+    <pre class="bg-dark-900 rounded-xl p-4 text-xs font-mono text-green-300 leading-relaxed overflow-x-auto">from license_check import has_feature, get_state
+
+<span class="text-gray-500"># Guard a route</span>
+@app.route(<span class="text-amber-300">'/dispatch'</span>)
+def dispatch():
+    if not has_feature(<span class="text-amber-300">'dispatch'</span>):
+        return <span class="text-amber-300">"Feature not included in your licence"</span>, 403
+    return render_template(<span class="text-amber-300">'dispatch.html'</span>)
+
+<span class="text-gray-500"># Pass features to a template</span>
+@app.route(<span class="text-amber-300">'/dashboard'</span>)
+def dashboard():
+    state = get_state()
+    return render_template(<span class="text-amber-300">'dashboard.html'</span>,
+        features=state[<span class="text-amber-300">'features'</span>],
+        customer=state[<span class="text-amber-300">'customer'</span>],
+        tier=state[<span class="text-amber-300">'tier'</span>],
+    )
+
+<span class="text-gray-500"># In a Jinja2 template</span>
+{% raw %}{% if 'dispatch' in features %}
+  &lt;a href="/dispatch"&gt;Dispatch&lt;/a&gt;
+{% endif %}{% endraw %}</pre>
+  </div>
+
+  <!-- Product details -->
+  <div class="bg-dark-800 border border-dark-700/50 rounded-2xl p-5 flex items-center gap-6 text-sm">
+    <div><p class="text-xs text-gray-500">Product</p><p class="font-semibold text-white">{{ product.name }}</p></div>
+    <div><p class="text-xs text-gray-500">Code</p><code class="font-mono text-emerald-400">{{ product.code }}</code></div>
+    <div><p class="text-xs text-gray-500">Server</p><code class="font-mono text-gray-300 text-xs">{{ base_url }}</code></div>
+    <div><p class="text-xs text-gray-500">IP Lock</p><p class="font-semibold {{ 'text-emerald-400' if product.require_ip_lock else 'text-gray-500' }}">{{ 'Enabled' if product.require_ip_lock else 'Disabled' }}</p></div>
+    <div><p class="text-xs text-gray-500">Max IPs</p><p class="font-semibold text-white">{{ product.max_ip_addresses }}</p></div>
+    <div class="ml-auto">
+      <a href="{{ url_for('lic_admin.edit_product', id=product.id) }}" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Edit settings →</a>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .tab-btn { color: #6b7280; border-bottom-color: transparent; }
+  .tab-btn:hover { color: #9ca3af; }
+  .tab-active { color: #10b981 !important; border-bottom-color: #10b981 !important; background: rgba(16,185,129,0.05); }
+</style>
+
+<script>
+function showTab(lang) {
+  document.querySelectorAll('.code-panel').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+  document.getElementById('code-' + lang).classList.remove('hidden');
+  document.getElementById('tab-' + lang).classList.add('tab-active');
+}
+
+function _doCopy(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    if (btn) {
+      btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!';
+      btn.classList.add('text-emerald-400');
+      setTimeout(() => {
+        btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> Copy';
+        btn.classList.remove('text-emerald-400');
+      }, 2000);
+    }
+  });
+}
+function copyCode() {
+  const visible = document.querySelector('.code-panel:not(.hidden) pre');
+  if (visible) _doCopy(visible.innerText);
+}
+function copyById(id) {
+  const el = document.getElementById(id);
+  if (el) _doCopy(el.innerText);
+}
+</script>
+{% endblock %}
+OPSLAB_KIT_EOF__4e9a82c1
+
+echo ""
+say "Done. No restart needed — templates auto-reload."
+say "Visit /licenses/admin/products/<id>/kit to see it (or go to a product's edit page and click 'Kit')"
+echo ""
+echo "Backups in $BACKUP_DIR"
+echo "Restore:  cp -r \"$BACKUP_DIR/.\" \"$TARGET/\""

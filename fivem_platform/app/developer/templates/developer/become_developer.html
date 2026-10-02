@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Developer Panel — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto text-center">
+  <h1 class="text-xl font-semibold text-white mb-2">Become a developer</h1>
+  <p class="text-sm text-gray-400 mb-6">
+    Get your own isolated workspace — products, licenses, customers, and a
+    Developer API Key for external sites and Tebex integrations.
+  </p>
+  <form method="POST" action="{{ url_for('developer.enable') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="bg-brand hover:bg-brand-hover text-white rounded-md px-5 py-2.5 text-sm font-medium transition">
+      Enable developer account
+    </button>
+  </form>
+</div>
+{% endblock %}

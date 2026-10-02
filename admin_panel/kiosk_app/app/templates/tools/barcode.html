@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Barcode — {{ tool.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('tools.list_tools') }}">← Tools</a></p>
+<div class="panel" style="max-width:400px; text-align:center;">
+  <h1>{{ tool.name }}</h1>
+  {% if barcode_image %}
+    <div style="background:#fff; border-radius:8px; padding:16px; margin:16px 0;">
+      <img src="{{ barcode_image }}" alt="Barcode {{ tool.barcode_code }}" style="width:100%; height:auto; display:block;">
+    </div>
+  {% else %}
+    <p class="muted">Couldn't render a scannable barcode for this code — use the text below.</p>
+  {% endif %}
+  {% if qr_image %}
+    <p class="muted" style="font-size:12.5px; margin:14px 0 4px;">Or scan this QR code — easier for most phone cameras to pick up:</p>
+    <div style="background:#fff; border-radius:8px; padding:16px; margin:0 auto; max-width:200px;">
+      <img src="{{ qr_image }}" alt="QR code {{ tool.barcode_code }}" style="width:100%; height:auto; display:block;">
+    </div>
+  {% endif %}
+  <div style="font-size:20px; font-family:ui-monospace,monospace; letter-spacing:3px; padding:14px; background:var(--bg); border-radius:8px;">
+    {{ tool.barcode_code }}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Scan Barcode{% endblock %}
+{% block content %}
+{% if layout_components %}
+  {% import "_layout_blocks.html" as blocks with context %}
+  {% for c in layout_components %}
+    {% if c.visible != false %}
+      {% if c.type == 'page_header' %}
+        {{ blocks.render_page_header(c, 'Scan Barcode', 'Scan an item or tool barcode, or type the code below.', 'fas fa-barcode', None, '') }}
+      {% elif c.type == 'text_block' %}
+        {{ blocks.render_text_block(c) }}
+      {% elif c.type == 'spacer' %}
+        {{ blocks.render_spacer(c) }}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+{% else %}
+<div class="page-header">
+  <h1 class="page-title"><i class="fas fa-barcode" style="color:#60a5fa;"></i> Scan Barcode</h1>
+  <p class="page-subtitle">Scan an item or tool barcode, or type the code below.</p>
+</div>
+{% endif %}
+<div class="card" style="padding:28px;max-width:420px;margin:0 auto;">
+  <form method="POST" action="{{ url_for('barcode.scan') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <label for="code" style="display:block;font-size:13px;font-weight:600;color:#9ca3af;margin-bottom:8px;">
+      Barcode value
+    </label>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="code" name="code" autofocus autocomplete="off"
+             placeholder="Scan or type a code…"
+             style="flex:1;min-width:0;padding:12px 14px;border-radius:8px;border:1px solid #374151;
+                    background:#1f2937;color:#f3f4f6;font-family:monospace;letter-spacing:1px;
+                    font-size:15px;"/>
+      <button type="button" class="btn btn-secondary scan-relay-btn"
+              data-target="code" data-autosubmit="true" title="Scan with phone">
+        <i class="fas fa-mobile-screen-button"></i>
+      </button>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;margin-top:16px;">
+      <i class="fas fa-magnifying-glass"></i> Look up
+    </button>
+  </form>
+</div>
+{% endblock %}

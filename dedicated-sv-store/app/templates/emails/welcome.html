@@ -1,0 +1,6 @@
+{% extends "emails/_layout.html" %}
+{% block email_content %}
+<p style="margin-top:0;">Hi {{ user.first_name or user.email }},</p>
+<p>Welcome to OpsLabs Servers — browse dedicated servers, build a custom configuration, or ship us your own equipment to host.</p>
+<p style="color:#9aa4b2;">If you have any questions, our support team is here to help.</p>
+{% endblock %}

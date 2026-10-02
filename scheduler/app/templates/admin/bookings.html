@@ -1,0 +1,80 @@
+{% extends "layouts/admin.html" %}
+{% block title %}Bookings · {{ app_name }}{% endblock %}
+{% block page_content %}
+
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-semibold text-ink">Bookings</h1>
+    <p class="mt-1 text-sm text-ink-muted">Everything people have booked with you.</p>
+  </div>
+  <div class="flex gap-1 rounded-lg border border-border bg-surface p-1 self-start">
+    {% for key, label in [('upcoming','Upcoming'), ('past','Past'), ('cancelled','Cancelled')] %}
+      <a href="{{ url_for('admin.bookings', filter=key) }}"
+         class="rounded-md px-3 py-1.5 text-sm font-medium {{ 'bg-surface-raised text-ink' if filter == key else 'text-ink-muted hover:text-ink' }}">
+        {{ label }}
+      </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card divide-y divide-border">
+  {% if bookings %}
+    {% for b in bookings %}
+    <div class="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <p class="font-medium text-ink">{{ b.name }}</p>
+          <span class="text-[10px] font-medium uppercase tracking-wide rounded px-1.5 py-0.5 border
+            {{ 'border-status-available/30 text-status-available' if b.status == 'confirmed'
+               else 'border-status-busy/30 text-status-busy' if b.status in ('cancelled', 'no_show')
+               else 'border-status-away/30 text-status-away' if b.status == 'completed'
+               else 'border-border text-ink-faint' }}">
+            {{ b.status.replace('_', ' ') }}
+          </span>
+          {% if b.is_out_of_hours %}
+          <span class="text-[10px] font-medium uppercase tracking-wide rounded px-1.5 py-0.5 border border-status-away/30 text-status-away">
+            Out of hours{% if b.out_of_hours_fee_shown %} · {{ b.out_of_hours_fee_shown }}{% endif %}
+          </span>
+          {% endif %}
+        </div>
+        <p class="mt-0.5 text-sm text-ink-muted">
+          {{ b.start_datetime.strftime('%a %d %b %Y, %H:%M') }} – {{ b.end_datetime.strftime('%H:%M') }}
+          {% if b.booking_type %} · {{ b.booking_type.name }}{% endif %}
+        </p>
+        <p class="mt-0.5 text-sm text-ink-faint">{{ b.email }}{% if b.phone %} · {{ b.phone }}{% endif %}</p>
+        {% if b.notes %}<p class="mt-1.5 text-sm text-ink-muted italic">"{{ b.notes }}"</p>{% endif %}
+      </div>
+      {% if b.status not in ('cancelled', 'completed', 'no_show') %}
+      <div class="flex flex-wrap gap-2 shrink-0">
+        <a href="{{ url_for('admin.reschedule_booking', booking_id=b.id) }}" class="btn-secondary">Reschedule</a>
+        <form method="POST" action="{{ url_for('admin.booking_running_late', booking_id=b.id) }}"
+              onsubmit="document.getElementById('late-minutes-{{ b.id }}').value = prompt('Roughly how many minutes late? (leave blank to skip)') || ''; return true;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" id="late-minutes-{{ b.id }}" name="minutes_late" value="">
+          <button type="submit" class="btn-secondary">Running late</button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.complete_booking', booking_id=b.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-secondary">Mark completed</button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.mark_no_show', booking_id=b.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-secondary">No-show</button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.cancel_booking', booking_id=b.id) }}"
+              onsubmit="return confirm('Cancel this booking with {{ b.name }}?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-danger">Cancel</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="p-8 text-center">
+      <p class="text-sm text-ink-muted">No {{ filter }} bookings.</p>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

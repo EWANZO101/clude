@@ -1,0 +1,937 @@
+{% extends "base.html" %}
+{% block title %}Databases — {{ panel_name }}{% endblock %}
+{% block content %}
+<input type="hidden" id="csrf_token" value="{{ csrf_token() }}">
+
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">Management</p>
+    <h1 class="page-title">Databases</h1>
+    <p class="page-sub">Browse, edit, query, import and export your MySQL databases, and manage database users.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="btn btn-secondary" href="#/users">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0113 0M16 4.5a3.5 3.5 0 010 7M18.5 20a6.5 6.5 0 00-3-5.5"/></svg>
+      Users
+    </a>
+    <a class="btn btn-secondary" href="#/sql">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-5-6-5M12 19h8"/></svg>
+      SQL console
+    </a>
+    <button class="btn btn-primary" type="button" id="new-db-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      New database
+    </button>
+  </div>
+</div>
+
+{% if not installed %}
+<div class="card"><div class="empty-state"><strong>MySQL isn't running on this server</strong>No MySQL/MariaDB socket was found. Install it from <a href="{{ url_for('installers.index') }}">Installers</a>, or set <code>MYSQL_SOCKET</code> in the panel's .env.</div></div>
+{% else %}
+<div class="dbm-shell">
+  <aside class="card flush dbm-tree">
+    <div class="dbm-tree-head">
+      <a href="#/" class="dbm-server" id="server-link">
+        <span class="dbm-dot"></span>
+        <span id="server-label">Connecting…</span>
+      </a>
+      <div class="dbm-search">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="tree-filter" placeholder="Filter databases & tables…">
+      </div>
+    </div>
+    <div class="dbm-tree-list" id="tree"></div>
+  </aside>
+
+  <section class="dbm-main">
+    <div class="dbm-crumbs" id="crumbs"></div>
+    <div id="view"></div>
+    <!-- The SQL editor lives outside #view so Monaco survives navigation. -->
+    <div id="sql-panel" class="card flush" style="display:none;">
+      <div class="dbm-sql-bar">
+        <label class="dbm-inline">Database
+          <select id="sql-db"></select>
+        </label>
+        <span class="dbm-hint">Ctrl+Enter to run · multiple statements allowed · max 1000 rows per result</span>
+        <button class="btn btn-primary btn-sm" type="button" id="sql-run">Run</button>
+      </div>
+      <div id="sql-editor"></div>
+      <textarea id="sql-fallback" spellcheck="false" style="display:none;"></textarea>
+    </div>
+    <div id="sql-results"></div>
+  </section>
+</div>
+{% endif %}
+
+<!-- Generic form modal -->
+<div class="modal-overlay" id="form-modal">
+  <div class="modal-box dbm-modal">
+    <div class="modal-header">
+      <div><h3 id="form-title"></h3><p class="modal-subtext" id="form-sub"></p></div>
+      <button class="modal-close" type="button" data-close>&times;</button>
+    </div>
+    <form id="form-body" class="dbm-form" autocomplete="off"></form>
+    <div class="editor-footer">
+      <span class="editor-save-status" id="form-status"></span>
+      <button class="btn btn-secondary" type="button" data-close>Cancel</button>
+      <button class="btn btn-primary" type="button" id="form-submit">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm modal (optionally type-to-confirm) -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal-box" style="max-width:460px;">
+    <div class="modal-header">
+      <h3 id="confirm-title">Are you sure?</h3>
+      <button class="modal-close" type="button" data-close>&times;</button>
+    </div>
+    <div style="padding:18px;">
+      <p class="dbm-confirm-text" id="confirm-text"></p>
+      <div class="field" id="confirm-type-wrap" style="display:none;">
+        <label>Type <code id="confirm-type-name"></code> to confirm</label>
+        <input type="text" id="confirm-type-input" autocomplete="off">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-danger" type="button" id="confirm-ok">Confirm</button>
+        <button class="btn btn-secondary" type="button" data-close>Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .dbm-shell { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 960px) { .dbm-shell { grid-template-columns: 1fr; } .dbm-tree { max-height: 320px; } }
+
+  .dbm-tree { position: sticky; top: 16px; display: flex; flex-direction: column; max-height: calc(100vh - 32px); }
+  .dbm-tree-head { padding: 12px; border-bottom: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 10px; }
+  .dbm-server { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+  .dbm-server:hover { color: var(--text-primary); }
+  .dbm-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+  .dbm-dot.ok { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-dim); }
+  .dbm-dot.bad { background: var(--danger); }
+  .dbm-search { display: flex; align-items: center; gap: 6px; background: var(--bg-void); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 0 9px; color: var(--text-muted); }
+  .dbm-search input { background: none; border: 0; outline: 0; color: var(--text-primary); padding: 7px 0; font-size: 12.5px; width: 100%; }
+  .dbm-tree-list { overflow-y: auto; padding: 6px; flex: 1; }
+  .dbm-node { display: flex; align-items: center; gap: 7px; padding: 6px 8px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-secondary); cursor: pointer; user-select: none; }
+  .dbm-node:hover { background: var(--bg-panel-hover); color: var(--text-primary); }
+  .dbm-node.active { background: var(--bg-panel-raised); color: var(--text-primary); box-shadow: inset 2px 0 0 var(--accent); }
+  .dbm-node .caret { width: 10px; color: var(--text-muted); font-size: 10px; transition: transform .12s; }
+  .dbm-node.open .caret { transform: rotate(90deg); }
+  .dbm-node .count { margin-left: auto; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted); }
+  .dbm-node.sys .name { color: var(--text-muted); }
+  .dbm-node .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dbm-children { padding-left: 16px; }
+  .dbm-children .dbm-node { font-size: 12.5px; padding: 4px 8px; font-family: var(--font-mono); }
+
+  .dbm-main { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+  .dbm-crumbs { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .dbm-crumbs a { color: var(--text-secondary); }
+  .dbm-crumbs a:hover { color: var(--text-primary); }
+  .dbm-crumbs .cur { color: var(--text-primary); }
+
+  .dbm-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid var(--border-subtle); }
+  .dbm-head h2 { margin: 0; font-size: 15px; font-family: var(--font-mono); color: var(--text-primary); }
+  .dbm-head .meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .dbm-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .dbm-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .dbm-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 18px; border-bottom: 1px solid var(--border-subtle); }
+  .dbm-toolbar .dbm-search { min-width: 220px; flex: 1; max-width: 360px; }
+  .dbm-toolbar .spacer { flex: 1; }
+  .dbm-toolbar select, .dbm-inline select { background: var(--bg-void); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--text-primary); padding: 5px 8px; font-size: 12.5px; }
+  .dbm-inline { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
+  .dbm-hint { font-size: 11.5px; color: var(--text-muted); margin-right: auto; }
+
+  .dbm-grid { font-family: var(--font-mono); font-size: 12.5px; }
+  .dbm-grid table.data-table thead th { padding: 9px 12px; position: sticky; top: 0; z-index: 1; }
+  .dbm-grid table.data-table thead th.sortable { cursor: pointer; }
+  .dbm-grid table.data-table thead th.sortable:hover { color: var(--text-primary); }
+  .dbm-grid table.data-table thead th .pk { color: var(--warn); margin-left: 4px; }
+  .dbm-grid table.data-table tbody td { padding: 7px 12px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dbm-grid .null { color: var(--text-muted); font-style: italic; }
+  .dbm-grid .num { text-align: right; }
+  .dbm-scroll { overflow: auto; max-height: 64vh; }
+  .dbm-rowact { white-space: nowrap; width: 1%; }
+  .dbm-rowact button { background: none; border: 0; color: var(--text-muted); cursor: pointer; padding: 2px 5px; font-size: 12px; }
+  .dbm-rowact button:hover { color: var(--text-primary); }
+  .dbm-rowact button.del:hover { color: var(--danger); }
+
+  .dbm-pager { display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-top: 1px solid var(--border-subtle); font-size: 12px; color: var(--text-muted); flex-wrap: wrap; }
+  .dbm-pager .spacer { flex: 1; }
+
+  .dbm-code { margin: 0; padding: 14px 18px; font-family: var(--font-mono); font-size: 12px; white-space: pre; overflow: auto; color: var(--text-secondary); background: var(--bg-void); max-height: 420px; }
+  .dbm-section-title { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); padding: 14px 18px 8px; }
+
+  .dbm-sql-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap; }
+  #sql-editor { height: 240px; }
+  #sql-fallback { width: 100%; height: 240px; background: var(--bg-void); color: var(--text-primary); border: 0; padding: 12px 14px; font-family: var(--font-mono); font-size: 13px; resize: vertical; outline: none; }
+  .dbm-result { margin-bottom: 12px; }
+  .dbm-result-head { display: flex; justify-content: space-between; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); }
+  .dbm-error { border: 1px solid var(--danger); background: var(--danger-dim); color: var(--danger); border-radius: var(--radius); padding: 11px 14px; font-family: var(--font-mono); font-size: 12.5px; white-space: pre-wrap; }
+
+  .dbm-modal { max-width: 640px; max-height: 88vh; }
+  .dbm-form { padding: 16px 18px; overflow-y: auto; }
+  .dbm-form .field { margin-bottom: 14px; }
+  .dbm-form .field label .type { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-left: 6px; font-weight: 400; }
+  .dbm-form .field-hint, .dbm-field-hint { font-size: 11.5px; color: var(--text-muted); margin-top: 5px; }
+  .dbm-val-row { display: flex; gap: 6px; align-items: flex-start; }
+  .dbm-val-row select { width: auto !important; flex-shrink: 0; padding: 9px 6px !important; font-size: 12px !important; }
+  .dbm-val-row input, .dbm-val-row textarea { flex: 1; min-width: 0; font-family: var(--font-mono) !important; font-size: 13px !important; }
+  .dbm-val-row .disabled { opacity: .45; }
+  .dbm-confirm-text { font-size: 13.5px; color: var(--text-secondary); margin: 0 0 16px; line-height: 1.55; }
+  .dbm-grants li { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border-subtle); word-break: break-all; }
+  .dbm-grants { list-style: none; padding: 0; margin: 0 0 16px; }
+  .dbm-drop { border: 1.5px dashed var(--border-strong); border-radius: var(--radius); padding: 28px; text-align: center; color: var(--text-muted); font-size: 13px; cursor: pointer; }
+  .dbm-drop:hover, .dbm-drop.over { border-color: var(--accent); color: var(--text-primary); }
+  .dbm-pad { padding: 18px; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+{% if installed %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+{% endif %}
+<script>
+(function () {
+  if (!document.getElementById('view')) return;
+
+  // ------------------------------------------------------------ helpers
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const csrf = () => document.getElementById('csrf_token').value;
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const enc = encodeURIComponent;
+  const API = '/databases/api';
+
+  async function getJson(path, params) {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    const res = await fetch(API + path + qs, { headers: { 'Accept': 'application/json' } });
+    return parse(res);
+  }
+  async function postJson(path, payload) {
+    const res = await fetch(API + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+      body: JSON.stringify(payload || {}),
+    });
+    return parse(res);
+  }
+  async function parse(res) {
+    let data;
+    try { data = await res.json(); } catch (e) { data = { ok: false, error: 'Unexpected response (HTTP ' + res.status + ')' }; }
+    if (res.status === 403) data = { ok: false, error: "You don't have permission to manage databases." };
+    if (res.status === 413) data = { ok: false, error: 'File is too large for the server upload limit.' };
+    return data;
+  }
+
+  function toast(msg, kind) {
+    const stack = document.getElementById('toast-stack');
+    const el = document.createElement('div');
+    el.className = 'toast flash-' + (kind || 'success');
+    el.innerHTML = '<span>' + esc(msg) + '</span><span class="toast-close">&times;</span>';
+    const close = () => { el.style.opacity = '0'; setTimeout(() => el.remove(), 200); };
+    el.querySelector('.toast-close').addEventListener('click', close);
+    stack.appendChild(el);
+    setTimeout(close, kind === 'error' ? 9000 : 4000);
+  }
+
+  function fmtBytes(n) {
+    if (n == null) return '—';
+    const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0; n = Number(n);
+    while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+    return (i ? n.toFixed(1) : n) + ' ' + u[i];
+  }
+  function fmtNum(n) { return n == null ? '—' : Number(n).toLocaleString(); }
+  function fmtUptime(s) {
+    const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+    return d ? d + 'd ' + h + 'h' : h ? h + 'h ' + m + 'm' : m + 'm';
+  }
+  function cell(v) {
+    if (v === null) return '<span class="null">NULL</span>';
+    const s = String(v);
+    return '<span title="' + esc(s.length > 80 ? s.slice(0, 600) : s) + '">' + esc(s.length > 200 ? s.slice(0, 200) + '…' : s) + '</span>';
+  }
+
+  // ------------------------------------------------------------ modals
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-close]')) m.classList.remove('open'); });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  });
+
+  function confirmAction({ title, text, typeName, okLabel }) {
+    return new Promise(resolve => {
+      $('#confirm-title').textContent = title || 'Are you sure?';
+      $('#confirm-text').innerHTML = text || '';
+      const wrap = $('#confirm-type-wrap'), input = $('#confirm-type-input'), ok = $('#confirm-ok');
+      ok.textContent = okLabel || 'Confirm';
+      wrap.style.display = typeName ? '' : 'none';
+      input.value = '';
+      $('#confirm-type-name').textContent = typeName || '';
+      ok.disabled = !!typeName;
+      input.oninput = () => { ok.disabled = input.value !== typeName; };
+      const modal = document.getElementById('confirm-modal');
+      const done = (v) => { ok.onclick = null; observer.disconnect(); closeModal('confirm-modal'); resolve(v); };
+      const observer = new MutationObserver(() => { if (!modal.classList.contains('open')) done(false); });
+      ok.onclick = () => done(true);
+      openModal('confirm-modal');
+      observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+      if (typeName) setTimeout(() => input.focus(), 50);
+    });
+  }
+
+  /* Form modal: `fields` is HTML; `onSubmit(form)` returns a promise of
+     {ok, error}. Closes on success, shows the error inline otherwise. */
+  function formModal({ title, sub, html, submitLabel, onSubmit, onOpen }) {
+    $('#form-title').textContent = title;
+    $('#form-sub').textContent = sub || '';
+    const form = $('#form-body');
+    form.innerHTML = html;
+    $('#form-status').textContent = '';
+    const btn = $('#form-submit');
+    btn.textContent = submitLabel || 'Save';
+    btn.disabled = false;
+    const submit = async () => {
+      btn.disabled = true;
+      $('#form-status').textContent = 'Working…';
+      try {
+        const r = await onSubmit(form);
+        if (r && r.ok) { closeModal('form-modal'); }
+        else { $('#form-status').innerHTML = '<span style="color:var(--danger)">' + esc((r && r.error) || 'Failed') + '</span>'; }
+      } finally { btn.disabled = false; }
+    };
+    btn.onclick = submit;
+    form.onsubmit = (e) => { e.preventDefault(); submit(); };
+    openModal('form-modal');
+    if (onOpen) onOpen(form);
+    const first = form.querySelector('input:not([type=hidden]):not([disabled]), textarea, select');
+    if (first) setTimeout(() => first.focus(), 50);
+  }
+
+  // ------------------------------------------------------------ state + tree
+  const state = { server: null, databases: [], tables: {}, open: new Set(), presets: [] };
+
+  async function loadOverview() {
+    const r = await getJson('/overview');
+    const dot = $('.dbm-dot');
+    if (!r.ok) {
+      dot.className = 'dbm-dot bad';
+      $('#server-label').textContent = 'Connection failed';
+      $('#view').innerHTML = '<div class="dbm-error">' + esc(r.error) + '</div>';
+      return false;
+    }
+    state.server = r.server; state.databases = r.databases; state.presets = r.presets;
+    dot.className = 'dbm-dot ok';
+    $('#server-label').textContent = r.server.flavor + ' ' + r.server.version.split('-')[0] + ' · localhost';
+    renderTree();
+    return true;
+  }
+
+  async function loadTables(db, force) {
+    if (state.tables[db] && !force) return state.tables[db];
+    const r = await getJson('/tables', { db });
+    if (!r.ok) { toast(r.error, 'error'); return []; }
+    state.tables[db] = r.tables;
+    return r.tables;
+  }
+
+  function renderTree() {
+    const q = $('#tree-filter').value.trim().toLowerCase();
+    const route = parseRoute();
+    let html = '';
+    state.databases.forEach(d => {
+      const tables = state.tables[d.name] || [];
+      const tableHits = q ? tables.filter(t => t.name.toLowerCase().includes(q)) : tables;
+      if (q && !d.name.toLowerCase().includes(q) && !tableHits.length) return;
+      const open = state.open.has(d.name) || (q && tableHits.length);
+      const active = route.db === d.name && !route.table;
+      html += '<div class="dbm-node' + (open ? ' open' : '') + (active ? ' active' : '') + (d.system ? ' sys' : '') + '" data-db="' + esc(d.name) + '">' +
+        '<span class="caret">▶</span><span class="name">' + esc(d.name) + '</span><span class="count">' + d.tables + '</span></div>';
+      if (open) {
+        html += '<div class="dbm-children">';
+        if (!state.tables[d.name]) html += '<div class="dbm-node"><span class="count" style="margin:0">loading…</span></div>';
+        (q && !d.name.toLowerCase().includes(q) ? tableHits : tables).forEach(t => {
+          const act = route.db === d.name && route.table === t.name;
+          html += '<div class="dbm-node' + (act ? ' active' : '') + '" data-db="' + esc(d.name) + '" data-table="' + esc(t.name) + '">' +
+            '<span class="name">' + (t.type === 'view' ? '◇ ' : '') + esc(t.name) + '</span></div>';
+        });
+        html += '</div>';
+      }
+    });
+    $('#tree').innerHTML = html || '<div class="empty-state">No matches</div>';
+  }
+
+  $('#tree').addEventListener('click', async (e) => {
+    const node = e.target.closest('.dbm-node[data-db]');
+    if (!node) return;
+    const db = node.dataset.db, table = node.dataset.table;
+    if (table) { location.hash = '#/db/' + enc(db) + '/table/' + enc(table); return; }
+    const onCaret = e.target.closest('.caret');
+    if (state.open.has(db) && (onCaret || parseRoute().db === db)) state.open.delete(db);
+    else { state.open.add(db); loadTables(db).then(renderTree); }
+    renderTree();
+    if (!onCaret) location.hash = '#/db/' + enc(db);
+  });
+  $('#tree-filter').addEventListener('input', renderTree);
+
+  // ------------------------------------------------------------ routing
+  function parseRoute() {
+    const parts = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
+    if (parts[0] === 'users') return { view: 'users' };
+    if (parts[0] === 'sql') return { view: 'sql', db: parts[1] || '' };
+    if (parts[0] === 'db' && parts[1]) {
+      if (parts[2] === 'table' && parts[3]) return { view: 'table', db: parts[1], table: parts[3], tab: parts[4] || 'browse' };
+      return { view: 'db', db: parts[1], tab: parts[2] || 'tables' };
+    }
+    return { view: 'server' };
+  }
+
+  function crumbs(route) {
+    const c = ['<a href="#/">localhost</a>'];
+    if (route.view === 'users') c.push('<span class="cur">users</span>');
+    if (route.view === 'sql') c.push('<span class="cur">sql console</span>');
+    if (route.db && route.view !== 'sql') c.push(route.table ? '<a href="#/db/' + enc(route.db) + '">' + esc(route.db) + '</a>' : '<span class="cur">' + esc(route.db) + '</span>');
+    if (route.table) c.push('<span class="cur">' + esc(route.table) + '</span>');
+    $('#crumbs').innerHTML = c.join('<span>/</span>');
+  }
+
+  let renderToken = 0;
+  async function render() {
+    const route = parseRoute();
+    const token = ++renderToken;
+    crumbs(route);
+    if (!state.server && route.view !== 'server' && !(await loadOverview())) return;
+    if (route.db && !state.open.has(route.db)) { state.open.add(route.db); loadTables(route.db).then(renderTree); }
+    renderTree();
+    const showSql = route.view === 'sql' || (route.view === 'db' && route.tab === 'sql') || (route.view === 'table' && route.tab === 'sql');
+    $('#sql-panel').style.display = showSql ? '' : 'none';
+    if (!showSql) $('#sql-results').innerHTML = '';
+    const view = $('#view');
+    view.innerHTML = '<div class="card"><div class="empty-state">Loading…</div></div>';
+    try {
+      if (route.view === 'server') await renderServer(view);
+      else if (route.view === 'users') await renderUsers(view);
+      else if (route.view === 'sql') { view.innerHTML = ''; showSqlEditor(route.db); }
+      else if (route.view === 'db') await renderDb(view, route, token);
+      else if (route.view === 'table') await renderTable(view, route, token);
+    } catch (err) {
+      if (token === renderToken) view.innerHTML = '<div class="dbm-error">' + esc(err.message || err) + '</div>';
+    }
+  }
+  window.addEventListener('hashchange', render);
+
+  // ------------------------------------------------------------ server overview
+  async function renderServer(view) {
+    const ok = await loadOverview();
+    if (!ok) return;
+    const s = state.server;
+    const userDbs = state.databases.filter(d => !d.system);
+    view.innerHTML =
+      '<div class="dbm-stats">' +
+        stat('Server', s.flavor + ' ' + s.version.split('-')[0], 'up ' + fmtUptime(s.uptime_seconds)) +
+        stat('Databases', userDbs.length, (state.databases.length - userDbs.length) + ' system') +
+        stat('Total size', fmtBytes(s.total_size), 'data + indexes') +
+        stat('Connections', s.connections, fmtNum(s.slow_queries) + ' slow queries') +
+      '</div>' +
+      '<div class="card flush"><div class="dbm-head"><div><h2>Databases</h2><div class="meta">Socket ' + esc(s.socket) + '</div></div></div>' +
+      '<div class="table-wrap"><table class="data-table"><thead><tr><th>Name</th><th>Tables</th><th>Size</th><th>Collation</th><th></th></tr></thead><tbody>' +
+      state.databases.map(d => '<tr><td class="primary"><a href="#/db/' + enc(d.name) + '" style="font-family:var(--font-mono)">' + esc(d.name) + '</a>' +
+        (d.system ? ' <span class="badge badge-muted">system</span>' : '') + '</td><td>' + d.tables + '</td><td>' + fmtBytes(d.size) + '</td><td>' + esc(d.collation) + '</td>' +
+        '<td class="actions"><div class="table-actions" style="justify-content:flex-end">' +
+          '<a class="btn btn-secondary btn-sm" href="#/sql/' + enc(d.name) + '">SQL</a>' +
+          '<a class="btn btn-secondary btn-sm" href="/databases/export?db=' + enc(d.name) + '">Export</a>' +
+          (d.system ? '' : '<button class="btn btn-danger btn-sm" data-drop-db="' + esc(d.name) + '">Drop</button>') +
+        '</div></td></tr>').join('') +
+      '</tbody></table></div></div>';
+    view.querySelectorAll('[data-drop-db]').forEach(b => b.addEventListener('click', () => dropDatabase(b.dataset.dropDb)));
+  }
+  function stat(label, value, meta) {
+    return '<div class="card stat" style="margin:0"><div class="card-header"><span class="card-label">' + esc(label) + '</span></div>' +
+      '<div class="card-value line">' + esc(value) + '</div><div class="card-meta">' + esc(meta) + '</div></div>';
+  }
+
+  async function dropDatabase(name) {
+    const ok = await confirmAction({ title: 'Drop database', typeName: name, okLabel: 'Drop database',
+      text: 'This permanently deletes <strong>' + esc(name) + '</strong> and every table in it. Export it first if you might need it.' });
+    if (!ok) return;
+    const r = await postJson('/db/drop', { name });
+    if (!r.ok) return toast(r.error, 'error');
+    toast('Dropped ' + name);
+    delete state.tables[name]; state.open.delete(name);
+    if (parseRoute().db === name) location.hash = '#/'; else render();
+  }
+
+  $('#new-db-btn').addEventListener('click', async () => {
+    const cs = await getJson('/charsets');
+    const opts = (cs.charsets || [{ name: 'utf8mb4' }]).map(c => '<option' + (c.name === 'utf8mb4' ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('');
+    formModal({
+      title: 'New database', submitLabel: 'Create',
+      html: '<div class="field"><label>Name</label><input type="text" name="name" placeholder="myapp" pattern="[A-Za-z0-9_$-]+"></div>' +
+        '<div class="field"><label>Character set</label><select name="charset">' + opts + '</select><p class="field-hint">utf8mb4 is right for almost everything (full Unicode, emoji).</p></div>' +
+        '<div class="field"><label><input type="checkbox" name="mkuser"> Also create a user with full access to it</label></div>' +
+        '<div id="mkuser-fields" style="display:none">' +
+          '<div class="field"><label>Username</label><input type="text" name="user"></div>' +
+          '<div class="field"><label>Password</label>' + pwField('password') + '</div>' +
+        '</div>',
+      onOpen: (f) => {
+        f.mkuser.addEventListener('change', () => {
+          $('#mkuser-fields').style.display = f.mkuser.checked ? '' : 'none';
+          if (f.mkuser.checked && !f.user.value) f.user.value = f.name.value;
+          if (f.mkuser.checked && !f.password.value) f.password.value = genPassword();
+        });
+        bindPwField(f);
+      },
+      onSubmit: async (f) => {
+        const name = f.name.value.trim();
+        const r = await postJson('/db/create', { name, charset: f.charset.value });
+        if (!r.ok) return r;
+        if (f.mkuser.checked) {
+          const u = await postJson('/user/create', { user: f.user.value.trim(), host: 'localhost', password: f.password.value, db: name, preset: 'all' });
+          if (!u.ok) { toast('Database created, but user failed: ' + u.error, 'error'); }
+          else toast('Created ' + name + ' and user ' + f.user.value.trim());
+        } else toast('Created ' + name);
+        location.hash = '#/db/' + enc(name);
+        await loadOverview();
+        return { ok: true };
+      },
+    });
+  });
+
+  // ------------------------------------------------------------ database view
+  function tabs(base, items, active) {
+    return '<div class="dbm-tabs">' + items.map(([id, label]) =>
+      '<a class="tab-link' + (id === active ? ' active' : '') + '" href="' + base + '/' + id + '">' + label + '</a>').join('') + '</div>';
+  }
+
+  async function renderDb(view, route, token) {
+    const tables = await loadTables(route.db, true);
+    if (token !== renderToken) return;
+    renderTree();
+    const d = state.databases.find(x => x.name === route.db) || { system: false };
+    const base = '#/db/' + enc(route.db);
+    const head = '<div class="dbm-head"><div><h2>' + esc(route.db) + '</h2><div class="meta">' + tables.length + ' tables · ' +
+      fmtBytes(tables.reduce((a, t) => a + t.size, 0)) + (d.collation ? ' · ' + esc(d.collation) : '') + '</div></div>' +
+      tabs(base, [['tables', 'Tables'], ['sql', 'SQL'], ['import', 'Import'], ['export', 'Export']], route.tab) + '</div>';
+
+    if (route.tab === 'sql') { view.innerHTML = '<div class="card flush">' + head + '</div>'; showSqlEditor(route.db); return; }
+
+    if (route.tab === 'export') {
+      view.innerHTML = '<div class="card flush">' + head + '<div class="dbm-pad">' +
+        '<p class="dbm-confirm-text">Downloads a full <code>mysqldump</code> of <strong>' + esc(route.db) + '</strong>: tables, data, routines, triggers and events. Import it back here or with <code>mysql ' + esc(route.db) + ' &lt; file.sql</code>.</p>' +
+        '<a class="btn btn-primary" href="/databases/export?db=' + enc(route.db) + '">Download ' + esc(route.db) + '.sql</a></div></div>';
+      return;
+    }
+
+    if (route.tab === 'import') {
+      view.innerHTML = '<div class="card flush">' + head + '<div class="dbm-pad">' +
+        (d.system ? '<div class="dbm-error">System databases can\'t be imported into.</div>' :
+        '<p class="dbm-confirm-text">Run a <code>.sql</code> or <code>.sql.gz</code> file against <strong>' + esc(route.db) + '</strong>. Statements execute as they come; a failure stops the import but doesn\'t roll back what already ran.</p>' +
+        '<label class="dbm-drop" id="drop-zone"><input type="file" id="import-file" accept=".sql,.gz" style="display:none"><span id="drop-label">Drop a file here or click to choose</span></label>' +
+        '<div class="btn-row" style="margin-top:14px"><button class="btn btn-primary" id="import-btn" disabled>Import</button><span class="dbm-hint" id="import-status"></span></div>') +
+        '</div></div>';
+      if (!d.system) bindImport(route.db);
+      return;
+    }
+
+    view.innerHTML = '<div class="card flush">' + head +
+      (tables.length ? '<div class="table-wrap"><table class="data-table"><thead><tr><th>Table</th><th>Rows</th><th>Size</th><th>Engine</th><th>Collation</th><th></th></tr></thead><tbody>' +
+      tables.map(t => {
+        const tb = base + '/table/' + enc(t.name);
+        return '<tr><td class="primary"><a href="' + tb + '" style="font-family:var(--font-mono)">' + esc(t.name) + '</a>' + (t.type === 'view' ? ' <span class="badge badge-muted">view</span>' : '') + '</td>' +
+          '<td title="InnoDB row counts are estimates">' + (t.rows == null ? '—' : '~' + fmtNum(t.rows)) + '</td><td>' + fmtBytes(t.size) + '</td><td>' + esc(t.engine || '—') + '</td><td>' + esc(t.collation || '—') + '</td>' +
+          '<td class="actions"><div class="table-actions" style="justify-content:flex-end">' +
+            '<a class="btn btn-secondary btn-sm" href="' + tb + '/browse">Browse</a>' +
+            '<a class="btn btn-secondary btn-sm" href="' + tb + '/structure">Structure</a>' +
+            '<a class="btn btn-secondary btn-sm" href="/databases/export?db=' + enc(route.db) + '&table=' + enc(t.name) + '">Export</a>' +
+            (d.system ? '' : (t.type === 'table' ? '<button class="btn btn-danger btn-sm" data-truncate="' + esc(t.name) + '">Empty</button>' : '') +
+              '<button class="btn btn-danger btn-sm" data-drop="' + esc(t.name) + '">Drop</button>') +
+          '</div></td></tr>';
+      }).join('') + '</tbody></table></div>'
+      : '<div class="empty-state"><strong>No tables yet</strong>Create one from the <a href="' + base + '/sql">SQL tab</a> or import a dump.</div>') +
+      '</div>';
+    view.querySelectorAll('[data-drop]').forEach(b => b.addEventListener('click', () => tableAction(route.db, b.dataset.drop, 'drop')));
+    view.querySelectorAll('[data-truncate]').forEach(b => b.addEventListener('click', () => tableAction(route.db, b.dataset.truncate, 'truncate')));
+  }
+
+  async function tableAction(db, table, action) {
+    const drop = action === 'drop';
+    const ok = await confirmAction({
+      title: drop ? 'Drop table' : 'Empty table', typeName: table, okLabel: drop ? 'Drop table' : 'Delete all rows',
+      text: drop ? 'Permanently delete <strong>' + esc(db + '.' + table) + '</strong> and all its data?'
+                 : 'Delete <strong>every row</strong> in ' + esc(db + '.' + table) + ' (TRUNCATE) and reset AUTO_INCREMENT? The table structure stays.',
+    });
+    if (!ok) return;
+    const r = await postJson('/table/' + action, { db, table });
+    if (!r.ok) return toast(r.error, 'error');
+    toast((drop ? 'Dropped ' : 'Emptied ') + table);
+    if (drop && parseRoute().table === table) location.hash = '#/db/' + enc(db); else render();
+    loadOverview();
+  }
+
+  function bindImport(db) {
+    const input = $('#import-file'), zone = $('#drop-zone'), btn = $('#import-btn');
+    let file = null;
+    const pick = (f) => { file = f; $('#drop-label').textContent = f ? f.name + ' (' + fmtBytes(f.size) + ')' : 'Drop a file here or click to choose'; btn.disabled = !f; };
+    input.addEventListener('change', () => pick(input.files[0]));
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+    zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('over'); pick(e.dataTransfer.files[0]); });
+    btn.addEventListener('click', async () => {
+      if (!file) return;
+      const ok = await confirmAction({ title: 'Import SQL', okLabel: 'Import', text: 'Run <strong>' + esc(file.name) + '</strong> against <strong>' + esc(db) + '</strong>? Dumps usually DROP and recreate tables that already exist.' });
+      if (!ok) return;
+      btn.disabled = true;
+      $('#import-status').textContent = 'Uploading and importing… keep this tab open.';
+      const fd = new FormData(); fd.append('db', db); fd.append('file', file);
+      const res = await fetch(API + '/import', { method: 'POST', headers: { 'X-CSRFToken': csrf() }, body: fd });
+      const r = await parse(res);
+      btn.disabled = false;
+      if (!r.ok) { toast('Import failed', 'error'); $('#import-status').innerHTML = '<span style="color:var(--danger)">' + esc(r.error) + '</span>'; return; }
+      $('#import-status').textContent = 'Imported in ' + (r.elapsed_ms / 1000).toFixed(1) + 's';
+      toast('Imported ' + file.name);
+      state.tables[db] = null; loadTables(db, true).then(renderTree); loadOverview();
+    });
+  }
+
+  // ------------------------------------------------------------ table view
+  const browse = { key: null, page: 1, per_page: 50, sort: null, dir: 'asc', q: '', data: null };
+
+  async function renderTable(view, route, token) {
+    const base = '#/db/' + enc(route.db) + '/table/' + enc(route.table);
+    const sys = (state.databases.find(x => x.name === route.db) || {}).system;
+    const tinfo = (state.tables[route.db] || []).find(t => t.name === route.table) || {};
+    const head = '<div class="dbm-head"><div><h2>' + esc(route.table) + '</h2><div class="meta">' + esc(route.db) +
+      (tinfo.engine ? ' · ' + esc(tinfo.engine) : '') + (tinfo.size != null ? ' · ' + fmtBytes(tinfo.size) : '') + '</div></div>' +
+      tabs(base, [['browse', 'Browse'], ['structure', 'Structure'], ['sql', 'SQL'], ['insert', 'Insert']], route.tab) + '</div>';
+
+    if (route.tab === 'sql') {
+      view.innerHTML = '<div class="card flush">' + head + '</div>';
+      showSqlEditor(route.db, 'SELECT * FROM `' + route.table.replace(/`/g, '``') + '` LIMIT 100;');
+      return;
+    }
+    if (route.tab === 'structure') {
+      const r = await getJson('/structure', { db: route.db, table: route.table });
+      if (token !== renderToken) return;
+      if (!r.ok) throw new Error(r.error);
+      view.innerHTML = '<div class="card flush">' + head +
+        '<div class="dbm-grid table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Column</th><th>Type</th><th>Null</th><th>Key</th><th>Default</th><th>Extra</th><th>Comment</th></tr></thead><tbody>' +
+        r.columns.map((c, i) => '<tr><td>' + (i + 1) + '</td><td class="primary">' + esc(c.name) + '</td><td>' + esc(c.type) + '</td><td>' + (c.nullable ? 'yes' : 'no') + '</td><td>' +
+          (c.key ? '<span class="badge ' + (c.key === 'PRI' ? 'badge-warn' : 'badge-muted') + '">' + esc(c.key) + '</span>' : '') + '</td><td>' + cell(c.default) + '</td><td>' + esc(c.extra) + '</td><td>' + esc(c.comment) + '</td></tr>').join('') +
+        '</tbody></table></div>' +
+        '<div class="dbm-section-title">Indexes</div>' +
+        (r.indexes.length ? '<div class="dbm-grid table-wrap"><table class="data-table"><thead><tr><th>Name</th><th>Columns</th><th>Unique</th><th>Type</th></tr></thead><tbody>' +
+          r.indexes.map(ix => '<tr><td class="primary">' + esc(ix.name) + '</td><td>' + esc(ix.columns.join(', ')) + '</td><td>' + (ix.unique ? 'yes' : 'no') + '</td><td>' + esc(ix.type) + '</td></tr>').join('') +
+          '</tbody></table></div>' : '<div class="empty-state" style="padding:12px">No indexes</div>') +
+        '<div class="dbm-section-title">Create statement</div><pre class="dbm-code">' + esc(r.create_sql) + '</pre></div>';
+      return;
+    }
+    if (route.tab === 'insert') {
+      view.innerHTML = '<div class="card flush">' + head + '<div class="empty-state">Opening insert form…</div></div>';
+      const r = await getJson('/structure', { db: route.db, table: route.table });
+      if (!r.ok) throw new Error(r.error);
+      if (sys) { view.querySelector('.empty-state').textContent = "System tables can't be edited."; return; }
+      rowForm(route.db, route.table, r.columns, null, () => { location.hash = base + '/browse'; });
+      view.querySelector('.empty-state').innerHTML = '<a class="btn btn-secondary btn-sm" href="' + base + '/browse">Back to rows</a>';
+      return;
+    }
+
+    // browse
+    const key = route.db + '\u0000' + route.table;
+    if (browse.key !== key) Object.assign(browse, { key, page: 1, sort: null, dir: 'asc', q: '' });
+    view.innerHTML = '<div class="card flush">' + head +
+      '<div class="dbm-toolbar">' +
+        '<div class="dbm-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>' +
+        '<input type="text" id="row-search" placeholder="Search all columns…" value="' + esc(browse.q) + '"></div>' +
+        '<span class="spacer"></span>' +
+        '<label class="dbm-inline">Rows <select id="per-page">' + [25, 50, 100, 250, 500].map(n => '<option' + (n === browse.per_page ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></label>' +
+        (sys ? '' : '<a class="btn btn-primary btn-sm" href="' + base + '/insert">+ Insert row</a>') +
+      '</div><div id="rows-body"><div class="empty-state">Loading rows…</div></div></div>';
+    let t;
+    $('#row-search').addEventListener('input', (e) => { clearTimeout(t); t = setTimeout(() => { browse.q = e.target.value; browse.page = 1; loadRows(route, sys); }, 300); });
+    $('#per-page').addEventListener('change', (e) => { browse.per_page = Number(e.target.value); browse.page = 1; loadRows(route, sys); });
+    await loadRows(route, sys);
+  }
+
+  async function loadRows(route, sys) {
+    const body = $('#rows-body');
+    if (!body) return;
+    const r = await getJson('/rows', { db: route.db, table: route.table, page: browse.page, per_page: browse.per_page, sort: browse.sort || '', dir: browse.dir, q: browse.q });
+    if (!$('#rows-body')) return;
+    if (!r.ok) { body.innerHTML = '<div class="dbm-pad"><div class="dbm-error">' + esc(r.error) + '</div></div>'; return; }
+    browse.data = r;
+    const pk = new Set(r.primary_key);
+    const pages = Math.max(1, Math.ceil(r.total / r.per_page));
+    const numeric = r.columns.map(c => /^(tiny|small|medium|big)?int|decimal|float|double/i.test(c.type));
+    body.innerHTML = (r.rows.length ?
+      '<div class="dbm-grid dbm-scroll"><table class="data-table"><thead><tr>' + (sys ? '' : '<th></th>') +
+      r.columns.map(c => '<th class="sortable" data-sort="' + esc(c.name) + '" title="' + esc(c.type) + '">' + esc(c.name) +
+        (pk.has(c.name) ? '<span class="pk">🔑</span>' : '') + (browse.sort === c.name ? (browse.dir === 'asc' ? ' ▲' : ' ▼') : '') + '</th>').join('') +
+      '</tr></thead><tbody>' +
+      r.rows.map((row, i) => '<tr>' + (sys ? '' : '<td class="dbm-rowact"><button data-edit="' + i + '" title="Edit">✎</button><button data-copy="' + i + '" title="Duplicate">⧉</button><button class="del" data-del="' + i + '" title="Delete">✕</button></td>') +
+        row.map((v, j) => '<td' + (numeric[j] ? ' class="num"' : '') + '>' + cell(v) + '</td>').join('') + '</tr>').join('') +
+      '</tbody></table></div>'
+      : '<div class="empty-state">' + (browse.q ? 'No rows match “' + esc(browse.q) + '”' : 'This table is empty') + '</div>') +
+      '<div class="dbm-pager"><span>' + fmtNum(r.total) + ' row' + (r.total === 1 ? '' : 's') + (r.primary_key.length ? '' : ' · <span title="Rows are matched on every column value when editing">no primary key</span>') + '</span><span class="spacer"></span>' +
+      '<button class="btn btn-secondary btn-sm" data-page="1"' + (r.page <= 1 ? ' disabled' : '') + '>«</button>' +
+      '<button class="btn btn-secondary btn-sm" data-page="' + (r.page - 1) + '"' + (r.page <= 1 ? ' disabled' : '') + '>‹ Prev</button>' +
+      '<span>Page ' + r.page + ' of ' + fmtNum(pages) + '</span>' +
+      '<button class="btn btn-secondary btn-sm" data-page="' + (r.page + 1) + '"' + (r.page >= pages ? ' disabled' : '') + '>Next ›</button>' +
+      '<button class="btn btn-secondary btn-sm" data-page="' + pages + '"' + (r.page >= pages ? ' disabled' : '') + '>»</button></div>';
+
+    body.querySelectorAll('[data-sort]').forEach(th => th.addEventListener('click', () => {
+      const c = th.dataset.sort;
+      if (browse.sort === c) browse.dir = browse.dir === 'asc' ? 'desc' : 'asc'; else { browse.sort = c; browse.dir = 'asc'; }
+      loadRows(route, sys);
+    }));
+    body.querySelectorAll('[data-page]').forEach(b => b.addEventListener('click', () => { browse.page = Number(b.dataset.page); loadRows(route, sys); }));
+    body.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => rowForm(route.db, route.table, r.columns, r.rows[b.dataset.edit], () => loadRows(route, sys), r.primary_key)));
+    body.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', () => rowForm(route.db, route.table, r.columns, r.rows[b.dataset.copy], () => loadRows(route, sys), null, true)));
+    body.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+      const row = r.rows[b.dataset.del];
+      const ok = await confirmAction({ title: 'Delete row', okLabel: 'Delete', text: 'Delete this row from <strong>' + esc(route.table) + '</strong>?<br><code>' + esc(describeRow(r.columns, row, r.primary_key)) + '</code>' });
+      if (!ok) return;
+      const res = await postJson('/row/delete', { db: route.db, table: route.table, match: matchFor(r.columns, row, r.primary_key) });
+      if (!res.ok) return toast(res.error, 'error');
+      toast(res.affected ? 'Row deleted' : 'No row matched — it may have changed', res.affected ? 'success' : 'error');
+      loadRows(route, sys);
+    }));
+  }
+
+  function matchFor(columns, row, pk) {
+    const m = {};
+    columns.forEach((c, i) => { if (!pk.length || pk.includes(c.name)) m[c.name] = row[i]; });
+    return m;
+  }
+  function describeRow(columns, row, pk) {
+    const m = matchFor(columns, row, pk.length ? pk : columns.slice(0, 3).map(c => c.name));
+    return Object.entries(m).map(([k, v]) => k + '=' + (v === null ? 'NULL' : String(v).slice(0, 40))).join(', ');
+  }
+
+  /* Insert / edit / duplicate form. Each field has a mode: a literal
+     value, NULL, or (insert only) the column DEFAULT. On edit only the
+     fields that actually changed are sent. */
+  function rowForm(db, table, columns, row, done, pk, duplicate) {
+    const editing = !!row && !duplicate;
+    const isBinary = c => /blob|binary/i.test(c.type);
+    const html = columns.map((c, i) => {
+      const v = row ? row[i] : null;
+      const auto = /auto_increment/i.test(c.extra);
+      let mode = 'value';
+      if (editing) mode = v === null ? 'null' : 'value';
+      else if (duplicate) mode = auto ? 'default' : (v === null ? 'null' : 'value');
+      else if (auto || c.default !== null || c.nullable || /DEFAULT_GENERATED/i.test(c.extra)) mode = 'default';
+      const long = /text|json|blob/i.test(c.type) || (v != null && String(v).length > 80);
+      const val = v == null ? '' : String(v);
+      const ro = editing && isBinary(c) && val.startsWith('0x');
+      const modes = [['value', 'Value']].concat(c.nullable ? [['null', 'NULL']] : []).concat(editing ? [] : [['default', 'Default']]);
+      const input = long ? '<textarea name="v_' + i + '" rows="3"' + (ro ? ' disabled' : '') + '>' + esc(val) + '</textarea>'
+                         : '<input type="text" name="v_' + i + '" value="' + esc(val) + '"' + (ro ? ' disabled' : '') + '>';
+      return '<div class="field"><label>' + esc(c.name) + '<span class="type">' + esc(c.type) + (c.key === 'PRI' ? ' · primary key' : '') + (auto ? ' · auto' : '') + '</span></label>' +
+        '<div class="dbm-val-row"><select name="m_' + i + '"' + (ro ? ' disabled' : '') + '>' + modes.map(([id, l]) => '<option value="' + id + '"' + (id === mode ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' + input + '</div>' +
+        (ro ? '<div class="dbm-field-hint">Binary value — edit it with SQL.</div>' : '') +
+        (!editing && c.default !== null ? '<div class="dbm-field-hint">Default: ' + esc(c.default) + '</div>' : '') + '</div>';
+    }).join('');
+    formModal({
+      title: editing ? 'Edit row' : duplicate ? 'Duplicate row' : 'Insert row', sub: db + '.' + table,
+      submitLabel: editing ? 'Save changes' : 'Insert', html,
+      onOpen: (f) => {
+        const sync = (i) => { const m = f['m_' + i], v = f['v_' + i]; if (m && v) v.classList.toggle('disabled', m.value !== 'value'); };
+        columns.forEach((c, i) => { sync(i); if (f['m_' + i]) f['m_' + i].addEventListener('change', () => sync(i)); if (f['v_' + i]) f['v_' + i].addEventListener('input', () => { if (f['m_' + i].value !== 'value') { f['m_' + i].value = 'value'; sync(i); } }); });
+      },
+      onSubmit: async (f) => {
+        const values = {};
+        columns.forEach((c, i) => {
+          const m = f['m_' + i], v = f['v_' + i];
+          if (!m || m.disabled) return;
+          if (m.value === 'default') return;
+          const nv = m.value === 'null' ? null : v.value;
+          if (editing && nv === row[i]) return;
+          values[c.name] = nv;
+        });
+        let r;
+        if (editing) {
+          if (!Object.keys(values).length) return { ok: true };
+          r = await postJson('/row/update', { db, table, match: matchFor(columns, row, pk || []), values });
+          if (r.ok && !r.affected) r = { ok: false, error: 'No row was changed — it may have been modified or deleted since you loaded it.' };
+        } else {
+          r = await postJson('/row/insert', { db, table, values });
+        }
+        if (r.ok) { toast(editing ? 'Row updated' : 'Row inserted' + (r.insert_id ? ' (id ' + r.insert_id + ')' : '')); done && done(); }
+        return r;
+      },
+    });
+  }
+
+  // ------------------------------------------------------------ SQL console
+  let monacoEditor = null, monacoTried = false;
+  function sqlValue() { return monacoEditor ? monacoEditor.getValue() : $('#sql-fallback').value; }
+  function setSql(v) { if (monacoEditor) monacoEditor.setValue(v); else $('#sql-fallback').value = v; }
+
+  function showSqlEditor(db, initial) {
+    const sel = $('#sql-db');
+    sel.innerHTML = '<option value="">(none)</option>' + state.databases.map(d => '<option' + (d.name === db ? ' selected' : '') + '>' + esc(d.name) + '</option>').join('');
+    if (initial && !sqlValue().trim()) setSql(initial);
+    if (monacoTried) return monacoEditor && monacoEditor.layout();
+    monacoTried = true;
+    const fallback = () => { $('#sql-editor').style.display = 'none'; const ta = $('#sql-fallback'); ta.style.display = ''; if (initial) ta.value = initial; };
+    if (typeof require === 'undefined') return fallback();
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    require(['vs/editor/editor.main'], () => {
+      const light = document.documentElement.getAttribute('data-mode') === 'light';
+      monacoEditor = monaco.editor.create($('#sql-editor'), {
+        value: $('#sql-fallback').value || initial || '', language: 'sql', theme: light ? 'vs' : 'vs-dark',
+        minimap: { enabled: false }, fontSize: 13, automaticLayout: true, scrollBeyondLastLine: false, wordWrap: 'on',
+      });
+      monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, runSql);
+      document.addEventListener('opslab-theme-changed', (e) => monaco.editor.setTheme(e.detail.mode === 'light' ? 'vs' : 'vs-dark'));
+    }, fallback);
+  }
+  $('#sql-fallback').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runSql(); } });
+  $('#sql-run').addEventListener('click', runSql);
+
+  const DESTRUCTIVE = /\b(drop|truncate|delete|alter|update|grant|revoke|rename)\b/i;
+  async function runSql() {
+    const sql = sqlValue().trim();
+    if (!sql) return;
+    if (DESTRUCTIVE.test(sql.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|--.*$|#.*$|\/\*[\s\S]*?\*\//gm, ''))) {
+      const ok = await confirmAction({ title: 'Run statement?', okLabel: 'Run it', text: 'This query looks like it changes data or structure. It runs immediately with no undo.' });
+      if (!ok) return;
+    }
+    const btn = $('#sql-run'), out = $('#sql-results');
+    btn.disabled = true; btn.textContent = 'Running…';
+    const r = await postJson('/query', { db: $('#sql-db').value, sql });
+    btn.disabled = false; btn.textContent = 'Run';
+    if (!r.ok && !r.results) { out.innerHTML = '<div class="dbm-error">' + esc(r.error) + '</div>'; return; }
+    let html = '';
+    r.results.forEach((res, n) => {
+      if (res.type === 'rows') {
+        html += '<div class="card flush dbm-result"><div class="dbm-result-head"><span>Result ' + (n + 1) + ' · ' + res.rows.length + ' row' + (res.rows.length === 1 ? '' : 's') +
+          (res.truncated ? ' (first 1000 shown)' : '') + '</span><span>' + (n === 0 ? r.elapsed_ms + ' ms' : '') + '</span></div>' +
+          (res.rows.length ? '<div class="dbm-grid dbm-scroll"><table class="data-table"><thead><tr>' + res.columns.map(c => '<th>' + esc(c) + '</th>').join('') + '</tr></thead><tbody>' +
+            res.rows.map(row => '<tr>' + row.map(v => '<td>' + cell(v) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>'
+            : '<div class="empty-state" style="padding:16px">Empty result set</div>') + '</div>';
+      } else {
+        html += '<div class="card flush dbm-result"><div class="dbm-result-head"><span>Statement ' + (n + 1) + ' · OK · ' + fmtNum(Math.max(0, res.affected)) + ' row(s) affected' +
+          (res.insert_id ? ' · insert id ' + res.insert_id : '') + '</span><span>' + (n === 0 ? r.elapsed_ms + ' ms' : '') + '</span></div></div>';
+      }
+    });
+    if (r.error) html += '<div class="dbm-error">' + esc(r.error) + (r.results.length ? '\n(statements before this one ran successfully)' : '') + '</div>';
+    out.innerHTML = html || '<div class="card"><div class="empty-state">Done.</div></div>';
+    // Structure may have changed — refresh the tree quietly.
+    if (/\b(create|drop|alter|rename|truncate)\b/i.test(sql)) {
+      state.tables = {}; loadOverview().then(() => state.open.forEach(db => loadTables(db, true).then(renderTree)));
+    }
+  }
+
+  // ------------------------------------------------------------ users
+  function genPassword() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    const a = new Uint32Array(24); crypto.getRandomValues(a);
+    return Array.from(a, x => chars[x % chars.length]).join('');
+  }
+  function pwField(name) {
+    return '<div class="dbm-val-row"><input type="text" name="' + name + '" spellcheck="false"><button type="button" class="btn btn-secondary btn-sm" data-gen="' + name + '" style="padding:9px 10px">Generate</button>' +
+      '<button type="button" class="btn btn-secondary btn-sm" data-copy-pw="' + name + '" style="padding:9px 10px">Copy</button></div>';
+  }
+  function bindPwField(f) {
+    f.querySelectorAll('[data-gen]').forEach(b => b.addEventListener('click', () => { f[b.dataset.gen].value = genPassword(); }));
+    f.querySelectorAll('[data-copy-pw]').forEach(b => b.addEventListener('click', () => { navigator.clipboard.writeText(f[b.dataset.copyPw].value).then(() => toast('Password copied')); }));
+  }
+  function presetSelect(name) {
+    const labels = { all: 'All privileges', readwrite: 'Read/write + schema changes', data: 'Read/write data only', readonly: 'Read only' };
+    return '<select name="' + name + '">' + state.presets.map(p => '<option value="' + p + '">' + esc(labels[p] || p) + '</option>').join('') + '</select>';
+  }
+  function dbSelect(name, includeNone) {
+    return '<select name="' + name + '">' + (includeNone ? '<option value="">(no database access yet)</option>' : '') +
+      state.databases.filter(d => !d.system).map(d => '<option>' + esc(d.name) + '</option>').join('') + '</select>';
+  }
+
+  async function renderUsers(view) {
+    if (!state.server) await loadOverview();
+    const r = await getJson('/users');
+    if (!r.ok) throw new Error(r.error);
+    view.innerHTML = '<div class="card flush"><div class="dbm-head"><div><h2>Database users</h2><div class="meta">' + r.users.length + ' accounts on this server</div></div>' +
+      '<button class="btn btn-primary btn-sm" id="new-user-btn">+ New user</button></div>' +
+      '<div class="table-wrap"><table class="data-table"><thead><tr><th>User</th><th>Host</th><th>Databases</th><th>Auth</th><th></th></tr></thead><tbody>' +
+      r.users.map((u, i) => '<tr><td class="primary" style="font-family:var(--font-mono)">' + esc(u.user) + (u.protected ? ' <span class="badge badge-muted">system</span>' : '') + (u.locked ? ' <span class="badge badge-warn">locked</span>' : '') + '</td>' +
+        '<td style="font-family:var(--font-mono)">' + esc(u.host) + '</td><td>' + (u.databases.length ? u.databases.map(d => '<span class="badge badge-muted" style="margin:1px">' + esc(d) + '</span>').join(' ') : '<span style="color:var(--text-muted)">—</span>') + '</td>' +
+        '<td style="font-size:12px">' + esc(u.plugin) + '</td>' +
+        '<td class="actions"><div class="table-actions" style="justify-content:flex-end">' +
+          '<button class="btn btn-secondary btn-sm" data-u="' + i + '" data-act="grants">Privileges</button>' +
+          (u.protected ? '' : '<button class="btn btn-secondary btn-sm" data-u="' + i + '" data-act="password">Password</button><button class="btn btn-danger btn-sm" data-u="' + i + '" data-act="drop">Drop</button>') +
+        '</div></td></tr>').join('') + '</tbody></table></div></div>';
+
+    $('#new-user-btn').addEventListener('click', () => formModal({
+      title: 'New database user', submitLabel: 'Create user',
+      html: '<div class="field"><label>Username</label><input type="text" name="user"></div>' +
+        '<div class="field"><label>Host</label><input type="text" name="host" value="localhost"><p class="field-hint"><code>localhost</code> for apps on this server, <code>%</code> for anywhere (MySQL is only listening on 127.0.0.1 right now), or a specific IP.</p></div>' +
+        '<div class="field"><label>Password</label>' + pwField('password') + '</div>' +
+        '<div class="field"><label>Grant access to</label>' + dbSelect('db', true) + '</div>' +
+        '<div class="field"><label>Privileges</label>' + presetSelect('preset') + '</div>',
+      onOpen: (f) => { f.password.value = genPassword(); bindPwField(f); },
+      onSubmit: async (f) => {
+        const res = await postJson('/user/create', { user: f.user.value.trim(), host: f.host.value.trim(), password: f.password.value, db: f.db.value, preset: f.preset.value });
+        if (res.ok) { toast('Created ' + f.user.value.trim() + " — copy the password now, it can't be shown again"); render(); }
+        return res;
+      },
+    }));
+
+    view.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => userAction(r.users[b.dataset.u], b.dataset.act)));
+  }
+
+  async function userAction(u, act) {
+    const id = { user: u.user, host: u.host };
+    const label = "'" + u.user + "'@'" + u.host + "'";
+    if (act === 'drop') {
+      const ok = await confirmAction({ title: 'Drop user', typeName: u.user, okLabel: 'Drop user', text: 'Delete <code>' + esc(label) + '</code>? Any app logging in as this user will stop working.' });
+      if (!ok) return;
+      const r = await postJson('/user/drop', id);
+      if (!r.ok) return toast(r.error, 'error');
+      toast('Dropped ' + label); render();
+    } else if (act === 'password') {
+      formModal({
+        title: 'Change password', sub: label, submitLabel: 'Set password',
+        html: '<div class="field"><label>New password</label>' + pwField('password') + '<p class="field-hint">Remember to update the app\'s .env / config with the new password.</p></div>',
+        onOpen: (f) => { f.password.value = genPassword(); bindPwField(f); },
+        onSubmit: async (f) => { const r = await postJson('/user/password', Object.assign({ password: f.password.value }, id)); if (r.ok) toast('Password changed for ' + label); return r; },
+      });
+    } else if (act === 'grants') {
+      const g = await getJson('/user/grants', id);
+      if (!g.ok) return toast(g.error, 'error');
+      formModal({
+        title: 'Privileges', sub: label, submitLabel: 'Grant',
+        html: '<div class="dbm-section-title" style="padding:0 0 6px">Current grants</div><ul class="dbm-grants">' + g.grants.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' +
+          (u.protected ? '<p class="field-hint">System account — privileges are read-only here.</p>' :
+          '<div class="field"><label>Database</label>' + dbSelect('db') + '</div><div class="field"><label>Privileges to grant</label>' + presetSelect('preset') + '</div>' +
+          (u.databases.length ? '<div class="field"><label>Revoke all access to</label><div class="dbm-val-row"><select name="revoke_db">' + u.databases.map(d => '<option>' + esc(d) + '</option>').join('') +
+            '</select><button type="button" class="btn btn-danger btn-sm" id="revoke-btn" style="padding:9px 12px">Revoke</button></div></div>' : '')),
+        onOpen: (f) => {
+          if (u.protected) $('#form-submit').disabled = true;
+          const rb = $('#revoke-btn');
+          if (rb) rb.addEventListener('click', async () => {
+            const r = await postJson('/user/revoke', Object.assign({ db: f.revoke_db.value }, id));
+            if (!r.ok) return toast(r.error, 'error');
+            toast('Revoked ' + f.revoke_db.value + ' from ' + label); closeModal('form-modal'); render();
+          });
+        },
+        onSubmit: async (f) => {
+          if (u.protected) return { ok: true };
+          const r = await postJson('/user/grant', Object.assign({ db: f.db.value, preset: f.preset.value }, id));
+          if (r.ok) { toast('Granted ' + f.db.value + ' to ' + label); render(); }
+          return r;
+        },
+      });
+    }
+  }
+
+  // ------------------------------------------------------------ boot
+  render();
+})();
+</script>
+{% endblock %}

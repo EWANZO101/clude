@@ -1,0 +1,93 @@
+{% extends "client_portal/_base.html" %}
+{% block title %}Manage Inventory — {{ instance.display_name() }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('client_portal.instance_detail', instance_id=instance.public_id) }}" class="crumb">← {{ instance.display_name() }}</a>
+    <h1>Manage Inventory</h1>
+    <div class="page-sub">Custom item/tool types and their custom fields — no code needed.</div>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('client_portal.sidebar_page', instance_id=instance.public_id) }}" class="btn btn-secondary">Sidebar order →</a>
+  </div>
+</div>
+
+<details class="toggle-card" open>
+  <summary>+ Add a new type</summary>
+  <div class="toggle-card-body">
+    <form method="post" action="{{ url_for('client_portal.inventory_add_type', instance_id=instance.public_id) }}">
+      <label>Name</label>
+      <input type="text" name="name" required placeholder="e.g. Consumables, Materials, Welding Wire">
+      <label>Description (optional)</label>
+      <input type="text" name="description">
+      <button type="submit" style="margin-top:14px;">Create Type</button>
+    </form>
+  </div>
+</details>
+
+{% for t in types %}
+<div class="panel" style="margin-top:16px;">
+  <div class="panel-head">
+    <div class="panel-head-title">
+      <h2>{{ t.name }}
+        {% if t.is_builtin %}<span class="pill pill-muted">Built-in</span>{% endif %}
+        <span class="muted" style="font-weight:400; font-size:13px;">({{ t.item_count }} item{{ '' if t.item_count == 1 else 's' }})</span>
+      </h2>
+    </div>
+    <a href="{{ url_for('client_portal.inventory_list_type', instance_id=instance.public_id, type_key=t.key) }}" class="btn btn-sm">View items →</a>
+  </div>
+
+  <form method="post" action="{{ url_for('client_portal.inventory_edit_type', instance_id=instance.public_id, type_key=t.key) }}" style="margin-bottom:16px;">
+    <label>Name</label>
+    <input type="text" name="name" value="{{ t.name }}" required>
+    <label>Description</label>
+    <input type="text" name="description" value="{{ t.description or '' }}">
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <button type="submit" class="btn-sm">Save</button>
+    </div>
+  </form>
+  {% if not t.is_builtin and t.item_count == 0 %}
+  <form method="post" action="{{ url_for('client_portal.inventory_delete_type', instance_id=instance.public_id, type_key=t.key) }}"
+        onsubmit="return confirm('Delete the {{ t.name }} type?');" style="margin-bottom:16px;">
+    <button type="submit" class="btn-danger btn-sm">Delete Type</button>
+  </form>
+  {% endif %}
+
+  <h3>Custom fields</h3>
+  {% if t.fields %}
+    {% for f in t.fields %}
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border-soft);">
+        <div>
+          <strong>{{ f.label }}</strong>
+          <span class="pill pill-accent">{{ f.field_type }}</span>
+          {% if f.required %}<span class="pill pill-muted">required</span>{% endif %}
+          {% if f.options %}<div class="muted" style="font-size:12px;">options: {{ f.options|join(', ') }}</div>{% endif %}
+        </div>
+        <form method="post" action="{{ url_for('client_portal.inventory_delete_field', instance_id=instance.public_id, type_key=t.key, field_id=f.id) }}"
+              onsubmit="return confirm('Remove this field?');">
+          <button type="submit" class="btn btn-secondary btn-sm">Remove</button>
+        </form>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted" style="font-size:13px;">No custom fields yet.</p>
+  {% endif %}
+
+  <details style="margin-top:12px;">
+    <summary style="cursor:pointer; color:var(--accent); font-size:13px;">+ Add a field</summary>
+    <form method="post" action="{{ url_for('client_portal.inventory_add_field', instance_id=instance.public_id, type_key=t.key) }}" style="margin-top:10px;">
+      <label>Label</label>
+      <input type="text" name="label" required placeholder="e.g. Diameter, Lot Number, Color">
+      <label>Field type</label>
+      <select name="field_type">
+        {% for ft in field_types %}<option value="{{ ft }}">{{ ft }}</option>{% endfor %}
+      </select>
+      <label>Options (comma-separated, only used for "select")</label>
+      <input type="text" name="options" placeholder="e.g. Red, Green, Blue">
+      <label class="checkline"><input type="checkbox" name="required"> Required</label>
+      <button type="submit" style="margin-top:14px;">Add Field</button>
+    </form>
+  </details>
+</div>
+{% endfor %}
+{% endblock %}

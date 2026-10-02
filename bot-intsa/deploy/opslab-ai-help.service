@@ -1,0 +1,15 @@
+[Unit]
+Description=OpsLab AI Help (Social Launch Agent)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/bot-intsa
+EnvironmentFile=/root/bot-intsa/.env
+ExecStart=/root/bot-intsa/venv/bin/gunicorn -w 2 -b 127.0.0.1:5091 --timeout 60 run:app
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

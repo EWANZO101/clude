@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}On-site Pricing · OpsLab Systems{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+
+  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-ops-300 mb-2">
+        <span class="live-dot"></span> Live pricing
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">On-site service pricing</h1>
+      <p class="text-gray-400 mt-2 text-sm max-w-xl">Estimated prices for our on-site &amp; in-person services. These are guide prices — the final cost is confirmed after assessment. Updates automatically.</p>
+    </div>
+    <a href="{{ url_for('callouts.book') }}" class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition self-start whitespace-nowrap">Book a call-out</a>
+  </div>
+
+  <div class="space-y-5" id="priceList">
+    {% for grp, opts in service_groups %}
+    <div class="rounded-2xl border border-ink-600 bg-ink-800/40 overflow-hidden">
+      <div class="px-5 py-3 bg-ink-900/40 text-sm font-bold text-ops-200">{{ grp }}</div>
+      <div class="divide-y divide-ink-600/50">
+        {% for o in opts %}
+          {% if o != other_label %}
+          <div class="flex items-center justify-between gap-4 px-5 py-3">
+            <span class="text-sm text-gray-200">{{ o }}</span>
+            <span class="text-sm font-bold text-white whitespace-nowrap price-cell" data-key="{{ o }}">{{ prices.get(o) or 'On assessment' }}</span>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <p class="text-xs text-gray-500 mt-6">Prices shown are estimates and may vary depending on location, access and parts. Areas outside the Scottish Borders may incur a travel charge. <span id="priceStamp" class="text-gray-600"></span></p>
+</div>
+
+<script>
+(function(){
+  var cells = Array.prototype.slice.call(document.querySelectorAll('.price-cell'));
+  var stamp = document.getElementById('priceStamp');
+  function apply(data){
+    cells.forEach(function(c){
+      var k = c.getAttribute('data-key');
+      var v = (data && Object.prototype.hasOwnProperty.call(data, k)) ? data[k] : '';
+      var next = v || 'On assessment';
+      if (c.textContent !== next){
+        c.textContent = next;
+        c.classList.add('price-flash');
+        setTimeout(function(){ c.classList.remove('price-flash'); }, 900);
+      }
+    });
+    if (stamp){ stamp.textContent = '· Updated ' + new Date().toLocaleTimeString(); }
+  }
+  function poll(){
+    fetch('{{ url_for("callouts.pricing_json") }}', {cache:'no-store'})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){ if (d) apply(d); })
+      .catch(function(){});
+  }
+  setInterval(poll, 15000);  // live refresh every 15s
+  // first refresh shortly after load to set the timestamp
+  setTimeout(poll, 2000);
+})();
+</script>
+<style>
+  .price-flash{ animation: priceFlash 0.9s ease; }
+  @keyframes priceFlash{ 0%{ color:#7cc0ff; } 100%{ color:#fff; } }
+</style>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Overview — {{ tenant_name }}{% endblock %}
+{% block content %}
+<h1>Overview</h1>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:20px;">
+  <div class="stat-card">
+    <div class="value">{{ total_items }}</div>
+    <div class="label">Total items</div>
+  </div>
+  <div class="stat-card">
+    <div class="value">{{ checked_out }}</div>
+    <div class="label">Checked out</div>
+  </div>
+  <div class="stat-card">
+    <div class="value">{{ types|length }}</div>
+    <div class="label">Item types</div>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+  <div class="panel">
+    <h2 style="margin-top:0; font-size:15px;">By type</h2>
+    {% if types %}
+      {% for t in types %}
+        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--panel-border);">
+          <a href="{{ url_for('inventory.list_type_items', type_key=t.key) }}">{{ t.name }}</a>
+          <span class="muted">{{ counts.get(t.key, 0) }}</span>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">No item types yet.</p>
+    {% endif %}
+    {% if is_admin %}
+      <a href="{{ url_for('inventory.type_manager') }}" class="btn" style="margin-top:14px; display:inline-block;">Manage Types</a>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0; font-size:15px;">Recent activity</h2>
+    {% if recent_activity %}
+      {% for a in recent_activity %}
+        <div style="padding:8px 0; border-bottom:1px solid var(--panel-border); font-size:13px;">
+          <strong>{{ a.action.replace('_', ' ') }}</strong>
+          {% if a.target %} — {{ a.target }}{% endif %}
+          <div class="muted" style="font-size:12px;">{{ a.actor or 'shared' }} · {{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">Nothing yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

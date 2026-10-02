@@ -1,0 +1,39 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}Hardware Brands — Admin{% endblock %}
+{% block page_title %}Hardware brands{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Name</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for brand in brands %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ brand.name }}</td>
+          <td>{% if brand.is_active %}<span class="badge-success">Active</span>{% else %}<span class="badge-neutral">Disabled</span>{% endif %}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.hardware_brand_toggle', brand_id=brand.id) }}">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-brand-400 hover:text-brand-300 text-sm">{{ "Disable" if brand.is_active else "Enable" }}</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="text-center text-text-muted py-8">No brands yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Add brand</h2>
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      {{ field(form.name) }}
+      {{ field(form.logo_path, placeholder="https://") }}
+      {{ checkbox(form.is_active) }}
+      <button type="submit" class="btn-primary w-full">Add brand</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

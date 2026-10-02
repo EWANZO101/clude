@@ -1,0 +1,191 @@
+{% extends "client_portal/_base.html" %}
+{% import "_icons.html" as icons %}
+{% block title %}Legal & Privacy — Client Portal{% endblock %}
+{% block content %}
+<style>
+  .legal-page h2{display:flex; align-items:center; gap:9px; font-size:17px; margin:0 0 4px;}
+  .legal-page h2 svg{color:var(--accent); flex-shrink:0;}
+  .legal-page .section-note{color:var(--muted); font-size:12.5px; margin:0 0 16px;}
+  .legal-page h3{font-size:13.5px; margin:20px 0 6px; color:var(--text);}
+  .legal-page p{font-size:13.5px; line-height:1.65; margin:0 0 12px;}
+  .legal-page ul{font-size:13.5px; line-height:1.75; margin:0 0 4px; padding-left:20px;}
+  .legal-page li{margin-bottom:8px;}
+  .legal-page li:last-child{margin-bottom:0;}
+  .legal-toc{
+    display:flex; flex-wrap:wrap; gap:8px; padding:0; margin:0 0 20px; list-style:none;
+  }
+  .legal-toc a{
+    display:inline-block; padding:7px 13px; border-radius:999px; background:var(--surface-2);
+    border:1px solid var(--border); font-size:12.5px; font-weight:500; color:var(--text);
+  }
+  .legal-toc a:hover{background:var(--accent-dim); border-color:var(--accent); text-decoration:none;}
+  .callout{
+    border-radius:var(--radius); padding:16px 18px; margin-bottom:16px; font-size:13.5px; line-height:1.65;
+  }
+  .callout-warn{background:var(--amber-dim); border:1px solid rgba(227,168,63,.35);}
+  .callout-info{background:var(--surface-3); border:1px solid var(--border);}
+  .data-card{
+    border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px;
+    background:var(--surface-3);
+  }
+  .data-card:last-child{margin-bottom:0;}
+  .data-card .label{font-weight:600; font-size:13.5px; margin-bottom:4px;}
+  .data-card p{margin:0; font-size:13px; color:var(--muted);}
+  .obligation-badge{
+    display:inline-block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
+    padding:2px 8px; border-radius:5px; margin-bottom:10px;
+  }
+  .obligation-badge.us{background:var(--green-dim); color:var(--green);}
+  .obligation-badge.yours{background:var(--amber-dim); color:var(--amber);}
+</style>
+
+<div class="page-header">
+  <div class="titles"><h1>Legal &amp; Privacy</h1></div>
+</div>
+
+<div class="legal-page">
+
+<div class="callout callout-warn">
+  <strong>Read this first.</strong> This page is a technical compliance overview, drafted by the team
+  that built this system — it is <strong>not legal advice</strong>, and it does not by itself make your
+  organization compliant with anything. It honestly describes what the OpsLab Kiosk Management System
+  (Admin Panel, Client Portal, Instance Agent, and Kiosk App) actually does with data. Whether that adds
+  up to full compliance for <em>your</em> organization also depends on things entirely outside this
+  software — an appointed Information Officer or DPO, lawful-basis assessments, staff contracts,
+  regulator registrations. Have this reviewed by qualified counsel in each jurisdiction you operate in
+  before relying on it, editing it, or publishing any part of it as your own notice.
+</div>
+
+<ul class="legal-toc">
+  <li><a href="#privacy-notice">Privacy Notice</a></li>
+  <li><a href="#uk-gdpr">Scotland / UK GDPR</a></li>
+  <li><a href="#popia">South Africa / POPIA</a></li>
+  <li><a href="#scope">Scope of this page</a></li>
+</ul>
+
+<div class="panel" id="privacy-notice">
+  <h2>{{ icons.icon('legal', 18) }}Privacy Notice — what this system collects</h2>
+  <p class="section-note">Covers the Admin Panel / Client Portal layer (this site). Each kiosk terminal's
+    own Kiosk App has a separate, on-device Privacy Notice for kiosk staff — see South Africa / POPIA
+    below for how the two connect.</p>
+
+  <h3>What's collected, and why</h3>
+  <div class="data-card">
+    <div class="label">Client Portal account</div>
+    <p>Your full name, email address, and a salted Argon2 password hash (never the password itself) —
+      used to sign you in and to attribute the actions you take here.</p>
+  </div>
+  <div class="data-card">
+    <div class="label">Instance telemetry</div>
+    <p>Hostname, OS/version, Agent/App version, local IP, and a heartbeat sent roughly once a minute —
+      used to show online/offline status and to run updates, backups, and diagnostics.</p>
+  </div>
+  <div class="data-card">
+    <div class="label">Synced inventory &amp; local users</div>
+    <p>Items/tools/equipment and Local Kiosk User accounts (name, badge code, role — PINs stored only as
+      Argon2 hashes on both sides) mirrored between the Kiosk App and this Admin Panel.</p>
+  </div>
+  <div class="data-card">
+    <div class="label">Backups</div>
+    <p>Database backups your organization schedules or requests, kept until you delete them — nothing is
+      pruned automatically today.</p>
+  </div>
+  <div class="data-card">
+    <div class="label">Audit &amp; command logs</div>
+    <p>Who did what and when — staff/config/update/command actions, kept indefinitely as an
+      accountability record.</p>
+  </div>
+
+  <h3>Security measures already in place</h3>
+  <ul>
+    <li>Passwords and PINs are never stored or logged in plain text — Argon2 hashing throughout.</li>
+    <li>Each instance authenticates with its own per-instance secret, not a shared credential.</li>
+    <li>This site is served over HTTPS.</li>
+    <li>A suspended or expired instance is cut off from every API call the moment that's set.</li>
+    <li>Every administrative action is attributed to a real user in the audit log.</li>
+  </ul>
+
+  <h3>Your rights</h3>
+  <p>As a Client Portal user, you can ask an OpsLabs admin to show you what this system holds about your
+    account, correct it, or delete it. For a kiosk's own local users (staff who log in at the physical
+    terminal), the same applies through that instance's own administrators.</p>
+</div>
+
+<div class="panel" id="uk-gdpr">
+  <h2>{{ icons.icon('legal', 18) }}Scotland — UK GDPR &amp; Data Protection Act 2018</h2>
+  <p class="section-note">Scotland is part of the United Kingdom, so this is what actually applies there
+    — not the EU GDPR directly.</p>
+
+  <p>Data protection in Scotland is governed by the <strong>UK GDPR</strong> (the retained,
+    UK-domestic version of the EU regulation, in force since 1 Jan 2021) together with the
+    <strong>Data Protection Act 2018</strong>. In practice the substantive rights and obligations are
+    very similar to the EU regime. If your organization also processes the data of people in the EU,
+    EU GDPR may apply there separately — a scoping question for your own counsel, not something this
+    system decides for you.</p>
+
+  <h3>What this means for a kiosk deployment</h3>
+  <ul>
+    <li><span class="obligation-badge us">this system provides</span><br>
+      The tools your administrators need to fulfil a data subject's rights of access, rectification,
+      erasure, restriction, portability, and objection — view/edit/delete a local user or account, export
+      records.</li>
+    <li><span class="obligation-badge yours">your responsibility</span><br>
+      Actually responding to a data subject's request within the statutory time limit; documenting your
+      lawful basis for processing (typically legitimate interests or contractual necessity for staff
+      custody/accountability records); deciding whether a Data Protection Impact Assessment is warranted
+      for your deployment.</li>
+    <li><span class="obligation-badge yours">your responsibility</span><br>
+      Registering with the <strong>Information Commissioner's Office (ICO)</strong>, the UK's supervisory
+      authority, and paying the annual data protection fee if your organization is required to.</li>
+    <li><span class="obligation-badge yours">your responsibility</span><br>
+      If you engage OpsLabs as a processor acting on your instructions (rather than just using
+      off-the-shelf software), UK GDPR Article 28 generally expects a written processing agreement — raise
+      this with OpsLabs directly if you need one in place.</li>
+  </ul>
+</div>
+
+<div class="panel" id="popia">
+  <h2>{{ icons.icon('legal', 18) }}South Africa — Protection of Personal Information Act (POPIA)</h2>
+
+  <p>Each Kiosk App instance already ships its own on-device Privacy Notice for kiosk staff/local users,
+    written specifically against POPIA's conditions for lawful processing — reachable from that kiosk's
+    own login screen without needing to log in first (the same "openness" principle POPIA itself
+    requires). It covers what's collected, retention, and the technical safeguards Condition 7 (Security
+    Safeguards) expects, and stays in sync with that instance's configured retention period and
+    Information Officer contact (set from that instance's Settings tab, either here or in the Admin
+    Panel).</p>
+
+  <h3>What stays your organization's own responsibility</h3>
+  <ul>
+    <li><span class="obligation-badge yours">your responsibility</span><br>
+      Appointing and registering an <strong>Information Officer</strong> with the Information Regulator
+      (this system records that person's contact details for display — it does not register them for
+      you).</li>
+    <li><span class="obligation-badge yours">your responsibility</span><br>
+      A documented <strong>PAIA manual</strong> and internal POPIA compliance framework/policies.</li>
+    <li><span class="obligation-badge yours">your responsibility</span><br>
+      Confirming your lawful basis (Condition 1) and that collection is adequate, relevant, and not
+      excessive (Condition 2) for how your site actually uses this system.</li>
+    <li><span class="obligation-badge yours">your responsibility</span><br>
+      Any <strong>cross-border transfer</strong> assessment (Condition 8) if data leaves South Africa —
+      e.g. if this Admin Panel or its backups are hosted outside the country.</li>
+    <li><span class="obligation-badge us">this system provides</span><br>
+      The tools to respond to data subject access/correction/deletion requests within POPIA's timelines
+      — per-user edit/delete, configurable retention. The actual response is yours to make.</li>
+  </ul>
+</div>
+
+<div class="panel" id="scope">
+  <h2>{{ icons.icon('legal', 18) }}Scope of this page</h2>
+  <p>This page deliberately covers <strong>data protection / privacy law</strong> only — UK GDPR/DPA 2018
+    for Scotland and POPIA for South Africa — since that's the area this software actually touches and
+    can meaningfully speak to. It is not, and doesn't attempt to be, a complete audit of every law that
+    could apply to a kiosk management system in either jurisdiction: consumer protection, electronic
+    transactions/signatures, accessibility, sector-specific rules, tax/record-keeping, and employment law
+    are all out of scope here and need their own separate legal review. If you need that broader review,
+    this page is a reasonable starting point for the data-protection section of it, not a substitute for
+    the rest.</p>
+</div>
+
+</div>
+{% endblock %}

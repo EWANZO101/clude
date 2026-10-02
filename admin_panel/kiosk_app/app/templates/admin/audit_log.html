@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Audit Log — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.index') }}">← Admin Panel</a></p>
+<h1>Audit Log</h1>
+<p class="muted" style="font-size:13px;">Most recent 200 entries. Administrative changes only — see the dashboard's activity feed for day-to-day stock activity.</p>
+
+<p>
+  <a href="{{ url_for('admin.audit_log') }}" style="{{ 'font-weight:700;' if not action }}">All</a>
+  {% for a in all_actions %}
+    · <a href="{{ url_for('admin.audit_log', action=a) }}" style="{{ 'font-weight:700;' if action == a }}">{{ a }}</a>
+  {% endfor %}
+</p>
+
+<div class="panel" style="padding:0;">
+  {% if entries %}
+    <table style="width:100%; border-collapse:collapse;">
+      <tbody>
+        {% for e in entries %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:12px 14px; font-size:13px;">
+              <strong>{{ e.actor }}</strong> — {{ e.action }}
+              {% if e.target %}<span class="muted">({{ e.target }})</span>{% endif %}
+              {% if e.detail %}<div class="muted" style="font-size:12px;">{{ e.detail }}</div>{% endif %}
+            </td>
+            <td style="padding:12px 14px; text-align:right; white-space:nowrap; font-size:12px;" class="muted">
+              {{ e.created_at.strftime('%Y-%m-%d %H:%M') }}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted" style="padding:20px;">No admin activity yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

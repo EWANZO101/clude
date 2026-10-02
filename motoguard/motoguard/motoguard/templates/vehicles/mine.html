@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import plate with context %}
+{% block content %}
+<div class="flex items-end justify-between mb-6">
+  <div><p class="eyebrow mb-1">Garage</p><h1 class="font-display font-800 text-3xl text-chalk">My bikes</h1></div>
+  <a href="{{ url_for('vehicles.register') }}" class="btn btn-primary btn-sm">+ Register</a>
+</div>
+{% if bikes %}
+<div class="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+{% for b in bikes %}
+  <a href="{{ url_for('vehicles.detail', vehicle_id=b.id) }}" class="card card-hover overflow-hidden">
+    {% if b.photos %}<img src="{{ url_for('static', filename='uploads/' + b.photos[0].filename) }}" class="h-36 w-full object-cover">{% else %}<div class="h-36 bg-surface2 flex items-center justify-center text-mute text-sm">No photo</div>{% endif %}
+    <div class="p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="font-display font-700 text-chalk text-sm">{{ b.title }}</span>
+        {% set cls = {'stolen':'tag-stolen','recovered':'tag-recovered'}.get(b.status,'tag-active') %}
+        <span class="tag {{ cls }}"><span class="dot"></span>{{ b.status }}</span>
+      </div>
+      {{ plate(b.reg_number, true) }}
+    </div>
+  </a>
+{% endfor %}
+</div>
+{% else %}
+<div class="card p-10 text-center">
+  <p class="font-display font-600 text-lg text-chalk">Nothing in the garage</p>
+  <p class="text-mute text-sm mt-1 mb-4">Register a bike to put it on the network.</p>
+  <a href="{{ url_for('vehicles.register') }}" class="btn btn-primary btn-sm">Register a bike</a>
+</div>
+{% endif %}
+{% endblock %}

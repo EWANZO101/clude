@@ -1,0 +1,39 @@
+{% macro field(f, help=None, wide=False) %}
+<div class="{% if wide %}sm:col-span-2{% endif %}">
+  <label for="{{ f.id }}" class="block mb-2 text-sm font-medium text-gray-300">{{ f.label.text }}</label>
+  {% if f.type == 'TextAreaField' %}
+    {{ f(class_="block w-full rounded-lg border border-gray-600 bg-gray-700 p-2.5 text-sm text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 min-h-[90px]", rows=4) }}
+  {% elif f.type in ('FileField','MultipleFileField') %}
+    {{ f(class_="block w-full text-sm text-gray-400 border border-gray-600 rounded-lg cursor-pointer bg-gray-700 focus:outline-none file:mr-3 file:py-2.5 file:px-3 file:border-0 file:bg-gray-600 file:text-gray-200 file:text-sm") }}
+  {% elif f.type == 'SelectField' %}
+    {{ f(class_="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5") }}
+  {% elif f.type == 'BooleanField' %}
+    <label class="flex items-center gap-2.5 text-sm text-gray-300">
+      {{ f(class_="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-600 focus:ring-2") }}
+      <span>{{ help or '' }}</span>
+    </label>
+  {% else %}
+    {{ f(class_="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 font-mono") }}
+  {% endif %}
+  {% if help and f.type != 'BooleanField' %}
+    <p class="mt-1.5 text-xs text-gray-500">{{ help }}</p>
+  {% endif %}
+  {% for error in f.errors %}
+    <p class="mt-1.5 text-xs text-red-400">{{ error }}</p>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro btn_primary(text, type="submit") %}
+<button type="{{ type }}" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition">{{ text }}</button>
+{% endmacro %}
+
+{% macro btn_secondary(text, href, type="link") %}
+<a href="{{ href }}" class="py-2.5 px-5 text-sm font-medium text-gray-300 bg-gray-800 rounded-lg border border-gray-600 hover:bg-gray-700 hover:text-white focus:ring-4 focus:ring-gray-700 transition">{{ text }}</a>
+{% endmacro %}
+
+{% macro btn_danger_form(action, text="Delete", confirm="Are you sure?") %}
+<form method="post" action="{{ action }}" onsubmit="return confirm('{{ confirm }}');" class="inline">
+  <button type="submit" class="text-xs font-medium text-red-400 hover:text-red-300 transition">{{ text }}</button>
+</form>
+{% endmacro %}

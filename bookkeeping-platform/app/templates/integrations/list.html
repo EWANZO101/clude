@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Integrations{% endblock %}
+{% block content %}
+<h1 class="page-title mb-2">Integrations</h1>
+<p class="page-subtitle">Each integration is isolated: if one fails, it cannot affect the core ledger or any other integration. Every attempt is logged below.</p>
+
+<div class="grid gap-4 sm:grid-cols-2 mb-8">
+  <div class="card" style="padding:1rem;">
+    <div class="page-header" style="margin-bottom:0.5rem;">
+      <div class="font-medium">Bank statement (CSV) import</div>
+      <form method="POST" action="{{ url_for('integrations.toggle_integration', provider='bank_csv') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="text-xs px-2 py-1 rounded {{ 'bg-green-100 text-green-800' if configs['bank_csv'].is_enabled else 'bg-gray-100 text-gray-600' }}">
+          {{ 'Enabled' if configs['bank_csv'].is_enabled else 'Disabled' }}
+        </button>
+      </form>
+    </div>
+    <p class="text-sm text-gray-500 mb-3">Import a CSV of bank transactions and match them to categories to post them to the ledger.</p>
+    <a href="{{ url_for('integrations.bank_csv_import') }}" class="link text-sm">Import a statement →</a>
+    ·
+    <a href="{{ url_for('integrations.bank_transactions') }}" class="link text-sm">Review unmatched →</a>
+  </div>
+
+  <div class="card" style="padding:1rem;">
+    <div class="page-header" style="margin-bottom:0.5rem;">
+      <div class="font-medium">Stripe-style payment webhook</div>
+      <form method="POST" action="{{ url_for('integrations.toggle_integration', provider='stripe') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="text-xs px-2 py-1 rounded {{ 'bg-green-100 text-green-800' if configs['stripe'].is_enabled else 'bg-gray-100 text-gray-600' }}">
+          {{ 'Enabled' if configs['stripe'].is_enabled else 'Disabled' }}
+        </button>
+      </form>
+    </div>
+    <p class="text-muted text-sm">POST /integrations/stripe/webhook with header <code>X-Webhook-Secret</code> matching this business's configured secret to auto-record invoice payments.</p>
+    {% if configs['stripe'].secret %}<p class="text-xs text-gray-400 mt-2">Secret is configured.</p>{% else %}<p class="text-xs text-amber-600 mt-2">No secret configured yet — set IntegrationConfig.secret before enabling in production.</p>{% endif %}
+  </div>
+</div>
+
+<h2 class="section-title">Recent activity</h2>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">When</th><th class="p-3">Provider</th><th class="p-3">Event</th><th class="p-3">Status</th></tr></thead>
+    <tbody>
+      {% for log in logs %}
+      <tr class="row-border">
+        <td class="p-3 whitespace-nowrap">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+        <td class="p-3">{{ log.provider }}</td>
+        <td class="p-3">{{ log.event }}</td>
+        <td class="p-3">{% if log.status == 'success' %}<span class="text-positive">success</span>{% else %}<span class="text-negative" title="{{ log.message }}">failed</span>{% endif %}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="empty-state">No integration activity yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

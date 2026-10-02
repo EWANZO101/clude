@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}{{ user.full_name }} — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('platform.list_users') }}" class="crumb">← Users</a>
+    <h1>{{ user.full_name }}</h1>
+    <div class="page-sub">
+      <span class="mono">{{ user.email }}</span>
+      {% if user.is_platform_admin %}<span class="pill pill-accent">Platform admin</span>{% endif %}
+      {% if not user.is_active %}
+        <span class="pill pill-red">Disabled</span>
+      {% elif not user.email_verified %}
+        <span class="pill pill-amber">Unverified</span>
+      {% else %}
+        <span class="pill pill-green">Active</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if user.id == current_user.id %}
+  <div class="flash flash-info">This is your own account — access changes have to come from another platform admin.</div>
+{% endif %}
+
+<div class="panel">
+  <h2>Account</h2>
+  <table class="kv-table">
+    <tr><th>User ID</th><td><code style="font-size:11.5px;">{{ user.public_id }}</code></td></tr>
+    <tr><th>Full name</th><td>{{ user.full_name }}</td></tr>
+    <tr><th>Email</th><td>{{ user.email }}</td></tr>
+    <tr><th>Email verified</th><td>{{ 'Yes' if user.email_verified else 'No' }}</td></tr>
+    <tr><th>Created</th><td>{{ user.created_at | friendly_dt }}</td></tr>
+    <tr><th>Last login</th><td>{{ user.last_login_at | friendly_dt if user.last_login_at else 'never' }}</td></tr>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>Access</h2>
+  <div style="display:flex; flex-wrap:wrap; gap:8px;">
+    <form method="post" action="{{ url_for('platform.toggle_active', user_id=user.public_id) }}">
+      {% if user.is_active %}
+        <button type="submit" class="btn-danger btn-sm" {{ 'disabled' if user.id == current_user.id }}>Disable account</button>
+      {% else %}
+        <button type="submit" class="btn-secondary btn-sm" {{ 'disabled' if user.id == current_user.id }}>Enable account</button>
+      {% endif %}
+    </form>
+    <form method="post" action="{{ url_for('platform.toggle_admin', user_id=user.public_id) }}">
+      {% if user.is_platform_admin %}
+        <button type="submit" class="btn-danger btn-sm" {{ 'disabled' if user.id == current_user.id }}>Revoke platform admin</button>
+      {% else %}
+        <button type="submit" class="btn-secondary btn-sm" {{ 'disabled' if user.id == current_user.id }}>Grant platform admin</button>
+      {% endif %}
+    </form>
+    {% if not user.email_verified %}
+      <form method="post" action="{{ url_for('platform.verify_email_manual', user_id=user.public_id) }}">
+        <button type="submit" class="btn-secondary btn-sm">Mark email verified</button>
+      </form>
+    {% endif %}
+    <form method="post" action="{{ url_for('platform.reset_password', user_id=user.public_id) }}"
+          onsubmit="return confirm('Reset the password for {{ user.email|e }}? A new temporary password will be generated and shown once.');">
+      <button type="submit" class="btn-secondary btn-sm">Reset password</button>
+    </form>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Company memberships</h2>
+  {% if memberships %}
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Company</th><th>Role</th><th></th></tr></thead>
+      <tbody>
+        {% for m in memberships %}
+          <tr>
+            <td><a href="{{ url_for('companies.detail', company_id=m.company.public_id) }}">{{ m.company.name }}</a></td>
+            <td><span class="badge badge-{{ m.role }}">{{ m.role }}</span></td>
+            <td class="row-actions">
+              <form method="post" action="{{ url_for('platform.remove_membership', user_id=user.public_id, membership_id=m.id) }}"
+                    onsubmit="return confirm('Remove {{ user.email|e }} from {{ m.company.name|e }}?');">
+                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted" style="margin:0;">Not a member of any company.</p>
+  {% endif %}
+
+  {% if available_companies %}
+    <form method="post" action="{{ url_for('platform.add_membership', user_id=user.public_id) }}" class="form-row" style="margin-top:16px;">
+      <div>
+        <label>Add to company</label>
+        <select name="company_id">
+          {% for c in available_companies %}
+            <option value="{{ c.public_id }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="flex:0 0 160px;">
+        <label>Role</label>
+        <select name="role">
+          {% for r in company_roles %}
+            <option value="{{ r }}" {% if r == 'operator' %}selected{% endif %}>{{ r }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="flex:0 0 auto;">
+        <button type="submit">Add</button>
+      </div>
+    </form>
+    <p class="muted" style="font-size:12px; margin-top:8px; margin-bottom:0;">
+      Adds them directly — no invite email, no acceptance step needed.
+    </p>
+  {% elif memberships %}
+    <p class="muted" style="font-size:12.5px; margin-top:16px; margin-bottom:0;">
+      Already a member of every company on the platform.
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

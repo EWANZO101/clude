@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Order Confirmed — Cioda's Commissions{% endblock %}
+{% block body %}
+<nav class="nav-bar">
+  <a class="nav-logo" href="/">Cioda's <span>Commissions</span></a>
+</nav>
+<main style="max-width:620px;margin:0 auto;padding:3rem 1.5rem;text-align:center;" class="fade-in">
+
+  <div style="font-size:4rem;margin-bottom:1rem;">🎨</div>
+  <h1 class="font-display" style="font-size:2rem;margin-bottom:0.5rem;color:var(--success);">
+    You're all set!
+  </h1>
+  <p style="color:var(--text-secondary);font-size:1.1rem;margin-bottom:2.5rem;">
+    Your commission has been submitted. Here is your personal tracking link —
+    <strong style="color:var(--text-primary);">save it!</strong>
+  </p>
+
+  <!-- Big tracking link box -->
+  <div class="card" style="margin-bottom:1.5rem;border:1px solid var(--accent);box-shadow:0 0 30px var(--accent-glow);">
+    <div class="font-display" style="font-size:0.8rem;color:var(--text-muted);letter-spacing:.1em;
+         text-transform:uppercase;margin-bottom:0.75rem;">Your Order Tracking Link</div>
+
+    <div style="background:var(--bg-elevated);border-radius:8px;padding:0.85rem 1rem;
+                margin-bottom:1rem;word-break:break-all;font-family:'JetBrains Mono',monospace;
+                font-size:0.9rem;color:var(--accent);border:1px solid var(--border);" id="trackingUrl">
+      {{ request.host_url }}order/{{ link }}
+    </div>
+
+    <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
+      <button onclick="copyLink()" class="btn btn-primary" id="copyBtn">
+        📋 Copy Link
+      </button>
+      <a href="/order/{{ link }}" class="btn btn-ghost">
+        🔗 View My Order
+      </a>
+    </div>
+  </div>
+
+  <!-- Order ID -->
+  <div style="margin-bottom:2rem;font-size:0.9rem;color:var(--text-muted);">
+    Order ID: <span class="font-mono" style="color:var(--accent);">{{ order_id }}</span>
+  </div>
+
+  <!-- What to expect -->
+  <div class="card" style="text-align:left;margin-bottom:2rem;">
+    <div class="font-display" style="color:var(--gold);margin-bottom:0.75rem;font-size:0.9rem;">What happens next?</div>
+    <div style="display:grid;gap:0.6rem;">
+      <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+        <span style="color:var(--accent);font-size:1.1rem;">1.</span>
+        <span style="color:var(--text-secondary);">Cioda reviews your request and confirms the details</span>
+      </div>
+      <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+        <span style="color:var(--accent);font-size:1.1rem;">2.</span>
+        <span style="color:var(--text-secondary);">Your order status and payment info will update on your tracking page</span>
+      </div>
+      <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+        <span style="color:var(--accent);font-size:1.1rem;">3.</span>
+        <span style="color:var(--text-secondary);">Check back anytime using your tracking link above</span>
+      </div>
+    </div>
+  </div>
+
+  <p style="font-size:0.85rem;color:var(--text-muted);font-style:italic;">
+    Questions? Discord: <strong style="color:var(--text-secondary);">totallynotcioda</strong>
+    or <a href="mailto:cioda@ciodrawz.space" style="color:var(--accent);">cioda@ciodrawz.space</a>
+  </p>
+
+</main>
+
+<script>
+function copyLink() {
+  const url = document.getElementById('trackingUrl').innerText.trim();
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ Copied!';
+    btn.style.background = 'var(--success)';
+    setTimeout(() => {
+      btn.textContent = '📋 Copy Link';
+      btn.style.background = '';
+    }, 2500);
+  });
+}
+</script>
+{% endblock %}

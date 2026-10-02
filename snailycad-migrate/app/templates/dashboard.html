@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-lg font-semibold text-gray-100">Dashboard</h1>
+  <span class="text-xs px-2 py-1 rounded bg-panel border border-border text-gray-400">
+    {% if current_user.is_temporary %}Temporary session{% else %}{{ current_user.email }}{% endif %}
+  </span>
+</div>
+
+<a href="{{ url_for('main.guide') }}"
+   class="block bg-blue-900/20 border border-blue-800 rounded-lg px-4 py-3 mb-6 text-sm text-blue-300 hover:bg-blue-900/30 transition-colors">
+  New here? <span class="underline">See the step-by-step guide</span> — what exports/imports are,
+  and which of the three connection methods to use →
+</a>
+
+<div class="flex items-center justify-between mb-3">
+  <h2 class="text-sm font-semibold text-gray-200">Your exports</h2>
+  <div class="flex gap-2">
+    <a href="{{ url_for('imports.list_imports') }}"
+       class="text-xs px-3 py-1.5 rounded-md bg-panel border border-border text-gray-300 hover:text-gray-100">Imports</a>
+    <a href="{{ url_for('agent.request_assist') }}"
+       class="text-xs px-3 py-1.5 rounded-md bg-panel border border-border text-gray-300 hover:text-gray-100">Get help from an admin</a>
+    <a href="{{ url_for('agent.new_export') }}"
+       class="text-xs px-3 py-1.5 rounded-md bg-panel border border-border text-gray-300 hover:text-gray-100">Agent export</a>
+    <a href="{{ url_for('exports.new') }}"
+       class="text-xs px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-500">+ New export</a>
+  </div>
+</div>
+
+<div class="bg-panel border border-border rounded-lg p-4">
+  {% if exports %}
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-gray-500 border-b border-border">
+          <th class="py-2">Created</th>
+          <th class="py-2">Status</th>
+          <th class="py-2">Size</th>
+          <th class="py-2"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for export in exports %}
+        <tr class="border-b border-border/50">
+          <td class="py-2 text-gray-300">
+            <a href="{{ url_for('exports.detail', export_id=export.id) }}" class="hover:text-blue-400">
+              {{ export.created_at }}
+            </a>
+          </td>
+          <td class="py-2 text-gray-300">{{ export.status }}</td>
+          <td class="py-2 text-gray-300">
+            {{ "%.2f MB"|format(export.file_size_bytes / 1048576) if export.file_size_bytes else "—" }}
+          </td>
+          <td class="py-2 text-right">
+            {% if export.status == "complete" %}
+              <a href="{{ url_for('exports.download', export_id=export.id) }}"
+                 class="text-blue-400 hover:text-blue-300 text-xs">Download</a>
+            {% else %}
+              <a href="{{ url_for('exports.detail', export_id=export.id) }}"
+                 class="text-gray-500 hover:text-gray-300 text-xs">Details</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="text-sm text-gray-500">No exports yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

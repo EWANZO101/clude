@@ -1,0 +1,22 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% block title %}Seller Orders — Admin{% endblock %}
+{% block page_title %}Orders by seller{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Seller</th><th>Orders</th><th>Total revenue</th><th></th></tr></thead>
+    <tbody>
+      {% for seller, order_count, total_revenue in rows %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ seller.business_name }}</td>
+        <td class="text-text-secondary">{{ order_count }}</td>
+        <td class="text-text-primary">£{{ total_revenue }}</td>
+        <td><a href="{{ url_for('admin.orders', seller=seller.id) }}" class="text-brand-400 hover:text-brand-300">View orders</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="text-center text-text-muted py-8">No seller orders yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

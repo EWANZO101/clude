@@ -1,0 +1,892 @@
+{% extends "base.html" %}
+{% block title %}.env Editor — {{ panel_name }}{% endblock %}
+{% block content %}
+<input type="hidden" id="csrf_token" value="{{ csrf_token() }}">
+
+<div class="topbar env-topbar">
+  <div>
+    <p class="page-eyebrow">
+      <a class="env-back-link" href="{{ url_for('dashboard.index') }}">&larr; Dashboard</a>
+      <span class="env-eyebrow-sep">/</span> Configuration
+    </p>
+    <h1 class="page-title">.env Editor</h1>
+    <p class="page-sub">Find every environment file on this server, review it, and edit it safely — without opening a terminal.</p>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-secondary" type="button" id="rescan-btn" title="Scan the server again for .env files">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-2.6-6.36"/><path d="M21 3v6h-6"/></svg>
+      Rescan server
+    </button>
+    <button class="btn btn-secondary" type="button" id="browse-btn" title="Browse the server's folders for a specific file">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+      Browse files
+    </button>
+    <button class="btn btn-primary" type="button" id="new-btn" title="Create a new .env file at a path you choose">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      New .env file
+    </button>
+    <button class="btn btn-ghost env-fullscreen-btn" type="button" id="fullscreen-btn" title="Expand the code editor to fill your screen">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 00-2 2v3M16 3h3a2 2 0 012 2v3M8 21H5a2 2 0 01-2-2v-3M16 21h3a2 2 0 002-2v-3"/></svg>
+      Fullscreen editor
+    </button>
+    <button class="btn btn-ghost env-help-btn" type="button" id="help-btn" title="Quick guide and keyboard shortcuts">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 114.2 1.8c-.6.55-1.2.9-1.2 1.9"/><path d="M12 17h.01"/></svg>
+      Help
+    </button>
+  </div>
+</div>
+
+<div class="env-notice">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6l7-3z"/><path d="M12 8v5M12 16h.01"/></svg>
+  <div>
+    <strong>These files usually hold live secrets.</strong>
+    Saves write straight to disk on the server — there's no draft state. Use <strong>Backup copy</strong> before a large edit, and double-check the path before you save.
+  </div>
+</div>
+
+<div class="env-shell">
+  <div class="card flush env-list-card">
+    <div class="env-list-header">
+      <div class="env-list-title">Detected files <span class="env-list-count" id="env-list-count"></span></div>
+      <div class="env-list-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="filter-input" placeholder="Filter by path or service…">
+      </div>
+    </div>
+    <div class="env-list" id="env-list">
+      <div class="empty-state">Scanning…</div>
+    </div>
+  </div>
+
+  <div class="card flush env-editor-card">
+    <div class="env-editor-toolbar">
+      <div class="env-editor-path-wrap">
+        <span class="env-editor-path-label">File</span>
+        <div class="env-editor-path" id="current-path">No file open</div>
+      </div>
+      <div class="env-editor-badges">
+        <span class="badge badge-warn" id="dirty-badge" style="display:none;">unsaved changes</span>
+        <span class="env-editor-status" id="editor-status"></span>
+      </div>
+    </div>
+    <div class="env-mode-bar">
+      <div class="env-mode-bar-row">
+        <div class="tab-row env-mode-tabs">
+          <button type="button" class="tab-link active" data-mode="code" title="Edit the raw file contents">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6L2 12l6 6M16 6l6 6-6 6"/></svg>
+            Code
+          </button>
+          <button type="button" class="tab-link" data-mode="placeholder" title="Edit KEY=VALUE pairs as a simple table">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 10h18M9 10v10"/></svg>
+            Placeholders
+          </button>
+        </div>
+        <div class="env-zoom-controls" title="Zoom the editor text size">
+          <button type="button" class="env-zoom-btn" id="zoom-out-btn" title="Zoom out (Ctrl -)">&minus;</button>
+          <button type="button" class="env-zoom-level" id="zoom-level" title="Reset zoom (Ctrl 0)">100%</button>
+          <button type="button" class="env-zoom-btn" id="zoom-in-btn" title="Zoom in (Ctrl +)">+</button>
+        </div>
+      </div>
+      <p class="env-mode-hint" id="mode-hint">Raw view — the exact text that will be written to the file.</p>
+    </div>
+
+    <div class="env-editor-body">
+      <div id="editor-empty" class="env-editor-empty">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M9 13h6M9 17h4"/></svg>
+        <h3>No file open yet</h3>
+        <p>Pick a file from the list on the left, or:</p>
+        <div class="env-empty-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="empty-browse-btn">Browse for a file…</button>
+          <button type="button" class="btn btn-primary btn-sm" id="empty-new-btn">Create a new .env file</button>
+        </div>
+      </div>
+
+      <div id="monaco-container"></div>
+      <div id="placeholder-container" class="env-ph-container" style="display:none;">
+        <div class="env-ph-toolbar">
+          <button class="btn btn-secondary btn-sm" type="button" id="ph-add-btn">+ Add variable</button>
+          <span class="env-ph-count" id="ph-count"></span>
+        </div>
+        <div class="env-ph-list" id="ph-list"></div>
+      </div>
+    </div>
+
+    <div class="editor-footer env-toolbar-buttons">
+      <div class="env-toolbar-group">
+        <button class="btn btn-secondary btn-sm" type="button" id="btn-reload" disabled title="Discard local changes and reload from disk">Reload</button>
+        <button class="btn btn-secondary btn-sm" type="button" id="btn-copy" disabled title="Copy the full file contents">Copy all</button>
+        <button class="btn btn-secondary btn-sm" type="button" id="btn-paste" disabled title="Paste clipboard contents into the file">Paste</button>
+        <button class="btn btn-secondary btn-sm" type="button" id="btn-download" disabled title="Download this file to your computer">Download</button>
+        <button class="btn btn-secondary btn-sm" type="button" id="btn-backup" disabled title="Save a timestamped backup copy next to this file">Backup copy</button>
+      </div>
+      <div class="env-toolbar-group env-toolbar-group-end">
+        <button class="btn btn-danger btn-sm" type="button" id="btn-delete" disabled title="Permanently delete this file">Delete</button>
+        <button class="btn btn-primary btn-sm" type="button" id="btn-save" disabled>Save <span class="env-kbd">Ctrl+S</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Browse-for-path modal (shows hidden/.env files too) -->
+<div class="modal-overlay" id="browse-modal">
+  <div class="modal-box modal-browse">
+    <div class="modal-header">
+      <div>
+        <h3 id="browse-path">/home</h3>
+        <p class="modal-subtext">Folders and hidden files are shown — click a file to open it in the editor.</p>
+      </div>
+      <button class="modal-close" type="button" id="browse-close">&times;</button>
+    </div>
+    <div class="browse-list" id="browse-list"></div>
+  </div>
+</div>
+
+<!-- New file modal -->
+<div class="modal-overlay" id="new-modal">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header">
+      <h3>New .env file</h3>
+      <button class="modal-close" type="button" id="new-close">&times;</button>
+    </div>
+    <div style="padding:18px;">
+      <div class="field">
+        <label>Full path</label>
+        <input type="text" id="new-path-input" placeholder="/home/myapp/.env">
+        <p class="field-hint">Use an absolute path. The parent folder must already exist.</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" type="button" id="new-create-btn">Create</button>
+        <button class="btn btn-secondary" type="button" id="new-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Help / quick-reference modal -->
+<div class="modal-overlay" id="help-modal">
+  <div class="modal-box modal-help" style="max-width:560px;">
+    <div class="modal-header">
+      <div>
+        <h3>Quick guide</h3>
+        <p class="modal-subtext">Shortcuts and tips for working in the .env editor.</p>
+      </div>
+      <button class="modal-close" type="button" id="help-close">&times;</button>
+    </div>
+    <div class="help-body">
+      <div class="help-section">
+        <h4>Keyboard shortcuts</h4>
+        <ul>
+          <li><span class="env-kbd">Ctrl</span> + <span class="env-kbd">S</span><span>Save the open file</span></li>
+          <li><span class="env-kbd">Ctrl</span> + <span class="env-kbd">Scroll</span><span>Zoom the editor text in or out</span></li>
+          <li><span class="env-kbd">Ctrl</span> + <span class="env-kbd">+</span> / <span class="env-kbd">&minus;</span><span>Zoom in / zoom out</span></li>
+          <li><span class="env-kbd">Ctrl</span> + <span class="env-kbd">0</span><span>Reset zoom to 100%</span></li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h4>Finding &amp; opening files</h4>
+        <ul class="help-list">
+          <li>Click any file in the left-hand list to open it.</li>
+          <li>Use the filter box to search by path or service name.</li>
+          <li><strong>Browse files</strong> lets you pick any file on the server, including hidden ones the scanner missed.</li>
+          <li><strong>New .env file</strong> creates an empty file at a path you type in.</li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h4>Editing</h4>
+        <ul class="help-list">
+          <li><strong>Code</strong> mode is the raw file, exactly as it will be written.</li>
+          <li><strong>Placeholders</strong> mode shows each KEY=VALUE pair as its own row — easier to scan and edit without touching syntax.</li>
+          <li><strong>Fullscreen editor</strong> expands just the editor pane; the file list and main sidebar stay put.</li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h4>Before you save</h4>
+        <ul class="help-list">
+          <li>Saving writes straight to disk on the server — there's no draft or undo history once saved.</li>
+          <li>Use <strong>Backup copy</strong> to snapshot a file before a risky edit.</li>
+          <li><strong>Download</strong> or <strong>Copy all</strong> if you want a local copy before you change anything.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .env-topbar { align-items: flex-start; }
+  .env-back-link { color: var(--text-muted); }
+  .env-back-link:hover { color: var(--accent); }
+  .env-eyebrow-sep { color: var(--border-strong); margin: 0 2px; }
+
+
+  .env-notice {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--warn-dim); border: 1px solid rgba(245, 197, 24, 0.3);
+    color: var(--text-secondary); border-radius: var(--radius); padding: 10px 14px;
+    font-size: 12.5px; line-height: 1.5; margin-bottom: 18px;
+  }
+  .env-notice svg { flex-shrink: 0; color: var(--warn); margin-top: 1px; }
+  .env-notice strong { color: var(--text-primary); }
+
+  .env-shell {
+    display: grid; grid-template-columns: 320px 1fr; gap: 16px; align-items: stretch;
+    height: calc(100vh - 260px); min-height: 480px;
+  }
+  @media (max-width: 900px) { .env-shell { grid-template-columns: 1fr; height: auto; } }
+
+  /* Fullscreen only ever applies to the editor pane itself — the file
+     list, sidebar, and topbar are simply not part of the fullscreen
+     element, so the browser leaves them out automatically. */
+  .env-editor-card:fullscreen,
+  .env-editor-card:-webkit-full-screen {
+    width: 100vw; height: 100vh; max-width: none; border-radius: 0; padding: 0;
+  }
+  .env-editor-card:fullscreen .env-editor-body,
+  .env-editor-card:-webkit-full-screen .env-editor-body { flex: 1; }
+
+  .env-list-card { display: flex; flex-direction: column; min-height: 0; }
+  .env-list-header { padding: 12px; border-bottom: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 8px; }
+  .env-list-title { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); font-family: var(--font-mono); display: flex; align-items: baseline; gap: 6px; }
+  .env-list-count { color: var(--text-secondary); font-weight: 600; }
+  .env-list-search { position: relative; }
+  .env-list-search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+  .env-list-search input {
+    width: 100%; background: var(--bg-void); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm); color: var(--text-primary); padding: 8px 10px 8px 30px; font-size: 12.5px;
+    box-sizing: border-box;
+  }
+  .env-list-search input:focus { outline: none; border-color: var(--accent); }
+  .env-list { flex: 1; overflow-y: auto; padding: 6px; min-height: 0; }
+  .env-item {
+    display: flex; align-items: flex-start; gap: 9px; padding: 9px 10px 9px 12px; border-radius: var(--radius-sm);
+    cursor: pointer; border: 1px solid transparent;
+  }
+  .env-item:hover { background: var(--bg-panel-hover); }
+  .env-item.active {
+    background: var(--bg-panel-raised);
+    border-color: transparent;
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+  .env-item-icon { flex-shrink: 0; color: var(--text-muted); margin-top: 2px; }
+  .env-item.active .env-item-icon { color: var(--accent); }
+  .env-item-main { min-width: 0; flex: 1; }
+  .env-item-name-row { display: flex; align-items: center; gap: 6px; }
+  .env-item-name { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-primary); }
+  .env-item-dir { font-size: 11px; color: var(--text-muted); word-break: break-all; margin-top: 1px; }
+  .env-item-meta { font-size: 10.5px; color: var(--text-muted); display: flex; gap: 8px; margin-top: 4px; font-family: var(--font-mono); }
+  .env-empty-hint { margin-top: 10px; }
+
+  .env-editor-card { display: flex; flex-direction: column; min-height: 0; }
+  .env-editor-toolbar {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 12px 14px; border-bottom: 1px solid var(--border-subtle);
+  }
+  .env-editor-path-wrap { min-width: 0; display: flex; align-items: baseline; gap: 8px; }
+  .env-editor-path-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); font-family: var(--font-mono); flex-shrink: 0; }
+  .env-editor-path { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-primary); word-break: break-all; }
+  .env-editor-badges { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .env-editor-status { font-size: 11.5px; color: var(--text-muted); }
+
+  .env-mode-bar { padding: 12px 14px 0; }
+  .env-mode-bar-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .env-mode-tabs.tab-row {
+    display: inline-flex; gap: 2px; padding: 3px;
+    background: var(--bg-void); border: 1px solid var(--border-subtle); border-radius: var(--radius);
+  }
+  .env-mode-tabs .tab-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 13px; font-size: 12px; border: 1px solid transparent; border-radius: var(--radius-sm);
+    color: var(--text-muted); background: transparent;
+  }
+  .env-mode-tabs .tab-link svg { opacity: 0.7; flex-shrink: 0; }
+  .env-mode-tabs .tab-link:hover { color: var(--text-primary); }
+  .env-mode-tabs .tab-link.active {
+    background: var(--bg-panel-hover); color: var(--text-primary); border-color: var(--border-strong);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  .env-mode-tabs .tab-link.active svg { opacity: 1; color: var(--accent); }
+  .env-mode-hint { font-size: 11.5px; color: var(--text-muted); margin: 9px 0 0; }
+
+  .env-zoom-controls {
+    display: inline-flex; align-items: center; gap: 1px; padding: 3px;
+    background: var(--bg-void); border: 1px solid var(--border-subtle); border-radius: var(--radius);
+  }
+  .env-zoom-btn, .env-zoom-level {
+    border: none; background: transparent; color: var(--text-secondary); cursor: pointer;
+    font-family: var(--font-mono); border-radius: var(--radius-sm);
+  }
+  .env-zoom-btn { width: 24px; height: 24px; font-size: 14px; line-height: 1; }
+  .env-zoom-btn:hover { background: var(--bg-panel-hover); color: var(--text-primary); }
+  .env-zoom-level { padding: 0 8px; font-size: 11px; min-width: 42px; }
+  .env-zoom-level:hover { background: var(--bg-panel-hover); color: var(--text-primary); }
+
+  .env-editor-body { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
+  #monaco-container { flex: 1; min-height: 0; }
+
+  .env-editor-empty {
+    position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; gap: 6px;
+    background: var(--bg-panel); padding: 20px;
+  }
+  .env-editor-empty svg { color: var(--border-strong); margin-bottom: 6px; }
+  .env-editor-empty h3 { margin: 0; font-size: 15px; color: var(--text-secondary); font-weight: 600; }
+  .env-editor-empty p { margin: 0; font-size: 12.5px; color: var(--text-muted); }
+  .env-empty-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+  .env-toolbar-buttons { justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .env-toolbar-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .env-ph-container { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .env-ph-toolbar {
+    display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .env-ph-count { font-size: 11.5px; color: var(--text-muted); margin-left: auto; }
+  .env-ph-list { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .env-ph-card {
+    display: grid; grid-template-columns: minmax(140px, 240px) 1fr auto; gap: 8px; align-items: center;
+    background: var(--bg-panel-hover); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+    padding: 8px;
+  }
+  .env-ph-key, .env-ph-value {
+    background: var(--bg-void); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+    color: var(--text-primary); padding: 7px 9px; font-size: var(--env-ph-font, 12.5px); font-family: var(--font-mono); width: 100%;
+    box-sizing: border-box;
+  }
+  .env-ph-key { color: var(--data); font-weight: 600; }
+  .env-ph-key:focus, .env-ph-value:focus { outline: none; border-color: var(--accent); }
+  .env-ph-remove {
+    background: none; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+    color: var(--text-muted); width: 30px; height: 30px; cursor: pointer; flex-shrink: 0;
+  }
+  .env-ph-remove:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-dim); }
+  @media (max-width: 600px) { .env-ph-card { grid-template-columns: 1fr; } }
+
+  .modal-header { align-items: flex-start; }
+  .modal-subtext { margin: 4px 0 0; font-size: 11.5px; color: var(--text-muted); }
+  .field-hint { font-size: 11.5px; color: var(--text-muted); margin: 6px 0 0; }
+
+  .env-kbd {
+    display: inline-block; font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+    color: var(--text-primary); background: var(--bg-panel-raised); border: 1px solid var(--border-strong);
+    border-bottom-width: 2px; border-radius: var(--radius-sm); padding: 1px 6px; line-height: 1.5;
+  }
+
+  .modal-help .modal-box, .modal-help { }
+  .help-body { padding: 16px 20px 20px; overflow-y: auto; max-height: 62vh; }
+  .help-section + .help-section { margin-top: 18px; }
+  .help-section h4 {
+    margin: 0 0 10px; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--data); font-family: var(--font-mono);
+  }
+  .help-section ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+  .help-section li { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+  .help-section li strong { color: var(--text-primary); }
+  .help-section ul:not(.help-list) li {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .help-section ul:not(.help-list) li > span:last-child { color: var(--text-muted); margin-left: 2px; }
+  .help-list li { padding-left: 14px; position: relative; }
+  .help-list li::before { content: "–"; position: absolute; left: 0; color: var(--text-muted); }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+<script>
+(function () {
+  const csrf = () => document.getElementById('csrf_token').value;
+
+  async function callJson(url, payload) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+      body: JSON.stringify(payload || {}),
+    });
+    return res.json();
+  }
+  async function getJson(url) {
+    const res = await fetch(url);
+    return res.json();
+  }
+
+  let files = [];
+  let activePath = null;
+  let dirty = false;
+  let monacoEditor = null;
+  let monacoLoaded = false;
+  let mode = 'code'; // 'code' | 'placeholder'
+  let envItems = []; // parsed structure backing both modes: [{type:'kv', id, key, value, quote} | {type:'raw', raw}]
+
+  const BASE_FONT_SIZE = 13;
+  const MIN_FONT_SIZE = 9;
+  const MAX_FONT_SIZE = 26;
+  let fontSize = BASE_FONT_SIZE;
+
+  const MODE_HINTS = {
+    code: 'Raw view — the exact text that will be written to the file.',
+    placeholder: 'Table view — edit KEY=VALUE pairs one at a time without touching raw syntax.',
+  };
+
+  function genId() { return 'i' + Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function parseEnv(text) {
+    const lines = (text || '').split(/\r?\n/);
+    return lines.map((line) => {
+      const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$/);
+      if (m && !line.trim().startsWith('#')) {
+        let val = m[2].trim();
+        let quote = '';
+        if (val.length >= 2 && ((val[0] === '"' && val[val.length - 1] === '"') || (val[0] === "'" && val[val.length - 1] === "'"))) {
+          quote = val[0];
+          val = val.slice(1, -1);
+        }
+        return { type: 'kv', id: genId(), key: m[1], value: val, quote };
+      }
+      return { type: 'raw', raw: line };
+    });
+  }
+
+  function serializeEnv(items) {
+    return items.map((it) => {
+      if (it.type === 'raw') return it.raw;
+      const q = it.quote || '';
+      return `${it.key}=${q}${it.value}${q}`;
+    }).join('\n');
+  }
+
+  function getCurrentContent() {
+    if (mode === 'code') return monacoEditor ? monacoEditor.getValue() : serializeEnv(envItems);
+    return serializeEnv(envItems);
+  }
+
+  const listEl = document.getElementById('env-list');
+  const listCountEl = document.getElementById('env-list-count');
+  const filterInput = document.getElementById('filter-input');
+  const currentPathEl = document.getElementById('current-path');
+  const dirtyBadge = document.getElementById('dirty-badge');
+  const statusEl = document.getElementById('editor-status');
+  const editorEmptyEl = document.getElementById('editor-empty');
+
+  const btnSave = document.getElementById('btn-save');
+  const btnReload = document.getElementById('btn-reload');
+  const btnCopy = document.getElementById('btn-copy');
+  const btnPaste = document.getElementById('btn-paste');
+  const btnDownload = document.getElementById('btn-download');
+  const btnBackup = document.getElementById('btn-backup');
+  const btnDelete = document.getElementById('btn-delete');
+
+  function setDirty(v) {
+    dirty = v;
+    dirtyBadge.style.display = v ? 'inline-flex' : 'none';
+  }
+
+  function setToolbarEnabled(enabled) {
+    [btnSave, btnReload, btnCopy, btnPaste, btnDownload, btnBackup, btnDelete].forEach((b) => b.disabled = !enabled);
+  }
+
+  function showEditorEmpty(show) {
+    editorEmptyEl.style.display = show ? 'flex' : 'none';
+  }
+
+  function fmtSize(n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    return (n / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+  function fmtTime(ts) {
+    const d = new Date(ts * 1000);
+    return d.toLocaleString();
+  }
+
+  const fileIconSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/></svg>';
+
+  function renderList() {
+    const q = filterInput.value.trim().toLowerCase();
+    const filtered = files.filter((f) =>
+      !q || f.path.toLowerCase().includes(q) || (f.service || '').toLowerCase().includes(q)
+    );
+    listCountEl.textContent = files.length ? '(' + files.length + ')' : '';
+    if (!filtered.length) {
+      listEl.innerHTML = files.length
+        ? '<div class="empty-state"><strong>No matches</strong>Try a different path or service name.</div>'
+        : '<div class="empty-state"><strong>No .env files found</strong>Use "Browse…" or "New .env file" above to add one.</div>';
+      return;
+    }
+    listEl.innerHTML = filtered.map((f) => `
+      <div class="env-item ${f.path === activePath ? 'active' : ''}" data-path="${f.path}">
+        <span class="env-item-icon">${fileIconSvg}</span>
+        <div class="env-item-main">
+          <div class="env-item-name-row">
+            <span class="env-item-name">${f.name}</span>
+            ${f.is_backup ? '<span class="badge badge-muted">backup</span>' : ''}
+          </div>
+          <div class="env-item-dir">${f.dir}${f.service ? ' · ' + f.service : ''}</div>
+          <div class="env-item-meta"><span>${fmtSize(f.size)}</span><span>${fmtTime(f.mtime)}</span></div>
+        </div>
+      </div>
+    `).join('');
+    listEl.querySelectorAll('.env-item').forEach((el) => {
+      el.addEventListener('click', () => openFile(el.getAttribute('data-path')));
+    });
+  }
+
+  async function scan() {
+    listEl.innerHTML = '<div class="empty-state">Scanning…</div>';
+    const data = await getJson('{{ url_for("envfiles.api_scan") }}');
+    if (!data.ok) {
+      listEl.innerHTML = `<div class="empty-state">${data.error || 'Scan failed.'}</div>`;
+      return;
+    }
+    files = data.files;
+    renderList();
+  }
+
+  document.getElementById('rescan-btn').addEventListener('click', scan);
+  filterInput.addEventListener('input', renderList);
+
+  // ---- Fullscreen just the editor pane (not the whole page) ----
+  const editorCard = document.querySelector('.env-editor-card');
+  document.getElementById('fullscreen-btn').addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      editorCard.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  });
+
+  // ---- Monaco ----
+  function ensureMonaco(cb) {
+    if (monacoLoaded) { cb(); return; }
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    require(['vs/editor/editor.main'], () => { monacoLoaded = true; cb(); });
+  }
+
+  function confirmDiscardIfDirty(cb) {
+    if (dirty && !confirm('Discard unsaved changes?')) return;
+    cb();
+  }
+
+  function createMonaco(text) {
+    if (monacoEditor) { monacoEditor.dispose(); monacoEditor = null; }
+    monacoEditor = monaco.editor.create(document.getElementById('monaco-container'), {
+      value: text,
+      language: 'ini',
+      theme: 'vs-dark',
+      automaticLayout: true,
+      minimap: { enabled: false },
+      fontSize: fontSize,
+      fontFamily: "'JetBrains Mono', monospace",
+    });
+    monacoEditor.onDidChangeModelContent(() => setDirty(true));
+    monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, saveFile);
+  }
+
+  // ---- Zoom (Code editor + Placeholders table share the same text size) ----
+  const zoomLevelBtn = document.getElementById('zoom-level');
+  const phContainerEl = document.getElementById('placeholder-container');
+
+  function applyFontSize() {
+    if (monacoEditor) monacoEditor.updateOptions({ fontSize: fontSize });
+    phContainerEl.style.setProperty('--env-ph-font', fontSize + 'px');
+    zoomLevelBtn.textContent = Math.round((fontSize / BASE_FONT_SIZE) * 100) + '%';
+  }
+  function zoomIn() { fontSize = Math.min(MAX_FONT_SIZE, fontSize + 1); applyFontSize(); }
+  function zoomOut() { fontSize = Math.max(MIN_FONT_SIZE, fontSize - 1); applyFontSize(); }
+  function zoomReset() { fontSize = BASE_FONT_SIZE; applyFontSize(); }
+
+  document.getElementById('zoom-in-btn').addEventListener('click', zoomIn);
+  document.getElementById('zoom-out-btn').addEventListener('click', zoomOut);
+  zoomLevelBtn.addEventListener('click', zoomReset);
+
+  // Ctrl/Cmd + scroll over the editor zooms, same as VS Code.
+  document.getElementById('monaco-container').addEventListener('wheel', (e) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    if (e.deltaY < 0) zoomIn(); else zoomOut();
+  }, { passive: false });
+
+  // Ctrl/Cmd +, -, and 0 zoom from anywhere on the page (matches browser
+  // zoom shortcuts, but resizes the editor text instead of the page).
+  document.addEventListener('keydown', (e) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomIn(); }
+    else if (e.key === '-' || e.key === '_') { e.preventDefault(); zoomOut(); }
+    else if (e.key === '0') { e.preventDefault(); zoomReset(); }
+  });
+
+  applyFontSize();
+
+  function renderPlaceholders() {
+    const list = document.getElementById('ph-list');
+    const kvItems = envItems.filter((it) => it.type === 'kv');
+    document.getElementById('ph-count').textContent = activePath
+      ? (kvItems.length + (kvItems.length === 1 ? ' variable' : ' variables')) : '';
+
+    if (!activePath) {
+      list.innerHTML = '<div class="empty-state">No file open — pick one on the left.</div>';
+      return;
+    }
+    if (!kvItems.length) {
+      list.innerHTML = '<div class="empty-state">No variables yet — add one below.</div>';
+      return;
+    }
+    list.innerHTML = kvItems.map((it) => `
+      <div class="env-ph-card" data-id="${it.id}">
+        <input type="text" class="env-ph-key" value="${escapeHtml(it.key)}" placeholder="KEY_NAME">
+        <input type="text" class="env-ph-value" value="${escapeHtml(it.value)}" placeholder="value">
+        <button type="button" class="env-ph-remove" title="Remove">✕</button>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('.env-ph-card').forEach((card) => {
+      const id = card.getAttribute('data-id');
+      const item = envItems.find((it) => it.id === id);
+      card.querySelector('.env-ph-key').addEventListener('input', (e) => { item.key = e.target.value; setDirty(true); });
+      card.querySelector('.env-ph-value').addEventListener('input', (e) => { item.value = e.target.value; setDirty(true); });
+      card.querySelector('.env-ph-remove').addEventListener('click', () => {
+        envItems = envItems.filter((it) => it.id !== id);
+        setDirty(true);
+        renderPlaceholders();
+      });
+    });
+  }
+
+  document.getElementById('ph-add-btn').addEventListener('click', () => {
+    if (!activePath) return;
+    envItems.push({ type: 'kv', id: genId(), key: '', value: '', quote: '' });
+    setDirty(true);
+    renderPlaceholders();
+    requestAnimationFrame(() => {
+      const keys = document.querySelectorAll('.env-ph-card .env-ph-key');
+      if (keys.length) keys[keys.length - 1].focus();
+    });
+  });
+
+  function switchMode(newMode) {
+    if (newMode === mode) return;
+    if (mode === 'code' && monacoEditor) {
+      envItems = parseEnv(monacoEditor.getValue());
+    }
+    mode = newMode;
+    document.querySelectorAll('.env-mode-tabs .tab-link').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+    document.getElementById('mode-hint').textContent = MODE_HINTS[mode] || '';
+    if (mode === 'code') {
+      document.getElementById('placeholder-container').style.display = 'none';
+      document.getElementById('monaco-container').style.display = '';
+      ensureMonaco(() => createMonaco(serializeEnv(envItems)));
+    } else {
+      document.getElementById('monaco-container').style.display = 'none';
+      document.getElementById('placeholder-container').style.display = 'flex';
+      renderPlaceholders();
+    }
+  }
+  document.querySelectorAll('.env-mode-tabs .tab-link').forEach((b) => {
+    b.addEventListener('click', () => switchMode(b.dataset.mode));
+  });
+
+  function openFile(path) {
+    confirmDiscardIfDirty(() => {
+      currentPathEl.textContent = 'Loading ' + path + ' …';
+      statusEl.textContent = '';
+      getJson('{{ url_for("envfiles.api_read_file") }}?path=' + encodeURIComponent(path)).then((data) => {
+        if (!data.ok) {
+          statusEl.textContent = data.error || 'Failed to load file.';
+          currentPathEl.textContent = activePath || 'No file open';
+          return;
+        }
+        activePath = path;
+        currentPathEl.textContent = path;
+        setToolbarEnabled(true);
+        setDirty(false);
+        showEditorEmpty(false);
+        renderList();
+        envItems = parseEnv(data.content);
+        if (mode === 'code') {
+          ensureMonaco(() => createMonaco(data.content));
+        } else {
+          renderPlaceholders();
+        }
+      });
+    });
+  }
+
+  function saveFile() {
+    if (!activePath) return;
+    statusEl.textContent = 'Saving…';
+    callJson('{{ url_for("envfiles.api_write_file") }}', {
+      path: activePath, content: getCurrentContent(),
+    }).then((data) => {
+      if (data.ok) {
+        statusEl.textContent = 'Saved ' + new Date().toLocaleTimeString();
+        setDirty(false);
+        scan();
+      } else {
+        statusEl.textContent = data.error || 'Save failed.';
+      }
+    });
+  }
+  btnSave.addEventListener('click', saveFile);
+
+  btnReload.addEventListener('click', () => {
+    if (!activePath) return;
+    const p = activePath;
+    activePath = null; // bypass dirty check on self-reload
+    openFile(p);
+  });
+
+  btnCopy.addEventListener('click', async () => {
+    if (!activePath) return;
+    try {
+      await navigator.clipboard.writeText(getCurrentContent());
+      statusEl.textContent = 'Copied to clipboard.';
+    } catch (e) {
+      statusEl.textContent = 'Clipboard blocked by browser.';
+    }
+  });
+
+  btnPaste.addEventListener('click', async () => {
+    if (!activePath) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      if (mode === 'code' && monacoEditor) {
+        const sel = monacoEditor.getSelection();
+        monacoEditor.executeEdits('paste', [{ range: sel, text }]);
+        monacoEditor.focus();
+      } else {
+        // Placeholder mode: merge pasted KEY=VALUE lines into the current
+        // list — existing keys get updated in place, new keys get appended.
+        const pasted = parseEnv(text).filter((it) => it.type === 'kv');
+        pasted.forEach((p) => {
+          const existing = envItems.find((it) => it.type === 'kv' && it.key === p.key);
+          if (existing) { existing.value = p.value; existing.quote = p.quote; }
+          else envItems.push(p);
+        });
+        setDirty(true);
+        renderPlaceholders();
+      }
+    } catch (e) {
+      statusEl.textContent = 'Clipboard blocked by browser — use Ctrl+V in the editor instead.';
+    }
+  });
+
+  btnDownload.addEventListener('click', () => {
+    if (!activePath) return;
+    const blob = new Blob([getCurrentContent()], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = activePath.split('/').pop();
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  btnBackup.addEventListener('click', async () => {
+    if (!activePath) return;
+    statusEl.textContent = 'Backing up…';
+    const data = await callJson('{{ url_for("envfiles.api_backup_file") }}', { path: activePath });
+    statusEl.textContent = data.ok ? 'Backup saved: ' + data.backup_path.split('/').pop() : (data.error || 'Backup failed.');
+    if (data.ok) scan();
+  });
+
+  btnDelete.addEventListener('click', async () => {
+    if (!activePath) return;
+    if (!confirm('Delete ' + activePath + '? This cannot be undone.')) return;
+    const data = await callJson('{{ url_for("envfiles.api_delete_file") }}', { path: activePath });
+    if (data.ok) {
+      if (monacoEditor) { monacoEditor.dispose(); monacoEditor = null; }
+      activePath = null;
+      envItems = [];
+      currentPathEl.textContent = 'No file open';
+      setToolbarEnabled(false);
+      setDirty(false);
+      showEditorEmpty(true);
+      statusEl.textContent = 'Deleted.';
+      renderPlaceholders();
+      scan();
+    } else {
+      statusEl.textContent = data.error || 'Delete failed.';
+    }
+  });
+
+  // ---- Browse modal (custom path, shows dotfiles) ----
+  const browseModal = document.getElementById('browse-modal');
+  const browseList = document.getElementById('browse-list');
+  const browsePathEl = document.getElementById('browse-path');
+
+  async function loadBrowse(path) {
+    const data = await getJson('{{ url_for("envfiles.api_browse") }}?path=' + encodeURIComponent(path));
+    if (!data.ok) {
+      browseList.innerHTML = `<div class="browse-item">${data.error}</div>`;
+      return;
+    }
+    browsePathEl.textContent = data.path;
+    let html = '';
+    if (data.parent) html += `<div class="browse-item" data-dir="${data.parent}"><span class="icon">↰</span> ..</div>`;
+    for (const entry of data.entries) {
+      if (entry.is_dir) {
+        html += `<div class="browse-item" data-dir="${entry.path}"><span class="icon">📁</span> ${entry.name}</div>`;
+      } else {
+        html += `<div class="browse-item" data-file="${entry.path}"><span class="icon">📄</span> ${entry.name}</div>`;
+      }
+    }
+    browseList.innerHTML = html || '<div class="browse-item">Empty directory</div>';
+    browseList.querySelectorAll('[data-dir]').forEach((el) => el.addEventListener('click', () => loadBrowse(el.getAttribute('data-dir'))));
+    browseList.querySelectorAll('[data-file]').forEach((el) => el.addEventListener('click', () => {
+      browseModal.classList.remove('open');
+      openFile(el.getAttribute('data-file'));
+    }));
+  }
+
+  function openBrowseModal() {
+    browseModal.classList.add('open');
+    loadBrowse('/home');
+  }
+  document.getElementById('browse-btn').addEventListener('click', openBrowseModal);
+  const emptyBrowseBtn = document.getElementById('empty-browse-btn');
+  if (emptyBrowseBtn) emptyBrowseBtn.addEventListener('click', openBrowseModal);
+  document.getElementById('browse-close').addEventListener('click', () => browseModal.classList.remove('open'));
+  browseModal.addEventListener('click', (e) => { if (e.target === browseModal) browseModal.classList.remove('open'); });
+
+  // ---- New file modal ----
+  const newModal = document.getElementById('new-modal');
+  const newPathInput = document.getElementById('new-path-input');
+  function openNewModal() {
+    newPathInput.value = '';
+    newModal.classList.add('open');
+    newPathInput.focus();
+  }
+  document.getElementById('new-btn').addEventListener('click', openNewModal);
+  const emptyNewBtn = document.getElementById('empty-new-btn');
+  if (emptyNewBtn) emptyNewBtn.addEventListener('click', openNewModal);
+  document.getElementById('new-close').addEventListener('click', () => newModal.classList.remove('open'));
+  document.getElementById('new-cancel-btn').addEventListener('click', () => newModal.classList.remove('open'));
+  newModal.addEventListener('click', (e) => { if (e.target === newModal) newModal.classList.remove('open'); });
+  document.getElementById('new-create-btn').addEventListener('click', async () => {
+    const path = newPathInput.value.trim();
+    if (!path) return;
+    const data = await callJson('{{ url_for("envfiles.api_new_file") }}', { path });
+    if (data.ok) {
+      newModal.classList.remove('open');
+      await scan();
+      openFile(path);
+    } else {
+      alert(data.error || 'Create failed.');
+    }
+  });
+
+  // ---- Help / quick-reference modal ----
+  const helpModal = document.getElementById('help-modal');
+  document.getElementById('help-btn').addEventListener('click', () => helpModal.classList.add('open'));
+  document.getElementById('help-close').addEventListener('click', () => helpModal.classList.remove('open'));
+  helpModal.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.classList.remove('open'); });
+
+  showEditorEmpty(true);
+  scan();
+})();
+</script>
+{% endblock %}

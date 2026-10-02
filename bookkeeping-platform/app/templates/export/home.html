@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Export data{% endblock %}
+{% block content %}
+<h1 class="page-title mb-2">Export your data</h1>
+<p class="page-subtitle">Your records are always yours. Export any list as CSV, or download everything at once.</p>
+
+<div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow max-w-lg mb-8">
+  <h2 class="font-medium mb-3">Download everything</h2>
+  <p class="text-sm text-gray-500 mb-4">A single zip with CSVs of every record type, all uploaded documents in their original form, and a manifest describing the contents.</p>
+  <a href="{{ url_for('export.download_everything') }}" class="inline-block bg-blue-600 text-white px-4 py-2 rounded text-sm">Download everything (.zip)</a>
+</div>
+
+<h2 class="section-title">Individual exports (CSV)</h2>
+<div class="grid gap-2 sm:grid-cols-2 max-w-lg">
+  {% for entity, label in [('customers','Customers'), ('suppliers','Suppliers'), ('invoices','Invoices'), ('bills','Bills'), ('expenses','Expenses'), ('chart-of-accounts','Chart of accounts'), ('journal-entries','Journal entries')] %}
+  <a href="{{ url_for('export.export_entity_csv', entity=entity) }}" class="bg-white dark:bg-gray-800 px-4 py-3 rounded-lg shadow text-sm text-blue-600">{{ label }} (.csv)</a>
+  {% endfor %}
+</div>
+{% endblock %}

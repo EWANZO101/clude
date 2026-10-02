@@ -1,0 +1,76 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Ticket {{ ticket.ticket_id }} — Admin{% endblock %}
+{% block admin_content %}
+
+<div style="max-width:800px;">
+  <div style="margin-bottom:1.5rem;">
+    <a href="/admin/tickets" style="color:var(--text-muted);font-size:0.9rem;text-decoration:none;">← Tickets</a>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-top:0.5rem;">
+      <div>
+        <div class="font-mono" style="font-size:0.85rem;color:var(--accent);">{{ ticket.ticket_id }}</div>
+        <h1 class="font-display" style="font-size:1.5rem;">{{ ticket.subject or 'Support Ticket' }}</h1>
+        <div style="font-size:0.85rem;color:var(--text-muted);">
+          From <strong style="color:var(--text-secondary);">{{ ticket.customer_name }}</strong>
+          {% if ticket.order_id %}
+          · Order <a href="/admin/orders/{{ ticket.order_id }}" class="font-mono"
+                     style="color:var(--accent);font-size:0.85rem;">{{ ticket.order_id }}</a>
+          {% endif %}
+          · {{ ticket.created_at.strftime('%b %d, %Y %H:%M') }}
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;">
+        {% if ticket.expires_at %}
+        <span class="badge {{ 'badge-accepted' if ticket.expires_at > now else 'badge-declined' }}">
+          {{ 'Active' if ticket.expires_at > now else 'Expired' }}
+        </span>
+        {% endif %}
+        <span class="badge {{ 'badge-inprogress' if ticket.status=='Open' else 'badge-pending' }}">{{ ticket.status }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conversation -->
+  <div style="display:grid;gap:0.75rem;margin-bottom:2rem;">
+    {% for msg in messages %}
+    <div style="
+      padding:1rem 1.1rem;border-radius:12px;max-width:85%;
+      {% if msg.sender == 'admin' %}
+        margin-left:auto;background:var(--accent-dim);color:#fff;
+      {% else %}
+        background:var(--bg-elevated);border:1px solid var(--border);
+      {% endif %}
+    ">
+      <div style="font-size:0.78rem;opacity:0.7;margin-bottom:0.35rem;font-family:'Cinzel',serif;letter-spacing:.03em;">
+        {{ '🎨 You (Admin)' if msg.sender == 'admin' else ticket.customer_name }}
+        &nbsp;·&nbsp;{{ msg.created_at.strftime('%b %d, %H:%M UTC') }}
+      </div>
+      <div style="white-space:pre-wrap;font-size:0.95rem;">{{ msg.message }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Reply form (admin) -->
+  {% if ticket.status == 'Open' %}
+  <div class="card" style="margin-bottom:1rem;">
+    <form method="POST">
+      <input type="hidden" name="action" value="reply">
+      <label class="form-label">Reply as Admin</label>
+      <textarea name="message" class="input" required
+        placeholder="Write your reply…" style="min-height:110px;margin-bottom:1rem;"></textarea>
+      <button type="submit" class="btn btn-primary btn-sm">Send Reply</button>
+    </form>
+  </div>
+
+  <form method="POST" style="display:inline;">
+    <input type="hidden" name="action" value="close">
+    <button type="submit" class="btn btn-danger btn-sm">Close Ticket</button>
+  </form>
+  {% else %}
+  <div style="color:var(--text-muted);font-style:italic;text-align:center;
+              padding:1.5rem;background:var(--bg-elevated);border-radius:10px;">
+    This ticket is closed.
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

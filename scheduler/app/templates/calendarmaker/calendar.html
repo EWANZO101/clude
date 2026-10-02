@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}{{ calendar.name }} · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto max-w-2xl px-4 py-10 sm:py-14">
+
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="font-display text-2xl font-semibold text-ink">{{ calendar.name }}</h1>
+      <p class="mt-1 text-sm text-ink-muted">Signed in as {{ access.email }} · {{ member_count }} member{% if member_count != 1 %}s{% endif %}</p>
+    </div>
+    <form method="POST" action="{{ url_for('calendarmaker.lock_calendar', share_token=calendar.share_token) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn-secondary">Lock</button>
+    </form>
+  </div>
+
+  {% include "partials/flash.html" %}
+
+  <div class="card mb-6 p-5 sm:p-6">
+    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">Invite link</p>
+    <div class="flex gap-2">
+      <input type="text" readonly value="{{ share_url }}" class="field-input font-mono text-xs" onclick="this.select()">
+      <button type="button" class="btn-secondary shrink-0" onclick="navigator.clipboard.writeText('{{ share_url }}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500);">Copy</button>
+    </div>
+    <p class="mt-2 text-xs text-ink-faint">Anyone with this link can join — they'll set their own PIN and email, and can add events.</p>
+
+    <p class="mt-5 mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">Public link</p>
+    <div class="flex gap-2">
+      <input type="text" readonly value="{{ public_url }}" class="field-input font-mono text-xs" onclick="this.select()">
+      <button type="button" class="btn-secondary shrink-0" onclick="navigator.clipboard.writeText('{{ public_url }}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500);">Copy</button>
+    </div>
+    <p class="mt-2 text-xs text-ink-faint">No sign-up — for posting somewhere public. Anyone with this link can view and add events{% if calendar.public_pin_protected %}, once they enter the PIN{% endif %}.</p>
+
+    <div class="mt-4 border-t border-border pt-4">
+      <form method="POST" action="{{ url_for('calendarmaker.set_public_pin', share_token=calendar.share_token) }}" novalidate class="flex flex-wrap items-end gap-3">
+        {{ public_pin_form.hidden_tag() }}
+        <label class="flex items-center gap-2 pb-2.5 text-sm text-ink-muted">
+          {{ public_pin_form.protect_with_pin(class_="rounded border-border bg-surface-raised text-accent focus:ring-accent focus:ring-offset-base", id="pub-pin-toggle", checked=calendar.public_pin_protected) }}
+          Protect public link with a PIN
+        </label>
+        <div id="pub-pin-field" class="{{ '' if calendar.public_pin_protected else 'hidden' }}">
+          <label class="field-label" for="{{ public_pin_form.pin.id }}">4-6 digit PIN</label>
+          {{ public_pin_form.pin(class_="field-input", maxlength=6, inputmode="numeric", placeholder="1234") }}
+        </div>
+        <button type="submit" class="btn-secondary">Save</button>
+      </form>
+      {% for error in public_pin_form.pin.errors %}<p class="field-error mt-2">{{ error }}</p>{% endfor %}
+    </div>
+  </div>
+
+  <div class="card mb-6 p-5 sm:p-6">
+    <p class="mb-4 text-xs font-semibold uppercase tracking-wide text-ink-muted">Add an event</p>
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        <label class="field-label" for="{{ form.title.id }}">Title</label>
+        {{ form.title(class_="field-input", placeholder="e.g. Team lunch") }}
+        {% for error in form.title.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="mb-3 grid grid-cols-3 gap-3">
+        <div>
+          <label class="field-label" for="{{ form.event_date.id }}">Date</label>
+          {{ form.event_date(class_="field-input") }}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.start_time.id }}">Start</label>
+          {{ form.start_time(class_="field-input") }}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.end_time.id }}">End</label>
+          {{ form.end_time(class_="field-input") }}
+        </div>
+      </div>
+      {% for error in form.event_date.errors + form.end_time.errors %}
+        <p class="field-error -mt-2 mb-3">{{ error }}</p>
+      {% endfor %}
+      <div class="mb-4">
+        <label class="field-label" for="{{ form.notes.id }}">Notes (optional)</label>
+        {{ form.notes(class_="field-input", rows=2) }}
+      </div>
+      <button type="submit" class="btn-primary">Add event</button>
+    </form>
+  </div>
+
+  <div class="card divide-y divide-border">
+    {% if upcoming %}
+      {% for e in upcoming %}
+      <div class="flex items-center justify-between gap-4 p-4">
+        <div class="min-w-0">
+          <p class="font-medium text-ink">{{ e.title }}</p>
+          <p class="mt-0.5 text-sm text-ink-muted">
+            {{ e.event_date.strftime('%a %d %b %Y') }}
+            {% if e.start_time %} · {{ e.start_time.strftime('%H:%M') }}{% if e.end_time %}–{{ e.end_time.strftime('%H:%M') }}{% endif %}{% endif %}
+          </p>
+          {% if e.notes %}<p class="mt-1 text-sm text-ink-faint">{{ e.notes }}</p>{% endif %}
+          <p class="mt-1 text-xs text-ink-faint">Added by {{ e.created_by_email }}</p>
+        </div>
+        <form method="POST" action="{{ url_for('calendarmaker.delete_event', share_token=calendar.share_token, event_id=e.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-ghost !px-2" aria-label="Remove">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
+          </button>
+        </form>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="p-8 text-center">
+        <p class="text-sm text-ink-muted">No upcoming events yet.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if past %}
+  <details class="mt-4">
+    <summary class="cursor-pointer text-sm font-medium text-ink-muted hover:text-ink">Past events ({{ past|length }})</summary>
+    <div class="card mt-2 divide-y divide-border">
+      {% for e in past %}
+      <div class="p-4 opacity-60">
+        <p class="font-medium text-ink">{{ e.title }}</p>
+        <p class="mt-0.5 text-sm text-ink-muted">{{ e.event_date.strftime('%a %d %b %Y') }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </details>
+  {% endif %}
+
+</div>
+<script>
+  const pubPinToggle = document.getElementById("pub-pin-toggle");
+  const pubPinField = document.getElementById("pub-pin-field");
+  function syncPubPinField() {
+    pubPinField.classList.toggle("hidden", !pubPinToggle.checked);
+  }
+  pubPinToggle.addEventListener("change", syncPubPinField);
+  syncPubPinField();
+</script>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Commissions Closed{% endblock %}
+{% block body %}
+<nav class="nav-bar">
+  <a class="nav-logo" href="/">Cioda's <span>Commissions</span></a>
+</nav>
+<main style="max-width:500px;margin:0 auto;padding:5rem 1.5rem;text-align:center;" class="fade-in">
+  <div style="font-size:4rem;margin-bottom:1rem;">🎨</div>
+  <h1 class="font-display" style="font-size:2rem;margin-bottom:0.75rem;color:var(--danger);">Commissions Closed</h1>
+  <p style="color:var(--text-secondary);font-size:1.1rem;margin-bottom:1.5rem;">{{ message }}</p>
+
+  {% if settings and settings.reopen_date %}
+  <div style="background:var(--bg-card);border:1px solid var(--success);border-radius:12px;
+              padding:1.1rem 1.5rem;margin-bottom:1.5rem;display:inline-block;">
+    <div style="font-size:0.78rem;color:var(--text-muted);font-family:'Cinzel',serif;
+                letter-spacing:.07em;text-transform:uppercase;margin-bottom:0.4rem;">
+      📅 Reopening On
+    </div>
+    <div style="font-size:1.2rem;font-weight:700;color:var(--success);">
+      {{ settings.reopen_date }}
+    </div>
+  </div>
+  {% endif %}
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}" style="text-align:left;margin-bottom:1.25rem;">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="card" style="text-align:left;margin-bottom:1.5rem;">
+    <div class="font-display" style="font-size:0.78rem;color:var(--accent);letter-spacing:.05em;
+                text-transform:uppercase;margin-bottom:0.85rem;">🔔 Get Notified When We Reopen</div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <a href="/notify-me/discord/join" class="btn btn-ghost btn-sm"
+         style="flex:1;min-width:220px;justify-content:center;border-color:#5865F2;color:#5865F2;">
+        🔗 Join Discord & Get Notified
+      </a>
+      <form method="POST" action="/notify-me" style="display:flex;gap:0.4rem;flex:1;min-width:220px;">
+        <input type="hidden" name="method" value="email">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <input type="email" name="contact" class="input" placeholder="you@example.com" required style="flex:1;">
+        <button type="submit" class="btn btn-ghost btn-sm">✉ Notify Me</button>
+      </form>
+    </div>
+  </div>
+
+  <div style="margin-top:1rem;">
+    <a href="/" class="btn btn-ghost">← Back to Home</a>
+  </div>
+</main>
+{% endblock %}

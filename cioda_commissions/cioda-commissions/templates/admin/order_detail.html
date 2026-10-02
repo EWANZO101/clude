@@ -1,0 +1,724 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Order {{ order.order_id }} — Admin{% endblock %}
+{% block admin_content %}
+
+{% set sc = order.status.lower().replace(' ','') %}
+{% set status_color = '#818cf8' if sc=='awaitingconfirmation' else '#86efac' if sc=='accepted' else '#fca5a5' if sc=='declined' else '#fcd34d' if sc=='pending' else '#60a5fa' if sc=='inprogress' else '#4ade80' if sc=='done' else 'var(--text-secondary)' %}
+
+<!-- ── Page Header ── -->
+<div style="margin-bottom:1.5rem;">
+  <a href="/admin/orders" style="color:var(--text-muted);font-size:0.85rem;text-decoration:none;">← All Orders</a>
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-top:0.6rem;">
+    <div>
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.3rem;">
+        <h1 class="font-display" style="font-size:1.6rem;margin:0;">{{ order.order_id }}</h1>
+        <span class="badge badge-{{ 'awaiting' if sc=='awaitingconfirmation' else sc }}">{{ order.status }}</span>
+        <span class="badge badge-{{ 'paid' if order.payment_status=='Paid' else 'unpaid' if order.payment_status=='Unpaid' else 'payp' }}">{{ order.payment_status }}</span>
+      </div>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin:0;">
+        {{ order.customer_name }} &nbsp;·&nbsp; Created {{ order.created_at.strftime('%B %d, %Y at %H:%M') }}
+      </p>
+    </div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <a href="/order/{{ order.unique_link }}" target="_blank" class="btn btn-ghost btn-sm">🔗 Customer View</a>
+      <button onclick="openEditModal()" class="btn btn-primary btn-sm">✏️ Edit Order</button>
+      <form method="POST" action="/admin/orders/{{ order.order_id }}/reset-pin"
+            onsubmit="return confirm('Reset the PIN for order {{ order.order_id }}? The customer will be asked to set a new one.')">
+        <button type="submit" class="btn btn-ghost btn-sm" title="{{ 'PIN is set' if order.pin_hash else 'No PIN set' }}"
+                style="{{ 'border-color:#f59e0b;color:#f59e0b;' if order.pin_hash else '' }}">
+          🔑 {{ 'Reset PIN' if order.pin_hash else 'No PIN' }}
+        </button>
+      </form>
+      <form method="POST" action="/admin/orders/{{ order.order_id }}/delete"
+            onsubmit="return confirm('Permanently delete {{ order.order_id }}? This cannot be undone.')">
+        <button type="submit" class="btn btn-danger btn-sm">🗑 Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── Tracking link bar ── -->
+<div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;
+            padding:0.75rem 1rem;display:flex;align-items:center;gap:0.75rem;
+            flex-wrap:wrap;margin-bottom:1.5rem;">
+  <div style="font-family:'Cinzel',serif;font-size:0.7rem;color:var(--text-muted);
+              letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;">Tracking Link</div>
+  <div class="font-mono" style="flex:1;font-size:0.85rem;color:var(--accent);
+              word-break:break-all;min-width:0;" id="trackingUrl">
+    {{ request.host_url }}order/{{ order.unique_link }}
+  </div>
+  <button onclick="navigator.clipboard.writeText(document.getElementById('trackingUrl').textContent.trim()).then(()=>{this.textContent='✓ Copied';setTimeout(()=>this.textContent='📋 Copy',2000)})"
+          class="btn btn-ghost btn-sm" style="white-space:nowrap;">📋 Copy</button>
+</div>
+
+<!-- ── Main grid ── -->
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,340px);gap:1.25rem;margin-bottom:1.25rem;">
+
+  <!-- LEFT: Order details card -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+    <!-- Customer Info -->
+    <div class="card" style="padding:0;">
+      <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);
+                  display:flex;align-items:center;justify-content:space-between;">
+        <div class="font-display" style="font-size:0.82rem;color:var(--accent);letter-spacing:.05em;">CUSTOMER INFO</div>
+        <div style="font-size:1.3rem;font-weight:700;color:var(--gold);">${{ "%.2f"|format(order.price) }}</div>
+      </div>
+      <div style="padding:1rem 1.25rem;">
+        <div style="display:grid;gap:0;">
+
+          <!-- Name row -->
+          <div style="display:flex;align-items:center;padding:0.55rem 0;border-bottom:1px solid var(--border);">
+            <span style="width:130px;flex-shrink:0;font-size:0.78rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.04em;">NAME</span>
+            <span style="font-size:0.95rem;">{{ order.customer_name }}</span>
+          </div>
+
+          {% if order.customer_discord %}
+          <div style="display:flex;align-items:center;padding:0.55rem 0;border-bottom:1px solid var(--border);">
+            <span style="width:130px;flex-shrink:0;font-size:0.78rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.04em;">💬 DISCORD</span>
+            <span style="font-size:0.95rem;">{{ order.customer_discord }}</span>
+          </div>
+          {% endif %}
+
+          {% if order.customer_instagram %}
+          <div style="display:flex;align-items:center;padding:0.55rem 0;border-bottom:1px solid var(--border);">
+            <span style="width:130px;flex-shrink:0;font-size:0.78rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.04em;">📸 INSTAGRAM</span>
+            <span style="font-size:0.95rem;">{{ order.customer_instagram }}</span>
+          </div>
+          {% endif %}
+
+          {% if order.customer_email %}
+          <div style="display:flex;align-items:center;padding:0.55rem 0;border-bottom:1px solid var(--border);">
+            <span style="width:130px;flex-shrink:0;font-size:0.78rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.04em;">✉️ EMAIL</span>
+            <span style="font-size:0.95rem;">{{ order.customer_email }}</span>
+          </div>
+          {% endif %}
+
+          <!-- Commission types -->
+          <div style="padding:0.55rem 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:0.78rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.04em;display:block;margin-bottom:0.35rem;">COMMISSION</span>
+            {% if order.commission_type %}
+              {% for t in order.commission_type.split(', ') %}
+              <span style="display:inline-block;background:var(--bg-elevated);border:1px solid var(--border-accent);
+                           border-radius:6px;padding:0.2rem 0.6rem;font-size:0.82rem;margin:0.15rem 0.15rem 0.15rem 0;">
+                {{ t }}
+              </span>
+              {% endfor %}
+            {% else %}
+              <span style="color:var(--text-muted);font-size:0.9rem;">—</span>
+            {% endif %}
+          </div>
+
+          {% if order.payment_method %}
+          <div style="display:flex;align-items:center;padding:0.55rem 0;border-bottom:1px solid var(--border);">
+            <span style="width:130px;flex-shrink:0;font-size:0.78rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.04em;">PAYMENT</span>
+            <span style="font-size:0.95rem;color:var(--gold);">
+              {{ '💵' if order.payment_method == 'CashApp' else '🅿️' }} {{ order.payment_method }}
+            </span>
+          </div>
+          {% endif %}
+
+          {% if order.payment_username %}
+          <div style="display:flex;align-items:center;padding:0.55rem 0;border-bottom:1px solid var(--border);">
+            <span style="width:130px;flex-shrink:0;font-size:0.78rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.04em;">
+              {{ 'CASHTAG' if order.payment_method == 'CashApp' else 'PAYPAL' }}
+            </span>
+            <span class="font-mono" style="font-size:0.88rem;color:var(--accent);">{{ order.payment_username }}</span>
+          </div>
+          {% endif %}
+
+          {% if order.eta %}
+          <div style="display:flex;align-items:center;padding:0.55rem 0;border-bottom:1px solid var(--border);">
+            <span style="width:130px;flex-shrink:0;font-size:0.78rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.04em;">ETA</span>
+            <span style="font-size:0.95rem;color:var(--accent);">{{ order.eta }}</span>
+          </div>
+          {% endif %}
+
+          {% if order.notes %}
+          <div style="padding:0.55rem 0;">
+            <span style="font-size:0.78rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.04em;display:block;margin-bottom:0.35rem;">NOTES TO CUSTOMER</span>
+            <div style="font-size:0.9rem;color:var(--text-secondary);white-space:pre-wrap;background:var(--bg-elevated);
+                        padding:0.6rem 0.75rem;border-radius:6px;">{{ order.notes }}</div>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Description accordion -->
+    {% if order.description %}
+    <div class="card" style="padding:0;">
+      <button onclick="toggleAccordion('desc')"
+              style="width:100%;background:none;border:none;cursor:pointer;padding:1rem 1.25rem;
+                     display:flex;align-items:center;justify-content:space-between;text-align:left;">
+        <div class="font-display" style="font-size:0.82rem;color:var(--accent);letter-spacing:.05em;">DESCRIPTION</div>
+        <span id="desc-arrow" style="color:var(--text-muted);font-size:0.9rem;transition:transform .2s;">▼</span>
+      </button>
+      <div id="desc-body" style="padding:0 1.25rem 1.25rem;display:none;">
+        <p style="font-size:0.95rem;color:var(--text-secondary);white-space:pre-wrap;
+                  background:var(--bg-elevated);padding:0.75rem;border-radius:8px;margin:0;">{{ order.description }}</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Form responses accordion -->
+    {% if form_responses %}
+    {% set has_responses = namespace(val=false) %}
+    {% for key, val in form_responses.items() %}{% if val %}{% set has_responses.val = true %}{% endif %}{% endfor %}
+    {% if has_responses.val %}
+    <div class="card" style="padding:0;">
+      <button onclick="toggleAccordion('form')"
+              style="width:100%;background:none;border:none;cursor:pointer;padding:1rem 1.25rem;
+                     display:flex;align-items:center;justify-content:space-between;text-align:left;">
+        <div class="font-display" style="font-size:0.82rem;color:var(--accent);letter-spacing:.05em;">FORM RESPONSES</div>
+        <span id="form-arrow" style="color:var(--text-muted);font-size:0.9rem;transition:transform .2s;">▼</span>
+      </button>
+      <div id="form-body" style="padding:0 1.25rem 1.25rem;display:none;">
+        <div style="display:grid;gap:0.6rem;">
+          {% for key, val in form_responses.items() %}
+          {% if val %}
+          <div style="background:var(--bg-elevated);border-radius:8px;padding:0.65rem 0.85rem;">
+            <div style="font-size:0.72rem;color:var(--text-muted);font-family:'Cinzel',serif;
+                        letter-spacing:.05em;margin-bottom:0.25rem;">{{ key.replace('_',' ').title() }}</div>
+            <div style="font-size:0.92rem;color:var(--text-secondary);">{{ val }}</div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- Invoices accordion -->
+    {% if invoices %}
+    <div class="card" style="padding:0;">
+      <button onclick="toggleAccordion('inv')"
+              style="width:100%;background:none;border:none;cursor:pointer;padding:1rem 1.25rem;
+                     display:flex;align-items:center;justify-content:space-between;text-align:left;">
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <div class="font-display" style="font-size:0.82rem;color:var(--accent);letter-spacing:.05em;">INVOICES</div>
+          <span style="font-size:0.75rem;background:var(--accent-glow);color:var(--accent);
+                       border-radius:999px;padding:0.1rem 0.5rem;font-family:'Cinzel',serif;">{{ invoices|length }}</span>
+        </div>
+        <span id="inv-arrow" style="color:var(--text-muted);font-size:0.9rem;transition:transform .2s;">▼</span>
+      </button>
+      <div id="inv-body" style="padding:0 1.25rem 1.25rem;display:none;">
+        {% for inv in invoices %}
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:0.65rem 0.85rem;background:var(--bg-elevated);border-radius:8px;
+                    margin-bottom:0.5rem;flex-wrap:wrap;gap:0.5rem;">
+          <div>
+            <div class="font-mono" style="font-size:0.82rem;color:var(--gold);">{{ inv.invoice_id }}</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--text-primary);">${{ "%.2f"|format(inv.amount) }}</div>
+            {% if inv.due_date %}<div style="font-size:0.78rem;color:var(--text-muted);">Due: {{ inv.due_date }}</div>{% endif %}
+          </div>
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span class="badge {{ 'badge-paid' if inv.paid else 'badge-unpaid' }}">
+              {{ 'Paid' if inv.paid else 'Unpaid' }}
+            </span>
+            {% if not inv.paid %}
+            <form method="POST" action="/admin/invoices/{{ inv.invoice_id }}/mark-paid" style="display:inline-flex;gap:0.3rem;">
+              <input type="hidden" name="amount" value="{{ inv.amount }}">
+              <button type="submit" class="btn btn-success btn-sm">Mark Paid</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+        <a href="/admin/invoices/new" class="btn btn-ghost btn-sm" style="margin-top:0.25rem;">+ New Invoice</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Tickets accordion -->
+    {% if tickets %}
+    <div class="card" style="padding:0;">
+      <button onclick="toggleAccordion('tkt')"
+              style="width:100%;background:none;border:none;cursor:pointer;padding:1rem 1.25rem;
+                     display:flex;align-items:center;justify-content:space-between;text-align:left;">
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <div class="font-display" style="font-size:0.82rem;color:var(--accent);letter-spacing:.05em;">TICKETS</div>
+          <span style="font-size:0.75rem;background:var(--accent-glow);color:var(--accent);
+                       border-radius:999px;padding:0.1rem 0.5rem;font-family:'Cinzel',serif;">{{ tickets|length }}</span>
+        </div>
+        <span id="tkt-arrow" style="color:var(--text-muted);font-size:0.9rem;transition:transform .2s;">▼</span>
+      </button>
+      <div id="tkt-body" style="padding:0 1.25rem 1.25rem;display:none;">
+        {% for t in tickets %}
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:0.65rem 0.85rem;background:var(--bg-elevated);border-radius:8px;
+                    margin-bottom:0.5rem;flex-wrap:wrap;gap:0.5rem;">
+          <div>
+            <div class="font-mono" style="font-size:0.82rem;color:var(--accent);">{{ t.ticket_id }}</div>
+            <div style="font-size:0.88rem;color:var(--text-secondary);">{{ t.subject or '(no subject)' }}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span class="badge {{ 'badge-accepted' if t.status=='Open' else 'badge-pending' }}">{{ t.status }}</span>
+            <a href="/admin/tickets/{{ t.ticket_id }}" class="btn btn-ghost btn-sm">View</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Finished Artwork accordion -->
+    <div class="card" style="padding:0;">
+      <button onclick="toggleAccordion('final')"
+              style="width:100%;background:none;border:none;cursor:pointer;padding:1rem 1.25rem;
+                     display:flex;align-items:center;justify-content:space-between;text-align:left;">
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <div class="font-display" style="font-size:0.82rem;color:var(--accent);letter-spacing:.05em;">🎁 FINISHED ARTWORK</div>
+          {% if final_images %}
+          <span style="font-size:0.75rem;background:var(--accent-glow);color:var(--accent);
+                       border-radius:999px;padding:0.1rem 0.5rem;font-family:'Cinzel',serif;">{{ final_images|length }}</span>
+          {% endif %}
+        </div>
+        <span id="final-arrow" style="color:var(--text-muted);font-size:0.9rem;transition:transform .2s;">▼</span>
+      </button>
+      <div id="final-body" style="padding:0 1.25rem 1.25rem;display:none;">
+        {% if order.status != 'Done' %}
+        <p style="font-size:0.82rem;color:var(--text-muted);font-style:italic;margin-bottom:0.85rem;">
+          Only visible to the customer once the order status is set to <strong style="color:var(--text-secondary);">Done</strong>.
+          You can upload ahead of time — it just won't show on their page until then.
+        </p>
+        {% endif %}
+        {% if final_images %}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.65rem;margin-bottom:1rem;">
+          {% for img in final_images %}
+          <div style="background:var(--bg-elevated);border-radius:8px;overflow:hidden;border:1px solid var(--border-accent);">
+            <a href="/final-image/{{ img.filename }}" target="_blank">
+              <img src="/final-image/{{ img.filename }}" alt="" style="width:100%;height:110px;object-fit:cover;display:block;">
+            </a>
+            <form method="POST" action="/admin/orders/{{ order.order_id }}/final-image/{{ img.id }}/delete"
+                  onsubmit="return confirm('Remove this finished image?')">
+              <button type="submit" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;color:var(--danger);border-radius:0;">🗑 Remove</button>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <form method="POST" action="/admin/orders/{{ order.order_id }}/final-image/upload" enctype="multipart/form-data"
+              style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+          <input type="file" name="images" multiple accept="image/png,image/jpeg,image/gif,image/webp"
+                 class="input" style="flex:1;min-width:200px;padding:0.4rem;">
+          <button type="submit" class="btn btn-primary btn-sm">⬆ Upload</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Trello accordion -->
+    <div class="card" style="padding:0;">
+      <button onclick="toggleAccordion('trello')"
+              style="width:100%;background:none;border:none;cursor:pointer;padding:1rem 1.25rem;
+                     display:flex;align-items:center;justify-content:space-between;text-align:left;">
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <div class="font-display" style="font-size:0.82rem;color:var(--accent);letter-spacing:.05em;">🗂 TRELLO</div>
+          {% if trello_mapping %}
+          <span style="font-size:0.75rem;background:var(--accent-glow);color:var(--accent);
+                       border-radius:999px;padding:0.1rem 0.5rem;font-family:'Cinzel',serif;">Linked</span>
+          {% endif %}
+        </div>
+        <span id="trello-arrow" style="color:var(--text-muted);font-size:0.9rem;transition:transform .2s;">▼</span>
+      </button>
+      <div id="trello-body" style="padding:0 1.25rem 1.25rem;display:none;">
+        {% if trello_conn.status != 'connected' %}
+        <p style="color:var(--text-muted);font-style:italic;margin:0;">
+          Trello isn't connected. <a href="/admin/trello" style="color:var(--accent);">Connect it in Admin → Trello</a>.
+        </p>
+        {% elif trello_mapping %}
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:0.65rem 0.85rem;background:var(--bg-elevated);border-radius:8px;flex-wrap:wrap;gap:0.5rem;">
+          <div>
+            <div style="font-size:0.92rem;font-weight:600;">{{ trello_mapping.trello_card_name }}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">Card ID: {{ trello_mapping.trello_card_id }}</div>
+          </div>
+          <div style="display:flex;gap:0.4rem;">
+            {% if trello_mapping.trello_card_url %}
+            <a href="{{ trello_mapping.trello_card_url }}" target="_blank" class="btn btn-ghost btn-sm">View in Trello ↗</a>
+            {% endif %}
+            <form method="POST" action="/admin/orders/{{ order.order_id }}/trello/unlink"
+                  onsubmit="return confirm('Unlink this card from the order? The card itself stays in Trello.')">
+              <button type="submit" class="btn btn-ghost btn-sm" title="Stop tracking it here, but keep it in Trello">Unlink</button>
+            </form>
+            <form method="POST" action="/admin/orders/{{ order.order_id }}/trello/delete"
+                  onsubmit="return confirm('Permanently delete this card from Trello? This cannot be undone.')">
+              <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--danger);" title="Deletes the card from Trello itself">🗑 Delete Card</button>
+            </form>
+          </div>
+        </div>
+        {% else %}
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+          <form method="POST" action="/admin/orders/{{ order.order_id }}/trello/create">
+            <button type="submit" class="btn btn-primary btn-sm" {{ 'disabled' if not trello_conn.list_id }}>
+              + Create Trello Card
+            </button>
+          </form>
+          {% if trello_conn.list_id %}
+          <form method="POST" action="/admin/orders/{{ order.order_id }}/trello/link" style="display:flex;gap:0.4rem;">
+            <select name="card_id" class="input" id="trelloLinkSelect" style="min-width:220px;">
+              <option value="">Loading cards…</option>
+            </select>
+            <button type="submit" class="btn btn-ghost btn-sm">Link Existing</button>
+          </form>
+          {% endif %}
+        </div>
+        {% if not trello_conn.list_id %}
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.6rem;font-style:italic;">
+          Pick a default board/list under <a href="/admin/trello" style="color:var(--accent);">Admin → Trello</a> to enable card creation.
+        </p>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+  </div><!-- end left col -->
+
+  <!-- RIGHT: Update panel -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+    <!-- Update order card -->
+    <div class="card" style="padding:0;position:sticky;top:calc(var(--nav-height) + 1rem);">
+      <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
+        <div class="font-display" style="font-size:0.82rem;color:var(--accent);letter-spacing:.05em;">UPDATE ORDER</div>
+      </div>
+      <div style="padding:1.1rem 1.25rem;">
+        <form method="POST" action="/admin/orders/{{ order.order_id }}/update">
+          <div style="margin-bottom:0.85rem;">
+            <label class="form-label">Order Status</label>
+            <select name="status" class="input">
+              {% for s in statuses %}
+              <option value="{{ s }}" {{ 'selected' if order.status==s }}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div style="margin-bottom:0.85rem;">
+            <label class="form-label">Payment Status</label>
+            <select name="payment_status" class="input">
+              {% for s in payment_statuses %}
+              <option value="{{ s }}" {{ 'selected' if order.payment_status==s }}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div style="margin-bottom:0.85rem;">
+            <label class="form-label">Price ($)</label>
+            <input type="number" name="price" class="input" value="{{ order.price }}" step="0.01" min="0">
+          </div>
+          <div style="margin-bottom:0.85rem;">
+            <label class="form-label">ETA</label>
+            <input type="text" name="eta" class="input" value="{{ order.eta or '' }}" placeholder="e.g. 1–2 weeks">
+          </div>
+          <div style="margin-bottom:1rem;">
+            <label class="form-label">Notes to Customer</label>
+            <textarea name="notes" class="input" style="min-height:80px;">{{ order.notes or '' }}</textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Save Changes</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add log entry -->
+    <div class="card" style="padding:0;">
+      <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
+        <div class="font-display" style="font-size:0.82rem;color:var(--accent);letter-spacing:.05em;">ADD LOG ENTRY</div>
+      </div>
+      <div style="padding:1.1rem 1.25rem;">
+        <form method="POST" action="/admin/orders/{{ order.order_id }}/log" enctype="multipart/form-data">
+          <div style="margin-bottom:0.65rem;">
+            <input type="text" name="event" class="input" placeholder="Event (e.g. Sketch started)" required>
+          </div>
+          <div style="margin-bottom:0.65rem;">
+            <input type="text" name="details" class="input" placeholder="Details (optional)">
+          </div>
+          <div style="margin-bottom:0.85rem;">
+            <label class="form-label" style="font-weight:400;">WIP Preview Image (optional)</label>
+            <input type="file" name="image" class="input" accept="image/png,image/jpeg,image/gif,image/webp"
+                   style="padding:0.4rem;">
+          </div>
+          <label style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.85rem;cursor:pointer;
+                        font-size:0.85rem;color:var(--text-secondary);">
+            <input type="checkbox" name="customer_visible" checked style="width:15px;height:15px;accent-color:var(--accent);">
+            Visible to customer
+          </label>
+          <button type="submit" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;">+ Add Entry</button>
+        </form>
+      </div>
+    </div>
+
+  </div><!-- end right col -->
+</div>
+
+<!-- ── Order Log (full width) ── -->
+<div class="card" style="padding:0;">
+  <button onclick="toggleAccordion('log')"
+          style="width:100%;background:none;border:none;cursor:pointer;padding:1rem 1.25rem;
+                 display:flex;align-items:center;justify-content:space-between;text-align:left;">
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+      <div class="font-display" style="font-size:0.82rem;color:var(--accent);letter-spacing:.05em;">ORDER LOG / HISTORY</div>
+      {% if logs %}
+      <span style="font-size:0.75rem;background:var(--accent-glow);color:var(--accent);
+                   border-radius:999px;padding:0.1rem 0.5rem;font-family:'Cinzel',serif;">{{ logs|length }}</span>
+      {% endif %}
+    </div>
+    <span id="log-arrow" style="color:var(--text-muted);font-size:0.9rem;transition:transform .2s;">▼</span>
+  </button>
+  <div id="log-body" style="padding:0 1.25rem 1.25rem;display:none;">
+    {% if logs %}
+    <div style="display:grid;gap:0.45rem;">
+      {% for log in logs %}
+      <div style="display:flex;gap:1rem;align-items:flex-start;padding:0.65rem 0.85rem;
+                  background:var(--bg-elevated);border-radius:8px;border-left:3px solid var(--accent);">
+        {% if log.image_filename %}
+        <a href="/order-log-image/{{ log.image_filename }}" target="_blank" style="flex-shrink:0;">
+          <img src="/order-log-image/{{ log.image_filename }}" alt=""
+               style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border-accent);">
+        </a>
+        {% endif %}
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+            <div style="font-size:0.92rem;font-weight:600;">{{ log.event }}</div>
+            {% if not log.customer_visible %}
+            <span style="font-size:0.68rem;background:var(--bg-base);color:var(--text-muted);
+                         border:1px solid var(--border-accent);border-radius:999px;padding:0.05rem 0.5rem;">🔒 Internal</span>
+            {% endif %}
+          </div>
+          {% if log.details %}
+          <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:0.15rem;">{{ log.details }}</div>
+          {% endif %}
+        </div>
+        <div class="font-mono" style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;flex-shrink:0;">
+          {{ log.created_at.strftime('%b %d, %H:%M') }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted);font-style:italic;margin:0;">No log entries yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function toggleAccordion(id) {
+  const body  = document.getElementById(id + '-body');
+  const arrow = document.getElementById(id + '-arrow');
+  const open  = body.style.display !== 'none';
+  body.style.display  = open ? 'none' : 'block';
+  arrow.style.transform = open ? '' : 'rotate(180deg)';
+  if (id === 'trello' && !open) loadTrelloLinkOptions();
+}
+
+let trelloOptionsLoaded = false;
+async function loadTrelloLinkOptions() {
+  const sel = document.getElementById('trelloLinkSelect');
+  if (!sel || trelloOptionsLoaded) return;
+  trelloOptionsLoaded = true;
+  try {
+    const r = await fetch('/admin/trello/lists/{{ trello_conn.list_id }}/cards');
+    const cards = r.ok ? await r.json() : [];
+    sel.innerHTML = '<option value="">— Select a card —</option>';
+    for (const c of cards) {
+      const opt = document.createElement('option');
+      opt.value = c.id; opt.textContent = c.name;
+      sel.appendChild(opt);
+    }
+  } catch (e) {
+    sel.innerHTML = '<option value="">Could not load cards</option>';
+  }
+}
+</script>
+
+<style>
+@media (max-width: 860px) {
+  /* Stack to single column on tablets/phones */
+  div[style*="grid-template-columns:minmax(0,1fr) minmax(0,340px)"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+
+<!-- ═══ EDIT ORDER MODAL (slide-in panel from right) ═══ -->
+<div id="editModalOverlay" onclick="closeEditModal()"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
+            z-index:500;backdrop-filter:blur(3px);"></div>
+
+<div id="editModal"
+     style="display:none;position:fixed;top:0;right:-540px;width:min(540px,100vw);
+            height:100vh;background:var(--bg-surface);border-left:1px solid var(--border);
+            z-index:600;overflow-y:auto;transition:right 0.3s cubic-bezier(0.4,0,0.2,1);">
+
+  <!-- Modal header -->
+  <div style="position:sticky;top:0;background:var(--bg-surface);border-bottom:1px solid var(--border);
+              padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;z-index:1;">
+    <div>
+      <div class="font-display" style="font-size:0.82rem;color:var(--accent);letter-spacing:.05em;">EDIT ORDER</div>
+      <div class="font-mono" style="font-size:0.85rem;color:var(--text-muted);">{{ order.order_id }}</div>
+    </div>
+    <button onclick="closeEditModal()"
+            style="background:none;border:none;color:var(--text-muted);font-size:1.4rem;
+                   cursor:pointer;padding:0.25rem;line-height:1;">✕</button>
+  </div>
+
+  <form method="POST" action="/admin/orders/{{ order.order_id }}/edit"
+        style="padding:1.25rem 1.25rem 0;">
+
+    <!-- ── Customer Info ── -->
+    <div style="margin-bottom:1.25rem;">
+      <div class="font-display" style="font-size:0.72rem;color:var(--text-muted);letter-spacing:.08em;
+           text-transform:uppercase;margin-bottom:0.65rem;padding-bottom:0.35rem;
+           border-bottom:1px solid var(--border);">Customer Info</div>
+      <div style="margin-bottom:0.65rem;">
+        <label class="form-label">Name *</label>
+        <input type="text" name="customer_name" class="input" required value="{{ order.customer_name }}">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;margin-bottom:0.65rem;">
+        <div>
+          <label class="form-label">💬 Discord</label>
+          <input type="text" name="customer_discord" class="input"
+                 value="{{ order.customer_discord or '' }}" placeholder="@username">
+        </div>
+        <div>
+          <label class="form-label">📸 Instagram</label>
+          <input type="text" name="customer_instagram" class="input"
+                 value="{{ order.customer_instagram or '' }}" placeholder="@handle">
+        </div>
+      </div>
+      <div>
+        <label class="form-label">✉️ Email</label>
+        <input type="email" name="customer_email" class="input"
+               value="{{ order.customer_email or '' }}" placeholder="email@example.com">
+      </div>
+    </div>
+
+    <!-- ── Payment Info ── -->
+    <div style="margin-bottom:1.25rem;">
+      <div class="font-display" style="font-size:0.72rem;color:var(--text-muted);letter-spacing:.08em;
+           text-transform:uppercase;margin-bottom:0.65rem;padding-bottom:0.35rem;
+           border-bottom:1px solid var(--border);">Payment Info</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;">
+        <div>
+          <label class="form-label">Method</label>
+          <select name="payment_method" class="input">
+            <option value="">— Not set —</option>
+            <option value="CashApp" {{ 'selected' if order.payment_method == 'CashApp' }}>💵 Cash App</option>
+            <option value="PayPal"  {{ 'selected' if order.payment_method == 'PayPal'  }}>🅿️ PayPal</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">$Tag / Email</label>
+          <input type="text" name="payment_username" class="input"
+                 value="{{ order.payment_username or '' }}" placeholder="$Cashtag or email">
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Commission Types ── -->
+    <div style="margin-bottom:1.25rem;">
+      <div class="font-display" style="font-size:0.72rem;color:var(--text-muted);letter-spacing:.08em;
+           text-transform:uppercase;margin-bottom:0.65rem;padding-bottom:0.35rem;
+           border-bottom:1px solid var(--border);">Commission Types</div>
+
+      {% set sel = order.commission_type.split(', ') if order.commission_type else [] %}
+      {% set categories = presets | groupby('category') %}
+      <div style="display:grid;gap:0.75rem;">
+        {% for cat, items in categories %}
+        <div>
+          <div style="font-size:0.7rem;color:var(--text-muted);font-family:'Cinzel',serif;
+               letter-spacing:.05em;text-transform:uppercase;margin-bottom:0.35rem;">{{ cat }}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.35rem;">
+            {% for item in items %}
+            <label class="edit-comm-label" style="cursor:pointer;display:flex;align-items:center;
+                   gap:0.45rem;padding:0.45rem 0.6rem;background:var(--bg-elevated);
+                   border:2px solid {{ 'var(--accent)' if item.type in sel else 'var(--border)' }};
+                   border-radius:7px;transition:border-color .15s;">
+              <input type="checkbox" name="commission_type" value="{{ item.type }}"
+                     {{ 'checked' if item.type in sel }}
+                     style="width:13px;height:13px;accent-color:var(--accent);flex-shrink:0;"
+                     onchange="this.closest('label').style.borderColor=this.checked?'var(--accent)':'var(--border)'">
+              <div>
+                <div style="font-size:0.78rem;font-weight:600;color:var(--text-primary);line-height:1.2;">
+                  {{ item.type.split(' - ')[-1] if ' - ' in item.type else item.type }}
+                </div>
+                <div style="font-size:0.72rem;color:var(--gold);">${{ item.price }}</div>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+        <!-- Custom -->
+        <label class="edit-comm-label" style="cursor:pointer;display:inline-flex;align-items:center;
+               gap:0.45rem;padding:0.45rem 0.6rem;background:var(--bg-elevated);
+               border:2px solid {{ 'var(--accent)' if 'Custom / Other' in sel else 'var(--border)' }};
+               border-radius:7px;transition:border-color .15s;">
+          <input type="checkbox" name="commission_type" value="Custom / Other"
+                 {{ 'checked' if 'Custom / Other' in sel }}
+                 style="width:13px;height:13px;accent-color:var(--accent);"
+                 onchange="this.closest('label').style.borderColor=this.checked?'var(--accent)':'var(--border)'">
+          <div style="font-size:0.78rem;font-weight:600;color:var(--text-primary);">Custom / Other</div>
+        </label>
+      </div>
+    </div>
+
+    <!-- ── Order Details ── -->
+    <div style="margin-bottom:1.25rem;">
+      <div class="font-display" style="font-size:0.72rem;color:var(--text-muted);letter-spacing:.08em;
+           text-transform:uppercase;margin-bottom:0.65rem;padding-bottom:0.35rem;
+           border-bottom:1px solid var(--border);">Order Details</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;margin-bottom:0.65rem;">
+        <div>
+          <label class="form-label">Price ($)</label>
+          <input type="number" name="price" class="input" step="0.01" min="0" value="{{ order.price }}">
+        </div>
+        <div>
+          <label class="form-label">ETA</label>
+          <input type="text" name="eta" class="input" value="{{ order.eta or '' }}" placeholder="e.g. 1–2 weeks">
+        </div>
+      </div>
+      <div style="margin-bottom:0.65rem;">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="input" style="min-height:90px;">{{ order.description or '' }}</textarea>
+      </div>
+      <div>
+        <label class="form-label">Notes to Customer</label>
+        <textarea name="notes" class="input" style="min-height:70px;">{{ order.notes or '' }}</textarea>
+      </div>
+    </div>
+
+    <!-- Sticky footer actions -->
+    <div style="position:sticky;bottom:0;background:var(--bg-surface);
+                padding:1rem 0;border-top:1px solid var(--border);
+                display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;">
+      <button type="button" onclick="closeEditModal()"
+              class="btn btn-ghost" style="justify-content:center;">Cancel</button>
+      <button type="submit"
+              class="btn btn-primary" style="justify-content:center;">💾 Save All Changes</button>
+    </div>
+
+  </form>
+</div>
+
+<script>
+function openEditModal() {
+  const modal   = document.getElementById('editModal');
+  const overlay = document.getElementById('editModalOverlay');
+  modal.style.display   = 'block';
+  overlay.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  requestAnimationFrame(() => { modal.style.right = '0'; });
+}
+function closeEditModal() {
+  const modal   = document.getElementById('editModal');
+  const overlay = document.getElementById('editModalOverlay');
+  modal.style.right = '-540px';
+  overlay.style.display = 'none';
+  document.body.style.overflow = '';
+  setTimeout(() => { modal.style.display = 'none'; }, 300);
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEditModal(); });
+</script>
+
+{% endblock %}

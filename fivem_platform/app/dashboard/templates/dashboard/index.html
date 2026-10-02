@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold text-white mb-1">Welcome back, {{ user.username }}</h1>
+  <p class="text-sm text-gray-500 mb-8">{{ user.email }}</p>
+
+  {% if not user.email_verified %}
+  <div class="bg-amber-950/40 border border-amber-800 rounded-lg p-4 mb-8 flex items-center justify-between gap-3 flex-wrap">
+    <p class="text-sm text-amber-300">Verify your email so purchases made with it show up in your account automatically.</p>
+    <form method="POST" action="{{ url_for('auth.resend_verification') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="text-xs bg-amber-900 hover:bg-amber-800 text-amber-200 rounded-md px-3 py-1.5 transition whitespace-nowrap">
+        Resend email
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">User ID</div>
+      <div class="font-mono text-gray-200">{{ user.user_id }}</div>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">Support ID</div>
+      <div class="font-mono text-gray-200">{{ user.support_id }}</div>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">API Identifier</div>
+      <div class="font-mono text-gray-200">{{ user.api_identifier }}</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8 text-sm">
+    <a href="{{ url_for('portal.my_licenses') }}" class="bg-surface-card border border-surface-border rounded-lg p-4 hover:border-brand transition">
+      <div class="text-white">My Licenses</div>
+      <div class="text-gray-500 text-xs mt-1">Purchases &amp; servers</div>
+    </a>
+    <a href="{{ url_for('developer.overview') }}" class="bg-surface-card border border-surface-border rounded-lg p-4 hover:border-brand transition">
+      <div class="text-white">Developer Panel</div>
+      <div class="text-gray-500 text-xs mt-1">Products &amp; licenses</div>
+    </a>
+    <a href="{{ url_for('cloudloader.info') }}" class="bg-surface-card border border-surface-border rounded-lg p-4 hover:border-brand transition">
+      <div class="text-white">CloudLoader</div>
+      <div class="text-gray-500 text-xs mt-1">Install instructions</div>
+    </a>
+    {% if user.is_admin %}
+    <a href="{{ url_for('admin.dashboard') }}" class="bg-surface-card border border-surface-border rounded-lg p-4 hover:border-brand transition">
+      <div class="text-white">Admin</div>
+      <div class="text-gray-500 text-xs mt-1">Platform management</div>
+    </a>
+    {% endif %}
+  </div>
+
+  {% if pending_invites %}
+  <h2 class="text-sm font-medium text-gray-400 mb-3">Team invites</h2>
+  <div class="space-y-2 mb-8">
+    {% for inv in pending_invites %}
+      <div class="flex items-center justify-between gap-3 flex-wrap bg-surface-card border border-surface-border rounded-lg px-4 py-3">
+        <div class="text-sm text-gray-300 min-w-0 flex-1">{{ inv.owner.username }} invited you to their developer team</div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <form method="POST" action="{{ url_for('developer.accept_team_invite', invite_id=inv.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="text-xs bg-brand hover:bg-brand-hover text-white rounded-md px-3 py-1.5 transition">Accept</button>
+          </form>
+          <form method="POST" action="{{ url_for('developer.decline_team_invite', invite_id=inv.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="text-xs text-gray-400 hover:text-white border border-surface-border rounded-md px-3 py-1.5 transition">Decline</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <h2 class="text-sm font-medium text-gray-400 mb-3">Security</h2>
+  <div class="bg-surface-card border border-surface-border rounded-lg p-5 mb-4">
+    <div class="flex items-center justify-between">
+      <div class="text-white text-sm">Password</div>
+      <a href="{{ url_for('auth.change_password') }}" class="text-xs bg-brand hover:bg-brand-hover text-white rounded-md px-3 py-1.5 transition">
+        Change password
+      </a>
+    </div>
+  </div>
+  <div class="bg-surface-card border border-surface-border rounded-lg p-5 mb-4">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <div class="text-white text-sm">Two-factor authentication</div>
+        <div class="text-gray-500 text-xs mt-0.5">{{ 'Enabled' if user.totp_enabled else 'Not enabled' }}</div>
+      </div>
+      {% if user.totp_enabled %}
+        <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400">on</span>
+      {% else %}
+        <span class="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-500">off</span>
+      {% endif %}
+    </div>
+
+    {% if user.totp_enabled %}
+      <form method="POST" action="{{ url_for('auth.regenerate_backup_codes') }}" class="inline mr-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="text-xs text-gray-400 hover:text-white border border-surface-border rounded-md px-3 py-1.5 transition">
+          New backup codes
+        </button>
+      </form>
+      <button onclick="document.getElementById('disable-2fa-form').classList.toggle('hidden')"
+        class="text-xs text-red-400 hover:text-red-300 border border-surface-border rounded-md px-3 py-1.5 transition">
+        Disable 2FA
+      </button>
+      <form id="disable-2fa-form" method="POST" action="{{ url_for('auth.disable_2fa') }}" class="hidden mt-3 flex gap-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="password" name="password" placeholder="Confirm your password" required
+          class="flex-1 bg-surface border border-surface-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+        <button type="submit" class="text-xs bg-red-950 text-red-300 border border-red-800 rounded-md px-3 py-1.5">Confirm disable</button>
+      </form>
+    {% else %}
+      <a href="{{ url_for('auth.setup_2fa') }}" class="inline-block text-xs bg-brand hover:bg-brand-hover text-white rounded-md px-3 py-1.5 transition">
+        Enable 2FA
+      </a>
+    {% endif %}
+  </div>
+
+  <form method="POST" action="{{ url_for('auth.reset_recovery_pin') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="text-sm text-gray-400 hover:text-white border border-surface-border rounded-md px-3 py-1.5 transition">
+      Regenerate recovery PIN
+    </button>
+  </form>
+
+  <div class="mt-8 pt-6 border-t border-surface-border">
+    <a href="{{ url_for('auth.delete_account') }}" class="text-sm text-red-400 hover:text-red-300">
+      Delete account
+    </a>
+  </div>
+</div>
+{% endblock %}

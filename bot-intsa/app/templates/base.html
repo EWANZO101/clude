@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}OpsLab{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            base: { 950: '#0a0b10', 900: '#12131a', 800: '#1b1d27', 700: '#262836' },
+            accent: { 500: '#8b5cf6', 600: '#7c3aed' }
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-base-950 text-slate-200 min-h-screen flex">
+  <aside class="w-60 shrink-0 bg-base-900 border-r border-base-700 flex flex-col">
+    <div class="px-5 py-5 text-lg font-bold tracking-tight text-white">OPSLAB</div>
+    <nav class="flex-1 px-3 space-y-1 text-sm">
+      <a href="{{ url_for('dashboard.index') }}"
+         class="block px-3 py-2 rounded-lg hover:bg-base-800 hover:text-white {{ 'bg-base-800 text-white' if request.endpoint == 'dashboard.index' }}">Dashboard</a>
+      <a href="{{ url_for('brand.show', brand_id=current_brand.id) if current_brand else url_for('onboarding.start') }}"
+         class="block px-3 py-2 rounded-lg hover:bg-base-800 hover:text-white {{ 'bg-base-800 text-white' if request.endpoint in ['brand.show', 'onboarding.start'] }}">Brand</a>
+      <a href="{{ url_for('content.index') }}"
+         class="block px-3 py-2 rounded-lg hover:bg-base-800 hover:text-white {{ 'bg-base-800 text-white' if request.endpoint and request.endpoint.startswith('content.') }}">Content</a>
+      <a href="{{ url_for('agent.index') }}"
+         class="block px-3 py-2 rounded-lg hover:bg-base-800 hover:text-white {{ 'bg-base-800 text-white' if request.endpoint and request.endpoint.startswith('agent.') }}">AI Agent</a>
+      <a href="{{ url_for('accounts.index') }}"
+         class="block px-3 py-2 rounded-lg hover:bg-base-800 hover:text-white {{ 'bg-base-800 text-white' if request.endpoint and request.endpoint.startswith('accounts.') }}">Accounts</a>
+    </nav>
+    <div class="px-5 py-4 border-t border-base-700">
+      <div class="text-xs text-slate-500 mb-2">OpsLab Social Agent</div>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <button class="text-xs text-slate-500 hover:text-white">Sign out</button>
+      </form>
+    </div>
+  </aside>
+  <main class="flex-1 flex flex-col">
+    <header class="h-14 border-b border-base-700 bg-base-900/60 flex items-center justify-between px-6">
+      <div class="text-sm text-slate-400">{% block header %}{% endblock %}</div>
+      <div class="text-sm">
+        {% if ig_status %}
+          <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs {{ 'bg-emerald-500/10 text-emerald-400' if ig_status == 'connected' else 'bg-slate-500/10 text-slate-400' }}">
+            <span class="w-1.5 h-1.5 rounded-full {{ 'bg-emerald-400' if ig_status == 'connected' else 'bg-slate-500' }}"></span>
+            Instagram: {{ 'Connected' if ig_status == 'connected' else 'Not connected' }}
+          </span>
+        {% endif %}
+      </div>
+    </header>
+    <div class="flex-1 p-6">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>StockTool — Phone Scanner</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('kiosk.static', filename='kiosk.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('kiosk.static', filename='mobile.css') }}" />
+</head>
+<body class="mobile-body">
+
+<div class="mobile-wrap">
+  <div class="mobile-header">
+    <i class="fas fa-mobile-screen-button"></i>
+    <div>
+      <div class="mobile-title">Phone Scanner</div>
+      <div class="mobile-subtitle">Connected to {{ device }}</div>
+    </div>
+  </div>
+
+  <!-- Step 1: badge login -->
+  <div id="loginStep" class="mobile-card" {% if already_paired %}style="display:none;"{% endif %}>
+    <p class="mobile-hint">Scan your badge with your camera, or enter your badge code below.</p>
+    <button id="scanBadgeBtn" class="mobile-btn mobile-btn-primary">
+      <i class="fas fa-barcode"></i> Scan Barcode
+    </button>
+    <div class="mobile-or">or</div>
+    <input type="text" id="manualBadgeInput" class="mobile-input" placeholder="Badge code" autocapitalize="off" />
+    <button id="manualBadgeBtn" class="mobile-btn mobile-btn-secondary">Connect</button>
+    <div id="loginError" class="mobile-error" style="display:none;"></div>
+  </div>
+
+  <!-- Step 2: continuous scanning -->
+  <div id="scanStep" class="mobile-card" {% if not already_paired %}style="display:none;"{% endif %}>
+    <div class="mobile-connected">
+      <i class="fas fa-circle-check"></i>
+      Connected as <strong id="connectedUsername">{{ phone_username or '' }}</strong>
+    </div>
+    <p class="mobile-hint">Point your camera at an item, tool, project, or badge barcode.
+      Actions (like entering a remove quantity) happen on the kiosk screen.</p>
+    <div id="qrReader" class="mobile-reader"></div>
+    <div id="scanResult" class="mobile-result" style="display:none;"></div>
+    <button id="scanNextBtn" class="mobile-btn mobile-btn-primary" style="display:none;">
+      <i class="fas fa-barcode"></i> Scan Next Barcode
+    </button>
+  </div>
+
+  <div class="mobile-footer">This link is single-use and tied to {{ device }}. Go back to the kiosk for a new QR code if this page stops working.</div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+  const PAIRING_ID = {{ pairing_id | tojson }};
+  const ALREADY_PAIRED = {{ 'true' if already_paired else 'false' }};
+</script>
+<script src="{{ url_for('kiosk.static', filename='mobile.js') }}"></script>
+</body>
+</html>

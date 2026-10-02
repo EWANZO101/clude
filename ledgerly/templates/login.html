@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Sign in · Ledgerly{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto mt-16">
+  <div class="text-center mb-8">
+    <div class="font-display text-3xl">Ledger<span class="text-gold">ly</span></div>
+    <p class="text-muted text-sm mt-2">Contracts, instalments, and currencies — kept in order.</p>
+  </div>
+  <form method="post" class="card p-6 space-y-4">
+    <div>
+      <label class="block text-xs text-muted mb-1.5">Email</label>
+      <input type="email" name="email" required class="w-full input-field px-3 py-2 text-sm">
+    </div>
+    <div>
+      <label class="block text-xs text-muted mb-1.5">Password</label>
+      <input type="password" name="password" required class="w-full input-field px-3 py-2 text-sm">
+    </div>
+    <button class="w-full btn-primary py-2 text-sm">Sign in</button>
+  </form>
+  <p class="text-center text-sm text-muted mt-5">No account? <a href="{{ url_for('register') }}" class="text-gold hover:underline">Set up your company</a></p>
+</div>
+{% endblock %}

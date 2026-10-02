@@ -1,0 +1,17 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_stat_card.html" import stat_card with context %}
+{% block title %}Dashboard — {{ app_name }}{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+  {{ stat_card("Active Servers", stats.active_servers) }}
+  {{ stat_card("Open Orders", stats.open_orders) }}
+  {{ stat_card("Pending Requests", stats.pending_requests) }}
+  {{ stat_card("Outstanding Invoices", stats.outstanding_invoices) }}
+  {{ stat_card("Shipments", stats.shipments) }}
+  {{ stat_card("Unread Messages", stats.unread_messages) }}
+</div>
+<div class="card p-8 text-center text-text-secondary">
+  Welcome back, {{ current_user.first_name or current_user.email }}. Your orders, equipment and requests will appear here as you use the platform.
+</div>
+{% endblock %}

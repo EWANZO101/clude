@@ -1,0 +1,18 @@
+id: checklist
+name: Checklist
+version: "1.0.0"
+author: OpsLab Systems
+description: Checklists, tasks, subtasks and an AI-free requirements-to-checklist generator.
+core_compatibility: "0.x"
+dependencies: []
+permissions:
+  - checklist.view
+  - checklist.edit
+navigation:
+  - label: Checklist
+    icon: check-square
+    url: /checklist/
+    position: 20
+dashboard_widgets:
+  - key: checklist_progress
+    label: Checklist progress

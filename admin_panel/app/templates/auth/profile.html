@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Profile — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles"><h1>Your profile</h1></div>
+</div>
+
+<div class="panel" style="max-width:480px;">
+  <h2>Account details</h2>
+  <form method="post">
+    <label>Full name</label>
+    <input type="text" name="full_name" value="{{ current_user.full_name }}" required>
+    <label>Email</label>
+    <input type="email" value="{{ current_user.email }}" disabled>
+    <button type="submit" style="margin-top:18px;">Save changes</button>
+  </form>
+</div>
+
+<div class="panel" style="max-width:480px;">
+  <h2>Security</h2>
+  <p class="muted" style="margin-bottom:12px;">Change the password used to log in.</p>
+  <a href="{{ url_for('auth.change_password') }}" class="btn btn-secondary btn-sm">Change password</a>
+</div>
+{% endblock %}

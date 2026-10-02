@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>StockTool — Scan Barcode</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('kiosk.static', filename='kiosk.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('kiosk.static', filename='mobile.css') }}" />
+</head>
+<body class="mobile-body">
+<div class="mobile-wrap">
+  <div class="mobile-header">
+    <i class="fas fa-barcode"></i>
+    <div>
+      <div class="mobile-title">Scan Barcode</div>
+      <div class="mobile-subtitle">Point your camera at a barcode</div>
+    </div>
+  </div>
+
+  <div class="mobile-card">
+    <div id="qrReader" class="mobile-reader"></div>
+    <div id="scanResult" class="mobile-result" style="display:none;"></div>
+    <div id="doneMessage" style="display:none;text-align:center;color:#6ee7b7;font-size:15px;padding:20px 0;">
+      <i class="fas fa-circle-check" style="font-size:28px;display:block;margin-bottom:10px;"></i>
+      Sent. You can close this tab now.
+    </div>
+  </div>
+
+  <div class="mobile-footer">This scan will fill in the field on the page you opened this from.</div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+  const RELAY_ID = {{ relay_id | tojson }};
+
+  (function () {
+    const resultBox = document.getElementById('scanResult');
+    const doneMessage = document.getElementById('doneMessage');
+    const reader = document.getElementById('qrReader');
+
+    function showResult(msg) {
+      resultBox.textContent = msg;
+      resultBox.style.display = 'block';
+      setTimeout(() => { resultBox.style.display = 'none'; }, 2200);
+    }
+
+    async function start() {
+      const scanner = new Html5Qrcode('qrReader', { verbose: false });
+      try {
+        await scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 260, height: 160 },
+            formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128] },
+          async (decodedText) => {
+            // Scan once and stop — no continuous re-scanning. This page
+            // exists to fill exactly one field; if another scan is
+            // needed, the admin page's button starts a fresh session.
+            await scanner.stop();
+            reader.style.display = 'none';
+
+            const code = decodedText.trim().toUpperCase();
+            const res = await fetch(`/api/scan-relay/${RELAY_ID}/scan`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code }),
+            });
+            const data = await res.json();
+            if (data.ok) {
+              doneMessage.style.display = 'block';
+            } else {
+              showResult(data.error || 'Could not send scan.');
+            }
+          },
+          () => { /* ignore per-frame decode failures */ }
+        );
+      } catch (e) {
+        showResult('Could not access camera. Check camera permission for this site.');
+      }
+    }
+
+    start();
+  })();
+</script>
+</body>
+</html>

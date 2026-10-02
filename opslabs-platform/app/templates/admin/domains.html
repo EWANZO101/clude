@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Domains — Admin{% endblock %}
+{% block content %}
+<h1>Custom Domains</h1>
+<div class="card">
+  <table>
+    <tr><th>Hostname</th><th>Company</th><th>Status</th><th>Failure reason</th><th>Actions</th></tr>
+    {% for d in domains %}
+    <tr>
+      <td>{{ d.hostname }}</td>
+      <td><a href="{{ url_for('admin.company_detail', company_id=d.company_id) }}" style="color:#e6e8eb;">{{ d.company.name }}</a></td>
+      <td><span class="badge {{ 'active' if d.status == 'active' else 'suspended' }}">{{ d.status }}</span></td>
+      <td style="font-size:0.8rem;color:#9aa3af;">{{ d.failure_reason or '—' }}</td>
+      <td>
+        <form class="inline" method="POST" action="{{ url_for('admin.recheck_domain', domain_id=d.id) }}">
+          <button class="secondary" type="submit">Recheck</button>
+        </form>
+        <form class="inline" method="POST" action="{{ url_for('domains.remove_domain', domain_id=d.id) }}"
+              onsubmit="return confirm('Disconnect {{ d.hostname }}?');">
+          <button class="danger" type="submit">Remove</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

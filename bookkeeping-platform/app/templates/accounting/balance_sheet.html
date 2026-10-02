@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Balance Sheet{% endblock %}
+{% block content %}
+<h1 class="page-title mb-6">Balance Sheet</h1>
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-2xl space-y-6 text-sm">
+  <div>
+    <div class="section-title">Assets</div>
+    {% for a, b in asset_rows %}<div class="flex justify-between"><span>{{ a.name }}</span><span>{{ "%.2f"|format(b) }}</span></div>{% endfor %}
+    <div class="summary-row-total"><span>Total assets</span><span>{{ "%.2f"|format(total_assets) }}</span></div>
+  </div>
+  <div>
+    <div class="section-title">Liabilities</div>
+    {% for a, b in liability_rows %}<div class="flex justify-between"><span>{{ a.name }}</span><span>{{ "%.2f"|format(b) }}</span></div>{% endfor %}
+    <div class="summary-row-total"><span>Total liabilities</span><span>{{ "%.2f"|format(total_liabilities) }}</span></div>
+  </div>
+  <div>
+    <div class="section-title">Equity</div>
+    {% for a, b in equity_rows %}<div class="flex justify-between"><span>{{ a.name }}</span><span>{{ "%.2f"|format(b) }}</span></div>{% endfor %}
+    <div class="summary-row-total"><span>Total equity</span><span>{{ "%.2f"|format(total_equity) }}</span></div>
+  </div>
+  <div class="table-foot-total" style="display:flex;justify-content:space-between;font-size:1rem;padding-top:0.5rem;">
+    <span>Liabilities + Equity</span><span>{{ "%.2f"|format(total_liabilities + total_equity) }}</span>
+  </div>
+</div>
+{% endblock %}

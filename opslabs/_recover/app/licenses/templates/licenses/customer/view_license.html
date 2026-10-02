@@ -1,0 +1,190 @@
+{% extends "customer/base.html" %}
+{% block title %}{{ license.license_key }} - Customer Portal{% endblock %}
+
+{% block body %}
+<div class="min-h-screen">
+    <header class="bg-dark-800 border-b border-dark-600">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('lic_customer.dashboard') }}" class="text-gray-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                <span class="font-bold">License Details</span>
+            </div>
+            <a href="{{ url_for('lic_customer.logout') }}" class="text-sm text-gray-400 hover:text-white">Logout</a>
+        </div>
+    </header>
+    
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-500/10 text-red-400 border border-red-500/20{% elif category == 'success' %}bg-green-500/10 text-green-400 border border-green-500/20{% else %}bg-blue-500/10 text-blue-400 border border-blue-500/20{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-6">
+                <!-- License Info -->
+                <div class="bg-dark-800 border border-dark-600 rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-lg font-semibold">License Information</h2>
+                        <span class="px-3 py-1 rounded-full text-sm {% if license.is_valid %}bg-green-500/20 text-green-400{% else %}bg-red-500/20 text-red-400{% endif %}">
+                            {{ license.status|upper }}
+                        </span>
+                    </div>
+                    
+                    <div class="bg-dark-900 rounded-lg p-4 mb-6">
+                        <p class="text-xs text-gray-500 mb-1">License Key</p>
+                        <p class="font-mono text-lg">{{ license.license_key }}</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs text-gray-500">Product</p>
+                            <p class="font-medium">{{ license.product.name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Tier</p>
+                            <p class="font-medium">{{ license.tier.name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Max Users</p>
+                            <p class="font-medium">{{ license.tier.max_users or 'Unlimited' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Expires</p>
+                            <p class="font-medium">{% if license.expires_at %}{{ license.expires_at.strftime('%d %b %Y') }}{% else %}Never{% endif %}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- IP Management -->
+                {% if license.product.require_ip_lock %}
+                <div class="bg-dark-800 border border-dark-600 rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold">IP Address Management</h2>
+                        <span class="text-xs text-gray-500">Max {{ license.product.max_ip_addresses }} IPs allowed</span>
+                    </div>
+                    
+                    <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
+                        <p class="text-sm text-blue-400">
+                            <strong>Your current IP:</strong> <span class="font-mono">{{ current_ip }}</span>
+                        </p>
+                    </div>
+                    
+                    {% if license.allowed_ips %}
+                    <div class="space-y-2 mb-4">
+                        <p class="text-sm text-gray-400">Allowed IPs:</p>
+                        {% for ip in license.allowed_ips %}
+                        <div class="flex items-center justify-between bg-dark-700 rounded-lg px-4 py-3">
+                            <span class="font-mono">{{ ip }}</span>
+                            {% if can_change_ip %}
+                            <form method="POST" action="{{ url_for('lic_customer.remove_ip', id=license.id) }}" class="inline">
+                                
+                                <input type="hidden" name="ip_address" value="{{ ip }}">
+                                <button type="submit" class="text-red-400 hover:text-red-300 text-sm" onclick="return confirm('Remove this IP?')">Remove</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
+                        <p class="text-sm text-yellow-400">No IPs configured. Your license will automatically lock to the first IP that activates it, or you can set it manually below.</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if can_change_ip %}
+                        {% if (license.allowed_ips or [])|length < license.product.max_ip_addresses %}
+                        <div class="flex gap-2 mb-4">
+                            <form method="POST" action="{{ url_for('lic_customer.use_current_ip', id=license.id) }}" class="flex-1">
+                                
+                                <button type="submit" class="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">
+                                    Use My Current IP ({{ current_ip }})
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <form method="POST" action="{{ url_for('lic_customer.add_ip', id=license.id) }}" class="flex gap-2">
+                            
+                            <input type="text" name="ip_address" placeholder="Or enter IP manually" 
+                                class="flex-1 px-4 py-2 bg-dark-700 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-emerald-500">
+                            <button type="submit" class="px-4 py-2 bg-dark-600 hover:bg-dark-500 rounded-lg text-sm">Add IP</button>
+                        </form>
+                        {% endif %}
+                    {% else %}
+                    <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                        <p class="text-sm text-yellow-400">{{ change_message }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Features -->
+                <div class="bg-dark-800 border border-dark-600 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4">Included Features</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        {% for feature, enabled in (license.tier.features or {}).items() %}
+                        <div class="flex items-center gap-2">
+                            {% if enabled %}
+                            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <span class="capitalize">{{ feature.replace('_', ' ') }}</span>
+                            {% else %}
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            <span class="text-gray-500 capitalize">{{ feature.replace('_', ' ') }}</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Activations -->
+                <div class="bg-dark-800 border border-dark-600 rounded-xl p-6">
+                    <h2 class="font-semibold mb-4">Activations</h2>
+                    <p class="text-2xl font-bold">{{ license.current_activations }}/{{ license.max_activations }}</p>
+                    <p class="text-sm text-gray-500">active installations</p>
+                    
+                    {% if activations %}
+                    <div class="mt-4 space-y-2">
+                        {% for act in activations[:5] %}
+                        <div class="text-sm p-2 bg-dark-700 rounded">
+                            <p class="font-mono text-xs">{{ act.ip_address }}</p>
+                            <p class="text-xs text-gray-500">{{ act.activated_at.strftime('%d %b %Y') }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- IP History -->
+                {% if ip_history %}
+                <div class="bg-dark-800 border border-dark-600 rounded-xl p-6">
+                    <h2 class="font-semibold mb-4">IP Change History</h2>
+                    <div class="space-y-2 text-sm">
+                        {% for h in ip_history[:10] %}
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono text-xs">{{ h.ip_address }}</span>
+                            <span class="text-xs {% if h.action == 'added' %}text-green-400{% else %}text-red-400{% endif %}">{{ h.action }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

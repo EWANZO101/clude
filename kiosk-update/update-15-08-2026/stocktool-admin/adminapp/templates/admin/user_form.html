@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} User{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{{ url_for('admin.index') }}" style="color:#6b7280;font-size:13px;text-decoration:none;
+     display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;">
+    <i class="fas fa-arrow-left"></i> Users
+  </a>
+  <h1 class="page-title">
+    <i class="fas fa-{% if action=='Add' %}user-plus{% else %}user-pen{% endif %}" style="color:#fbbf24;"></i>
+    {{ action }} User
+  </h1>
+</div>
+
+<div class="card" style="padding:20px;max-width:480px;">
+  <form method="POST" id="userForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div style="margin-bottom:14px;">
+      <label class="form-label">Username
+        {% if not user %}<span style="color:#ef4444;">*</span>{% endif %}
+      </label>
+      {% if user %}
+      <input type="text" class="form-input" value="{{ user.username }}" disabled />
+      {% else %}
+      <input type="text" name="username" class="form-input" required
+             placeholder="Lowercase, no spaces"
+             autocapitalize="none" autocorrect="off" spellcheck="false" />
+      {% endif %}
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="form-label">Email <span style="font-size:12px;color:#6b7280;">(optional)</span></label>
+      <input type="email" name="email" class="form-input"
+             value="{{ user.email if user and user.email else '' }}"
+             inputmode="email" autocapitalize="none" />
+    </div>
+
+    <!-- Badge-only toggle — a shop-floor account that only ever badge-scans
+         to log into the kiosk has no real use for a password at all. -->
+    <div style="margin-bottom:16px;padding:12px 14px;background:#111827;border-radius:10px;border:1px solid #374151;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="badgeOnlyToggle" name="badge_only"
+               {% if user and not user.has_password %}checked{% endif %}
+               style="width:18px;height:18px;accent-color:#2563eb;flex-shrink:0;" />
+        <span style="font-size:14px;color:#d1d5db;font-weight:500;">
+          <i class="fas fa-id-badge" style="color:#818cf8;"></i> Badge-only account
+        </span>
+      </label>
+      <p style="font-size:12px;color:#6b7280;margin:6px 0 0 28px;">
+        No password, no admin-site login — the badge barcode is the only credential.
+        Works for kiosk badge-scan login only. Automatically set to Stock User.
+      </p>
+    </div>
+
+    <div id="roleField" style="margin-bottom:14px;">
+      <label class="form-label">Role</label>
+      <select name="role" class="form-select" id="roleSelect">
+        <option value="{{ Role.STOCK_USER }}"
+                {% if not user or user.role == Role.STOCK_USER %}selected{% endif %}>
+          Stock User
+        </option>
+        <option value="{{ Role.ADMIN }}"
+                {% if user and user.role == Role.ADMIN %}selected{% endif %}>
+          Administrator
+        </option>
+      </select>
+    </div>
+
+    <div id="passwordField" style="margin-bottom:14px;">
+      <label class="form-label">
+        {% if user %}New Password
+          <span style="color:#6b7280;font-size:12px;">
+            {% if user.has_password %}(leave blank to keep current){% else %}(currently badge-only — set one to enable login){% endif %}
+          </span>
+        {% else %}Password <span style="color:#ef4444;">*</span>{% endif %}
+      </label>
+      <input type="password" name="{% if user %}new_password{% else %}password{% endif %}"
+             class="form-input" id="passwordInput"
+             {% if not user %}required minlength="6"{% endif %}
+             placeholder="Min. 6 characters"
+             autocomplete="new-password" />
+    </div>
+
+    {% if user %}
+    <div style="margin-bottom:14px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" name="is_active"
+               {% if user.is_active %}checked{% endif %}
+               style="width:18px;height:18px;accent-color:#2563eb;flex-shrink:0;" />
+        <span style="font-size:14px;color:#d1d5db;">Account Active</span>
+      </label>
+    </div>
+    {% endif %}
+
+    <div style="margin-bottom:20px;" id="forcePwChangeField">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" name="force_password_change"
+               {% if user and user.force_password_change %}checked{% endif %}
+               style="width:18px;height:18px;accent-color:#2563eb;flex-shrink:0;" />
+        <span style="font-size:14px;color:#d1d5db;">Require password change on next login</span>
+      </label>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> {{ action }} User
+      </button>
+      <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  (function () {
+    const toggle = document.getElementById('badgeOnlyToggle');
+    const roleField = document.getElementById('roleField');
+    const roleSelect = document.getElementById('roleSelect');
+    const passwordField = document.getElementById('passwordField');
+    const passwordInput = document.getElementById('passwordInput');
+    const forcePwField = document.getElementById('forcePwChangeField');
+    const isEditing = {{ 'true' if user else 'false' }};
+    const alreadyHasPassword = {{ 'true' if user and user.has_password else 'false' }};
+
+    function applyState() {
+      const badgeOnly = toggle.checked;
+      roleField.style.display = badgeOnly ? 'none' : 'block';
+      if (badgeOnly) roleSelect.value = '{{ Role.STOCK_USER }}';
+
+      forcePwField.style.display = badgeOnly ? 'none' : 'block';
+
+      if (badgeOnly) {
+        // Creating (or converting to) a badge-only account — no password needed.
+        passwordField.style.display = 'none';
+        passwordInput.required = false;
+      } else {
+        passwordField.style.display = 'block';
+        // Converting FROM badge-only TO a normal account requires setting
+        // a password right now — there's no such thing as a normal
+        // account with no password.
+        const mustSetPasswordNow = isEditing && alreadyHasPassword === false;
+        passwordInput.required = !isEditing || mustSetPasswordNow;
+      }
+    }
+
+    toggle.addEventListener('change', applyState);
+    applyState();
+  })();
+</script>
+{% endblock %}

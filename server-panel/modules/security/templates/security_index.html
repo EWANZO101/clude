@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+{% block title %}Security — {{ panel_name }}{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">
+      <span class="status-dot ok live"></span>Live telemetry
+    </p>
+    <h1 class="page-title">Security</h1>
+    <p class="page-sub">SSH sessions, firewall denials, and adaptive DDoS protection</p>
+  </div>
+  <span class="badge {{ 'badge-ok' if health.level == 'healthy' else ('badge-warn' if health.level == 'warning' else 'badge-danger') }}" id="health-badge">
+    {{ health.level | capitalize }}
+  </span>
+</div>
+
+<!-- Health hero — surfaces the *specific* reasons behind the badge above,
+     instead of leaving them only in a hover tooltip on the dashboard. -->
+<div class="card flush" style="overflow:hidden; margin-bottom:16px;">
+  <div style="display:flex; align-items:center; gap:16px; padding:18px 22px; flex-wrap:wrap;">
+    <div style="width:44px; height:44px; border-radius:var(--radius-lg); flex-shrink:0; display:flex; align-items:center; justify-content:center; background:{{ 'var(--ok-dim)' if health.level == 'healthy' else ('var(--warn-dim)' if health.level == 'warning' else 'var(--danger-dim)') }};">
+      {% if health.level == 'healthy' %}
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6l7-3z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
+      {% else %}
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ 'var(--warn)' if health.level == 'warning' else 'var(--danger)' }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L2.7 17.1A1.8 1.8 0 004.3 20h15.4a1.8 1.8 0 001.6-2.9L13.7 3.9a1.8 1.8 0 00-3.4 0z"/></svg>
+      {% endif %}
+    </div>
+    <div style="flex:1; min-width:220px;">
+      <div style="font-family:var(--font-display); font-weight:600; font-size:16px; color:var(--text-primary);">
+        {% if health.level == 'healthy' %}No issues detected
+        {% elif health.level == 'warning' %}Attention recommended
+        {% else %}Action needed
+        {% endif %}
+      </div>
+      {% if health.reasons %}
+      <ul style="margin:6px 0 0; padding-left:18px; color:var(--text-secondary); font-size:12.5px; line-height:1.8;">
+        {% for reason in health.reasons %}<li>{{ reason }}</li>{% endfor %}
+      </ul>
+      {% else %}
+      <div class="card-meta" style="margin-top:2px;">CPU, memory, disk, load, and DDoS signals are all within normal range.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card stat">
+    <div class="card-header">
+      <div class="card-label" style="margin:0; display:flex; align-items:center; gap:6px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="1.5"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+        SSH Sessions
+      </div>
+    </div>
+    <div class="card-value"><span id="ssh-session-count">{{ ssh_sessions | length }}</span></div>
+    <div class="card-meta">live &amp; authenticated connections</div>
+  </div>
+  <div class="card stat">
+    <div class="card-header">
+      <div class="card-label" style="margin:0; display:flex; align-items:center; gap:6px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>
+        Blocked IPs
+      </div>
+    </div>
+    <div class="card-value"><span id="blocked-ip-count">{{ blocked_ips | length }}</span></div>
+    <div class="card-meta">denied at the firewall</div>
+  </div>
+  <div class="card stat">
+    <div class="card-header">
+      <div class="card-label" style="margin:0; display:flex; align-items:center; gap:6px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--data)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="6" r="2.2"/><circle cx="12" cy="18" r="2.2"/><path d="M6.8 7.6L11 16M17.2 7.6L13 16"/></svg>
+        Active Connections
+      </div>
+    </div>
+    <div class="card-value"><span id="conn-count">{{ connection_count if connection_count is not none else '--' }}</span></div>
+    <div class="card-meta">inet sockets, all states</div>
+  </div>
+  <div class="card stat">
+    <div class="card-header">
+      <div class="card-label" style="margin:0; display:flex; align-items:center; gap:6px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l4-9 4 6 3-4 4 3 3-8"/></svg>
+        DDoS Status
+      </div>
+    </div>
+    <div class="card-value line">
+      <span class="badge {{ 'badge-ok' if ddos_status.state == 'normal' else ('badge-warn' if ddos_status.state == 'elevated' else 'badge-danger') }}" id="ddos-state-badge">
+        {{ ddos_status.state | replace('_', ' ') | capitalize }}
+      </span>
+    </div>
+    <div class="card-meta" id="ddos-score-meta">score {{ ddos_status.composite_score }} · {{ 'learning' if ddos_status.mode == 'learning' else 'active' }}</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header">
+    <div class="card-label" style="margin:0; display:flex; align-items:center; gap:8px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l4-9 4 6 3-4 4 3 3-8"/></svg>
+      DDoS Protection — adaptive baseline detection
+    </div>
+  </div>
+  <p class="page-sub" style="margin:6px 0 14px;">
+    This host's normal traffic gets learned automatically — connection count, new-connection rate, and
+    bandwidth are tracked as a running average. Once enough samples are collected, anything several standard
+    deviations outside that average is flagged (elevated at z ≥ {{ '%.1f' | format(ddos_status.config.z_elevated) if ddos_status.config is defined else '3.0' }}).
+    A single IP holding an unusually large share of connections is tracked separately as a flood suspect,
+    regardless of the global state.
+  </p>
+
+  {% if ddos_status.mode == 'learning' %}
+  <div class="progress-track" style="margin-bottom:6px;">
+    <div class="progress-fill ok" id="learning-bar" style="width:{{ (ddos_status.samples_seen / ddos_status.learning_target * 100) | round(1) }}%"></div>
+  </div>
+  <p class="card-meta" id="learning-meta" style="margin-bottom:14px;">
+    Learning baseline: {{ ddos_status.samples_seen }} / {{ ddos_status.learning_target }} samples
+  </p>
+  {% endif %}
+
+  <div class="grid grid-2" style="margin-bottom:14px;">
+    <div class="table-wrap">
+      <table class="data-table" id="metrics-table">
+        <thead><tr><th>Metric</th><th>Current</th><th>Baseline mean</th><th>z-score</th></tr></thead>
+        <tbody>
+          {% for key, label in [('conn_count','Connections'),('new_conn_rate','New conns/sec'),('bytes_in_rate','Bytes in/sec'),('bytes_out_rate','Bytes out/sec')] %}
+          <tr data-metric="{{ key }}">
+            <td>{{ label }}</td>
+            <td class="mono" data-field="current">{{ ddos_status.current[key] | round(1) }}</td>
+            <td class="mono" data-field="mean">{{ ddos_status.baseline[key].mean }} <span style="color:var(--text-muted);">± {{ ddos_status.baseline[key].std }}</span></td>
+            <td class="mono" data-field="z">{{ ddos_status.z_scores.get(key, 0) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="field" style="margin:0;">
+      <form method="POST" action="{{ url_for('security.toggle_auto_mitigation') }}" style="margin-bottom:10px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="enabled" value="{{ '0' if ddos_status.auto_mitigation else '1' }}">
+        <div class="field-row" style="align-items:center; justify-content:space-between;">
+          <span>Auto-mitigation
+            <span class="badge {{ 'badge-ok' if ddos_status.auto_mitigation else 'badge-muted' }}">{{ 'On' if ddos_status.auto_mitigation else 'Off' }}</span>
+          </span>
+          <button type="submit" class="btn btn-secondary btn-sm">{{ 'Turn off' if ddos_status.auto_mitigation else 'Turn on' }}</button>
+        </div>
+      </form>
+      <p class="page-sub" style="margin:0 0 14px;">
+        When on, an IP that crosses the flood-suspect score is automatically denied at the firewall
+        (tagged <span class="mono">ddos-auto</span> so it's easy to find later). SSH-whitelisted IPs are
+        never auto-blocked. When off, suspects are only flagged for manual review below.
+      </p>
+      <form method="POST" action="{{ url_for('security.reset_baseline') }}" onsubmit="return confirm('Reset the learned baseline and start relearning traffic patterns?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-ghost btn-sm">Reset baseline &amp; relearn</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table" id="suspects-table">
+      <thead><tr><th>IP</th><th>Connections</th><th>Score</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for s in ddos_status.suspects %}
+        <tr>
+          <td class="mono primary">{{ s.ip }}</td>
+          <td>{{ s.count }}</td>
+          <td>{{ s.score }}</td>
+          <td>
+            {% if s.blocked %}<span class="badge badge-danger">Blocked</span>
+            {% else %}<span class="badge badge-warn">Flagged</span>{% endif %}
+          </td>
+          <td>
+            {% if not s.blocked %}
+            <form method="POST" action="{{ url_for('security.block_ip') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="ip" value="{{ s.ip }}">
+              <button type="submit" class="btn btn-danger btn-sm">Block now</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5"><div class="empty-state">No flood suspects right now.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-top:16px;">
+  <div class="card flush tight">
+    <div class="card-label" style="padding:16px 18px 0; display:flex; align-items:center; gap:6px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="1.5"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+      SSH Sessions
+    </div>
+    <div class="table-wrap">
+      <table class="data-table" id="ssh-sessions-table" style="margin-top:8px;">
+        <thead><tr><th>User</th><th>Remote IP</th><th>Login time</th><th>Idle</th></tr></thead>
+        <tbody>
+          {% for s in ssh_sessions %}
+          <tr>
+            <td>{{ s.user or '—' }}{% if not s.authenticated %} <span class="badge badge-muted">unauth'd</span>{% endif %}</td>
+            <td class="mono primary">{{ s.remote_ip }}</td>
+            <td class="mono">{{ s.login_time or '—' }}</td>
+            <td class="mono">{{ s.idle or '—' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4"><div class="empty-state">No SSH sessions right now.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card flush tight">
+    <div class="card-label" style="padding:16px 18px 0; display:flex; align-items:center; gap:6px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--data)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="6" r="2.2"/><circle cx="12" cy="18" r="2.2"/><path d="M6.8 7.6L11 16M17.2 7.6L13 16"/></svg>
+      Top Connections by IP
+    </div>
+    <div class="table-wrap">
+      <table class="data-table" id="top-connections-table" style="margin-top:8px;">
+        <thead><tr><th>IP</th><th>Established connections</th></tr></thead>
+        <tbody>
+          {% for c in top_connections %}
+          <tr><td class="mono primary">{{ c.ip }}</td><td>{{ c.connections }}</td></tr>
+          {% else %}
+          <tr><td colspan="2"><div class="empty-state">No active connections.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card flush tight" style="margin-top:16px;">
+  <div class="card-header" style="padding:16px 18px 0;">
+    <div class="card-label" style="margin:0; display:flex; align-items:center; gap:6px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+      SSH Session Activity <span class="badge badge-ok live" style="margin-left:4px;">Live</span>
+    </div>
+  </div>
+  <p class="page-sub" style="margin:6px 0 0; padding:0 18px;">
+    What each logged-in session is actually running right now — the processes attached to its tty, sorted busiest first.
+  </p>
+  <div class="table-wrap">
+    <table class="data-table" id="session-activity-table" style="margin-top:8px;">
+      <thead><tr><th>User</th><th>Remote IP</th><th>TTY</th><th>PID</th><th>Command</th><th>Args</th><th>CPU%</th><th>MEM%</th><th>Runtime</th></tr></thead>
+      <tbody>
+        {% for a in session_activity %}
+          {% if a.processes %}
+            {% for p in a.processes %}
+            <tr>
+              <td>{{ a.user or '—' }}</td>
+              <td class="mono primary">{{ a.remote_ip }}</td>
+              <td class="mono">{{ a.tty }}</td>
+              <td class="mono">{{ p.pid }}</td>
+              <td class="mono">{{ p.command }}</td>
+              <td class="mono" style="max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ p.args }}">{{ p.args }}</td>
+              <td class="mono">{{ p.cpu }}</td>
+              <td class="mono">{{ p.mem }}</td>
+              <td class="mono">{{ p.runtime }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td>{{ a.user or '—' }}</td>
+              <td class="mono primary">{{ a.remote_ip }}</td>
+              <td class="mono">{{ a.tty }}</td>
+              <td colspan="6"><div class="empty-state" style="padding:6px 0;">Idle — no active processes on this tty.</div></td>
+            </tr>
+          {% endif %}
+        {% else %}
+        <tr><td colspan="9"><div class="empty-state">No live SSH sessions to inspect right now.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card flush tight" style="margin-top:16px;">
+  <div class="card-header" style="padding:16px 18px 0;">
+    <div class="card-label" style="margin:0; display:flex; align-items:center; gap:6px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>
+      Blocked IPs
+    </div>
+  </div>
+  {% if not firewall_installed %}
+  <div class="empty-state" style="padding:0 18px 18px;">ufw isn't installed, so there's nothing to block/unblock here yet.</div>
+  {% else %}
+  <form method="POST" action="{{ url_for('security.block_ip') }}" class="field-row" style="padding:12px 18px 0;">
+    {{ block_form.hidden_tag() }}
+    <div class="field" style="margin:0; flex:1; min-width:200px;">{{ block_form.ip.label }} {{ block_form.ip(placeholder="203.0.113.4") }}</div>
+    <button class="btn btn-danger" type="submit">Block IP</button>
+  </form>
+  <div class="table-wrap">
+    <table class="data-table" id="blocked-ips-table" style="margin-top:8px;">
+      <thead><tr><th>IP</th><th>Rule</th><th>Source</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for b in blocked_ips %}
+        <tr>
+          <td class="mono primary">{{ b.ip }}</td>
+          <td class="mono">{{ b.text }}</td>
+          <td>
+            {% if b.protected %}<span class="badge badge-muted">Protected</span>
+            {% elif b.auto_blocked %}<span class="badge badge-warn">DDoS auto-block</span>
+            {% else %}<span class="badge badge-muted">Manual</span>{% endif %}
+          </td>
+          <td>
+            {% if not b.protected %}
+            <form method="POST" action="{{ url_for('security.unblock_ip') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="ip" value="{{ b.ip }}">
+              <button type="submit" class="btn btn-secondary btn-sm">Unblock</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4"><div class="empty-state">No IPs currently blocked.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card flush tight" style="margin-top:16px;">
+  <div class="card-label" style="padding:16px 18px 0; display:flex; align-items:center; gap:6px;">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+    Recent Security Events
+  </div>
+  <div class="table-wrap">
+    <table class="data-table" id="events-table" style="margin-top:8px;">
+      <thead><tr><th>When</th><th>Severity</th><th>Event</th></tr></thead>
+      <tbody>
+        {% for e in ddos_events %}
+        <tr>
+          <td class="mono">{{ e.at.split('.')[0].replace('T', ' ') }}</td>
+          <td><span class="badge {{ 'badge-ok' if e.severity == 'info' else ('badge-warn' if e.severity == 'warning' else 'badge-danger') }}">{{ e.severity }}</span></td>
+          <td>{{ e.message }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3"><div class="empty-state">Nothing logged yet.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  window.CSRF_TOKEN = "{{ csrf_token() }}";
+  const socket = io('/security');
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function fmtBytes(bytes) {
+    if (bytes === null || bytes === undefined) return '--';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0, val = bytes;
+    while (val >= 1024 && i < units.length - 1) { val /= 1024; i++; }
+    return val.toFixed(1) + ' ' + units[i];
+  }
+
+  function stateBadgeClass(state) {
+    if (state === 'normal') return 'badge badge-ok';
+    if (state === 'elevated') return 'badge badge-warn';
+    return 'badge badge-danger';
+  }
+
+  socket.on('ddos_update', (data) => {
+    const badge = document.getElementById('ddos-state-badge');
+    badge.className = stateBadgeClass(data.state);
+    badge.textContent = data.state.replace('_', ' ').replace(/^./, c => c.toUpperCase());
+    document.getElementById('ddos-score-meta').textContent =
+      `score ${data.composite_score} · ${data.mode === 'learning' ? 'learning' : 'active'}`;
+
+    const bar = document.getElementById('learning-bar');
+    const learnMeta = document.getElementById('learning-meta');
+    if (bar && data.mode === 'learning') {
+      const pct = Math.min(100, (data.samples_seen / data.learning_target) * 100);
+      bar.style.width = pct.toFixed(1) + '%';
+      learnMeta.textContent = `Learning baseline: ${data.samples_seen} / ${data.learning_target} samples`;
+    }
+
+    document.querySelectorAll('#metrics-table tr[data-metric]').forEach(row => {
+      const key = row.dataset.metric;
+      const isBytes = key.startsWith('bytes');
+      row.querySelector('[data-field="current"]').textContent =
+        isBytes ? fmtBytes(data.current[key]) + '/s' : (data.current[key] ?? 0).toFixed(1);
+      row.querySelector('[data-field="mean"]').textContent =
+        isBytes ? fmtBytes(data.baseline[key].mean) + '/s' : data.baseline[key].mean;
+      const meanCell = row.querySelector('[data-field="mean"]');
+      const std = data.baseline[key].std;
+      if (std !== undefined) {
+        meanCell.innerHTML = meanCell.textContent + ' <span style="color:var(--text-muted);">± ' + (isBytes ? fmtBytes(std) + '/s' : std) + '</span>';
+      }
+      row.querySelector('[data-field="z"]').textContent = (data.z_scores[key] ?? 0).toFixed(2);
+    });
+
+    const tbody = document.querySelector('#suspects-table tbody');
+    if (data.suspects && data.suspects.length) {
+      tbody.innerHTML = data.suspects.map(s => `
+        <tr>
+          <td class="mono primary">${s.ip}</td>
+          <td>${s.count ?? 0}</td>
+          <td>${s.score}</td>
+          <td>${s.blocked ? '<span class="badge badge-danger">Blocked</span>' : '<span class="badge badge-warn">Flagged</span>'}</td>
+          <td>${s.blocked ? '' : `<form method="POST" action="/security/block-ip"><input type="hidden" name="csrf_token" value="${window.CSRF_TOKEN}"><input type="hidden" name="ip" value="${s.ip}"><button type="submit" class="btn btn-danger btn-sm">Block now</button></form>`}</td>
+        </tr>`).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">No flood suspects right now.</div></td></tr>';
+    }
+  });
+
+  socket.on('sessions_update', (data) => {
+    document.getElementById('ssh-session-count').textContent = data.ssh_sessions.length;
+    document.getElementById('blocked-ip-count').textContent = data.blocked_ips.length;
+    document.getElementById('conn-count').textContent = data.connection_count ?? '--';
+
+    const sshBody = document.querySelector('#ssh-sessions-table tbody');
+    sshBody.innerHTML = data.ssh_sessions.length ? data.ssh_sessions.map(s => `
+      <tr>
+        <td>${s.user || '—'}${!s.authenticated ? ' <span class="badge badge-muted">unauth\'d</span>' : ''}</td>
+        <td class="mono primary">${s.remote_ip}</td>
+        <td class="mono">${s.login_time || '—'}</td>
+        <td class="mono">${s.idle || '—'}</td>
+      </tr>`).join('') : '<tr><td colspan="4"><div class="empty-state">No SSH sessions right now.</div></td></tr>';
+
+    const connBody = document.querySelector('#top-connections-table tbody');
+    connBody.innerHTML = data.top_connections.length ? data.top_connections.map(c => `
+      <tr><td class="mono primary">${c.ip}</td><td>${c.connections}</td></tr>`).join('')
+      : '<tr><td colspan="2"><div class="empty-state">No active connections.</div></td></tr>';
+
+    const activityBody = document.querySelector('#session-activity-table tbody');
+    const activity = data.session_activity || [];
+    if (!activity.length) {
+      activityBody.innerHTML = '<tr><td colspan="9"><div class="empty-state">No live SSH sessions to inspect right now.</div></td></tr>';
+    } else {
+      activityBody.innerHTML = activity.map(a => {
+        if (a.processes && a.processes.length) {
+          return a.processes.map(p => `
+            <tr>
+              <td>${escapeHtml(a.user) || '—'}</td>
+              <td class="mono primary">${escapeHtml(a.remote_ip)}</td>
+              <td class="mono">${escapeHtml(a.tty)}</td>
+              <td class="mono">${escapeHtml(p.pid)}</td>
+              <td class="mono">${escapeHtml(p.command)}</td>
+              <td class="mono" style="max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(p.args)}">${escapeHtml(p.args)}</td>
+              <td class="mono">${escapeHtml(p.cpu)}</td>
+              <td class="mono">${escapeHtml(p.mem)}</td>
+              <td class="mono">${escapeHtml(p.runtime)}</td>
+            </tr>`).join('');
+        }
+        return `
+          <tr>
+            <td>${escapeHtml(a.user) || '—'}</td>
+            <td class="mono primary">${escapeHtml(a.remote_ip)}</td>
+            <td class="mono">${escapeHtml(a.tty)}</td>
+            <td colspan="6"><div class="empty-state" style="padding:6px 0;">Idle — no active processes on this tty.</div></td>
+          </tr>`;
+      }).join('');
+    }
+  });
+</script>
+{% endblock %}

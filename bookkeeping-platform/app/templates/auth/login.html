@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<div class="card card-padded max-w-sm mx-auto">
+  <h1 class="page-title mb-4">Log in</h1>
+  <form method="POST" class="space-y-4">
+    {{ form.csrf_token }}
+    <div>
+      <label class="label-field">{{ form.email.label }}</label>
+      {{ form.email(class_="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700") }}
+    </div>
+    <div>
+      <label class="label-field">{{ form.password.label }}</label>
+      {{ form.password(class_="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700") }}
+    </div>
+    <label class="flex items-center gap-2 text-sm">{{ form.remember_me() }} Remember me</label>
+    <button class="btn btn-primary btn-block">Log in</button>
+  </form>
+  <p class="text-sm mt-4">No account? <a class="link" href="{{ url_for('auth.register') }}">Sign up</a></p>
+</div>
+{% endblock %}

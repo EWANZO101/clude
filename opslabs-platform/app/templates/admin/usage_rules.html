@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Usage Rules — Admin{% endblock %}
+{% block content %}
+<h1>Credit Usage Rules</h1>
+<p style="color:#9aa3af;font-size:0.85rem;">
+  How many credits a feature costs when a company uses it. A feature with no rule here
+  defaults to 1 credit.
+</p>
+
+<div class="card">
+  <h2>Add a rule</h2>
+  <form method="POST" action="{{ url_for('admin.new_usage_rule') }}">
+    <label>Feature key <span style="color:#9aa3af;">(e.g. api_call, export_pdf)</span></label>
+    <input type="text" name="feature_key" required>
+    <label>Credits cost</label>
+    <input type="number" name="credits_cost" value="1" min="0">
+    <button type="submit">Add rule</button>
+  </form>
+</div>
+
+<div class="card">
+  <table>
+    <tr><th>Feature key</th><th>Cost</th><th>Product scope</th><th>Actions</th></tr>
+    {% for r in rules %}
+    <tr>
+      <td>{{ r.feature_key }}</td>
+      <td>
+        <form class="inline" method="POST" action="{{ url_for('admin.update_usage_rule', rule_id=r.id) }}">
+          <input type="number" name="credits_cost" value="{{ r.credits_cost }}" min="0" style="width:70px;display:inline-block;">
+          <button class="secondary" type="submit" style="padding:0.3rem 0.6rem;font-size:0.8rem;">Update</button>
+        </form>
+      </td>
+      <td>{{ r.product.name if r.product else 'global' }}</td>
+      <td>
+        <form class="inline" method="POST" action="{{ url_for('admin.delete_usage_rule', rule_id=r.id) }}"
+              onsubmit="return confirm('Delete the rule for {{ r.feature_key }}?');">
+          <button class="danger" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

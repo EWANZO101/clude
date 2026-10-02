@@ -1,0 +1,63 @@
+{% extends "portal/_base.html" %}
+{% set active_page = 'invoices' %}
+{% block portal_title %}{{ inv.number }}{% endblock %}
+{% block portal_heading %}<a href="{{ url_for('portal.invoices') }}" class="text-gray-500 hover:text-gray-300">Invoices</a> <span class="text-gray-600">/</span> {{ inv.number }}{% endblock %}
+{% block portal_content %}
+{% if request.args.get('paid') %}
+<div class="mb-5 p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-200 text-sm">Payment received — thank you!</div>
+{% endif %}
+
+<div class="pcard p-6 sm:p-8 max-w-3xl">
+  <div class="flex items-start justify-between gap-4 mb-6">
+    <div>
+      <div class="font-mono text-ops-300">{{ inv.number }}</div>
+      <div class="text-xs text-gray-500 mt-1">Issued {{ inv.issued_at|dtdate if inv.issued_at else '—' }} · Due {{ inv.due_at|dtdate if inv.due_at else '—' }}</div>
+    </div>
+    <span class="pbadge" style="background:{{ inv.status_meta.color }}1f;color:{{ inv.status_meta.color }};">{{ inv.status_meta.label }}</span>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-gray-500 text-[11px] uppercase tracking-widest border-b border-ink-600">
+        <tr><th class="text-left py-2">Description</th><th class="text-right py-2">Qty</th><th class="text-right py-2">Unit</th><th class="text-right py-2">Amount</th></tr>
+      </thead>
+      <tbody>
+        {% for li in inv.line_items %}
+        <tr class="border-b border-ink-600/40">
+          <td class="py-3">{{ li.description }}</td>
+          <td class="py-3 text-right text-gray-400">{{ li.quantity }}</td>
+          <td class="py-3 text-right text-gray-400">£{{ '%.2f'|format(li.unit_cents/100) }}</td>
+          <td class="py-3 text-right font-semibold">£{{ '%.2f'|format(li.amount_cents/100) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><td colspan="3" class="py-3 text-right font-bold">Total</td><td class="py-3 text-right text-lg font-extrabold">{{ inv.total_display }}</td></tr>
+      </tfoot>
+    </table>
+  </div>
+
+  {% if inv.notes %}<p class="text-sm text-gray-400 mt-4">{{ inv.notes }}</p>{% endif %}
+
+  <div class="mt-6 flex flex-wrap gap-3">
+    {% if inv.is_payable %}
+      {% if stripe_on %}
+      <form method="post" action="{{ url_for('portal.invoice_pay', iid=inv.id) }}">
+        <button class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">
+          Pay {{ inv.total_display }} online
+        </button>
+      </form>
+      {% else %}
+      <div class="text-sm text-yellow-300/90 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+        Online payment isn't switched on yet (Stripe keys not set). The invoice is still viewable.
+      </div>
+      {% endif %}
+    {% elif inv.status == 'paid' %}
+      <div class="text-sm text-green-300 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Paid {{ inv.paid_at|dtdate }}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

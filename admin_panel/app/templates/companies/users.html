@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Users — {{ company.name }} — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('companies.detail', company_id=company.public_id) }}" class="crumb">← {{ company.name }}</a>
+    <h1>Users</h1>
+    <div class="page-sub">
+      <span class="muted">{{ members|length }} member{{ 's' if members|length != 1 }}</span>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Members</h2>
+  </div>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>PIN</th><th></th></tr></thead>
+    <tbody>
+      {% for m in members %}
+        <tr>
+          <td>{{ m.user.full_name }}</td>
+          <td class="muted">{{ m.user.email }}</td>
+          <td>
+            {% if role in ["owner", "administrator"] %}
+              <form method="post" action="{{ url_for('companies.update_member_role', company_id=company.public_id, membership_id=m.id) }}">
+                <select name="role" onchange="this.form.submit()" style="width:auto;">
+                  {% for r in company_roles %}
+                    <option value="{{ r }}" {% if r == m.role %}selected{% endif %}>{{ r }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            {% else %}
+              <span class="badge badge-{{ m.role }}">{{ m.role }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if m.user.pin_hash is none %}
+              <span class="pill pill-muted">Never set</span>
+            {% elif m.user.pin_must_change %}
+              <span class="pill pill-amber">Reset pending</span>
+            {% elif m.user.pin_is_expired() %}
+              <span class="pill pill-red">Expired</span>
+            {% else %}
+              <span class="pill pill-green">OK</span>
+              <span class="muted" style="font-size:11.5px; display:block; margin-top:3px;">since {{ m.user.pin_set_at | friendly_date }}</span>
+            {% endif %}
+          </td>
+          <td class="row-actions">
+            {% if role in ["owner", "administrator"] %}
+              {% if m.user.pin_hash is not none and not m.user.pin_must_change %}
+                <form method="post" action="{{ url_for('companies.reset_member_pin', company_id=company.public_id, membership_id=m.id) }}"
+                      onsubmit="return confirm('Reset the PIN for {{ m.user.email|e }}? They\'ll need to set a new one next time they access the system.');" style="display:inline;">
+                  <button type="submit" class="btn btn-secondary btn-sm">Reset PIN</button>
+                </form>
+              {% endif %}
+              {% if m.user_id != current_user.id %}
+                <form method="post" action="{{ url_for('companies.remove_member', company_id=company.public_id, membership_id=m.id) }}"
+                      onsubmit="return confirm('Remove this member?');" style="display:inline;">
+                  <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                </form>
+              {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+{% if pending_invites %}
+<div class="panel">
+  <h2>Pending invites</h2>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Email</th><th>Role</th><th>Sent</th><th></th></tr></thead>
+    <tbody>
+      {% for inv in pending_invites %}
+        <tr>
+          <td>{{ inv.email }}</td>
+          <td><span class="badge badge-{{ inv.role }}">{{ inv.role }}</span></td>
+          <td class="muted">{{ inv.created_at | friendly_date }}</td>
+          <td class="row-actions">
+            {% if role in ["owner", "administrator"] %}
+              <form method="post" action="{{ url_for('companies.revoke_invite', company_id=company.public_id, invite_id=inv.id) }}">
+                <button type="submit" class="btn btn-secondary btn-sm">Revoke</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+{% if role in ["owner", "administrator"] %}
+<div class="panel">
+  <h2>Invite a teammate</h2>
+  <form method="post" action="{{ url_for('companies.invite_member', company_id=company.public_id) }}" class="form-row">
+    <div>
+      <label>Email</label>
+      <input type="email" name="email" required>
+    </div>
+    <div style="flex:0 0 160px;">
+      <label>Role</label>
+      <select name="role">
+        {% for r in company_roles %}
+          <option value="{{ r }}" {% if r == 'operator' %}selected{% endif %}>{{ r }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="flex:0 0 auto;">
+      <button type="submit">Send invite</button>
+    </div>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>PIN policy</h2>
+  <p class="muted" style="margin-top:0;">
+    Members are asked to set a PIN the first time they access the system, and to renew it
+    once it expires. PINs currently expire after
+    <strong class="mono">{{ company.pin_expiry_days }}</strong> day{{ 's' if company.pin_expiry_days != 1 }}.
+  </p>
+  <form method="post" action="{{ url_for('companies.update_pin_policy', company_id=company.public_id) }}" class="form-row">
+    <div style="flex:0 0 200px;">
+      <label>Expiry period</label>
+      <select name="pin_expiry_choice" id="pin-expiry-choice" onchange="document.getElementById('pin-expiry-custom-wrap').style.display = this.value === 'custom' ? '' : 'none';">
+        {% for key, days in pin_expiry_presets.items() %}
+          <option value="{{ key }}" {% if company.pin_expiry_days == days %}selected{% endif %}>
+            {{ {'1m': '1 month', '3m': '3 months (default)', '6m': '6 months', '12m': '12 months'}[key] }}
+          </option>
+        {% endfor %}
+        <option value="custom" {% if company.pin_expiry_days not in pin_expiry_presets.values() %}selected{% endif %}>Custom…</option>
+      </select>
+    </div>
+    <div id="pin-expiry-custom-wrap" style="flex:0 0 140px; {% if company.pin_expiry_days in pin_expiry_presets.values() %}display:none;{% endif %}">
+      <label>Custom (days)</label>
+      <input type="number" name="pin_expiry_custom_days" min="1" value="{{ company.pin_expiry_days if company.pin_expiry_days not in pin_expiry_presets.values() else '' }}">
+    </div>
+    <div style="flex:0 0 auto;">
+      <button type="submit">Save</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

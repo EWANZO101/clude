@@ -1,0 +1,34 @@
+<div class="list-item px-5 py-4">
+  <div class="grid sm:grid-cols-2 gap-3">
+    {% for f in schema.item_fields %}
+    <div {% if f.kind == 'textarea' %}class="sm:col-span-2"{% endif %}>
+      <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">{{ f.label }}</div>
+      {% if f.kind == 'textarea' %}
+        <textarea data-key="{{ f.key }}" rows="{{ f.rows or 2 }}"
+                  class="form-textarea px-3 py-2 text-sm">{{ item.get(f.key, '') if item else '' }}</textarea>
+      {% elif f.kind == 'tags' %}
+        <input data-key="{{ f.key }}"
+               value="{{ (item.get(f.key, [])|join(', ')) if item and item.get(f.key) is iterable and item.get(f.key) is not string else (item.get(f.key, '') if item else '') }}"
+               placeholder="React, Next.js, Flask"
+               class="form-input px-3 py-2 text-sm">
+      {% elif f.kind == 'bool' %}
+        <label class="inline-flex items-center gap-2 mt-1 cursor-pointer">
+          <input type="checkbox" data-key="{{ f.key }}" value="1"
+                 {% if item and item.get(f.key) %}checked{% endif %}
+                 class="w-4 h-4 rounded bg-ink-900 border-ink-600 text-ops-500 focus:ring-ops-500 focus:ring-1">
+          <span class="text-xs text-gray-400">{{ f.help or 'Enabled' }}</span>
+        </label>
+      {% else %}
+        <input data-key="{{ f.key }}" value="{{ item.get(f.key, '') if item else '' }}"
+               class="form-input px-3 py-2 text-sm">
+      {% endif %}
+      {% if f.help and f.kind != 'bool' %}<div class="field-help">{{ f.help }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <div class="flex justify-end mt-3">
+    <button type="button" onclick="this.closest('.list-item').remove()" class="btn btn-danger btn-sm">
+      Remove item
+    </button>
+  </div>
+</div>

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}v{{ package.version }} — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('releases.list_releases') }}" class="crumb">← Releases</a>
+    <h1>Version {{ package.version }}</h1>
+    <div class="page-sub">
+      <span class="pill pill-muted">{{ package.product.name if package.product else "Kiosk System" }}</span>
+      {% if package.withdrawn %}
+        <span class="pill pill-muted">Withdrawn</span>
+      {% elif package.status == 'validated' %}
+        <span class="pill pill-green">Validated — usable</span>
+      {% else %}
+        <span class="pill pill-red">Invalid — cannot be pushed</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="page-actions">
+    {% if manifest_version %}
+      <form method="post" action="{{ url_for('releases.autofix_version', package_id=package.public_id) }}"
+            onsubmit="return confirm('Re-validate this package as v{{ manifest_version }} (the version already inside its update.json) instead of v{{ package.version }}?');">
+        <button type="submit" class="btn btn-secondary btn-sm">Auto-fix version → v{{ manifest_version }}</button>
+      </form>
+    {% endif %}
+    {% if package.status == 'invalid' %}
+      <form method="post" action="{{ url_for('releases.fix_package', package_id=package.public_id) }}"
+            onsubmit="return confirm('Add a manifest (v{{ package.version }}) and a rescue/ component copied from the most recently validated release, then re-validate this package?');">
+        <button type="submit" class="btn btn-secondary btn-sm">Fix package</button>
+      </form>
+    {% endif %}
+    {% if package.status == 'validated' and not package.withdrawn %}
+      <form method="post" action="{{ url_for('releases.withdraw', package_id=package.public_id) }}">
+        <button type="submit" class="btn btn-danger btn-sm">Withdraw</button>
+      </form>
+    {% elif package.withdrawn %}
+      <form method="post" action="{{ url_for('releases.reinstate', package_id=package.public_id) }}">
+        <button type="submit" class="btn btn-secondary btn-sm">Reinstate</button>
+      </form>
+    {% endif %}
+    {% if delete_blocking_reason %}
+      <button type="button" class="btn btn-danger btn-sm" disabled title="{{ delete_blocking_reason }}">Delete</button>
+    {% else %}
+      <form method="post" action="{{ url_for('releases.delete', package_id=package.public_id) }}"
+            onsubmit="return confirm('Permanently delete v{{ package.version }}? This removes the package file and its record entirely — this can\'t be undone.');">
+        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Package details</h2>
+  <table class="kv-table">
+    <tr><th>Supported OS</th><td>{{ package.supported_os_list()|join(', ') or '—' }}</td></tr>
+    <tr><th>File size</th><td class="mono">{{ (package.file_size / 1024 / 1024) | round(2) }} MB</td></tr>
+    <tr><th>SHA-256</th><td><code style="font-size:11.5px; word-break:break-all;">{{ package.checksum_sha256 }}</code></td></tr>
+    <tr><th>Rescue component</th><td>{% if package.has_rescue_component %}<span class="pill pill-green">Present</span>{% else %}<span class="pill pill-red">Missing</span>{% endif %}</td></tr>
+    <tr><th>Uploaded by</th><td>{{ package.uploaded_by.full_name }}</td></tr>
+    <tr><th>Uploaded</th><td>{{ package.uploaded_at | friendly_dt }}</td></tr>
+  </table>
+</div>
+
+{% if package.release_notes %}
+<div class="panel">
+  <h2>Release notes</h2>
+  <p style="white-space:pre-wrap; margin:0;">{{ package.release_notes }}</p>
+</div>
+{% endif %}
+
+{% if package.validation_log %}
+<div class="panel" style="border-color:rgba(240,96,92,.3);">
+  <div class="panel-head">
+    <h2 style="color:var(--red);">Validation log</h2>
+    <span class="pill pill-red">{{ package.validation_log.split('\n')|length }} error{{ 's' if package.validation_log.split('\n')|length != 1 }}</span>
+  </div>
+  <p class="muted" style="margin-top:0; font-size:12.5px;">
+    Why this upload was rejected. If an error below names a file, cross-check it against
+    "Package contents" underneath — that's exactly what was inside the uploaded zip.
+  </p>
+  <ul style="margin:0; padding-left:18px;">
+    {% for line in package.validation_log.split('\n') %}
+      <li style="color:var(--red); font-size:13.5px; margin-bottom:4px;">{{ line }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if package.file_listing %}
+{% set listing_lines = package.file_listing.split('\n') %}
+<div class="panel">
+  <details {{ 'open' if package.status == 'invalid' }}>
+    <summary style="cursor:pointer;">
+      <span style="display:inline-flex; align-items:center; gap:8px;">
+        <h2 style="display:inline;">Package contents</h2>
+        <span class="pill pill-muted mono">{{ listing_lines|length }} file{{ 's' if listing_lines|length != 1 }}</span>
+      </span>
+    </summary>
+    <p class="muted" style="font-size:12.5px; margin:10px 0 8px;">
+      Every file this zip actually contained at upload time — the exact same list validation checked against.
+      Useful for spotting a stray file, a wrong top-level directory, or a whole wrong tree at a glance, without
+      downloading and unzipping this package by hand.
+    </p>
+    <textarea readonly rows="12" class="mono" style="font-size:12px;">{{ package.file_listing }}</textarea>
+  </details>
+</div>
+{% endif %}
+
+<div class="panel">
+  <h2>Deployment</h2>
+  <p class="muted" style="margin:0;">
+    {% if package.status == 'validated' and not package.withdrawn %}
+      Push this version from a company's fleet page — open an instance, or use "Push to multiple" / a staged rollout to send it to several at once.
+    {% else %}
+      This package can't be pushed to any instance until it passes validation.
+    {% endif %}
+  </p>
+</div>
+{% endblock %}

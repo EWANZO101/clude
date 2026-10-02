@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Nginx — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">Reverse proxy</p>
+    <h1 class="page-title">Nginx</h1>
+    <p class="page-sub">Sites served through this host</p>
+  </div>
+  {% if installed %}
+  <div class="topbar-actions">
+    <form method="POST" action="{{ url_for('nginx.repair') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-secondary" type="submit">Repair (test + reload)</button>
+    </form>
+    <a class="btn btn-secondary" href="{{ url_for('nginx.ssl') }}">+ SSL certificate</a>
+    <a class="btn btn-primary" href="{{ url_for('nginx.create') }}">+ New site</a>
+  </div>
+  {% endif %}
+</div>
+
+{% if not installed %}
+  <div class="card">
+    <div class="card-label">Not installed</div>
+    <p class="page-sub" style="margin: 8px 0 16px;">nginx wasn't found on this server.</p>
+    <form method="POST" action="{{ url_for('nginx.install') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-primary" type="submit">Install nginx</button>
+    </form>
+  </div>
+{% else %}
+  {% if not certbot_installed %}
+    <div class="flash flash-info">certbot isn't installed yet — it'll be installed automatically the first time you issue a certificate.</div>
+  {% endif %}
+
+  {% if sites %}
+  <div class="card flush">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Domain</th>
+            <th>Proxies to</th>
+            <th>SSL</th>
+            <th>Enabled</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for site in sites %}
+          <tr>
+            <td class="mono primary">{{ site.server_name }}</td>
+            <td class="mono">{{ site.proxy_pass or '—' }}</td>
+            <td>
+              <span class="status-dot {{ 'ok' if site.ssl else '' }}"></span>
+              {{ 'Yes' if site.ssl else 'No' }}
+            </td>
+            <td>{{ 'Yes' if site.enabled else 'No' }}</td>
+            <td>
+              <div class="table-actions">
+                <a href="{{ url_for('nginx.site_backups', filename=site.filename) }}" class="btn btn-secondary btn-sm">Backups</a>
+                <form method="POST" action="{{ url_for('nginx.delete_site', filename=site.filename) }}" onsubmit="return confirm('Remove this site?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+    <div class="card"><div class="empty-state">No sites configured yet.</div></div>
+  {% endif %}
+
+  <div class="card tight" style="margin-top:16px; max-width:320px;">
+    <div class="card-label">Certificates</div>
+    <form method="POST" action="{{ url_for('nginx.renew_ssl') }}" style="margin-top:10px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-primary btn-block" type="submit">Renew all certificates</button>
+    </form>
+  </div>
+{% endif %}
+{% endblock %}

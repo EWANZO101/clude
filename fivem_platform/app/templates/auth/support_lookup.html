@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Support lookup — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-6">Account recovery lookup</h1>
+
+  <form method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Support ID</label>
+      <input type="text" name="support_id" required placeholder="SUP-849201-AB"
+        class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand">
+    </div>
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Recovery PIN</label>
+      <input type="text" name="recovery_pin" required placeholder="0000-0000"
+        class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand">
+    </div>
+    <button type="submit" class="w-full bg-brand hover:bg-brand-hover text-white rounded-md py-2 text-sm font-medium transition">
+      Verify ownership
+    </button>
+  </form>
+
+  {% if result %}
+    <div class="mt-8 bg-surface-card border border-surface-border rounded-lg p-5">
+      <h2 class="text-white font-medium mb-3">{{ result.username }}</h2>
+      <dl class="text-sm space-y-1 text-gray-400">
+        <div class="flex justify-between"><dt>User ID</dt><dd class="font-mono text-gray-300">{{ result.user_id }}</dd></div>
+        <div class="flex justify-between gap-2"><dt class="flex-shrink-0">Email</dt><dd class="text-gray-300 truncate min-w-0">{{ result.email }}</dd></div>
+        <div class="flex justify-between"><dt>Joined</dt><dd class="text-gray-300">{{ result.created_at.strftime('%Y-%m-%d') }}</dd></div>
+        <div class="flex justify-between"><dt>Suspended</dt><dd class="text-gray-300">{{ 'Yes' if result.is_suspended else 'No' }}</dd></div>
+      </dl>
+      <form method="POST" action="{{ url_for('auth.issue_temp_password', user_id=result.id) }}" class="mt-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white rounded-md py-2 text-sm font-medium transition">
+          Issue temporary password
+        </button>
+      </form>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

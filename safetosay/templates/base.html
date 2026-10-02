@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>{% block title %}{{ get_text('global','site_name','ClearVoice') }}{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/flowbite@2.3.0/dist/flowbite.min.css" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0d1117;--surface:#161b22;--card:#1c2128;--border:#30363d;
+  --accent:#58a6ff;--accent2:#3d8bcd;--danger:#f85149;--warn:#e3b341;
+  --success:#3fb950;--text:#e6edf3;--muted:#8b949e;--tag-bg:#1f3a5f;
+  --nav-h:58px;--drawer-w:270px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;margin:0;padding:0}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 0%,rgba(88,166,255,.06) 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(63,185,80,.04) 0%,transparent 60%);pointer-events:none;z-index:0}
+.page-wrap{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column}
+
+/* NAV */
+.topnav{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;height:var(--nav-h)}
+.topnav .inner{max-width:1280px;margin:0 auto;padding:0 1rem;display:flex;align-items:center;gap:.6rem;height:100%}
+.site-name{font-family:'IBM Plex Mono',monospace;font-size:1.05rem;font-weight:600;color:var(--accent);text-decoration:none;letter-spacing:-.02em;white-space:nowrap;flex-shrink:0}
+.site-name span{color:var(--muted);font-weight:400}
+.desktop-nav{display:flex;align-items:center;gap:.15rem;margin-left:.35rem}
+.nav-link{padding:.35rem .7rem;border-radius:6px;font-size:.875rem;color:var(--muted);text-decoration:none;transition:all .15s;white-space:nowrap}
+.nav-link:hover,.nav-link.active{background:rgba(88,166,255,.1);color:var(--accent)}
+.nav-spacer{flex:1}
+.nav-actions{display:flex;align-items:center;gap:.4rem}
+
+/* HAMBURGER */
+.hamburger{display:none;flex-direction:column;justify-content:center;align-items:center;gap:5px;width:40px;height:40px;border:1px solid var(--border);border-radius:8px;background:var(--card);cursor:pointer;flex-shrink:0;transition:background .15s;padding:0}
+.hamburger:hover{background:rgba(88,166,255,.1);border-color:rgba(88,166,255,.3)}
+.hamburger span{display:block;width:18px;height:2px;background:var(--muted);border-radius:2px;transition:all .25s}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);background:var(--accent)}
+.hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);background:var(--accent)}
+
+/* DRAWER */
+.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;backdrop-filter:blur(2px)}
+.drawer-overlay.open{display:block}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:var(--drawer-w);background:var(--surface);border-right:1px solid var(--border);z-index:301;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+.drawer-head{padding:.9rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--card)}
+.d-close{width:32px;height:32px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.d-close:hover{background:rgba(248,81,73,.1);color:var(--danger);border-color:rgba(248,81,73,.3)}
+.drawer-body{flex:1;padding:.6rem .7rem 2rem}
+.d-section{font-size:.67rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:.7rem .55rem .25rem}
+.d-link{display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;border-radius:8px;font-size:.9rem;color:var(--muted);text-decoration:none;transition:all .15s;margin-bottom:.08rem}
+.d-link:hover,.d-link.active{background:rgba(88,166,255,.1);color:var(--accent)}
+.d-link .di{font-size:.95rem;flex-shrink:0;width:20px;text-align:center}
+.d-hr{border:none;border-top:1px solid var(--border);margin:.55rem 0}
+.d-user{padding:.8rem .75rem;background:rgba(88,166,255,.06);border:1px solid rgba(88,166,255,.15);border-radius:10px;margin-bottom:.75rem}
+.d-btn{display:flex;align-items:center;justify-content:center;gap:.4rem;width:100%;padding:.58rem .75rem;border-radius:8px;font-size:.875rem;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid;text-decoration:none;margin-top:.3rem}
+.d-btn-primary{background:var(--accent);color:#0d1117;border-color:var(--accent)}
+.d-btn-primary:hover{background:var(--accent2);border-color:var(--accent2)}
+.d-btn-ghost{background:transparent;color:var(--muted);border-color:var(--border)}
+.d-btn-ghost:hover{background:var(--card);color:var(--text)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .85rem;border-radius:7px;font-size:.875rem;font-weight:500;cursor:pointer;transition:all .15s;border:none;text-decoration:none;line-height:1.4;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#0d1117}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--card);color:var(--text)}
+.btn-danger{background:rgba(248,81,73,.12);color:var(--danger);border:1px solid rgba(248,81,73,.25)}
+.btn-danger:hover{background:rgba(248,81,73,.22)}
+.btn-warn{background:rgba(227,179,65,.12);color:var(--warn);border:1px solid rgba(227,179,65,.25)}
+.btn-success{background:rgba(63,185,80,.12);color:var(--success);border:1px solid rgba(63,185,80,.25)}
+.btn-sm{padding:.26rem .58rem;font-size:.78rem}
+.btn-full{width:100%;justify-content:center}
+
+/* MAIN */
+.main{flex:1;max-width:1280px;width:100%;margin:0 auto;padding:1.5rem 1rem}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.card-body{padding:1.25rem}
+
+/* POST CARD */
+.post-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;transition:border-color .2s,box-shadow .2s,transform .15s;cursor:pointer}
+.post-card:hover{border-color:rgba(88,166,255,.35);box-shadow:0 4px 16px rgba(88,166,255,.08);transform:translateY(-1px)}
+.post-id{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted);background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.15);padding:.13rem .43rem;border-radius:4px;display:inline-block}
+.post-title{font-size:1.05rem;font-weight:600;color:var(--text);text-decoration:none;display:block;line-height:1.4;margin:.35rem 0 .2rem}
+.post-title:hover{color:var(--accent)}
+.post-meta{font-size:.77rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:.4rem .85rem;align-items:center}
+.post-excerpt{color:var(--muted);font-size:.875rem;margin:.4rem 0 0;line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
+/* BADGES */
+.status-badge{display:inline-flex;align-items:center;gap:.3rem;padding:.13rem .48rem;border-radius:4px;font-size:.72rem;font-weight:600}
+.badge-active{background:rgba(63,185,80,.12);color:var(--success)}
+.badge-hidden{background:rgba(227,179,65,.12);color:var(--warn)}
+.badge-removed{background:rgba(248,81,73,.12);color:var(--danger)}
+.badge-verified{background:rgba(88,166,255,.12);color:var(--accent)}
+.post-tag{display:inline-block;padding:.16rem .52rem;background:var(--tag-bg);color:var(--accent);border-radius:4px;font-size:.71rem;font-weight:600;font-family:'IBM Plex Mono',monospace}
+.status-pending{color:var(--warn);background:rgba(227,179,65,.12);padding:.13rem .48rem;border-radius:4px;font-size:.73rem}
+.status-seen{color:var(--accent);background:rgba(88,166,255,.12);padding:.13rem .48rem;border-radius:4px;font-size:.73rem}
+.status-resolved{color:var(--success);background:rgba(63,185,80,.12);padding:.13rem .48rem;border-radius:4px;font-size:.73rem}
+.status-dismissed{color:var(--muted);background:rgba(139,148,158,.1);padding:.13rem .48rem;border-radius:4px;font-size:.73rem}
+
+/* FORMS */
+.form-label{display:block;font-size:.875rem;font-weight:500;color:var(--text);margin-bottom:.38rem}
+.form-input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:.58rem .82rem;font-size:.9rem;font-family:inherit;outline:none;transition:border-color .15s;-webkit-appearance:none}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(88,166,255,.1)}
+.form-input::placeholder{color:var(--muted)}
+textarea.form-input{resize:vertical;min-height:110px}
+select.form-input{cursor:pointer}
+.form-group{margin-bottom:1.1rem}
+.form-hint{font-size:.77rem;color:var(--muted);margin-top:.22rem}
+
+/* FLASH */
+.flash-container{max-width:1280px;margin:0 auto;padding:.6rem 1rem 0}
+.flash{padding:.68rem .88rem;border-radius:8px;font-size:.84rem;margin-bottom:.38rem;display:flex;align-items:flex-start;gap:.5rem;border:1px solid}
+.flash-success{background:rgba(63,185,80,.1);border-color:rgba(63,185,80,.3);color:#3fb950}
+.flash-error{background:rgba(248,81,73,.1);border-color:rgba(248,81,73,.3);color:#f85149}
+.flash-info{background:rgba(88,166,255,.1);border-color:rgba(88,166,255,.3);color:#58a6ff}
+.flash-warning{background:rgba(227,179,65,.1);border-color:rgba(227,179,65,.3);color:#e3b341}
+
+/* ANNOUNCEMENTS */
+.ann-wrap{background:var(--surface);border-bottom:1px solid var(--border)}
+.ann-inner{max-width:1280px;margin:0 auto;padding:.4rem 1rem}
+.announcement{padding:.6rem 1rem;font-size:.83rem;border-left:3px solid;margin-bottom:.3rem}
+.ann-info{background:rgba(88,166,255,.08);border-color:var(--accent);color:#cce0ff}
+.ann-warning{background:rgba(227,179,65,.08);border-color:var(--warn);color:#ffe8a0}
+.ann-danger{background:rgba(248,81,73,.08);border-color:var(--danger);color:#ffd0cc}
+.ann-success{background:rgba(63,185,80,.08);border-color:var(--success);color:#c0ffc8}
+
+/* HERO */
+.hero{padding:2rem 0 1.5rem;border-bottom:1px solid var(--border);margin-bottom:1.5rem}
+.hero h1{font-size:1.75rem;font-weight:700;margin:0 0 .4rem;line-height:1.2}
+.hero p{color:var(--muted);font-size:.9rem;max-width:600px;line-height:1.7;margin:.3rem 0 0}
+
+/* MISC */
+.divider{border:none;border-top:1px solid var(--border);margin:1.2rem 0}
+.comment{border-left:2px solid var(--border);padding:.62rem .88rem;margin-bottom:.8rem}
+.comment-meta{font-size:.77rem;color:var(--muted);margin-bottom:.28rem}
+.comment-content{font-size:.875rem;line-height:1.65;white-space:pre-wrap}
+.pagination{display:flex;gap:.28rem;align-items:center;flex-wrap:wrap;margin-top:1.2rem}
+.page-btn{padding:.32rem .62rem;border-radius:6px;font-size:.81rem;border:1px solid var(--border);background:var(--card);color:var(--muted);text-decoration:none;transition:all .15s}
+.page-btn:hover,.page-btn.active{background:rgba(88,166,255,.15);border-color:var(--accent);color:var(--accent)}
+
+/* ADMIN */
+.admin-layout{display:grid;grid-template-columns:215px 1fr;gap:1.5rem;align-items:start}
+.admin-sidebar{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.8rem;position:sticky;top:calc(var(--nav-h) + 1rem)}
+.admin-nav-item{display:block;padding:.48rem .68rem;border-radius:6px;font-size:.845rem;color:var(--muted);text-decoration:none;transition:all .15s;margin-bottom:.1rem}
+.admin-nav-item:hover,.admin-nav-item.active{background:rgba(88,166,255,.1);color:var(--accent)}
+.admin-section-label{font-size:.67rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;padding:.5rem .68rem .2rem;margin-top:.3rem}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:1rem 1.5rem;text-align:center;font-size:.77rem;color:var(--muted);background:var(--surface)}
+
+/* GRID HELPERS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.sidebar-layout{display:grid;grid-template-columns:1fr 280px;gap:1.5rem;align-items:start}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:.875rem;min-width:520px}
+th{text-align:left;padding:.62rem .88rem;color:var(--muted);font-weight:600;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
+td{padding:.62rem .88rem;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.012)}
+
+/* MODALS */
+.cv-modal{
+  display:none;
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  width:100vw;height:100vh;
+  z-index:10000;
+  background:rgba(0,0,0,.78);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:1rem;
+  box-sizing:border-box;
+}
+.cv-modal.open{
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding-top:5vh;
+}
+.modal-box{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  width:100%;
+  max-width:640px;
+  box-shadow:0 32px 80px rgba(0,0,0,.8);
+  position:relative;
+  z-index:10001;
+}
+.modal-head{padding:1rem 1.2rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem}
+.modal-body{padding:1.1rem 1.2rem}
+.modal-foot{padding:.8rem 1.2rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.55rem;flex-wrap:wrap}
+
+/* BOTTOM NAV (mobile only) */
+.mobile-bnav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:150;background:var(--surface);border-top:1px solid var(--border);justify-content:space-around;align-items:center;padding:.3rem 0 calc(.3rem + env(safe-area-inset-bottom))}
+.mbn-item{display:flex;flex-direction:column;align-items:center;gap:.18rem;padding:.28rem .65rem;border-radius:8px;color:var(--muted);text-decoration:none;font-size:.6rem;font-weight:500;transition:all .15s;min-width:52px;background:none;border:none;cursor:pointer}
+.mbn-item.active,.mbn-item:hover{color:var(--accent)}
+.mbn-icon{font-size:1.15rem;line-height:1}
+
+/* ─── TABLET (≤1024px) ─── */
+@media(max-width:1024px){
+  .desktop-nav{display:none}
+  .hamburger{display:flex}
+  .sidebar-layout{grid-template-columns:1fr}
+  .sidebar-layout .post-sidebar{display:none}
+  .admin-layout{grid-template-columns:1fr}
+  .admin-sidebar{display:none}
+  .hero h1{font-size:1.5rem}
+  .nav-actions .hide-tablet{display:none}
+}
+
+/* ─── MOBILE (≤640px) ─── */
+@media(max-width:640px){
+  :root{--drawer-w:88vw}
+  .main{padding:1rem .75rem;padding-bottom:5.5rem}
+  .hero{padding:1.2rem 0 1rem;margin-bottom:1rem}
+  .hero h1{font-size:1.25rem}
+  .hero p{font-size:.84rem}
+  .card-body{padding:.88rem}
+  .post-card{padding:.82rem .88rem}
+  .post-excerpt{font-size:.83rem;-webkit-line-clamp:3;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+  .post-meta{font-size:.75rem;gap:.35rem}
+  .post-title{font-size:.98rem}
+  .g2{grid-template-columns:1fr}
+  .g3{grid-template-columns:1fr}
+  .btn{font-size:.82rem;padding:.36rem .68rem}
+  .btn-sm{padding:.22rem .48rem;font-size:.75rem}
+  .flash-container{padding:.45rem .75rem 0}
+  .topnav .inner{padding:0 .75rem;gap:.45rem}
+  .nav-actions .hide-mobile{display:none}
+  .mobile-bnav{display:flex}
+  footer{padding-bottom:calc(1rem + env(safe-area-inset-bottom) + 52px)}
+  .modal-box{margin:.5rem}
+  .cv-modal{padding:.5rem;padding-top:2vh}
+  /* hide hero actions that duplicate bottom nav */
+  .hero-actions{display:none !important}
+  .hero-intro{display:none !important}
+  /* hide check-a-report widget on mobile - accessible via menu */
+  .lookup-widget{display:none}
+  /* tighten up hero on mobile */
+  .hero{padding:.85rem 0 .6rem;margin-bottom:.75rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Device Selection Overlay ── -->
+<div id="device-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#0d1117;align-items:center;justify-content:center;padding:1.5rem">
+  <div style="max-width:420px;width:100%;text-align:center">
+    <div style="margin-bottom:1.75rem">
+      <div style="font-size:1.6rem;font-weight:700;color:#e6edf3;letter-spacing:-.02em;margin-bottom:.35rem">Clear<span style="color:#58a6ff">Voice</span></div>
+      <p style="color:#8b949e;font-size:.88rem;margin:0">How are you accessing the site?</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:1.5rem">
+      <button onclick="setDevice('desktop')" id="btn-desktop"
+        style="background:#1c2128;border:2px solid #30363d;border-radius:14px;padding:1.6rem 1rem;cursor:pointer;transition:all .18s;display:flex;flex-direction:column;align-items:center;gap:.65rem;color:#e6edf3">
+        <span style="font-size:2.4rem;line-height:1">🖥️</span>
+        <span style="font-weight:600;font-size:.95rem">Computer</span>
+        <span style="font-size:.75rem;color:#8b949e;line-height:1.4">Desktop or laptop</span>
+      </button>
+      <button onclick="setDevice('mobile')" id="btn-mobile"
+        style="background:#1c2128;border:2px solid #30363d;border-radius:14px;padding:1.6rem 1rem;cursor:pointer;transition:all .18s;display:flex;flex-direction:column;align-items:center;gap:.65rem;color:#e6edf3">
+        <span style="font-size:2.4rem;line-height:1">📱</span>
+        <span style="font-weight:600;font-size:.95rem">Phone / Tablet</span>
+        <span style="font-size:.75rem;color:#8b949e;line-height:1.4">Mobile or tablet</span>
+      </button>
+    </div>
+    <p style="font-size:.74rem;color:#8b949e;margin:0">Your choice is saved — you won't be asked again.<br>You can change it anytime in the menu.</p>
+  </div>
+</div>
+
+<style>
+#btn-desktop:hover,#btn-mobile:hover{border-color:#58a6ff;background:rgba(88,166,255,.07);transform:translateY(-2px)}
+#btn-desktop.selected,#btn-mobile.selected{border-color:#58a6ff;background:rgba(88,166,255,.12)}
+body.device-mobile .hide-on-mobile{display:none!important}
+body.device-desktop .mobile-bnav{display:none!important}
+body.device-desktop .hamburger{display:none!important}
+body.device-desktop .desktop-nav{display:flex!important}
+</style>
+
+<div class="page-wrap">
+
+<!-- Drawer overlay -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- Slide-out drawer -->
+<div class="drawer" id="main-drawer" role="dialog" aria-label="Navigation menu">
+  <div class="drawer-head">
+    <a href="{{ url_for('index') }}" class="site-name" onclick="closeDrawer()">Clear<span>Voice</span></a>
+    <button class="d-close" onclick="closeDrawer()" aria-label="Close menu">✕</button>
+  </div>
+  <div class="drawer-body">
+
+    {% if current_user.is_authenticated %}
+    <div class="d-user">
+      <div style="display:flex;align-items:center;gap:.62rem">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(88,166,255,.15);border:1px solid rgba(88,166,255,.3);display:flex;align-items:center;justify-content:center;font-size:.9rem;color:var(--accent);flex-shrink:0">{{ current_user.username[0].upper() }}</div>
+        <div>
+          <div style="font-weight:600;font-size:.92rem;color:var(--text)">{{ current_user.username }}</div>
+          <div style="font-size:.72rem;color:var(--muted)">{% if current_user.is_admin %}Administrator{% else %}Member{% endif %}</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="d-section">Forum</div>
+    <a href="{{ url_for('index') }}" class="d-link {% if request.endpoint=='index' %}active{% endif %}" onclick="closeDrawer()"><span class="di">📖</span> Stories</a>
+    <a href="{{ url_for('advice') }}" class="d-link {% if request.endpoint=='advice' %}active{% endif %}" onclick="closeDrawer()"><span class="di">💬</span> Advice Forum</a>
+
+    {% if current_user.is_authenticated %}
+    <hr class="d-hr">
+    <div class="d-section">Create</div>
+    <a href="{{ url_for('create_post') }}" class="d-link" onclick="closeDrawer()"><span class="di">✏</span> Share My Story</a>
+    <a href="{{ url_for('create_advice') }}" class="d-link" onclick="closeDrawer()"><span class="di">🙋</span> Post for Advice</a>
+    <hr class="d-hr">
+    <div class="d-section">Account</div>
+    <a href="{{ url_for('profile', username=current_user.username) }}" class="d-link" onclick="closeDrawer()"><span class="di">👤</span> My Profile</a>
+    {% if current_user.is_admin %}
+    <hr class="d-hr">
+    <div class="d-section">Admin</div>
+    <a href="{{ url_for('admin_dashboard') }}" class="d-link" onclick="closeDrawer()"><span class="di">📊</span> Dashboard</a>
+    <a href="{{ url_for('admin_users') }}" class="d-link" onclick="closeDrawer()"><span class="di">👥</span> Users</a>
+    <a href="{{ url_for('admin_posts') }}" class="d-link" onclick="closeDrawer()"><span class="di">📋</span> Posts</a>
+    <a href="{{ url_for('admin_reports') }}" class="d-link" onclick="closeDrawer()"><span class="di">⚑</span> Reports</a>
+    <a href="{{ url_for('admin_announcements') }}" class="d-link" onclick="closeDrawer()"><span class="di">📢</span> Announcements</a>
+    <a href="{{ url_for('admin_site_text') }}" class="d-link" onclick="closeDrawer()"><span class="di">✎</span> Edit Text</a>
+    {% endif %}
+    <hr class="d-hr">
+    <a href="{{ url_for('logout') }}" class="d-btn d-btn-ghost" onclick="closeDrawer()">Logout</a>
+    {% else %}
+    <hr class="d-hr">
+    <a href="{{ url_for('register') }}" class="d-link" onclick="closeDrawer()"><span class="di">✚</span> Create Account</a>
+    <a href="{{ url_for('login') }}" class="d-link" onclick="closeDrawer()"><span class="di">→</span> Log In</a>
+    {% endif %}
+
+    <hr class="d-hr">
+    <div class="d-section">Report Portal</div>
+    {% if portal_logged_in %}
+    <a href="{{ url_for('portal_my_reports') }}" class="d-link" onclick="closeDrawer()"><span class="di">🔐</span> My Reports</a>
+    <a href="{{ url_for('portal_lookup') }}" class="d-link" onclick="closeDrawer()"><span class="di">🔍</span> Look Up Report</a>
+    <a href="{{ url_for('portal_logout') }}" class="d-link" onclick="closeDrawer()"><span class="di">🚪</span> Portal Logout</a>
+    {% else %}
+    <a href="{{ url_for('portal_lookup') }}" class="d-link" onclick="closeDrawer()"><span class="di">🔍</span> Look Up by Report ID</a>
+    <a href="{{ url_for('portal_login') }}" class="d-link" onclick="closeDrawer()"><span class="di">🔐</span> Report Portal Login</a>
+    {% endif %}
+    <hr class="d-hr">
+    <div class="d-section">Preferences</div>
+    <button class="d-link" onclick="closeDrawer();showDeviceOverlay()" style="background:none;border:none;cursor:pointer;width:100%;text-align:left"><span class="di">🖥️</span> <span id="drawer-device-label">Change Device Type</span></button>
+  </div>
+</div>
+
+<!-- Top nav -->
+<nav class="topnav">
+  <div class="inner">
+    <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <a href="{{ url_for('index') }}" class="site-name">Clear<span>Voice</span></a>
+    <div class="desktop-nav">
+      <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint=='index' %}active{% endif %}">Stories</a>
+      <a href="{{ url_for('advice') }}" class="nav-link {% if request.endpoint=='advice' %}active{% endif %}">Advice</a>
+    </div>
+    <div class="nav-spacer"></div>
+    <div class="nav-actions">
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('create_post') }}" class="btn btn-primary btn-sm hide-tablet">+ Post Story</a>
+        <a href="{{ url_for('profile', username=current_user.username) }}" class="nav-link hide-tablet" style="display:inline-flex;align-items:center;gap:.38rem">
+          <span style="width:26px;height:26px;border-radius:50%;background:rgba(88,166,255,.15);border:1px solid rgba(88,166,255,.3);display:inline-flex;align-items:center;justify-content:center;font-size:.74rem;color:var(--accent)">{{ current_user.username[0].upper() }}</span>
+          <span style="font-size:.81rem">{{ current_user.username }}</span>
+        </a>
+        {% if current_user.is_admin %}<a href="{{ url_for('admin_dashboard') }}" class="nav-link hide-tablet">⚙</a>{% endif %}
+        <a href="{{ url_for('logout') }}" class="btn btn-ghost btn-sm hide-tablet">Logout</a>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-ghost btn-sm hide-mobile">Login</a>
+        <a href="{{ url_for('register') }}" class="btn btn-primary btn-sm hide-mobile">Register</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+{% if announcements %}
+<div class="ann-wrap">
+  <div class="ann-inner">
+    {% for ann in announcements %}
+    <div class="announcement ann-{{ ann.ann_type }}"><strong>{{ ann.title }}</strong> — {{ ann.content }}</div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="flash-container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash flash-{{ category if category in ['success','error','info','warning'] else 'info' }}"><span>{{ message }}</span></div>
+    {% endfor %}
+  {% endwith %}
+</div>
+
+<main class="main" role="main">{% block content %}{% endblock %}</main>
+
+<footer>{{ get_text('global','footer_text','© ClearVoice — A platform for those who have been falsely accused.') }}</footer>
+
+<!-- Mobile bottom nav -->
+<nav class="mobile-bnav" aria-label="Bottom navigation">
+  <a href="{{ url_for('index') }}" class="mbn-item {% if request.endpoint=='index' %}active{% endif %}"><span class="mbn-icon">📖</span>Stories</a>
+  <a href="{{ url_for('advice') }}" class="mbn-item {% if request.endpoint=='advice' %}active{% endif %}"><span class="mbn-icon">💬</span>Advice</a>
+  {% if current_user.is_authenticated %}
+  <a href="{{ url_for('create_post') }}" class="mbn-item" style="background:rgba(88,166,255,.1);border-radius:10px;border:1px solid rgba(88,166,255,.18)">
+    <span class="mbn-icon" style="color:var(--accent)">✚</span><span style="color:var(--accent)">Post</span>
+  </a>
+  <a href="{{ url_for('profile', username=current_user.username) }}" class="mbn-item {% if request.endpoint=='profile' %}active{% endif %}"><span class="mbn-icon">👤</span>Profile</a>
+  {% else %}
+  <a href="{{ url_for('register') }}" class="mbn-item"><span class="mbn-icon">✚</span>Join</a>
+  {% endif %}
+  <button class="mbn-item" onclick="toggleDrawer()"><span class="mbn-icon">☰</span>Menu</button>
+</nav>
+
+<!-- Report modal -->
+<div id="report-modal" class="cv-modal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <h3 style="font-size:.98rem;font-weight:600;color:var(--text);margin:0 0 .18rem">Submit a Report</h3>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:.73rem;color:var(--muted);margin:0" id="modal-post-id-display"></p>
+      </div>
+      <button onclick="closeReportModal()" class="d-close" aria-label="Close">✕</button>
+    </div>
+    <div style="padding:.7rem 1.2rem;background:rgba(227,179,65,.06);border-bottom:1px solid rgba(227,179,65,.18)">
+      <p style="font-size:.81rem;color:var(--warn);margin:0 0 .2rem">⚠ {{ get_text('report','popup_intro','Reports are reviewed within 24 hours.') }}</p>
+      <p style="font-size:.76rem;color:var(--muted);margin:0">Save your report ID to check the status later.</p>
+    </div>
+    <form method="POST" action="{{ url_for('submit_report') }}" enctype="multipart/form-data">
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:.8rem">
+        <input type="hidden" name="post_ref_id" id="modal-post-ref-id">
+        <div class="g2">
+          <div>
+            <label class="form-label">Post ID</label>
+            <input type="text" id="modal-post-id-field" name="post_ref_id_display" class="form-input" readonly style="font-family:'IBM Plex Mono',monospace;opacity:.7;font-size:.8rem">
+          </div>
+          <div>
+            <label class="form-label">Your Name (optional)</label>
+            <input type="text" name="display_name" class="form-input" placeholder="Leave blank to be anonymous">
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Report Description <span style="color:var(--danger)">*</span></label>
+          <textarea name="description" class="form-input" rows="4" required placeholder="Why are you reporting this? What evidence do you have?"></textarea>
+        </div>
+        <div>
+          <label class="form-label">Links (optional)</label>
+          <input type="text" name="links" class="form-input" placeholder="https://...">
+        </div>
+        <div>
+          <label class="form-label">Upload Evidence (max 5 files)</label>
+          <input type="file" name="evidence" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.doc,.docx" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Additional Information</label>
+          <textarea name="other_info" class="form-input" rows="2" placeholder="Anything else you'd like to add..."></textarea>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;padding:.65rem .82rem;background:rgba(88,166,255,.06);border-radius:7px;border:1px solid rgba(88,166,255,.14)">
+          <input type="checkbox" name="is_anonymous" value="1" id="anon-check" style="accent-color:var(--accent);width:16px;height:16px;flex-shrink:0">
+          <label for="anon-check" style="font-size:.82rem;color:var(--muted);cursor:pointer">Submit anonymously</label>
+        </div>
+        {% if not portal_logged_in %}
+        <p style="font-size:.79rem;color:var(--muted);margin:0">Track your report: <a href="{{ url_for('portal_register') }}" style="color:var(--accent)">create a portal account</a> or <a href="{{ url_for('portal_login') }}" style="color:var(--accent)">log in</a>.</p>
+        {% endif %}
+      </div>
+      <div class="modal-foot">
+        <button type="button" onclick="closeReportModal()" class="btn btn-ghost">Cancel</button>
+        <button type="submit" class="btn btn-danger">Submit Report</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Rules modal -->
+<div id="rules-modal" class="cv-modal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 style="font-size:.98rem;font-weight:600;color:var(--text);margin:0">{{ get_text('rules','title','Community Rules') }}</h3>
+      <button onclick="closeModal('rules-modal')" class="d-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="white-space:pre-wrap;line-height:1.8;font-size:.875rem;color:var(--muted);max-height:60vh;overflow-y:auto">{{ get_text('rules','body','Community rules not set.') }}</div>
+    </div>
+    <div class="modal-foot">
+      <button onclick="acceptRules()" class="btn btn-primary">I Accept</button>
+      <button onclick="closeModal('rules-modal')" class="btn btn-ghost">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flowbite@2.3.0/dist/flowbite.min.js"></script>
+<script>
+// Drawer
+function toggleDrawer(){
+  const d=document.getElementById('main-drawer'),o=document.getElementById('drawer-overlay'),b=document.getElementById('hamburger-btn');
+  const open=d.classList.contains('open');
+  if(open){closeDrawer();}else{d.classList.add('open');o.classList.add('open');b.classList.add('open');b.setAttribute('aria-expanded','true');document.body.style.overflow='hidden';}
+}
+function closeDrawer(){
+  document.getElementById('main-drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+  const b=document.getElementById('hamburger-btn');
+  b.classList.remove('open');b.setAttribute('aria-expanded','false');
+  if(!document.querySelector('.cv-modal.open'))document.body.style.overflow='';
+}
+// Modals
+function openModal(id){
+  const m=document.getElementById(id);
+  if(!m)return;
+  m.classList.add('open');
+  document.documentElement.style.overflow='hidden';
+  document.body.style.overflow='hidden';
+}
+function closeModal(id){
+  const m=document.getElementById(id);
+  if(!m)return;
+  m.classList.remove('open');
+  // Only unlock scroll if no other modals are open
+  if(!document.querySelector('.cv-modal.open')){
+    document.documentElement.style.overflow='';
+    document.body.style.overflow='';
+  }
+}
+document.querySelectorAll('.cv-modal').forEach(function(m){
+  m.addEventListener('click',function(e){
+    if(e.target===this)closeModal(this.id);
+  });
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    document.querySelectorAll('.cv-modal.open').forEach(function(m){closeModal(m.id);});
+    closeDrawer();
+  }
+});
+// Report modal
+function openReportModal(postId){
+  document.getElementById('modal-post-ref-id').value=postId;
+  document.getElementById('modal-post-id-field').value=postId;
+  document.getElementById('modal-post-id-display').textContent='Post: '+postId;
+  openModal('report-modal');
+}
+function closeReportModal(){closeModal('report-modal');}
+// Rules modal
+function openRulesModal(){openModal('rules-modal');}
+function acceptRules(){
+  const cb=document.getElementById('rules-check');
+  if(cb){cb.checked=true;if(window.updateSubmitBtn)updateSubmitBtn();}
+  closeModal('rules-modal');
+}
+
+// ── Device Selection ──────────────────────────────────────────────────────
+(function(){
+  const STORAGE_KEY = 'cv_device';
+
+  function applyDevice(type) {
+    document.body.classList.remove('device-mobile','device-desktop');
+    document.body.classList.add('device-' + type);
+    // Update drawer label
+    const lbl = document.getElementById('drawer-device-label');
+    if (lbl) lbl.textContent = type === 'mobile' ? '🖥️ Switch to Desktop View' : '📱 Switch to Mobile View';
+  }
+
+  function setDevice(type) {
+    localStorage.setItem(STORAGE_KEY, type);
+    applyDevice(type);
+    hideDeviceOverlay();
+  }
+
+  function hideDeviceOverlay() {
+    const el = document.getElementById('device-overlay');
+    if (el) { el.style.opacity='0'; setTimeout(()=>el.style.display='none', 250); }
+  }
+
+  function showDeviceOverlay() {
+    const el = document.getElementById('device-overlay');
+    if (!el) return;
+    // Highlight current selection
+    const saved = localStorage.getItem(STORAGE_KEY);
+    document.getElementById('btn-desktop').classList.toggle('selected', saved==='desktop');
+    document.getElementById('btn-mobile').classList.toggle('selected', saved==='mobile');
+    el.style.display = 'flex';
+    el.style.opacity = '0';
+    requestAnimationFrame(()=>{ el.style.transition='opacity .2s'; el.style.opacity='1'; });
+  }
+
+  // Expose so drawer button can call it
+  window.setDevice = setDevice;
+  window.showDeviceOverlay = showDeviceOverlay;
+
+  // On load: auto-detect or show overlay
+  document.addEventListener('DOMContentLoaded', function() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    const overlay = document.getElementById('device-overlay');
+
+    if (saved) {
+      applyDevice(saved);
+      if (overlay) overlay.style.display = 'none';
+    } else {
+      // Auto-detect based on screen width / user agent
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+      const autoType = isMobile ? 'mobile' : 'desktop';
+      // Pre-highlight auto-detected button
+      if (overlay) {
+        document.getElementById(autoType === 'mobile' ? 'btn-mobile' : 'btn-desktop').classList.add('selected');
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '0';
+        overlay.style.transition = 'opacity .3s';
+        requestAnimationFrame(() => { overlay.style.opacity = '1'; });
+      }
+    }
+  });
+})();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

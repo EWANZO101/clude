@@ -1,0 +1,425 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Trello — Admin{% endblock %}
+{% block admin_content %}
+
+<div style="max-width:820px;">
+  <div style="margin-bottom:1.5rem;">
+    <h1 class="font-display" style="font-size:1.7rem;">Trello Integration</h1>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin-top:0.25rem;">
+      Connect your Trello account to pull commission cards straight into the admin area —
+      no API key or password to hand out.
+    </p>
+  </div>
+
+  {% if not configured %}
+  <div class="card" style="margin-bottom:1.5rem;border-color:var(--danger);">
+    <div style="font-weight:600;color:var(--danger);margin-bottom:0.35rem;">⚠ Not configured</div>
+    <p style="font-size:0.88rem;color:var(--text-secondary);margin:0;">
+      Add <code>TRELLO_API_KEY</code> and <code>TRELLO_API_SECRET</code> to the server's
+      <code>.env</code> file, then restart the app. Get a key/secret from
+      <code>https://trello.com/power-ups/admin</code> (create a Power-Up, then open
+      "API Key" under it), and register this callback URL there:
+      <code style="display:block;margin-top:0.4rem;color:var(--accent);word-break:break-all;">{{ request.host_url }}admin/trello/callback</code>
+    </p>
+  </div>
+  {% endif %}
+
+  <!-- Connection card -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1rem;">Connection</h2>
+
+    {% if conn.status == 'connected' %}
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        {% if conn.avatar_url %}
+        <img src="{{ conn.avatar_url }}" alt="" style="width:44px;height:44px;border-radius:50%;border:1px solid var(--border-accent);">
+        {% else %}
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--bg-elevated);
+                    display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🗂</div>
+        {% endif %}
+        <div>
+          <div style="font-weight:600;color:var(--success);">✓ Trello Connected</div>
+          <div style="font-size:0.85rem;color:var(--text-muted);">
+            {{ conn.full_name or conn.username }}{% if conn.username %} (@{{ conn.username }}){% endif %}
+          </div>
+        </div>
+      </div>
+      <form method="POST" action="/admin/trello/disconnect"
+            onsubmit="return confirm('Disconnect Trello? Board/list selections will be cleared.')">
+        <button type="submit" class="btn btn-danger btn-sm">Disconnect Trello</button>
+      </form>
+    </div>
+    {% else %}
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <div style="font-weight:600;color:var(--text-muted);">Not connected</div>
+        <div style="font-size:0.85rem;color:var(--text-muted);">
+          Sign in with Trello and approve access — you'll never be asked for an API key or password here.
+        </div>
+      </div>
+      {% if configured %}
+      <a href="/admin/trello/connect" class="btn btn-primary btn-sm">🔗 Connect Trello</a>
+      {% else %}
+      <span class="btn btn-primary btn-sm" style="opacity:.5;cursor:not-allowed;" title="Configure TRELLO_API_KEY / TRELLO_API_SECRET first">🔗 Connect Trello</span>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  {% if conn.status == 'connected' %}
+  <!-- Workspace / Board / List picker -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1rem;">Board &amp; List</h2>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem;">
+      Pick where new commission cards should be created, and which list this page reads cards from.
+    </p>
+    <form method="POST" action="/admin/trello/settings" id="trelloSettingsForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+        <div>
+          <label class="form-label">Workspace</label>
+          <select class="input" id="workspaceSelect">
+            <option value="">All boards</option>
+          </select>
+          <input type="hidden" name="workspace_id" id="workspace_id" value="{{ conn.workspace_id }}">
+          <input type="hidden" name="workspace_name" id="workspace_name" value="{{ conn.workspace_name }}">
+        </div>
+        <div>
+          <label class="form-label">Board</label>
+          <select class="input" id="boardSelect">
+            <option value="">— Loading —</option>
+          </select>
+          <input type="hidden" name="board_id" id="board_id" value="{{ conn.board_id }}">
+          <input type="hidden" name="board_name" id="board_name" value="{{ conn.board_name }}">
+        </div>
+        <div>
+          <label class="form-label">List</label>
+          <select class="input" id="listSelect">
+            <option value="">— Select a board —</option>
+          </select>
+          <input type="hidden" name="list_id" id="list_id" value="{{ conn.list_id }}">
+          <input type="hidden" name="list_name" id="list_name" value="{{ conn.list_name }}">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">💾 Save Settings</button>
+    </form>
+  </div>
+
+  <!-- Auto-import + live status sync -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:0.5rem;">🔄 Order Sync</h2>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem;">
+      Cards in <strong style="color:var(--text-secondary);">{{ conn.list_name or '— pick a list above —' }}</strong>
+      that aren't tracked yet get turned into orders automatically (checked every few minutes in the
+      background, no Discord ping — you'll want to fill in the customer's real name/email/price after).
+      You can also trigger it right now:
+    </p>
+    <form method="POST" action="/admin/trello/sync-orders" style="margin-bottom:1.5rem;">
+      <button type="submit" class="btn btn-ghost btn-sm" {{ 'disabled' if not conn.list_id }}>⬇ Sync Now</button>
+    </form>
+
+    <div style="border-top:1px solid var(--border);padding-top:1rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;margin-bottom:0.75rem;">
+        <div>
+          <div style="font-weight:600;font-size:0.9rem;">Live Status Sync</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);">
+            When enabled, moving a card between lists on Trello updates the matching order's status here — instantly, no polling.
+          </div>
+        </div>
+        {% if conn.webhook_id %}
+        <form method="POST" action="/admin/trello/webhook/disable">
+          <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--danger);white-space:nowrap;">Disable</button>
+        </form>
+        {% else %}
+        <form method="POST" action="/admin/trello/webhook/enable">
+          <button type="submit" class="btn btn-primary btn-sm" style="white-space:nowrap;" {{ 'disabled' if not conn.board_id }}>🔌 Enable Live Sync</button>
+        </form>
+        {% endif %}
+      </div>
+
+      {% if conn.webhook_id and board_lists %}
+      <div style="margin-top:1rem;">
+        <div class="font-display" style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:0.6rem;">
+          List → Order Status
+        </div>
+        <form method="POST" action="/admin/trello/status-map">
+          <div style="display:grid;gap:0.5rem;">
+            {% for list in board_lists %}
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+              <span style="flex:1;min-width:140px;font-size:0.88rem;">{{ list.name }}</span>
+              <input type="hidden" name="listname_{{ list.id }}" value="{{ list.name }}">
+              <select name="list_{{ list.id }}" class="input" style="max-width:220px;">
+                <option value="">— Don't change status —</option>
+                {% for s in order_statuses %}
+                <option value="{{ s }}" {{ 'selected' if status_map.get(list.id) == s }}>{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endfor %}
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm" style="margin-top:1rem;">💾 Save Mapping</button>
+        </form>
+      </div>
+      {% elif conn.webhook_id %}
+      <p style="font-size:0.82rem;color:var(--text-muted);font-style:italic;margin-top:0.5rem;">
+        No lists found on the connected board yet.
+      </p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Ping List → Discord DM -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:0.5rem;">
+      🔔 Ping List → Discord DM
+    </h2>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem;">
+      Pick a Trello list where each card is named like <code>username (discord)</code> — e.g. a
+      "let me know when you're open" list. Import it, and when you open commissions, everyone on
+      it gets DM'd on Discord automatically.
+    </p>
+    <form method="POST" action="/admin/trello/ping-list/settings" id="pingListForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+        <div>
+          <label class="form-label">Board</label>
+          <select class="input" id="pingBoardSelect">
+            <option value="">— Loading —</option>
+          </select>
+          <input type="hidden" name="ping_board_id" id="ping_board_id" value="{{ conn.ping_board_id }}">
+        </div>
+        <div>
+          <label class="form-label">List</label>
+          <select class="input" id="pingListSelect">
+            <option value="">— Select a board —</option>
+          </select>
+          <input type="hidden" name="ping_list_id" id="ping_list_id" value="{{ conn.ping_list_id }}">
+          <input type="hidden" name="ping_list_name" id="ping_list_name" value="{{ conn.ping_list_name }}">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">💾 Save Ping List</button>
+    </form>
+
+    {% if conn.ping_list_id %}
+    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-top:0.85rem;">
+      <form method="POST" action="/admin/trello/ping-list/import">
+        <button type="submit" class="btn btn-ghost btn-sm">⬇ Import from "{{ conn.ping_list_name }}"</button>
+      </form>
+      <form method="POST" action="/admin/trello/ping-list/notify"
+            onsubmit="return confirm('Send a Discord DM to every subscriber right now?')">
+        <button type="submit" class="btn btn-ghost btn-sm">📣 Send Notification Now</button>
+      </form>
+    </div>
+    {% endif %}
+
+    <div style="margin-top:1rem;">
+      {% if not subscribers %}
+      <p style="color:var(--text-muted);font-style:italic;margin:0;">
+        No subscribers yet — pick a list above and hit "Import".
+      </p>
+      {% else %}
+      <div style="display:grid;gap:0.5rem;">
+        {% for sub in subscribers %}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;
+                    padding:0.6rem 0.85rem;background:var(--bg-elevated);border-radius:8px;flex-wrap:wrap;">
+          <div>
+            <div class="font-mono" style="font-size:0.88rem;color:var(--accent);">@{{ sub.discord_username }}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">
+              from "{{ sub.trello_card_name }}"{% if sub.last_notified_at %} · last pinged {{ sub.last_notified_at.strftime('%b %d, %H:%M') }}{% endif %}
+            </div>
+          </div>
+          <form method="POST" action="/admin/trello/ping-list/{{ sub.id }}/remove"
+                onsubmit="return confirm('Remove @{{ sub.discord_username }} from the ping list?')">
+            <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--danger);">Remove</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Cards in selected list -->
+  <div class="card">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1rem;">
+      Cards {% if conn.list_name %}in "{{ conn.list_name }}"{% endif %}
+    </h2>
+    {% if not conn.list_id %}
+    <p style="color:var(--text-muted);font-style:italic;margin:0;">Select a list above to see its cards here.</p>
+    {% elif not cards %}
+    <p style="color:var(--text-muted);font-style:italic;margin:0;">No cards found in this list.</p>
+    {% else %}
+    <div style="display:grid;gap:0.5rem;">
+      {% for c in cards %}
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;
+                  padding:0.65rem 0.85rem;background:var(--bg-elevated);border-radius:8px;flex-wrap:wrap;">
+        <div style="min-width:0;">
+          <div style="font-size:0.92rem;font-weight:600;">{{ c.name }}</div>
+          {% if c.due %}<div style="font-size:0.78rem;color:var(--text-muted);">Due: {{ c.due }}</div>{% endif %}
+        </div>
+        <div style="display:flex;gap:0.4rem;flex-shrink:0;">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="showCard('{{ c.id }}')">View</button>
+          <a href="{{ c.shortUrl }}" target="_blank" class="btn btn-ghost btn-sm">Open in Trello ↗</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Card detail modal -->
+<div id="cardModalOverlay" onclick="closeCardModal()"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;backdrop-filter:blur(3px);"></div>
+<div id="cardModal" style="display:none;position:fixed;top:8vh;left:50%;transform:translateX(-50%);
+     width:min(520px,92vw);max-height:80vh;overflow-y:auto;background:var(--bg-surface);
+     border:1px solid var(--border-accent);border-radius:12px;z-index:600;padding:1.25rem;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+    <div class="font-display" style="font-size:0.82rem;color:var(--accent);letter-spacing:.05em;">TRELLO CARD</div>
+    <button onclick="closeCardModal()" style="background:none;border:none;color:var(--text-muted);
+            font-size:1.3rem;cursor:pointer;padding:0;line-height:1;">✕</button>
+  </div>
+  <div id="cardModalBody" style="font-size:0.9rem;color:var(--text-secondary);">Loading…</div>
+</div>
+
+<script>
+async function jget(url) {
+  const r = await fetch(url);
+  return r.ok ? r.json() : null;
+}
+
+async function loadWorkspaces() {
+  const sel = document.getElementById('workspaceSelect');
+  const workspaces = await jget('/admin/trello/workspaces') || [];
+  const savedId = document.getElementById('workspace_id').value;
+  for (const w of workspaces) {
+    const opt = document.createElement('option');
+    opt.value = w.id; opt.textContent = w.name;
+    if (w.id === savedId) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  sel.addEventListener('change', () => {
+    const opt = sel.options[sel.selectedIndex];
+    document.getElementById('workspace_id').value = sel.value;
+    document.getElementById('workspace_name').value = sel.value ? opt.textContent : '';
+    loadBoards(sel.value);
+  });
+  loadBoards(savedId);
+}
+
+async function loadBoards(workspaceId) {
+  const sel = document.getElementById('boardSelect');
+  sel.innerHTML = '<option value="">— Loading —</option>';
+  const boards = await jget('/admin/trello/boards' + (workspaceId ? ('?workspace_id=' + encodeURIComponent(workspaceId)) : '')) || [];
+  sel.innerHTML = '<option value="">— Select a board —</option>';
+  const savedId = document.getElementById('board_id').value;
+  for (const b of boards) {
+    const opt = document.createElement('option');
+    opt.value = b.id; opt.textContent = b.name;
+    if (b.id === savedId) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  sel.onchange = () => {
+    const opt = sel.options[sel.selectedIndex];
+    document.getElementById('board_id').value = sel.value;
+    document.getElementById('board_name').value = sel.value ? opt.textContent : '';
+    loadLists(sel.value);
+  };
+  if (savedId) loadLists(savedId); else {
+    document.getElementById('listSelect').innerHTML = '<option value="">— Select a board —</option>';
+  }
+}
+
+async function loadLists(boardId) {
+  const sel = document.getElementById('listSelect');
+  if (!boardId) { sel.innerHTML = '<option value="">— Select a board —</option>'; return; }
+  sel.innerHTML = '<option value="">— Loading —</option>';
+  const lists = await jget('/admin/trello/boards/' + boardId + '/lists') || [];
+  sel.innerHTML = '<option value="">— Select a list —</option>';
+  const savedId = document.getElementById('list_id').value;
+  for (const l of lists) {
+    const opt = document.createElement('option');
+    opt.value = l.id; opt.textContent = l.name;
+    if (l.id === savedId) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  sel.onchange = () => {
+    const opt = sel.options[sel.selectedIndex];
+    document.getElementById('list_id').value = sel.value;
+    document.getElementById('list_name').value = sel.value ? opt.textContent : '';
+  };
+}
+
+async function showCard(cardId) {
+  const overlay = document.getElementById('cardModalOverlay');
+  const modal = document.getElementById('cardModal');
+  const body = document.getElementById('cardModalBody');
+  body.innerHTML = 'Loading…';
+  overlay.style.display = 'block';
+  modal.style.display = 'block';
+  const card = await jget('/admin/trello/cards/' + cardId);
+  if (!card || card.error) { body.innerHTML = 'Could not load this card.'; return; }
+  let html = `<div style="font-size:1.05rem;font-weight:700;margin-bottom:0.5rem;">${escapeHtml(card.name || '')}</div>`;
+  if (card.desc) html += `<div style="white-space:pre-wrap;background:var(--bg-elevated);padding:0.65rem;border-radius:8px;margin-bottom:0.65rem;">${escapeHtml(card.desc)}</div>`;
+  if (card.due) html += `<div style="margin-bottom:0.35rem;"><strong>Due:</strong> ${escapeHtml(card.due)}</div>`;
+  if (card.labels && card.labels.length) html += `<div style="margin-bottom:0.35rem;"><strong>Labels:</strong> ${card.labels.map(l => escapeHtml(l.name || l.color || '')).join(', ')}</div>`;
+  if (card.members && card.members.length) html += `<div style="margin-bottom:0.35rem;"><strong>Members:</strong> ${card.members.map(m => escapeHtml(m.fullName || m.username)).join(', ')}</div>`;
+  if (card.checklists && card.checklists.length) html += `<div style="margin-bottom:0.35rem;"><strong>Checklists:</strong> ${card.checklists.map(c => escapeHtml(c.name)).join(', ')}</div>`;
+  if (card.shortUrl) html += `<a href="${card.shortUrl}" target="_blank" class="btn btn-ghost btn-sm" style="margin-top:0.5rem;">View in Trello ↗</a>`;
+  body.innerHTML = html;
+}
+function closeCardModal() {
+  document.getElementById('cardModalOverlay').style.display = 'none';
+  document.getElementById('cardModal').style.display = 'none';
+}
+function escapeHtml(s) {
+  const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+}
+
+async function loadPingBoards() {
+  const sel = document.getElementById('pingBoardSelect');
+  const boards = await jget('/admin/trello/boards') || [];
+  sel.innerHTML = '<option value="">— Select a board —</option>';
+  const savedBoardId = document.getElementById('ping_board_id').value;
+  for (const b of boards) {
+    const opt = document.createElement('option');
+    opt.value = b.id; opt.textContent = b.name;
+    if (b.id === savedBoardId) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  sel.onchange = () => {
+    document.getElementById('ping_board_id').value = sel.value;
+    // Board changed — the previously saved list no longer applies.
+    document.getElementById('ping_list_id').value = '';
+    document.getElementById('ping_list_name').value = '';
+    loadPingLists(sel.value);
+  };
+  if (savedBoardId) loadPingLists(savedBoardId);
+}
+
+async function loadPingLists(boardId) {
+  const sel = document.getElementById('pingListSelect');
+  if (!boardId) { sel.innerHTML = '<option value="">— Select a board —</option>'; return; }
+  sel.innerHTML = '<option value="">— Loading —</option>';
+  const lists = await jget('/admin/trello/boards/' + boardId + '/lists') || [];
+  sel.innerHTML = '<option value="">— Select a list —</option>';
+  const savedId = document.getElementById('ping_list_id').value;
+  for (const l of lists) {
+    const opt = document.createElement('option');
+    opt.value = l.id; opt.textContent = l.name;
+    if (l.id === savedId) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  sel.onchange = () => {
+    const opt = sel.options[sel.selectedIndex];
+    document.getElementById('ping_list_id').value = sel.value;
+    document.getElementById('ping_list_name').value = sel.value ? opt.textContent : '';
+  };
+}
+
+{% if conn.status == 'connected' %}
+loadWorkspaces();
+loadPingBoards();
+{% endif %}
+</script>
+
+{% endblock %}

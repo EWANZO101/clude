@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Staged rollouts — {{ company.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('companies.detail', company_id=company.public_id) }}" class="crumb">← {{ company.name }}</a>
+    <h1>Staged rollouts</h1>
+  </div>
+  {% if role in ["owner", "administrator"] %}
+    <div class="page-actions">
+      <a href="{{ url_for('rollouts.new_rollout', company_id=company.public_id) }}" class="btn btn-secondary btn-sm">{% import "_icons.html" as icons %}{{ icons.icon('plus',14) }}New rollout</a>
+    </div>
+  {% endif %}
+</div>
+
+<div class="panel" style="padding:8px 22px 20px;">
+  {% if rollouts %}
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Version</th><th>Status</th><th>Batches</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+        {% for r in rollouts %}
+          <tr>
+            <td class="mono">v{{ r.package.version }}</td>
+            <td>
+              {% if r.status == 'completed' %}
+                <span class="pill pill-green">Completed</span>
+              {% elif r.status == 'halted' %}
+                <span class="pill pill-red">Halted</span>
+              {% else %}
+                <span class="pill pill-amber">In progress</span>
+              {% endif %}
+            </td>
+            <td class="muted mono">{{ r.highest_pushed_batch() }} / {{ r.total_batches() }}</td>
+            <td>{{ r.created_at | friendly_dt }}</td>
+            <td><a href="{{ url_for('rollouts.detail', company_id=company.public_id, rollout_id=r.public_id) }}" class="btn btn-secondary btn-sm">Open →</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="empty">No staged rollouts yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Roles - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+    <div>
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Roles & Permissions</h1>
+        <p class="text-gray-500 mt-1">Manage access control for admin users</p>
+    </div>
+    <a href="{{ url_for('admin.create_role') }}" class="px-5 py-2.5 bg-gradient-to-r from-{{ primary_color }}-500 to-{{ primary_color }}-600 hover:from-{{ primary_color }}-400 hover:to-{{ primary_color }}-500 text-white font-medium rounded-xl shadow-lg shadow-{{ primary_color }}-500/25 transition-all duration-200 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Create Role
+    </a>
+</div>
+
+<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for role in roles %}
+    <div class="bg-dark-800/50 backdrop-blur border border-dark-700/50 rounded-2xl overflow-hidden hover:border-dark-600 transition-colors group">
+        <div class="p-6">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-{{ role.color }}-500/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-{{ role.color }}-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg">{{ role.name }}</h3>
+                        <p class="text-sm text-gray-500">{{ role.users|length }} users</p>
+                    </div>
+                </div>
+                {% if role.is_system %}
+                <span class="px-2 py-1 bg-gray-500/20 text-gray-400 text-xs rounded-lg">System</span>
+                {% endif %}
+            </div>
+            
+            {% if role.description %}
+            <p class="text-sm text-gray-400 mb-4">{{ role.description }}</p>
+            {% endif %}
+            
+            <div class="flex flex-wrap gap-1.5 mb-4">
+                {% for perm in role.permissions[:5] %}
+                <span class="px-2 py-1 bg-dark-700 text-gray-400 text-xs rounded-lg">{{ perm.name }}</span>
+                {% endfor %}
+                {% if role.permissions|length > 5 %}
+                <span class="px-2 py-1 bg-dark-700 text-gray-400 text-xs rounded-lg">+{{ role.permissions|length - 5 }} more</span>
+                {% endif %}
+            </div>
+            
+            <div class="flex gap-2 pt-4 border-t border-dark-700/50">
+                <a href="{{ url_for('admin.edit_role', id=role.id) }}" class="flex-1 px-3 py-2 bg-dark-700 hover:bg-dark-600 text-center rounded-xl text-sm font-medium transition-colors">Edit</a>
+                {% if not role.is_system %}
+                <form method="POST" action="{{ url_for('admin.delete_role', id=role.id) }}" onsubmit="return confirm('Delete this role?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl text-sm font-medium transition-colors">Delete</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

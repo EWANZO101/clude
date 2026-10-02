@@ -1,0 +1,73 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}{{ "Add" if is_new else "Edit" }} Equipment — {{ app_name }}{% endblock %}
+{% block page_title %}{{ "Add equipment" if is_new else "Edit equipment" }}{% endblock %}
+{% block content %}
+<form method="POST" novalidate class="max-w-3xl">
+  {{ form.hidden_tag() }}
+  <div class="card p-6 mb-6">
+    <h2 class="font-semibold text-text-primary mb-4">Identification</h2>
+    <div class="grid sm:grid-cols-2 gap-x-4">
+      {{ field(form.equipment_type_id) }}
+      {{ field(form.quantity) }}
+      {{ field(form.manufacturer) }}
+      {{ field(form.model) }}
+      {{ field(form.serial_number) }}
+      {{ field(form.asset_number) }}
+    </div>
+  </div>
+
+  <div class="card p-6 mb-6">
+    <h2 class="font-semibold text-text-primary mb-4">Server specifications</h2>
+    <p class="text-xs text-text-muted mb-4">Fill in what applies — leave the rest blank for non-server equipment.</p>
+    <div class="grid sm:grid-cols-2 gap-x-4">
+      {{ field(form.cpu_summary) }}
+      {{ field(form.ram_summary) }}
+      {{ field(form.storage_summary) }}
+      {{ field(form.gpu_summary) }}
+      {{ field(form.raid_summary) }}
+      {{ field(form.psu_summary) }}
+      {{ field(form.chassis_summary) }}
+      {{ field(form.network_summary) }}
+    </div>
+  </div>
+
+  <div class="card p-6 mb-6">
+    <h2 class="font-semibold text-text-primary mb-4">Networking specifications</h2>
+    <p class="text-xs text-text-muted mb-4">For switches, routers, firewalls and similar equipment.</p>
+    <div class="grid sm:grid-cols-2 gap-x-4">
+      {{ field(form.port_count) }}
+      {{ field(form.port_types) }}
+      {{ field(form.port_speeds) }}
+      {{ field(form.mac_address) }}
+      {{ field(form.firmware_version) }}
+    </div>
+  </div>
+
+  <div class="card p-6 mb-6">
+    <h2 class="font-semibold text-text-primary mb-4">Physical details</h2>
+    <div class="grid sm:grid-cols-2 gap-x-4">
+      <div class="sm:col-span-2">{{ checkbox(form.rack_mount) }}</div>
+      {{ field(form.u_height) }}
+      {{ field(form.dimensions) }}
+      {{ field(form.weight_kg) }}
+      {{ field(form.power_requirements) }}
+    </div>
+  </div>
+
+  <div class="card p-6 mb-6">
+    <h2 class="font-semibold text-text-primary mb-4">Value &amp; insurance</h2>
+    <div class="grid sm:grid-cols-3 gap-x-4">
+      {{ field(form.declared_value) }}
+      {{ field(form.replacement_value) }}
+      {{ field(form.insurance_value) }}
+    </div>
+    <div class="mt-4">{{ field(form.notes, rows=3) }}</div>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <button type="submit" class="btn-primary">{{ "Add equipment" if is_new else "Save changes" }}</button>
+    <a href="{{ url_for('customer.request_detail', request_id=req.id) }}" class="btn-ghost">Cancel</a>
+  </div>
+</form>
+{% endblock %}

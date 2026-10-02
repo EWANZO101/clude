@@ -1,0 +1,17 @@
+{% extends "layouts/seller_dashboard.html" %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}Settings — Seller Portal{% endblock %}
+{% block page_title %}Business settings{% endblock %}
+{% block content %}
+<form method="POST" class="card p-6 max-w-2xl">
+  {{ form.hidden_tag() }}
+  {{ field(form.business_name) }}
+  {{ field(form.description, rows=4) }}
+  <div class="grid sm:grid-cols-2 gap-x-4">
+    {{ field(form.support_email) }}
+    {{ field(form.support_phone) }}
+  </div>
+  {{ field(form.website_url, placeholder="https://") }}
+  <button type="submit" class="btn-primary">Save settings</button>
+</form>
+{% endblock %}

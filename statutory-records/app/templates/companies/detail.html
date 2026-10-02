@@ -1,0 +1,225 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}{{ company.company_name }}{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  {% call ui.page_header(company.company_name, company.company_number or 'No company number on record') %}
+    {% if company.company_status == 'active' %}{{ ui.badge('Active', 'success') }}
+    {% elif company.company_status == 'dormant' %}{{ ui.badge('Dormant', 'neutral') }}
+    {% else %}{{ ui.badge(company.company_status | title, 'danger') }}{% endif %}
+    {{ ui.button("Edit", href=url_for('main.edit_company', company_id=company.id), variant="secondary", icon_name="edit") }}
+  {% endcall %}
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    {{ ui.stat_tile("Company type", company.company_type | replace('_', ' ') | title, icon_name="building") }}
+    {{ ui.stat_tile("Incorporated", company.incorporation_date.strftime('%d %b %Y') if company.incorporation_date else '—', icon_name="alarm-clock") }}
+    {{ ui.stat_tile("Active directors", company.active_directors | length, icon_name="users") }}
+  </div>
+
+  {% if company.registered_office_address or company.sic_codes or company.notes %}
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-2 text-sm">
+      {% if company.registered_office_address %}<p><span class="text-slate-500">Registered office:</span> <span class="text-slate-200">{{ company.registered_office_address }}</span></p>{% endif %}
+      {% if company.sic_codes %}<p><span class="text-slate-500">SIC codes:</span> <span class="text-slate-200">{{ company.sic_codes }}</span></p>{% endif %}
+      {% if company.notes %}<p><span class="text-slate-500">Notes:</span> <span class="text-slate-200">{{ company.notes }}</span></p>{% endif %}
+    </div>
+  {% endif %}
+
+  <!-- Statutory deadlines -->
+  <div class="space-y-2">
+    <h2 class="text-lg font-semibold text-white flex items-center gap-2">{{ ui.icon('alarm-clock', 'w-4 h-4 text-slate-500') }} Statutory deadlines</h2>
+    <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+      {% for d in company.deadlines %}
+        <div class="p-3 px-4 flex items-center justify-between text-sm gap-3 {{ 'opacity-50' if d.completed_at }}">
+          <div class="min-w-0">
+            <p class="text-slate-100">{{ d.display_label }}</p>
+            <p class="text-xs text-slate-500 mt-0.5">Due {{ d.due_date.strftime('%d %b %Y') }} · {{ 'Repeats yearly' if d.frequency == 'annual' else 'One-off' }}</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            {% if not d.completed_at %}
+              {% if d.urgency == 'overdue' %}{{ ui.badge('Overdue', 'danger') }}
+              {% elif d.urgency == 'soon' %}{{ ui.badge('Due soon', 'warning') }}
+              {% else %}{{ ui.badge('On track', 'success') }}{% endif %}
+              <form method="POST" action="{{ url_for('main.complete_deadline', deadline_id=d.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="text-emerald-400 hover:text-emerald-300 text-xs">Mark filed</button>
+              </form>
+            {% endif %}
+            <form method="POST" action="{{ url_for('main.delete_deadline', deadline_id=d.id) }}" onsubmit="return confirm('Remove this deadline?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="text-red-400 hover:text-red-300">{{ ui.icon('x', 'w-3.5 h-3.5') }}</button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        {% call ui.empty_state("No deadlines tracked yet", icon_name="alarm-clock") %}{% endcall %}
+      {% endfor %}
+      <details class="group">
+        <summary class="cursor-pointer select-none px-4 py-3 text-sm text-accent hover:text-accent-hover list-none flex items-center gap-1.5">{{ ui.icon('plus', 'w-3.5 h-3.5') }} Add a deadline</summary>
+        <form method="POST" action="{{ url_for('main.new_deadline', company_id=company.id) }}" class="flex flex-wrap gap-2 p-4 pt-0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <select name="kind" class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+            {% for val, lbl in deadline_kinds %}<option value="{{ val }}">{{ lbl }}</option>{% endfor %}
+          </select>
+          <input name="label" placeholder="Label (optional)" class="flex-1 min-w-[8rem] bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+          <input type="date" name="due_date" required class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+          <select name="frequency" class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+            <option value="annual">Repeats yearly</option>
+            <option value="one_off">One-off</option>
+          </select>
+          {{ ui.button("Add", type="submit", variant="primary", size="sm") }}
+        </form>
+      </details>
+    </div>
+  </div>
+
+  <!-- Directors / PSC -->
+  <div class="space-y-2">
+    <h2 class="text-lg font-semibold text-white flex items-center gap-2">{{ ui.icon('users', 'w-4 h-4 text-slate-500') }} Directors &amp; PSC</h2>
+    <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+      {% for d in company.directors %}
+        <div class="p-3 px-4 flex items-center justify-between text-sm gap-3 {{ 'opacity-50' if d.resignation_date }}">
+          <div class="min-w-0">
+            <p class="text-slate-100">{{ d.name }}</p>
+            <p class="text-xs text-slate-500 mt-0.5">
+              {{ {'director': 'Director', 'psc': 'PSC', 'both': 'Director & PSC'}.get(d.role, d.role) }}
+              {% if d.appointment_date %} · appointed {{ d.appointment_date.strftime('%d %b %Y') }}{% endif %}
+              {% if d.resignation_date %} · resigned {{ d.resignation_date.strftime('%d %b %Y') }}{% endif %}
+            </p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            {% if not d.resignation_date %}
+              <form method="POST" action="{{ url_for('main.resign_director', director_id=d.id) }}" onsubmit="return confirm('Mark ' + {{ d.name | tojson }} + ' as resigned today?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="text-xs text-slate-400 hover:text-slate-200">Mark resigned</button>
+              </form>
+            {% endif %}
+            <form method="POST" action="{{ url_for('main.delete_director', director_id=d.id) }}" onsubmit="return confirm('Remove this record?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="text-red-400 hover:text-red-300">{{ ui.icon('x', 'w-3.5 h-3.5') }}</button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        {% call ui.empty_state("No directors or PSC recorded yet", icon_name="users") %}{% endcall %}
+      {% endfor %}
+      <details>
+        <summary class="cursor-pointer select-none px-4 py-3 text-sm text-accent hover:text-accent-hover list-none flex items-center gap-1.5">{{ ui.icon('plus', 'w-3.5 h-3.5') }} Add a director / PSC</summary>
+        <form method="POST" action="{{ url_for('main.new_director', company_id=company.id) }}" class="flex flex-wrap gap-2 p-4 pt-0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input name="name" placeholder="Full name" required class="flex-1 min-w-[8rem] bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+          <select name="role" class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+            <option value="director">Director</option>
+            <option value="psc">PSC</option>
+            <option value="both">Director & PSC</option>
+          </select>
+          <input type="date" name="appointment_date" class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+          <input name="nationality" placeholder="Nationality" class="w-32 bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+          {{ ui.button("Add", type="submit", variant="primary", size="sm") }}
+        </form>
+      </details>
+    </div>
+  </div>
+
+  <!-- Documents -->
+  <div class="space-y-2">
+    <h2 class="text-lg font-semibold text-white flex items-center gap-2">{{ ui.icon('file-text', 'w-4 h-4 text-slate-500') }} Documents</h2>
+    <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+      {% for doc in company.documents %}
+        <div class="p-3 px-4 flex items-center justify-between text-sm gap-3">
+          <div class="min-w-0">
+            <p class="text-slate-100 truncate">{{ doc.original_filename }}</p>
+            <p class="text-xs text-slate-500 mt-0.5">{{ doc.uploaded_at.strftime('%d %b %Y') }}{% if doc.description %} · {{ doc.description }}{% endif %}</p>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <a href="{{ url_for('main.download_document', document_id=doc.id) }}" class="text-slate-400 hover:text-slate-200">{{ ui.icon('download', 'w-4 h-4') }}</a>
+            <form method="POST" action="{{ url_for('main.delete_document', document_id=doc.id) }}" onsubmit="return confirm('Delete this document?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="text-red-400 hover:text-red-300">{{ ui.icon('x', 'w-3.5 h-3.5') }}</button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        {% call ui.empty_state("No documents uploaded yet", "Certificates, resolutions, registers — anything you want kept with this company.", "file-text") %}{% endcall %}
+      {% endfor %}
+      <form method="POST" action="{{ url_for('main.upload_document', company_id=company.id) }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2 p-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="file" name="file" required class="text-xs text-slate-400 flex-1 min-w-[10rem]">
+        <input name="description" placeholder="Description (optional)" class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+        {{ ui.button("Upload", type="submit", variant="primary", size="sm", icon_name="upload") }}
+      </form>
+    </div>
+  </div>
+
+  <!-- Bank account -->
+  {% set connection = company.bank_connections | first %}
+  <div class="space-y-2">
+    <h2 class="text-lg font-semibold text-white flex items-center gap-2">{{ ui.icon('landmark', 'w-4 h-4 text-slate-500') }} Bank account</h2>
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+      {% if not connection %}
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <p class="text-sm text-slate-400">Connect this company's business bank account to bring spending and income into one place — every UK bank, business or personal.</p>
+          {{ ui.button("Connect your bank", href=url_for('bank.choose_bank', company_id=company.id), variant="primary", icon_name="landmark") }}
+        </div>
+        <p class="text-xs text-slate-500 mt-3">
+          Banking with Monzo or Starling? Skip the bank picker —
+          <a href="{{ url_for('bank.connect', company_id=company.id, provider_key='monzo') }}" class="text-accent hover:text-accent-hover">connect Monzo</a>
+          or
+          <a href="{{ url_for('bank.connect', company_id=company.id, provider_key='starling') }}" class="text-accent hover:text-accent-hover">Starling</a>
+          directly in one tap.
+        </p>
+      {% else %}
+        {% set acc = connection.accounts | first %}
+        <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            {{ ui.badge(connection.institution_name or connection.provider | title, 'info') }}
+            {% if connection.status == 'connected' %}{{ ui.badge('Connected', 'success') }}
+            {% elif connection.status == 'error' %}{{ ui.badge('Needs attention', 'danger') }}
+            {% else %}{{ ui.badge(connection.status | title, 'warning') }}{% endif %}
+            {% if connection.last_synced_at %}<span class="text-xs text-slate-500">Last synced {{ connection.last_synced_at.strftime('%d %b %Y %H:%M') }}</span>{% endif %}
+          </div>
+          <div class="flex items-center gap-2">
+            <form method="POST" action="{{ url_for('bank.sync', company_id=company.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {{ ui.button("Sync now", type="submit", variant="secondary", size="sm", icon_name="refresh") }}
+            </form>
+            <form method="POST" action="{{ url_for('bank.disconnect', company_id=company.id) }}" onsubmit="return confirm('Disconnect this bank account?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {{ ui.button("Disconnect", type="submit", variant="danger", size="sm", icon_name="unlink") }}
+            </form>
+          </div>
+        </div>
+        {% if connection.last_error %}<p class="text-xs text-amber-400 mb-3">{{ connection.last_error }}</p>{% endif %}
+        {% if acc %}
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            {{ ui.stat_tile("Balance", acc.balance_minor | money(acc.currency), hint=acc.name) }}
+            {{ ui.stat_tile("Sort code / account", (acc.sort_code or '—') ~ ' / ' ~ (acc.account_number or '—')) }}
+            {{ ui.stat_tile("Transactions synced", acc.transactions | length) }}
+          </div>
+          <div class="divide-y divide-surface-border rounded-xl border border-surface-border overflow-hidden">
+            {% for t in acc.transactions[:10] %}
+              <div class="p-3 flex items-center justify-between text-sm">
+                <div class="min-w-0">
+                  <p class="text-slate-200 truncate">{{ t.description }}</p>
+                  <p class="text-xs text-slate-500">{{ t.date.strftime('%d %b %Y') }}</p>
+                </div>
+                <span class="{{ 'text-emerald-400' if t.amount_minor >= 0 else 'text-slate-200' }} font-medium tabular-nums">{{ t.amount_minor | money(t.currency) }}</span>
+              </div>
+            {% else %}
+              <p class="p-4 text-sm text-slate-500">No transactions synced yet — hit "Sync now".</p>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-sm text-amber-400">Connected, but no account approved yet — check your Monzo app for a notification, then "Sync now".</p>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="pt-4 border-t border-surface-border">
+    <form method="POST" action="{{ url_for('main.delete_company', company_id=company.id) }}" onsubmit="return confirm('Remove this company and all its records? This cannot be undone.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1.5">{{ ui.icon('trash', 'w-3.5 h-3.5') }} Remove this company</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

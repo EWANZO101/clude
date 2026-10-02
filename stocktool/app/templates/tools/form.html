@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Tool{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{{ url_for('tools.index') }}" style="color:#6b7280;font-size:13px;text-decoration:none;
+     display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;">
+    <i class="fas fa-arrow-left"></i> Tools
+  </a>
+  <h1 class="page-title">
+    <i class="fas fa-{% if action=='Add' %}plus{% else %}pen{% endif %}" style="color:#34d399;"></i>
+    {{ action }} Tool
+  </h1>
+</div>
+
+<div class="card" style="padding:20px;max-width:680px;">
+  <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="grid-column:span 2;">
+        <label class="form-label">Tool Name <span style="color:#ef4444;">*</span></label>
+        <input type="text" name="name" class="form-input" required
+               value="{{ tool.name if tool else '' }}" placeholder="e.g. Makita Drill" />
+      </div>
+      <div>
+        <label class="form-label">Asset / Tool Number</label>
+        <input type="text" name="tool_number" class="form-input"
+               value="{{ tool.tool_number if tool and tool.tool_number else '' }}"
+               placeholder="e.g. T-001" />
+      </div>
+      <div>
+        <label class="form-label">Category</label>
+        <input type="text" name="category" class="form-input"
+               value="{{ tool.category if tool and tool.category else '' }}"
+               placeholder="e.g. Power Tools" />
+      </div>
+      <div>
+        <label class="form-label">Brand</label>
+        <input type="text" name="brand" class="form-input"
+               value="{{ tool.brand if tool and tool.brand else '' }}" placeholder="e.g. Makita" />
+      </div>
+      <div>
+        <label class="form-label">Model</label>
+        <input type="text" name="model" class="form-input"
+               value="{{ tool.model if tool and tool.model else '' }}" placeholder="e.g. DHP484Z" />
+      </div>
+      <div>
+        <label class="form-label">Serial Number</label>
+        <input type="text" name="serial_number" class="form-input"
+               value="{{ tool.serial_number if tool and tool.serial_number else '' }}"
+               placeholder="Manufacturer serial" inputmode="text" />
+      </div>
+      <div>
+        <label class="form-label">Location</label>
+        <input type="text" name="location" class="form-input"
+               value="{{ tool.location if tool and tool.location else '' }}"
+               placeholder="e.g. Workshop Cage A" />
+      </div>
+      <div>
+        <label class="form-label">Purchase Date</label>
+        <input type="date" name="purchase_date" class="form-input"
+               value="{{ tool.purchase_date.isoformat() if tool and tool.purchase_date else '' }}" />
+      </div>
+      <div>
+        <label class="form-label">Purchase Price (£)</label>
+        <input type="number" name="purchase_price" class="form-input"
+               step="0.01" min="0" inputmode="decimal"
+               value="{{ tool.purchase_price if tool and tool.purchase_price else '' }}"
+               placeholder="0.00" />
+      </div>
+      <div style="grid-column:span 2;">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-textarea" rows="2"
+                  placeholder="Optional details">{{ tool.description if tool and tool.description else '' }}</textarea>
+      </div>
+      {% if tool %}
+      <div style="grid-column:span 2;">
+        <label class="form-label">Condition Notes</label>
+        <textarea name="condition_notes" class="form-textarea" rows="2"
+                  placeholder="Current condition">{{ tool.condition_notes if tool and tool.condition_notes else '' }}</textarea>
+      </div>
+      {% endif %}
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> {{ action }} Tool
+      </button>
+      <a href="{{ url_for('tools.index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

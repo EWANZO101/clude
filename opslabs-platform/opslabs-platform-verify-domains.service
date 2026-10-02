@@ -1,0 +1,10 @@
+[Unit]
+Description=OpsLabs Platform - poll pending custom domain verifications
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/opslabs-platform
+Environment=FLASK_APP=wsgi.py
+ExecStart=/root/opslabs-platform/venv/bin/flask verify-domains

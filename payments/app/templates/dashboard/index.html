@@ -1,0 +1,80 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+{% set widget_meta = {
+  'current_balance': ('wallet', '/finance/accounts'),
+  'available_money': ('sparkles', '/finance/purchases'),
+  'monthly_income': ('repeat', '/finance/history'),
+  'monthly_spending': ('receipt', '/finance/history'),
+  'upcoming_bills': ('alarm-clock', '/finance/bills'),
+  'budgets': ('pie-chart', '/finance/budgets'),
+  'recent_transactions': ('list', '/finance/transactions'),
+  'checklist_progress': ('check-square', '/checklist/'),
+  'notifications': ('bell', '/notifications/'),
+  'spending_chart': ('activity', '/finance/history'),
+} %}
+{% set ns = namespace(hero=none) %}
+{% set rest = [] %}
+{% for w in widgets %}
+  {% if w.widget_key == 'available_money' and widget_data.get(w.id) and ns.hero is none %}
+    {% set ns.hero = w %}
+  {% else %}
+    {% set _ = rest.append(w) %}
+  {% endif %}
+{% endfor %}
+{% set hero = ns.hero %}
+
+<div class="space-y-6">
+  <div class="flex items-start justify-between flex-wrap gap-3">
+    <div>
+      <h1 class="text-xl font-semibold text-white tracking-tight">Welcome back, {{ current_user.name.split(' ')[0] if current_user.name else 'there' }}</h1>
+      <p class="text-sm text-slate-500 mt-0.5" id="dashboard-date"></p>
+    </div>
+    <div class="flex items-center gap-2">
+      {{ ui.button("Import statement", href=url_for('finance.import_statement'), variant="secondary", icon_name="plus", size="sm") }}
+      {{ ui.button("Log fill-up", href="/fuel/vehicles", variant="secondary", icon_name="fuel", size="sm") }}
+    </div>
+  </div>
+
+  {% if hero %}
+    {% set hd = widget_data.get(hero.id) %}
+    <div class="bg-gradient-to-br from-accent/15 via-surface-card to-surface-card border border-accent/25 rounded-2xl p-6 shadow-glow">
+      <p class="text-sm text-emerald-200/80 flex items-center gap-1.5">{{ ui.icon('sparkles', 'w-4 h-4') }} Safe to spend</p>
+      <p class="text-3xl sm:text-4xl font-bold text-white tabular-nums mt-1">{{ hd.value }}</p>
+      <p class="text-sm text-slate-400 mt-1.5">{{ hd.subtitle }}</p>
+    </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for w in rest %}
+      {% set data = widget_data.get(w.id) %}
+      {% set meta = widget_meta.get(w.widget_key, ('sparkles', none)) %}
+      {{ ui.stat_tile(
+        w.widget_key.replace('_', ' ') | title,
+        data.value if data else '—',
+        data.subtitle if data else 'Data wires up once its module is installed.',
+        icon_name=meta[0],
+        href=meta[1]
+      ) }}
+    {% else %}
+      {% if not hero %}
+        <div class="col-span-full">
+          {% call ui.empty_state("No widgets configured yet", "Widgets appear automatically once you finish setup.", "layout-dashboard") %}{% endcall %}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var el = document.getElementById('dashboard-date');
+    if (el) {
+      el.textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% from "_macros.html" import loc_picker with context %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+<p class="eyebrow mb-1">Add to the network</p>
+<h1 class="font-display font-800 text-3xl text-chalk mb-5">Register a bike</h1>
+<form method="post" enctype="multipart/form-data" class="space-y-4 card p-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  {% if mot_enabled %}
+  <div class="card-2 p-4">
+    <label class="label">Registration — look it up to auto-fill</label>
+    <div class="flex gap-2">
+      <input id="f_reg" name="reg_number" placeholder="e.g. SV21 ABC"
+             class="input flex-1 uppercase font-mono tracking-wider"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();motLookup();}">
+      <button type="button" onclick="motLookup()" id="mot_btn" class="btn btn-primary whitespace-nowrap">Look up</button>
+    </div>
+    <p id="mot_status" class="text-xs text-mute mt-2"></p>
+    <div id="mot_results" class="hidden mt-3 space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div id="box_tax" class="card p-3"><div class="eyebrow">Vehicle tax</div><div class="stat font-display font-800 text-lg mt-1">—</div><div class="sub text-xs text-mute"></div></div>
+        <div id="box_mot" class="card p-3"><div class="eyebrow">MOT</div><div class="stat font-display font-800 text-lg mt-1">—</div><div class="sub text-xs text-mute"></div></div>
+      </div>
+      <div id="mot_history"></div>
+    </div>
+  </div>
+  {% else %}
+    <div><label class="label">Registration</label><input id="f_reg" name="reg_number" placeholder="Reg number" class="input uppercase font-mono tracking-wider"></div>
+  {% endif %}
+
+  <div class="grid grid-cols-2 gap-3">
+    <div><label class="label">Make</label><input id="f_make" name="make" placeholder="Yamaha" class="input"></div>
+    <div><label class="label">Model</label><input id="f_model" name="model" placeholder="MT-07" class="input"></div>
+    <div><label class="label">Year</label><input id="f_year" name="year" placeholder="2021" class="input"></div>
+    <div><label class="label">Colour</label><input id="f_color" name="color" placeholder="Blue" class="input"></div>
+    <div class="col-span-2"><label class="label">VIN / frame number</label><input name="vin" placeholder="Optional" class="input"></div>
+  </div>
+
+  <div><label class="label">Distinguishing features</label><textarea name="description" rows="3" placeholder="Scratches, mods, stickers — anything that makes it identifiable" class="input"></textarea></div>
+
+  <div><label class="label">Home / usual location</label>{{ loc_picker('reg', 'last_city', 'last_region', 'last_country', 'last_lat', 'last_lng') }}</div>
+
+  <div><label class="label">Visibility</label>
+    <select name="privacy" class="input">
+      <option value="public_when_stolen">Show publicly only if stolen (recommended)</option>
+      <option value="public">Always public</option>
+      <option value="private">Private</option>
+    </select>
+  </div>
+
+  <div><label class="label">Photos</label><input type="file" name="photos" multiple accept="image/*" class="text-sm text-mute file:btn file:btn-ghost file:btn-sm file:mr-3"></div>
+  <button class="btn btn-primary btn-block">Register bike</button>
+</form>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if mot_enabled %}
+<script>
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function setBox(id, label, ok, sub){
+  var box=document.getElementById(id);
+  var color = ok===true ? '#30D158' : (ok===false ? '#FF453A' : '#FFB020');
+  box.querySelector('.stat').textContent = label;
+  box.querySelector('.stat').style.color = color;
+  box.querySelector('.sub').textContent = sub || '';
+}
+async function motLookup(){
+  var reg=(document.getElementById('f_reg').value||'').trim();
+  var status=document.getElementById('mot_status');
+  var btn=document.getElementById('mot_btn');
+  var results=document.getElementById('mot_results');
+  if(!reg){ status.style.color='#8B94A1'; status.textContent='Enter a registration first.'; return; }
+  status.style.color='#8B94A1'; status.textContent='Looking up DVLA records\u2026'; btn.disabled=true;
+  try{
+    var res=await fetch('{{ url_for("vehicles.lookup") }}?reg='+encodeURIComponent(reg));
+    var j=await res.json();
+    if(!j.ok){ status.style.color='#FFB020'; status.textContent=j.error||'Not found.'; results.classList.add('hidden'); return; }
+    var v=j.vehicle;
+    var set=function(id,val){ var e=document.getElementById(id); if(e&&val) e.value=val; };
+    set('f_make',v.make); set('f_model',v.model); set('f_color',v.color); set('f_year',v.year);
+    if(v.reg_number) document.getElementById('f_reg').value=v.reg_number;
+    status.style.color='#30D158';
+    status.textContent='\u2713 '+[v.make,v.model,v.color,v.year,v.fuel].filter(Boolean).join(' \u00b7 ');
+
+    if(j.tax && j.tax.status){
+      setBox('box_tax', j.tax.status, j.tax.status==='Taxed', j.tax.due ? ('Due '+j.tax.due) : '');
+    } else {
+      setBox('box_tax', 'Not available', null, 'Add a DVLA tax (VES) key');
+    }
+    if(j.mot && j.mot.status){
+      var valid = /valid/i.test(j.mot.status) && !/not/i.test(j.mot.status);
+      var unknown = /no details/i.test(j.mot.status);
+      setBox('box_mot', j.mot.status, valid ? true : (unknown ? null : false), j.mot.expiry ? ('Expires '+j.mot.expiry) : '');
+    } else if (v.first_mot_due){
+      setBox('box_mot', 'Not due yet', null, 'First MOT due '+v.first_mot_due);
+    } else {
+      setBox('box_mot', 'Unknown', null, '');
+    }
+
+    var hist=document.getElementById('mot_history');
+    if(v.tests && v.tests.length){
+      var rows = v.tests.map(function(t){
+        var pass = /pass/i.test(t.result||'');
+        var rc = pass ? '#30D158' : '#FF453A';
+        var miles = t.mileage!=null ? (Number(t.mileage).toLocaleString()+' '+(t.unit||'mi')) : '';
+        var adv = (t.advisories||[]).map(function(a){return '<li>'+esc(a)+'</li>';}).join('');
+        var fail = (t.failures||[]).map(function(a){return '<li style="color:#FF8A82">'+esc(a)+'</li>';}).join('');
+        return '<div style="border-top:1px solid #283038;padding-top:8px;margin-top:8px">'
+          +'<div style="display:flex;justify-content:space-between;font-size:.85rem;gap:8px">'
+          +'<span>'+esc(t.date)+' \u00b7 <strong style="color:'+rc+'">'+esc(t.result||'')+'</strong></span>'
+          +'<span style="color:#8B94A1;text-align:right">'+esc(miles)+(t.expiry?(' \u00b7 exp '+esc(t.expiry)):'')+'</span></div>'
+          +((adv||fail)?('<ul style="font-size:.75rem;color:#8B94A1;margin:.3rem 0 0 1rem;list-style:disc">'+fail+adv+'</ul>'):'')
+          +'</div>';
+      }).join('');
+      hist.innerHTML='<div class="card p-3"><div class="eyebrow mb-1">MOT history \u00b7 '+v.tests.length+' test'+(v.tests.length>1?'s':'')+'</div>'+rows+'</div>';
+    } else {
+      hist.innerHTML='<div class="card p-3 text-xs text-mute">No MOT tests on record yet.</div>';
+    }
+    results.classList.remove('hidden');
+  }catch(e){ status.style.color='#FFB020'; status.textContent='Lookup failed \u2014 fill it in manually.'; }
+  finally{ btn.disabled=false; }
+}
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Edit Post — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div style="margin-bottom:.85rem">
+  <a href="{{ url_for('post_detail', post_id=post.post_id) }}" style="color:var(--muted);text-decoration:none;font-size:.85rem">← Back to Post</a>
+</div>
+
+<div style="max-width:740px;margin:0 auto">
+  <div class="card">
+    <div class="card-body">
+
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1.25rem">
+        <span class="post-id">{{ post.post_id }}</span>
+        <h1 style="font-size:1.05rem;font-weight:600;margin:0;color:var(--text)">Edit Post</h1>
+      </div>
+
+      <form method="POST" enctype="multipart/form-data">
+
+        <!-- Title -->
+        <div class="form-group" style="margin-bottom:1rem">
+          <label class="form-label">Title <span style="color:var(--danger)">*</span></label>
+          <input type="text" name="title" class="form-input" value="{{ post.title }}" required maxlength="200">
+        </div>
+
+        <!-- Content -->
+        <div class="form-group" style="margin-bottom:1.1rem">
+          <label class="form-label">Content <span style="color:var(--danger)">*</span></label>
+          <textarea name="content" class="form-input" rows="12" required style="resize:vertical;min-height:200px">{{ post.content }}</textarea>
+        </div>
+
+        <!-- Existing attachments -->
+        {% set approved_media = post.media | selectattr('approved') | list %}
+        {% if approved_media %}
+        <div style="margin-bottom:1.1rem">
+          <label class="form-label">Current Attachments</label>
+          <p style="font-size:.77rem;color:var(--muted);margin:.1rem 0 .7rem">Check the box next to any file to remove it.</p>
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            {% for media in approved_media %}
+            <label style="display:flex;align-items:center;gap:.7rem;padding:.55rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer">
+              <input type="checkbox" name="delete_media" value="{{ media.id }}" style="accent-color:var(--danger);width:15px;height:15px;flex-shrink:0">
+              {% if media.media_type == 'image' %}
+                <img src="{{ url_for('uploaded_file', filename=media.filename) }}" style="width:48px;height:48px;object-fit:cover;border-radius:5px;border:1px solid var(--border);flex-shrink:0">
+              {% else %}
+                <span style="font-size:1.4rem;flex-shrink:0">📄</span>
+              {% endif %}
+              <span style="font-size:.8rem;color:var(--muted);word-break:break-all">{{ media.filename.split('/')[-1] }}</span>
+              <span style="margin-left:auto;font-size:.72rem;color:var(--danger);flex-shrink:0">Remove</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Add new files -->
+        {% if approved_media|length < 5 %}
+        <div class="form-group" style="margin-bottom:1.25rem">
+          <label class="form-label">Add Attachments <span style="font-size:.75rem;color:var(--muted);font-weight:400">({{ 5 - approved_media|length }} slot{{ 's' if (5 - approved_media|length) != 1 }} remaining)</span></label>
+          <input type="file" name="photos" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.doc,.docx" class="form-input">
+          <p style="font-size:.75rem;color:var(--muted);margin:.35rem 0 0">Images and documents (PNG, JPG, GIF, WEBP, PDF, DOC, DOCX)</p>
+        </div>
+        {% endif %}
+
+        <!-- Warning -->
+        <div style="padding:.65rem .85rem;background:rgba(227,179,65,.07);border:1px solid rgba(227,179,65,.18);border-radius:7px;font-size:.8rem;color:var(--warn);margin-bottom:1.25rem">
+          ⚠ Edits are saved immediately. Do not include full legal names — use initials or pseudonyms only.
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+          <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+          <a href="{{ url_for('post_detail', post_id=post.post_id) }}" class="btn btn-ghost">Cancel</a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

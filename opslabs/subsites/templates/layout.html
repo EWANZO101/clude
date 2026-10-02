@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#09090b">
+<title>{% block title %}OpsLab Systems{% endblock %}</title>
+<meta name="description" content="{% block meta_desc %}OpsLab Systems — hands-on technology services.{% endblock %}">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        colors: {
+          ink: { 950:'#09090b', 900:'#0c0c0e', 800:'#131316', 700:'#1a1a1e', 600:'#27272a', 500:'#3f3f46' },
+          ops: { 50:'#eff6ff', 100:'#dbeafe', 200:'#bfdbfe', 300:'#93c5fd', 400:'#60a5fa', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 800:'#1e40af', 900:'#1e3a8a' },
+          gray: { 50:'#fafafa', 100:'#f4f4f5', 200:'#e4e4e7', 300:'#d4d4d8', 400:'#a1a1aa', 500:'#71717a', 600:'#52525b', 700:'#3f3f46', 800:'#27272a', 900:'#18181b', 950:'#09090b' },
+        },
+        boxShadow: {
+          glow:      '0 1px 2px rgba(0,0,0,.4)',
+          'glow-sm': '0 1px 2px rgba(0,0,0,.35)',
+        },
+        letterSpacing: { wider: '.03em', widest: '.08em' },
+      }
+    }
+  }
+</script>
+<style>
+  html, body { background:#09090b; color:#ededef; }
+  body { -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01"; }
+  h1, h2, h3 { letter-spacing: -.02em; }
+  .accent { color: {{ accent|default('#3b82f6') }}; }
+  .card { background:#0c0c0e; border:1px solid rgba(255,255,255,.07); border-radius:12px; transition:border-color .15s ease, background .15s ease; }
+  .card:hover { border-color: rgba(255,255,255,.14); }
+  .navlink { padding:6px 11px; border-radius:6px; font-size:14px; font-weight:500; color:#a1a1aa; transition: color .15s, background .15s; }
+  .navlink:hover, .navlink.active { color:#fff; background:rgba(255,255,255,.04); }
+  .site-nav { background: rgba(9,9,11,.8); -webkit-backdrop-filter: saturate(180%) blur(12px); backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid rgba(255,255,255,.06); }
+  .grid-overlay { background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px); background-size: 24px 24px; mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 100%); }
+  .ui-btn { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; height:2.25rem; padding:0 .9rem; border-radius:8px; font-size:.875rem; font-weight:500; transition: background .15s, border-color .15s, color .15s; white-space:nowrap; }
+  .ui-btn-primary { background:#fafafa; color:#09090b; }
+  .ui-btn-primary:hover { background:#e4e4e7; }
+  .ui-btn-ghost { border:1px solid rgba(255,255,255,.14); color:#e4e4e7; }
+  .ui-btn-ghost:hover { background: rgba(255,255,255,.05); color:#fff; }
+  .ui-btn-lg { height:2.75rem; padding:0 1.25rem; font-size:.9rem; }
+  *::-webkit-scrollbar { width:10px; height:10px; }
+  *::-webkit-scrollbar-track { background:transparent; }
+  *::-webkit-scrollbar-thumb { background:#27272a; border-radius:5px; border:2px solid #09090b; }
+  ::selection { background: rgba(59,130,246,.35); color:#fff; }
+</style>
+{% block head_extra %}{% endblock %}
+</head>
+<body class="font-sans antialiased min-h-screen flex flex-col">
+
+<nav class="site-nav sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-14 gap-3">
+      <a href="/" class="flex items-center gap-2.5 group shrink-0">
+        <svg viewBox="0 0 64 64" width="22" height="22" aria-hidden="true">
+          <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="#fafafa" stroke-width="5" stroke-linejoin="round"/>
+          <polygon points="32,4 56,18 32,32" fill="{{ accent|default('#3b82f6') }}"/>
+          <polygon points="32,32 56,18 56,46 32,60" fill="#fafafa"/>
+        </svg>
+        <span class="font-semibold text-[15px] tracking-tight leading-none text-white">OpsLab <span class="text-gray-400 font-medium">{{ site_name|default('Systems') }}</span></span>
+      </a>
+
+      <div class="hidden md:flex items-center gap-0.5">
+        <a href="#overview" class="navlink">Overview</a>
+        <a href="#packages" class="navlink">Packages</a>
+        <a href="#faq" class="navlink">FAQ</a>
+        <a href="#contact" class="navlink">Contact</a>
+
+        <div class="relative group">
+          <button type="button" class="navlink flex items-center gap-1">
+            Other services
+            <svg class="w-3 h-3 opacity-70" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="absolute right-0 top-full pt-2 w-72 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition"><div class="rounded-xl border border-white/[.12] bg-[#111113] p-1.5 shadow-2xl">
+            {% for sub, slug2, svc in siblings %}
+            <a href="{{ subdomain_url(sub) }}" class="flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-white/[.04] transition">
+              <span class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-white/[.03] border border-white/[.08]" style="color:{{ svc.accent }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ svc.icon }}"/></svg>
+              </span>
+              <span class="text-sm font-medium text-white">{{ svc.short_name }}</span>
+            </a>
+            {% endfor %}
+            <div class="mt-1 pt-1 border-t border-white/[.06]">
+              <a href="{{ hub_url('/') }}" class="flex items-center justify-center gap-1.5 text-xs font-medium text-gray-400 hover:text-white py-2.5">
+                All OpsLab Systems services
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+              </a>
+            </div>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <a href="{{ hub_url('/auth/login') }}" class="hidden sm:inline-flex navlink">Client login</a>
+        <a href="{{ hub_url(s.cta_url|default('/auth/register')) }}" class="ui-btn ui-btn-primary !h-8 !px-3.5">
+          {{ cta_short|default('Get started') }}
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main class="flex-1">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="mt-24 border-t border-white/[.06]">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid md:grid-cols-3 gap-8">
+      <div>
+        <div class="flex items-center gap-2.5 mb-3">
+          <svg viewBox="0 0 64 64" width="20" height="20" aria-hidden="true">
+            <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="#fafafa" stroke-width="5" stroke-linejoin="round"/>
+            <polygon points="32,4 56,18 32,32" fill="{{ accent|default('#3b82f6') }}"/>
+            <polygon points="32,32 56,18 56,46 32,60" fill="#fafafa"/>
+          </svg>
+          <span class="font-semibold text-[15px] tracking-tight text-white">OpsLab <span class="text-gray-400 font-medium">Systems</span></span>
+        </div>
+        <p class="text-sm text-gray-500 leading-relaxed max-w-xs">
+          One team, six specialised divisions, one shared ticket system.
+        </p>
+        <a href="mailto:{{ CONTACT_EMAIL }}" class="mt-3 inline-block text-sm text-gray-500 hover:text-gray-200 transition">{{ CONTACT_EMAIL }}</a>
+      </div>
+      <div>
+        <h4 class="text-sm font-medium text-white mb-3">Our services</h4>
+        <ul class="space-y-2 text-sm text-gray-500">
+          {% for sub, slug2, svc in siblings %}
+          <li><a href="{{ subdomain_url(sub) }}" class="hover:text-gray-200 transition">{{ svc.short_name }}</a></li>
+          {% endfor %}
+          <li><a href="#overview" class="hover:text-gray-200 transition">{{ s.short_name }} (this site)</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-sm font-medium text-white mb-3">Account &amp; support</h4>
+        <ul class="space-y-2 text-sm text-gray-500">
+          <li><a href="{{ hub_url('/') }}" class="hover:text-gray-200 transition">OpsLab Systems home</a></li>
+          <li><a href="{{ hub_url('/auth/login') }}" class="hover:text-gray-200 transition">Client login</a></li>
+          <li><a href="{{ hub_url('/auth/register') }}" class="hover:text-gray-200 transition">Create an account</a></li>
+          <li><a href="{{ hub_url('/tickets/new') }}" class="hover:text-gray-200 transition">Open a ticket</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt-10 pt-6 border-t border-white/[.06] text-xs text-gray-500">
+      &copy; {{ 2026 }} OpsLab Systems. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.7
+Flask-Login==0.6.3
+Flask-Mail==0.9.1
+itsdangerous==2.2.0
+email-validator==2.1.1
+python-dotenv==1.0.1
+gunicorn==22.0.0
+argon2-cffi==23.1.0
+requests==2.32.3
+waitress==3.0.0
+tzdata==2024.1  # zoneinfo has no IANA data of its own on Windows (unlike Linux/macOS, which use the OS's copy) — needed for ZoneInfo("Europe/London") in app/update_scheduling.py
+qrcode==8.2  # generates the scan-link QR code (SVG, no Pillow needed) — see app/blueprints/instances.py's scan-token panel

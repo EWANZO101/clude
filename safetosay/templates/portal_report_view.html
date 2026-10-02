@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+{% block title %}Report {{ report.report_id }} — Private Ticket — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div style="max-width:760px;margin:0 auto">
+
+  <!-- Back + session info -->
+  <div style="margin-bottom:.85rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+    <a href="{{ url_for('portal_my_reports') if session.get('portal_user_id') else url_for('portal_lookup') }}" style="color:var(--muted);text-decoration:none;font-size:.85rem">← Back</a>
+    <div style="display:flex;align-items:center;gap:.75rem">
+      {% if session.get('portal_user_id') %}
+      <span style="font-size:.8rem;color:var(--muted)">Logged in as <strong style="color:var(--accent)">{{ session.get('portal_username') }}</strong></span>
+      {% endif %}
+      <!-- Live indicator -->
+      <div style="display:flex;align-items:center;gap:.35rem" id="live-indicator">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block;animation:pulse 2s infinite" id="live-dot"></span>
+        <span style="font-size:.75rem;color:var(--muted)" id="live-label">Live</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report summary -->
+  <div class="card" style="margin-bottom:1.2rem;border-left:3px solid var(--accent)" id="report-summary-card">
+    <div class="card-body">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.75rem">
+        <div>
+          <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.3rem">
+            <span class="post-id">{{ report.report_id }}</span>
+            <span id="status-badge" class="status-{{ report.status }}">{{ report.status.title() }}</span>
+            <span id="seen-badge" style="font-size:.75rem;color:{% if report.admin_seen %}var(--success){% else %}var(--muted){% endif %}">
+              {% if report.admin_seen %}✓ Seen by admin{% else %}⏳ Awaiting review{% endif %}
+            </span>
+          </div>
+          <p style="font-size:.82rem;color:var(--muted);margin:0">
+            Re: post <span style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">{{ report.post_ref_id }}</span>
+            — submitted {{ report.created_at.strftime('%d %B %Y') }}
+          </p>
+        </div>
+      </div>
+      <details>
+        <summary style="cursor:pointer;font-size:.83rem;color:var(--muted);padding:.3rem 0">View original report</summary>
+        <div style="margin-top:.6rem;padding:.75rem .9rem;background:var(--surface);border:1px solid var(--border);border-radius:7px;font-size:.875rem;color:var(--muted);white-space:pre-wrap;line-height:1.65">{{ report.description }}</div>
+      </details>
+    </div>
+  </div>
+
+  <!-- Ticket thread -->
+  <h2 style="font-size:.95rem;font-weight:600;margin-bottom:.85rem;display:flex;align-items:center;gap:.5rem">
+    🔒 Private Ticket
+    <span style="font-size:.74rem;color:var(--muted);font-weight:400">— only visible to you and the admin team</span>
+  </h2>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:1.1rem;overflow:hidden">
+    <!-- Thread scroll area -->
+    <div id="ticket-thread"
+         style="padding:1rem 1.1rem;min-height:220px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:.7rem">
+      <!-- Populated by JS -->
+      <div id="thread-empty" style="text-align:center;padding:2rem 1.5rem;color:var(--muted);font-size:.875rem">
+        <p style="font-size:1.5rem;margin-bottom:.4rem">📭</p>
+        No messages yet. Our admin team will reply within 24 hours.
+      </div>
+    </div>
+
+    <!-- Typing / last updated -->
+    <div style="padding:.35rem 1.1rem;border-top:1px solid var(--border);background:rgba(0,0,0,.15);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:.72rem;color:var(--muted)" id="last-updated">Checking for new messages…</span>
+      <span style="font-size:.72rem;color:var(--muted)" id="msg-count"></span>
+    </div>
+  </div>
+
+  <!-- Reply form -->
+  <div class="card" id="reply-card">
+    <div class="card-body">
+      <h3 style="font-size:.88rem;font-weight:600;margin-bottom:.65rem">Send a Message</h3>
+      <form id="reply-form" method="POST" action="{{ url_for('portal_reply', report_id=report.report_id) }}" onsubmit="handleReplySubmit(event)">
+        <input type="hidden" name="claim_token" value="{{ claim_token }}">
+        <div style="display:flex;gap:.5rem;align-items:flex-end">
+          <textarea name="content" id="reply-text" class="form-input"
+                    rows="3" style="flex:1;min-height:72px;resize:vertical"
+                    placeholder="Add information, answer the admin's questions, or request an update…"
+                    required></textarea>
+          <button type="submit" class="btn btn-primary" style="flex-shrink:0;align-self:flex-end" id="send-btn">Send →</button>
+        </div>
+        <p style="font-size:.75rem;color:var(--muted);margin:.45rem 0 0">🔒 Private between you and the admin team.</p>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<style>
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.msg-bubble-admin{
+  display:flex;justify-content:flex-start;
+}
+.msg-bubble-reporter{
+  display:flex;justify-content:flex-end;
+}
+.bubble{
+  max-width:82%;padding:.82rem .95rem;border-radius:12px;
+}
+.bubble-admin{
+  background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.2);
+  border-radius:12px 12px 12px 0;
+}
+.bubble-reporter{
+  background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.2);
+  border-radius:12px 12px 0 12px;
+}
+.bubble-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.35rem}
+.bubble-label-admin{color:var(--accent)}
+.bubble-label-reporter{color:var(--success)}
+.bubble-time{font-size:.69rem;color:var(--muted)}
+.bubble-content{font-size:.875rem;color:var(--text);white-space:pre-wrap;line-height:1.65;margin:.3rem 0 0}
+.new-badge{font-size:.67rem;background:rgba(63,185,80,.2);color:var(--success);padding:.1rem .38rem;border-radius:3px;margin-left:.35rem}
+</style>
+
+<script>
+const REPORT_ID   = {{ report.report_id | tojson }};
+const CLAIM_TOKEN = {{ claim_token | tojson }};
+const POLL_MS     = 2000;
+
+let lastMessageId = 0;
+let pollTimer     = null;
+let sending       = false;
+
+// ── Build a message bubble ──────────────────────────────────────
+function buildBubble(msg) {
+  const isAdmin = msg.sender === 'admin';
+  const wrap = document.createElement('div');
+  wrap.className = isAdmin ? 'msg-bubble-admin' : 'msg-bubble-reporter';
+  wrap.dataset.msgId = msg.id;
+
+  const newBadge = (!msg.is_read && isAdmin)
+    ? '<span class="new-badge">NEW</span>'
+    : '';
+
+  wrap.innerHTML = `
+    <div class="bubble ${isAdmin ? 'bubble-admin' : 'bubble-reporter'}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem">
+        <span class="bubble-label ${isAdmin ? 'bubble-label-admin' : 'bubble-label-reporter'}">
+          ${msg.sender_label}${newBadge}
+        </span>
+        <span class="bubble-time">${msg.created_at}</span>
+      </div>
+      <div class="bubble-content">${escHtml(msg.content)}</div>
+    </div>`;
+  return wrap;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Update status badges ────────────────────────────────────────
+function updateStatusUI(data) {
+  // Status badge
+  const sb = document.getElementById('status-badge');
+  if (sb) {
+    sb.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+    sb.className = 'status-' + data.status;
+  }
+  // Seen badge
+  const seen = document.getElementById('seen-badge');
+  if (seen) {
+    if (data.admin_seen) {
+      seen.textContent = '✓ Seen by admin';
+      seen.style.color = 'var(--success)';
+    } else {
+      seen.textContent = '⏳ Awaiting review';
+      seen.style.color = 'var(--muted)';
+    }
+  }
+}
+
+// ── Render all messages ─────────────────────────────────────────
+function renderMessages(data) {
+  const thread = document.getElementById('ticket-thread');
+  const empty  = document.getElementById('thread-empty');
+  const msgs   = data.messages;
+
+  // Add legacy admin_reply as first message if no thread messages yet
+  let allMsgs = msgs;
+  if (data.admin_reply && msgs.length === 0) {
+    allMsgs = [{
+      id: -1,
+      sender: 'admin',
+      sender_label: 'Admin Team',
+      content: data.admin_reply,
+      is_read: true,
+      created_at: ''
+    }];
+  }
+
+  if (allMsgs.length === 0) {
+    if (empty) empty.style.display = 'block';
+    document.getElementById('msg-count').textContent = '';
+    return;
+  }
+
+  if (empty) empty.style.display = 'none';
+
+  // Find which IDs are already in the DOM
+  const existing = new Set(
+    Array.from(thread.querySelectorAll('[data-msg-id]')).map(el => el.dataset.msgId)
+  );
+
+  let appended = false;
+  allMsgs.forEach(msg => {
+    if (!existing.has(String(msg.id))) {
+      thread.appendChild(buildBubble(msg));
+      appended = true;
+      if (msg.id > lastMessageId) lastMessageId = msg.id;
+    }
+  });
+
+  if (appended) {
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  const total = allMsgs.length;
+  document.getElementById('msg-count').textContent =
+    total + ' message' + (total !== 1 ? 's' : '');
+}
+
+// ── Poll for updates ────────────────────────────────────────────
+function buildUrl() {
+  let url = `/report-portal/report/${REPORT_ID}/messages.json`;
+  if (CLAIM_TOKEN) url += `?token=${encodeURIComponent(CLAIM_TOKEN)}`;
+  return url;
+}
+
+async function poll() {
+  try {
+    const res  = await fetch(buildUrl(), { cache: 'no-store' });
+    const data = await res.json();
+    renderMessages(data);
+    updateStatusUI(data);
+
+    const dot   = document.getElementById('live-dot');
+    const label = document.getElementById('live-label');
+    const now   = new Date();
+    const time  = now.getHours().toString().padStart(2,'0') + ':' +
+                  now.getMinutes().toString().padStart(2,'0') + ':' +
+                  now.getSeconds().toString().padStart(2,'0');
+    if (dot)   dot.style.background = 'var(--success)';
+    if (label) label.textContent    = 'Live · ' + time;
+    document.getElementById('last-updated').textContent = 'Last checked ' + time;
+  } catch(e) {
+    const dot = document.getElementById('live-dot');
+    if (dot) dot.style.background = 'var(--danger)';
+    document.getElementById('last-updated').textContent = 'Connection error — retrying…';
+  }
+  pollTimer = setTimeout(poll, POLL_MS);
+}
+
+// ── Handle reply form submit ────────────────────────────────────
+function handleReplySubmit(e) {
+  e.preventDefault();
+  if (sending) return;
+  const txt = document.getElementById('reply-text');
+  const btn = document.getElementById('send-btn');
+  if (!txt.value.trim()) return;
+
+  sending = true;
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  clearTimeout(pollTimer);
+
+  const form = document.getElementById('reply-form');
+  const fd   = new FormData(form);
+
+  fetch(form.action, { method: 'POST', body: fd })
+    .then(() => {
+      txt.value = '';
+      btn.textContent = 'Send →';
+      btn.disabled = false;
+      sending = false;
+      // Immediately poll so the new message appears
+      poll();
+    })
+    .catch(() => {
+      btn.textContent = 'Send →';
+      btn.disabled = false;
+      sending = false;
+      // Fall back to real form submit if fetch failed
+      form.submit();
+    });
+}
+
+// ── Start on load ───────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  poll();
+});
+
+// Stop polling when tab is hidden, resume when visible
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) {
+    clearTimeout(pollTimer);
+    const dot = document.getElementById('live-dot');
+    if (dot) dot.style.animation = 'none';
+  } else {
+    poll();
+    const dot = document.getElementById('live-dot');
+    if (dot) dot.style.animation = 'pulse 2s infinite';
+  }
+});
+</script>
+{% endblock %}

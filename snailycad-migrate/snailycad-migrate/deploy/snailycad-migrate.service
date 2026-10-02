@@ -1,0 +1,20 @@
+[Unit]
+Description=SnailyCAD Migration Platform
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/snailycad-migrate
+EnvironmentFile=/root/snailycad-migrate/.env
+ExecStart=/root/snailycad-migrate/venv/bin/gunicorn -c deploy/gunicorn_conf.py run:app
+Restart=on-failure
+RestartSec=5
+
+# Hardening — relax IPAddressAllow/ProtectHome if the export/import paths
+# it needs to reach live outside these defaults.
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

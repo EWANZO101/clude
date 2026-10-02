@@ -1,0 +1,19 @@
+<div class="admin-sidebar">
+  <div style="font-size:.67rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;padding:.2rem .5rem .55rem">Admin Panel</div>
+  <a href="{{ url_for('admin_dashboard') }}" class="admin-nav-item {% if request.endpoint=='admin_dashboard' %}active{% endif %}">📊 Dashboard</a>
+  <div class="admin-section-label">Users</div>
+  <a href="{{ url_for('admin_users') }}" class="admin-nav-item {% if request.endpoint in ['admin_users','admin_user_detail'] %}active{% endif %}">👤 Users</a>
+  <a href="{{ url_for('admin_banned_ips') }}" class="admin-nav-item {% if request.endpoint=='admin_banned_ips' %}active{% endif %}">🔒 Banned IPs</a>
+  <div class="admin-section-label">Content</div>
+  <a href="{{ url_for('admin_posts') }}" class="admin-nav-item {% if request.endpoint=='admin_posts' %}active{% endif %}">📋 All Posts</a>
+  <a href="{{ url_for('admin_posts') }}?type=main" class="admin-nav-item">📖 Stories</a>
+  <a href="{{ url_for('admin_posts') }}?type=advice" class="admin-nav-item">💬 Advice</a>
+  <div class="admin-section-label">Reports</div>
+  <a href="{{ url_for('admin_reports') }}" class="admin-nav-item {% if request.endpoint in ['admin_reports','admin_report_detail'] %}active{% endif %}">⚑ All Reports</a>
+  <a href="{{ url_for('admin_reports') }}?status=pending" class="admin-nav-item">🔔 Pending</a>
+  <div class="admin-section-label">Site</div>
+  <a href="{{ url_for('admin_announcements') }}" class="admin-nav-item {% if request.endpoint=='admin_announcements' %}active{% endif %}">📢 Announcements</a>
+  <a href="{{ url_for('admin_site_text') }}" class="admin-nav-item {% if request.endpoint=='admin_site_text' %}active{% endif %}">✎ Edit Text</a>
+  <hr style="border-color:var(--border);margin:.65rem 0">
+  <a href="{{ url_for('index') }}" class="admin-nav-item">← Back to Site</a>
+</div>

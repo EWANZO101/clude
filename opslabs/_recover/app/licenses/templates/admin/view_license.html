@@ -1,0 +1,184 @@
+{% extends "licenses/base.html" %}
+{% block title %}License {{ license.license_key }} - License Manager{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <a href="{{ url_for('lic_admin.licenses') }}" class="text-gray-500 hover:text-gray-300 text-sm mb-2 inline-block">← Back to Licenses</a>
+        <h1 class="text-2xl font-bold font-mono">{{ license.license_key }}</h1>
+    </div>
+    <a href="{{ url_for('lic_admin.edit_license', id=license.id) }}" class="px-4 py-2 bg-dark-700 hover:bg-dark-600 border border-dark-500 rounded-lg">Edit</a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Status Card -->
+        <div class="bg-dark-800 border border-dark-600 rounded-xl p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="font-semibold">License Status</h2>
+                <span class="px-3 py-1 rounded-full text-sm font-medium
+                    {% if license.status == 'active' %}bg-green-500/20 text-green-400
+                    {% elif license.status == 'suspended' %}bg-yellow-500/20 text-yellow-400
+                    {% else %}bg-red-500/20 text-red-400{% endif %}">
+                    {{ license.status|upper }}
+                </span>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Product</p>
+                    <p class="font-medium mt-1">{{ license.product.name }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Tier</p>
+                    <p class="font-medium mt-1">{{ license.tier.name }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Max Users</p>
+                    <p class="font-medium mt-1">{{ license.tier.max_users or 'Unlimited' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Activations</p>
+                    <p class="font-medium mt-1">{{ license.current_activations }}/{{ license.max_activations }}</p>
+                </div>
+            </div>
+            
+            <!-- Status Actions -->
+            <div class="mt-6 pt-6 border-t border-dark-600 flex flex-wrap gap-3">
+                {% if license.status == 'active' %}
+                <form method="POST" action="{{ url_for('lic_admin.change_license_status', id=license.id) }}">
+                    
+                    <input type="hidden" name="status" value="suspended">
+                    <button type="submit" class="px-4 py-2 bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 rounded-lg text-sm">Suspend</button>
+                </form>
+                <form method="POST" action="{{ url_for('lic_admin.change_license_status', id=license.id) }}" onsubmit="return confirm('Revoke this license?');">
+                    
+                    <input type="hidden" name="status" value="revoked">
+                    <button type="submit" class="px-4 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg text-sm">Revoke</button>
+                </form>
+                {% elif license.status == 'suspended' %}
+                <form method="POST" action="{{ url_for('lic_admin.change_license_status', id=license.id) }}">
+                    
+                    <input type="hidden" name="status" value="active">
+                    <button type="submit" class="px-4 py-2 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded-lg text-sm">Reactivate</button>
+                </form>
+                {% elif license.status == 'revoked' %}
+                <form method="POST" action="{{ url_for('lic_admin.change_license_status', id=license.id) }}">
+                    
+                    <input type="hidden" name="status" value="active">
+                    <button type="submit" class="px-4 py-2 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded-lg text-sm">Reactivate</button>
+                </form>
+                {% endif %}
+                
+                <form method="POST" action="{{ url_for('lic_admin.reset_activations', id=license.id) }}" onsubmit="return confirm('Reset all activations?');">
+                    
+                    <button type="submit" class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-sm">Reset Activations</button>
+                </form>
+                
+                <a href="{{ url_for('lic_admin.manage_license_ips', id=license.id) }}" class="px-4 py-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg text-sm">Manage IPs</a>
+                
+                <form method="POST" action="{{ url_for('lic_admin.purge_license', id=license.id) }}" onsubmit="return confirm('Purge ALL data (IPs, activations, history)? License will be kept.');">
+                    
+                    <button type="submit" class="px-4 py-2 bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 rounded-lg text-sm">Purge Data</button>
+                </form>
+                
+                <form method="POST" action="{{ url_for('lic_admin.delete_license', id=license.id) }}" onsubmit="return confirm('PERMANENTLY DELETE this license? This cannot be undone!');">
+                    
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg text-sm">Delete License</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Features -->
+        <div class="bg-dark-800 border border-dark-600 rounded-xl p-6">
+            <h2 class="font-semibold mb-4">Features</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {% for feature, enabled in (license.tier.features or {}).items() %}
+                <div class="flex items-center gap-2">
+                    {% if enabled %}
+                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span class="text-sm capitalize">{{ feature.replace('_', ' ') }}</span>
+                    {% else %}
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <span class="text-sm text-gray-500 capitalize">{{ feature.replace('_', ' ') }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Activations -->
+        <div class="bg-dark-800 border border-dark-600 rounded-xl">
+            <div class="p-4 border-b border-dark-600"><h2 class="font-semibold">Activations ({{ activations|length }})</h2></div>
+            <div class="divide-y divide-dark-600">
+                {% for activation in activations %}
+                <div class="p-4 flex items-center justify-between">
+                    <div>
+                        <p class="font-medium">{{ activation.domain or activation.ip_address }}</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ activation.activated_at.strftime('%d %b %Y %H:%M') }}</p>
+                    </div>
+                    <span class="px-2 py-1 text-xs rounded-full {% if activation.is_active %}bg-green-500/20 text-green-400{% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                        {{ 'Active' if activation.is_active else 'Inactive' }}
+                    </span>
+                </div>
+                {% else %}
+                <p class="p-4 text-gray-500 text-sm">No activations yet</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        <!-- Expiration -->
+        <div class="bg-dark-800 border border-dark-600 rounded-xl p-6">
+            <h2 class="font-semibold mb-4">Expiration</h2>
+            {% if license.expires_at %}
+                {% if license.is_expired %}
+                <div class="text-center py-4">
+                    <p class="text-red-400 text-2xl font-bold">EXPIRED</p>
+                    <p class="text-gray-500 text-sm mt-1">{{ license.expires_at.strftime('%d %b %Y') }}</p>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <p class="text-3xl font-bold text-green-400">{{ license.days_until_expiry }}</p>
+                    <p class="text-gray-500 text-sm">days remaining</p>
+                </div>
+                {% endif %}
+            {% else %}
+            <div class="text-center py-4">
+                <p class="text-2xl font-bold text-emerald-400">LIFETIME</p>
+            </div>
+            {% endif %}
+            
+            <form method="POST" action="{{ url_for('lic_admin.extend_license', id=license.id) }}" class="mt-4 flex gap-2">
+                
+                <select name="days" class="flex-1 px-3 py-2 bg-dark-700 border border-dark-500 rounded-lg text-sm">
+                    <option value="30">+30 days</option>
+                    <option value="90">+90 days</option>
+                    <option value="365">+1 year</option>
+                </select>
+                <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm">Extend</button>
+            </form>
+        </div>
+        
+        <!-- Customer -->
+        <div class="bg-dark-800 border border-dark-600 rounded-xl p-6">
+            <h2 class="font-semibold mb-4">Customer</h2>
+            {% if license.customer %}
+            <p class="font-medium">{{ license.customer.company_name or 'No company' }}</p>
+            <p class="text-sm text-gray-400">{{ license.customer.email }}</p>
+            {% else %}
+            <p class="text-gray-500 text-sm">No customer assigned</p>
+            {% endif %}
+        </div>
+        
+        <!-- Copy Key -->
+        <div class="bg-dark-800 border border-dark-600 rounded-xl p-6">
+            <h2 class="font-semibold mb-4">License Key</h2>
+            <div class="bg-dark-900 rounded-lg p-3 font-mono text-sm break-all">{{ license.license_key }}</div>
+            <button onclick="navigator.clipboard.writeText('{{ license.license_key }}')" class="w-full mt-3 px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-sm">Copy</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

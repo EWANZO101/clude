@@ -1,0 +1,30 @@
+# Nginx reverse proxy for SnailyCAD Migration Platform.
+# Place at /etc/nginx/sites-available/snailycad-migrate, symlink into
+# sites-enabled, then `certbot --nginx -d your-domain` for TLS.
+
+server {
+    listen 80;
+    server_name cloudloader.example.com;  # replace with your real domain
+
+    # Large database dumps / uploads — matches MAX_CONTENT_LENGTH in app/config.py
+    client_max_body_size 4G;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Export/import requests run synchronously and can take a while
+        # on large SnailyCAD installs.
+        proxy_read_timeout 1800s;
+        proxy_send_timeout 1800s;
+    }
+
+    location /static/ {
+        alias /root/snailycad-migrate/app/static/;
+        expires 7d;
+        access_log off;
+    }
+}

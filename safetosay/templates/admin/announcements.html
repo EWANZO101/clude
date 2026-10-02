@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Announcements — Admin — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div class="admin-layout">
+{% include "admin/_sidebar.html" %}
+<div>
+  <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:1.5rem">Announcements</h1>
+
+  <!-- Create new -->
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="card-body">
+      <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem">Create Announcement</h2>
+      <form method="POST">
+        <input type="hidden" name="action" value="create">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            <input type="text" name="title" class="form-input" required placeholder="Announcement title">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Type</label>
+            <select name="ann_type" class="form-input">
+              <option value="info">ℹ Info (blue)</option>
+              <option value="warning">⚠ Warning (yellow)</option>
+              <option value="danger">🚨 Danger (red)</option>
+              <option value="success">✓ Success (green)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Message</label>
+          <textarea name="content" class="form-input" rows="3" required placeholder="Announcement message..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Show on Page</label>
+          <select name="target_page" class="form-input">
+            <option value="all">All Pages</option>
+            <option value="index">Stories Forum only</option>
+            <option value="advice">Advice Forum only</option>
+            <option value="register">Register Page only</option>
+            <option value="login">Login Page only</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">📢 Publish Announcement</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Existing announcements -->
+  <h2 style="font-size:1rem;font-weight:600;margin-bottom:.85rem">All Announcements ({{ announcements|length }})</h2>
+  {% if announcements %}
+  <div style="display:flex;flex-direction:column;gap:.75rem">
+    {% for ann in announcements %}
+    <div class="card" style="border-left:3px solid {% if ann.ann_type=='info' %}var(--accent){% elif ann.ann_type=='warning' %}var(--warn){% elif ann.ann_type=='danger' %}var(--danger){% else %}var(--success){% endif %}">
+      <div class="card-body" style="padding:1rem 1.25rem">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.35rem">
+              <strong style="color:var(--text)">{{ ann.title }}</strong>
+              <span style="font-size:.75rem;color:var(--muted);background:var(--surface);padding:.1rem .4rem;border-radius:3px">{{ ann.ann_type }}</span>
+              <span style="font-size:.75rem;color:var(--muted)">→ {{ ann.target_page }}</span>
+              {% if ann.is_active %}
+                <span class="status-badge badge-active" style="font-size:.72rem">Active</span>
+              {% else %}
+                <span class="status-badge badge-hidden" style="font-size:.72rem">Inactive</span>
+              {% endif %}
+            </div>
+            <p style="font-size:.875rem;color:var(--muted)">{{ ann.content }}</p>
+            <p style="font-size:.75rem;color:var(--muted);margin-top:.3rem">Created {{ ann.created_at.strftime('%d %b %Y') }}</p>
+          </div>
+          <div style="display:flex;gap:.4rem;flex-shrink:0;flex-wrap:wrap">
+            <form method="POST" style="display:inline">
+              <input type="hidden" name="action" value="toggle">
+              <input type="hidden" name="ann_id" value="{{ ann.id }}">
+              <button type="submit" class="btn btn-sm {% if ann.is_active %}btn-warn{% else %}btn-success{% endif %}">
+                {{ '⊘ Disable' if ann.is_active else '✓ Enable' }}
+              </button>
+            </form>
+            <form method="POST" style="display:inline" onsubmit="return confirm('Delete this announcement?')">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="ann_id" value="{{ ann.id }}">
+              <button type="submit" class="btn btn-danger btn-sm">🗑</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card" style="text-align:center;padding:2.5rem">
+    <p style="color:var(--muted)">No announcements yet.</p>
+  </div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

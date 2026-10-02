@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="py-10 sm:py-16">
+  <div class="grid lg:grid-cols-2 gap-10 items-center">
+    <div>
+      <span class="plate text-xs mb-5"><span class="plate-blue-strip mr-1">GB</span>SB26 CBK</span>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-gauge">Digital service book</p>
+      <h1 class="font-bold text-4xl sm:text-5xl leading-[1.08] mt-3">Every mile.<br>Every service.<br><span class="text-gauge">One provenance record.</span></h1>
+      <p class="mt-5 text-ink-muted text-lg max-w-lg leading-relaxed">Log servicing, modifications, parts, MOT history and accidents against each of your bikes — then hand over a professional public history link when it's time to sell.</p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="{{ url_for('auth.register') }}" class="inline-flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-800 font-medium rounded-lg text-sm px-6 py-3 text-center transition">Create your garage</a>
+        <a href="{{ url_for('auth.login') }}" class="inline-flex items-center justify-center rounded-md bg-asphalt-alt hover:bg-asphalt-border border border-asphalt-border text-ink text-sm font-medium px-6 py-3 transition">Log in</a>
+      </div>
+    </div>
+    <div class="card p-6">
+      <div class="flex items-center justify-between text-xs text-ink-faint font-mono mb-4">
+        <span>ODOMETER LOG</span><span>2019 — PRESENT</span>
+      </div>
+      <ol class="space-y-4 border-l border-asphalt-border pl-5">
+        {% for label, cost, tag, tone in [
+          ("Exhaust upgrade fitted", "£650", "MOD", "gauge"),
+          ("Front & rear tyres — 18,500mi", "£300", "SERVICE", "odometer"),
+          ("MOT — Passed, 2 advisories", "—", "MOT", "okay"),
+          ("Rear-end shunt, repaired", "£1,850", "ACCIDENT", "danger"),
+        ] %}
+        <li class="relative">
+          <span class="absolute -left-[26px] top-1 w-2.5 h-2.5 rounded-full bg-{{ tone }}"></span>
+          <div class="flex items-center justify-between gap-3">
+            <p class="text-sm text-ink">{{ label }}</p>
+            <span class="font-mono text-xs text-ink-faint shrink-0">{{ cost }}</span>
+          </div>
+          <span class="text-[10px] font-mono tracking-wider text-{{ tone }}">{{ tag }}</span>
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="grid sm:grid-cols-3 gap-4 mt-4 mb-8">
+  {% for title, desc in [
+    ("Full ownership record", "Service history, mods, spare parts and accident records, all tied to the bike."),
+    ("Official MOT history", "Pull DVSA MOT test results straight into the bike's timeline."),
+    ("Sell with confidence", "Share a professional public history link — you choose what's visible."),
+  ] %}
+  <div class="card p-5">
+    <h3 class="font-semibold text-ink mb-1.5">{{ title }}</h3>
+    <p class="text-sm text-ink-muted">{{ desc }}</p>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

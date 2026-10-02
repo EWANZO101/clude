@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ user.username }} — Admin — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-1">{{ user.username }}</h1>
+  <p class="text-sm text-gray-500 mb-6">{{ user.email }} · {{ user.user_id }} · {{ user.support_id }}</p>
+
+  <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">Joined</div>
+      <div class="text-white">{{ user.created_at.strftime('%Y-%m-%d') }}</div>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">Last login</div>
+      <div class="text-white">{{ user.last_login_at.strftime('%Y-%m-%d %H:%M') if user.last_login_at else 'never' }}</div>
+    </div>
+  </div>
+
+  <h2 class="text-sm font-medium text-gray-400 mb-3">Roles</h2>
+  <div class="flex flex-wrap gap-3 mb-8">
+    {% for role, label in [('is_admin', 'Admin'), ('is_support', 'Support'), ('is_developer', 'Developer')] %}
+      <form method="POST" action="{{ url_for('admin.toggle_role', user_id=user.id, role=role) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="text-sm border rounded-md px-3 py-1.5 transition
+          {% if user[role] %} border-emerald-800 text-emerald-400 hover:bg-emerald-950
+          {% else %} border-surface-border text-gray-400 hover:text-white {% endif %}">
+          {{ label }}: {{ 'on' if user[role] else 'off' }}
+        </button>
+      </form>
+    {% endfor %}
+  </div>
+
+  <form method="POST" action="{{ url_for('admin.toggle_suspend', user_id=user.id) }}" class="mb-8">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="text-sm border rounded-md px-3 py-1.5 transition
+      {% if user.is_suspended %} border-red-800 text-red-400 hover:bg-red-950
+      {% else %} border-surface-border text-gray-400 hover:text-white {% endif %}"
+      onsubmit="return confirm('{{ 'Reactivate' if user.is_suspended else 'Suspend' }} this account?');">
+      {{ 'Reactivate account' if user.is_suspended else 'Suspend account' }}
+    </button>
+  </form>
+
+  {% if products %}
+    <h2 class="text-sm font-medium text-gray-400 mb-3">Products ({{ products|length }})</h2>
+    <div class="space-y-2 mb-8">
+      {% for p in products %}
+        <div class="bg-surface-card border border-surface-border rounded-lg px-4 py-3 text-sm">
+          <div class="text-white">{{ p.name }}</div>
+          <div class="text-gray-500 text-xs font-mono">{{ p.product_id }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if licenses %}
+    <h2 class="text-sm font-medium text-gray-400 mb-3">Licenses purchased ({{ licenses|length }})</h2>
+    <div class="space-y-2 mb-8">
+      {% for lic in licenses %}
+        <div class="bg-surface-card border border-surface-border rounded-lg px-4 py-3 text-sm flex justify-between">
+          <span class="text-white font-mono">{{ lic.license_key }}</span>
+          <span class="text-gray-500">{{ lic.product.name }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if audit_entries %}
+    <h2 class="text-sm font-medium text-gray-400 mb-3">Support history</h2>
+    <div class="space-y-2">
+      {% for e in audit_entries %}
+        <div class="bg-surface-card border border-surface-border rounded-lg px-4 py-3 text-xs text-gray-400">
+          {{ e.created_at.strftime('%Y-%m-%d %H:%M') }} — {{ e.action }} by {{ e.support_user.username }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

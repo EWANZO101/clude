@@ -1,0 +1,55 @@
+{
+  "ticket_id": "TICK-0019",
+  "ticket_type": "support",
+  "opened_by": "e",
+  "opened_at": "2026-04-02 10:02:18",
+  "closed_by": "e",
+  "closed_at": "2026-04-02 10:02 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-02T10:02:18.537000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1460361220329574521> <@344560012997165057>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:02:34.269000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "awfaf",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:02:35.387000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "awfjaiwofuja",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:02:36.585000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "hfaiwhfiaw",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:02:38.206000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "1111111111111",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

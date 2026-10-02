@@ -1,0 +1,31 @@
+{% extends "layout/base.html" %}
+{% block title %}Appearance settings{% endblock %}
+{% block content %}
+{% include "dashboard/_settings_nav.html" %}
+<form method="POST" class="max-w-lg space-y-4 bg-surface-card border border-surface-border rounded-2xl p-6 mt-4"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="space-y-1">
+    <label class="text-sm text-slate-400">Theme</label>
+    <select name="theme" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm">
+      <option value="dark" {{ 'selected' if current_user.theme == 'dark' }}>Dark</option>
+      <option value="light" {{ 'selected' if current_user.theme == 'light' }}>Light</option>
+      <option value="system" {{ 'selected' if current_user.theme == 'system' }}>System</option>
+    </select>
+  </div>
+  <div class="space-y-1">
+    <label class="text-sm text-slate-400">Accent colour</label>
+    <select name="accent_colour" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm">
+      {% for c in ['emerald', 'blue', 'violet', 'amber', 'rose'] %}
+        <option value="{{ c }}" {{ 'selected' if current_user.accent_colour == c }}>{{ c|capitalize }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="space-y-1">
+    <label class="text-sm text-slate-400">Dashboard density</label>
+    <select name="dashboard_density" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm">
+      <option value="comfortable" {{ 'selected' if current_user.dashboard_density == 'comfortable' }}>Comfortable</option>
+      <option value="compact" {{ 'selected' if current_user.dashboard_density == 'compact' }}>Compact</option>
+    </select>
+  </div>
+  <button class="bg-accent hover:bg-accent-hover text-white text-sm font-medium py-2.5 px-5 rounded-lg">Save</button>
+</form>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Item{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{{ url_for('items.index') }}" style="color:#6b7280;font-size:13px;text-decoration:none;
+     display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;">
+    <i class="fas fa-arrow-left"></i> Items
+  </a>
+  <h1 class="page-title">
+    <i class="fas fa-{% if action=='Add' %}plus{% else %}pen{% endif %}" style="color:#60a5fa;"></i>
+    {{ action }} Item
+  </h1>
+</div>
+
+<div class="card" style="padding:20px;max-width:640px;">
+  <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="grid-column:span 2;">
+        <label class="form-label">Item Name <span style="color:#ef4444;">*</span></label>
+        <input type="text" name="name" class="form-input" required
+               value="{{ item.name if item else '' }}" placeholder="e.g. M8 Hex Bolt" />
+      </div>
+      <div>
+        <label class="form-label">SKU / Part Number</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="sku" name="sku" class="form-input"
+                 value="{{ item.sku if item and item.sku else '' }}" placeholder="e.g. BOLT-M8" />
+          <button type="button" class="btn btn-secondary scan-relay-btn" data-target="sku" title="Scan with phone">
+            <i class="fas fa-mobile-screen-button"></i>
+          </button>
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Category</label>
+        <input type="text" name="category" class="form-input"
+               value="{{ item.category if item and item.category else '' }}"
+               placeholder="e.g. Fasteners" />
+      </div>
+      <div>
+        <label class="form-label">Location</label>
+        <input type="text" name="location" class="form-input"
+               value="{{ item.location if item and item.location else '' }}"
+               placeholder="e.g. Shelf A3" />
+      </div>
+      <div>
+        <label class="form-label">Stock tracking method</label>
+        <select name="measurement_type" id="measurementType" class="form-input">
+          {% for mt in measurement_types %}
+          <option value="{{ mt.value }}" {% if (item.measurement_type if item else 'count') == mt.value %}selected{% endif %}>{{ mt.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Unit</label>
+        <select name="unit" id="unitSelect" class="form-input"></select>
+      </div>
+      {% if not item %}
+      <div id="initialQtyWrap">
+        <label class="form-label">Initial Quantity</label>
+        <input type="number" name="quantity" class="form-input" min="0" value="0"
+               inputmode="numeric" />
+      </div>
+      <div id="initialAmountWrap" style="display:none;">
+        <label class="form-label">Initial Stock Amount</label>
+        <input type="number" step="any" name="stock_amount" class="form-input" min="0" value="0" />
+      </div>
+      {% else %}
+      <div id="initialAmountWrap" style="{% if item.measurement_type == 'count' %}display:none;{% endif %}">
+        <label class="form-label">Stock Amount</label>
+        <input type="number" step="any" name="stock_amount" class="form-input" min="0"
+               value="{{ item.stock_amount if item.stock_amount is not none else 0 }}" />
+      </div>
+      {% endif %}
+      <div>
+        <label class="form-label">Low Stock Threshold</label>
+        <input type="number" name="low_stock_threshold" class="form-input" min="0"
+               value="{{ item.low_stock_threshold if item else 5 }}" inputmode="numeric" />
+      </div>
+      <div style="grid-column:span 2;">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-textarea" rows="3"
+                  placeholder="Optional notes">{{ item.description if item and item.description else '' }}</textarea>
+      </div>
+      <div style="grid-column:span 2;">
+        <label class="form-label">Categories</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:#111827;border-radius:10px;border:1px solid #374151;">
+          {% for cat in all_categories %}
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#d1d5db;background:#1f2937;
+                        padding:6px 10px;border-radius:8px;cursor:pointer;">
+            <input type="checkbox" name="category_ids" value="{{ cat.id }}"
+                   {% if item and cat.id in (item.categories | map(attribute='id') | list) %}checked{% endif %} />
+            {{ cat.name }}
+          </label>
+          {% endfor %}
+          {% if not all_categories %}
+          <span style="font-size:12px;color:#6b7280;">No categories yet — create one on the Categories page.</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> {{ action }} Item
+      </button>
+      <a href="{{ url_for('items.index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  const UNITS_CATALOG = {{ units_by_type | tojson }};
+  const currentUnit = {{ (item.unit if item and item.unit else '') | tojson }};
+  const mtSelect = document.getElementById('measurementType');
+  const unitSelect = document.getElementById('unitSelect');
+  const initialQtyWrap = document.getElementById('initialQtyWrap');
+  const initialAmountWrap = document.getElementById('initialAmountWrap');
+
+  function refreshUnits() {
+    const mt = mtSelect.value;
+    const units = UNITS_CATALOG[mt] || [];
+    unitSelect.innerHTML = units.map(u => `<option value="${u.value}">${u.label}</option>`).join('');
+    if (units.some(u => u.value === currentUnit)) unitSelect.value = currentUnit;
+    if (initialQtyWrap) initialQtyWrap.style.display = (mt === 'count') ? '' : 'none';
+    if (initialAmountWrap) initialAmountWrap.style.display = (mt === 'count') ? 'none' : '';
+  }
+  mtSelect.addEventListener('change', refreshUnits);
+  refreshUnits();
+</script>
+{% endblock %}

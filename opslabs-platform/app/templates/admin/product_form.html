@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if product else 'New' }} product — Admin{% endblock %}
+{% block content %}
+<h1>{{ 'Edit product' if product else 'New product' }}</h1>
+<div class="card" style="max-width:480px;">
+  <form method="POST">
+    <label>Name</label>
+    <input type="text" name="name" value="{{ product.name if product else '' }}" required>
+
+    <label>Description</label>
+    <input type="text" name="description" value="{{ product.description if product else '' }}">
+
+    <label>Type</label>
+    <select name="type">
+      {% for t in ['subscription', 'one_off', 'lifetime', 'free', 'trial'] %}
+        <option value="{{ t }}" {{ 'selected' if product and product.type == t }}>{{ t }}</option>
+      {% endfor %}
+    </select>
+
+    <label>Feature flags <span style="color:#9aa3af;">(comma-separated keys, e.g. api_access, priority_support)</span></label>
+    <input type="text" name="feature_flags" value="{{ (product.feature_flags|from_json)|join(', ') if product else '' }}">
+
+    <label style="display:flex;align-items:center;gap:0.5rem;margin-top:1rem;">
+      <input type="checkbox" name="is_active" style="width:auto;" {{ 'checked' if not product or product.is_active }}>
+      Active (visible for assigning to plans)
+    </label>
+
+    <button type="submit">{{ 'Save' if product else 'Create product' }}</button>
+  </form>
+</div>
+{% endblock %}

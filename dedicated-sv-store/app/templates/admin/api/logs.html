@@ -1,0 +1,29 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}API Logs — Admin{% endblock %}
+{% block page_title %}API logs{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Method</th><th>Path</th><th>Status</th><th>Duration</th><th>IP</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for log in pagination.items %}
+      <tr>
+        <td class="text-text-secondary font-mono text-xs">{{ log.method }}</td>
+        <td class="text-text-primary font-mono text-xs">{{ log.path }}</td>
+        <td>
+          {% if log.status_code and log.status_code < 300 %}<span class="badge-success">{{ log.status_code }}</span>
+          {% else %}<span class="badge-danger">{{ log.status_code }}</span>{% endif %}
+        </td>
+        <td class="text-text-secondary">{{ log.duration_ms }}ms</td>
+        <td class="text-text-muted">{{ log.ip_address or "—" }}</td>
+        <td class="text-text-muted">{{ log.created_at.strftime("%d %b %Y %H:%M") }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-text-muted py-8">No API requests logged yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.api_logs") }}
+</div>
+{% endblock %}

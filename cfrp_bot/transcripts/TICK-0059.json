@@ -1,0 +1,55 @@
+{
+  "ticket_id": "TICK-0059",
+  "ticket_type": "whitelist",
+  "opened_by": "granades_",
+  "opened_at": "2026-04-25 09:38:41",
+  "closed_by": "IMPI CHAPLIN",
+  "closed_at": "2026-04-25 10:35 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-25T09:38:41.801000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1451691985730539592> <@744887814432358510>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-25T09:38:42.436000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-25T10:33:44.944000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "good afternoon",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-25T10:34:13.269000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "<@744887814432358510> please join interview if ready",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-25T10:34:51.972000+00:00",
+      "author": "granades_",
+      "author_id": "744887814432358510",
+      "role": "",
+      "content": "Hello I\u2019ve already been whitelisted thanks",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

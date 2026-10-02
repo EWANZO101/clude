@@ -1,0 +1,668 @@
+{% extends "base.html" %}
+{% block title %}OpsLab Systems · Web, FiveM, hosting & on-site IT{% endblock %}
+
+{# ────────────────────────────────────────────────────────────────────────
+   HOW TO EDIT YOUR CONTACT / ON-SITE DETAILS
+   Search this file for  "EDIT:"  — every placeholder is marked.
+   The on-site phone, WhatsApp, email and service area all live in the
+   "ON-SITE IT & NETWORKING" section below.
+   ──────────────────────────────────────────────────────────────────────── #}
+
+{% block head_extra %}
+<style>
+  /* Lean, grounded primitives — no drifting blobs, no fake-terminal theatre. */
+  .card {
+    background: #0b1224;
+    border: 1px solid #1b2a4a;
+    border-radius: 16px;
+    transition: border-color .2s ease, transform .2s ease;
+  }
+  .card:hover { border-color: rgba(33,150,243,.45); transform: translateY(-2px); }
+
+  .svc-icon {
+    background: rgba(33,150,243,.10);
+    border: 1px solid rgba(33,150,243,.30);
+    color: #71b7ff;
+  }
+
+  .accent { color: #429fff; }
+
+  .tag {
+    font-size: 11px; padding: 2px 9px; border-radius: 999px;
+    background: rgba(255,255,255,.04); border: 1px solid #1b2a4a; color: #9fb0c9;
+  }
+
+  .check {
+    width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
+    background: rgba(33,150,243,.12); border: 1px solid rgba(33,150,243,.35);
+    display: inline-flex; align-items: center; justify-content: center; color: #71b7ff;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════════════════════════════ HERO ══ -->
+<section class="relative">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 lg:pt-20 pb-14">
+    <div class="grid lg:grid-cols-12 gap-10 items-start">
+
+      <div class="lg:col-span-7">
+        <span class="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full text-[12px] font-semibold tag">
+          <span class="live-dot"></span>
+          Web · FiveM · Hosting · On-site IT &amp; Networking
+        </span>
+
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
+          One person who builds it,<br>
+          fixes it, and <span class="accent">turns up in person</span>.
+        </h1>
+
+        <p class="mt-6 text-lg text-gray-300 max-w-2xl leading-relaxed">
+          OpsLab Systems is a small, hands-on tech outfit: websites and web apps,
+          FiveM development, hosting and server setup — and on-site IT and network
+          work when you need someone physically there.
+        </p>
+
+        <p class="mt-3 text-base text-gray-400 max-w-2xl leading-relaxed">
+          Everything runs through one simple ticket system that stays in sync
+          between the website and Discord, so nothing gets lost. You talk to the
+          person actually doing the work.
+        </p>
+
+        <div class="mt-8 flex flex-wrap gap-3">
+          {% if current_user.is_authenticated %}
+            <a href="{{ url_for('tickets.new') }}"
+               class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">
+              Open a ticket
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </a>
+          {% else %}
+            <a href="{{ url_for('auth.register') }}"
+               class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">
+              Get started
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </a>
+          {% endif %}
+          <a href="#onsite"
+             class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-white/[.05] border border-ink-600 rounded-xl hover:bg-white/[.09] transition">
+            <svg class="w-4 h-4 accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Need me on-site?
+          </a>
+        </div>
+
+        <!-- Honest, concrete trust row — no invented statistics -->
+        <div class="mt-10 grid sm:grid-cols-3 gap-4 max-w-2xl">
+          <div class="flex items-start gap-2.5">
+            <span class="check mt-0.5"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>
+            <span class="text-sm text-gray-300">Talk to the person doing the work — no call-centre.</span>
+          </div>
+          <div class="flex items-start gap-2.5">
+            <span class="check mt-0.5"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>
+            <span class="text-sm text-gray-300">Tickets sync between web &amp; Discord automatically.</span>
+          </div>
+          <div class="flex items-start gap-2.5">
+            <span class="check mt-0.5"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>
+            <span class="text-sm text-gray-300">Remote or on-site — your choice.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick-jump card: makes the page easy to navigate -->
+      <div class="lg:col-span-5">
+        <div class="card p-6">
+          <div class="text-[11px] font-bold uppercase tracking-widest text-gray-500 mb-4">Jump to</div>
+          <div class="grid grid-cols-2 gap-2.5">
+            <a href="#onsite" class="flex items-center gap-2.5 px-3 py-3 rounded-xl bg-ops-500/[.08] border border-ops-500/30 hover:border-ops-500/60 transition">
+              <svg class="w-5 h-5 accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <span class="text-sm font-semibold text-white">On-site &amp; networking</span>
+            </a>
+            <a href="#services" class="flex items-center gap-2.5 px-3 py-3 rounded-xl bg-white/[.03] border border-ink-600 hover:border-ops-500/50 transition">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+              <span class="text-sm font-semibold text-white">Services</span>
+            </a>
+            <a href="#companies" class="flex items-center gap-2.5 px-3 py-3 rounded-xl bg-white/[.03] border border-ink-600 hover:border-ops-500/50 transition">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2M5 21H3m4-12h2m-2 4h2m6-4h2m-2 4h2"/></svg>
+              <span class="text-sm font-semibold text-white">Brands</span>
+            </a>
+            <a href="#licenses" class="flex items-center gap-2.5 px-3 py-3 rounded-xl bg-white/[.03] border border-ink-600 hover:border-ops-500/50 transition">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+              <span class="text-sm font-semibold text-white">Licenses</span>
+            </a>
+            <a href="#how-it-works" class="flex items-center gap-2.5 px-3 py-3 rounded-xl bg-white/[.03] border border-ink-600 hover:border-ops-500/50 transition">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+              <span class="text-sm font-semibold text-white">How it works</span>
+            </a>
+            <a href="#faq" class="flex items-center gap-2.5 px-3 py-3 rounded-xl bg-white/[.03] border border-ink-600 hover:border-ops-500/50 transition">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span class="text-sm font-semibold text-white">FAQ</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════ ON-SITE IT & NETWORKING ══ -->
+<section id="onsite" class="py-16 border-y border-ops-500/20 bg-ops-500/[.04] scroll-mt-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid lg:grid-cols-12 gap-10 items-start">
+
+      <div class="lg:col-span-7">
+        <div class="text-[11px] font-bold uppercase tracking-[.25em] accent mb-3">In person · on-site</div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
+          Need someone there in person? Quick and easy.
+        </h2>
+        <p class="mt-4 text-gray-300 text-lg leading-relaxed max-w-2xl">
+          For network setup, cabling, hardware and anything that needs hands on
+          the kit, I come to you. No drawn-out process — call, message, or book a
+          call-out and we'll sort a time.
+        </p>
+
+        <div class="mt-8 grid sm:grid-cols-2 gap-3">
+          {% set onsite_items = [
+            ('Network setup & cabling', 'Routers, switches, structured cabling, patch panels.'),
+            ('Wi-Fi & coverage', 'Access points, mesh, dead-spot fixes, guest networks.'),
+            ('Hardware install & repair', 'PCs, NAS, printers, peripherals — set up and fixed on site.'),
+            ('Servers & racks', 'On-prem servers, rack tidy-ups, NVR/CCTV networking.'),
+            ('Internet & ISP issues', 'Diagnosing drops, line faults, router/modem config.'),
+            ('General IT call-outs', 'Anything that needs a person on the ground.'),
+          ] %}
+          {% for title, desc in onsite_items %}
+          <div class="flex items-start gap-3 p-3 rounded-xl bg-ink-900/50 border border-ink-600">
+            <span class="check mt-0.5"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>
+            <div>
+              <div class="text-sm font-semibold text-white">{{ title }}</div>
+              <div class="text-xs text-gray-400 mt-0.5">{{ desc }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="lg:col-span-5">
+        <div class="card p-6 sm:p-7">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="live-dot"></span>
+            <span class="text-[11px] font-bold uppercase tracking-widest text-gray-400">
+              <!-- EDIT: your service area -->
+              Providing services across the Scottish Borders and outside of this area at a charge
+            </span>
+          </div>
+          <h3 class="text-xl font-bold text-white mt-2">Book an on-site visit</h3>
+          <p class="text-sm text-gray-400 mt-1">Fastest first. Pick whatever suits you.</p>
+
+          <div class="mt-5 space-y-2.5">
+            <!-- EDIT: phone number (used in both the link and the label) -->
+            <a href="tel:+440000000000"
+               class="flex items-center gap-3 p-3.5 rounded-xl bg-ink-900/60 border border-ink-600 hover:border-ops-500/60 transition group">
+              <span class="svc-icon w-10 h-10 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+              </span>
+              <div class="flex-1">
+                <div class="text-sm font-semibold text-white">Call</div>
+                <div class="text-xs text-gray-400">+44 0000 000 000</div>
+              </div>
+              <svg class="w-4 h-4 text-gray-500 group-hover:accent transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </a>
+
+            <!-- EDIT: WhatsApp number, international format, no + or spaces -->
+            <a href="https://wa.me/440000000000"
+               class="flex items-center gap-3 p-3.5 rounded-xl bg-ink-900/60 border border-ink-600 hover:border-ops-500/60 transition group">
+              <span class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.35);color:#25d366;">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.484 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.515 5.26l-.999 3.648 3.973-1.607z"/></svg>
+              </span>
+              <div class="flex-1">
+                <div class="text-sm font-semibold text-white">WhatsApp</div>
+                <div class="text-xs text-gray-400">Message me directly</div>
+              </div>
+              <svg class="w-4 h-4 text-gray-500 group-hover:accent transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </a>
+
+            <a href="{{ url_for('callouts.book') }}" target="_blank" rel="noopener"
+               class="flex items-center gap-3 p-3.5 rounded-xl bg-ops-500/[.10] border border-ops-500/40 hover:border-ops-500/70 transition group">
+              <span class="svc-icon w-10 h-10 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </span>
+              <div class="flex-1">
+                <div class="text-sm font-semibold text-white">Book a call-out</div>
+                <div class="text-xs text-gray-400">In-person, phone or online — request a time</div>
+              </div>
+              <svg class="w-4 h-4 accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </a>
+
+            <!-- EDIT: your email address -->
+            <a href="mailto:hello@opslabsystems.cloud"
+               class="flex items-center gap-3 p-3.5 rounded-xl bg-ink-900/60 border border-ink-600 hover:border-ops-500/60 transition group">
+              <span class="svc-icon w-10 h-10 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              </span>
+              <div class="flex-1">
+                <div class="text-sm font-semibold text-white">Email</div>
+                <div class="text-xs text-gray-400">hello@opslabsystems.cloud</div>
+              </div>
+              <svg class="w-4 h-4 text-gray-500 group-hover:accent transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </a>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-ink-600/60 flex items-center gap-2 text-xs text-gray-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <!-- EDIT: your hours -->
+            <span>Call-outs Mon–Sat. Same-week slots where possible.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════ SERVICES ══ -->
+<section id="services" class="py-20 scroll-mt-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-2xl mb-12">
+      <div class="text-[11px] font-bold uppercase tracking-[.25em] accent mb-3">What I do</div>
+      <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Services, all under one roof.</h2>
+      <p class="mt-4 text-gray-400 text-lg">
+        One contact, one ticket system. No chasing freelancers across five platforms.
+      </p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      {% set services = [
+        ('Website development', 'Custom sites, dashboards, landing pages, e-commerce and ongoing maintenance.', ['Flask','React','Next.js','WordPress'],
+         'M3 7h18M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M3 7l2-3h14l2 3M8 13h.01M12 13h.01M16 13h.01'),
+        ('FiveM development', 'Scripts, MLOs, custom maps and full server builds for QBCore, ESX or standalone.', ['QBCore','ESX','Lua','MLO'],
+         'M9 10l-2 2v3a2 2 0 002 2h6a2 2 0 002-2v-3l-2-2M9 10V7a3 3 0 016 0v3M9 10h6'),
+        ('Tech support', 'Debugging, troubleshooting and rapid fixes — remote or on-site.', ['Debugging','Log analysis','Triage'],
+         'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z'),
+        ('Hosting', 'VPS, dedicated and game-server hosting. Provisioning, migration and management.', ['VPS','Dedicated','Game servers'],
+         'M4 7c0-1.105 3.582-2 8-2s8 .895 8 2-3.582 2-8 2-8-.895-8-2zm0 0v10c0 1.105 3.582 2 8 2s8-.895 8-2V7M4 12c0 1.105 3.582 2 8 2s8-.895 8-2'),
+        ('System setup', 'OS install, hardening, monitoring and performance tuning — Linux and Windows.', ['Linux','Windows Server','Hardening'],
+         'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'),
+        ('On-site IT & networking', 'Cabling, Wi-Fi, hardware and network installs — in person, at your place.', ['Networking','Cabling','Wi-Fi'],
+         'M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z'),
+      ] %}
+
+      {% for title, desc, tags, icon in services %}
+      <a href="{% if title == 'On-site IT & networking' %}#onsite{% elif current_user.is_authenticated %}{{ url_for('tickets.new') }}{% else %}{{ url_for('auth.register') }}{% endif %}"
+         class="card group p-6 block">
+        <div class="svc-icon w-11 h-11 rounded-xl flex items-center justify-center mb-4">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ icon }}"/></svg>
+        </div>
+        <h3 class="text-lg font-bold mb-2">{{ title }}</h3>
+        <p class="text-sm text-gray-400 mb-4 leading-relaxed">{{ desc }}</p>
+        <div class="flex flex-wrap gap-1.5">
+          {% for t in tags %}<span class="tag">{{ t }}</span>{% endfor %}
+        </div>
+        <div class="mt-4 text-xs accent font-semibold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+          {% if title == 'On-site IT & networking' %}See on-site options{% else %}Open a ticket{% endif %}
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════ BRANDS / COMPANIES ══ -->
+<section id="companies" class="py-20 border-t border-ink-600/40 scroll-mt-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-2xl mb-12">
+      <div class="text-[11px] font-bold uppercase tracking-[.25em] accent mb-3">Brands &amp; projects</div>
+      <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">The brands I build and run.</h2>
+      <p class="mt-4 text-gray-400 text-lg">Each one's a focused project. Open a ticket against any of them.</p>
+    </div>
+
+    {% if companies %}
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for c in companies %}
+      <a href="{{ url_for('tickets.new') }}?company_id={{ c.id }}"
+         class="card group p-6 block">
+        <div class="flex items-start gap-4">
+          {% if c.logo_url %}
+            <img src="{{ c.logo_url }}" alt="{{ c.name }}" class="w-12 h-12 rounded-xl object-cover border border-ink-600/60">
+          {% else %}
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold flex-shrink-0"
+                 style="background: {{ c.accent_color or '#2196f3' }}1f; color: {{ c.accent_color or '#71b7ff' }};">
+              {{ c.name[0]|upper }}
+            </div>
+          {% endif %}
+          <div class="flex-1 min-w-0">
+            <div class="text-base font-bold text-white group-hover:accent transition">{{ c.name }}</div>
+            {% if c.tagline %}<div class="text-xs text-gray-400 mt-1">{{ c.tagline }}</div>{% endif %}
+          </div>
+        </div>
+        {% if c.description %}
+          <p class="text-sm text-gray-400 mt-4 leading-relaxed line-clamp-3">{{ c.description }}</p>
+        {% endif %}
+        <div class="mt-4 pt-4 border-t border-ink-600/40 flex items-center justify-between">
+          {% set _cats = c.categories.all() if c.categories.__class__.__name__ == 'AppenderQuery' else (c.categories or []) %}
+          <span class="text-[11px] font-semibold uppercase tracking-widest text-gray-500">
+            {{ _cats|length }} service{% if _cats|length != 1 %}s{% endif %}
+          </span>
+          <span class="text-xs font-semibold accent flex items-center gap-1">
+            Open ticket
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-sm text-gray-500">No brands listed yet.</div>
+    {% endif %}
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════ LICENSE MANAGER ══ -->
+<section id="licenses" class="py-20 border-t border-ink-600/40 scroll-mt-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid lg:grid-cols-2 gap-12 items-center">
+
+      <div>
+        <div class="text-[11px] font-bold uppercase tracking-[.25em] accent mb-3">License Manager</div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+          License your software, control activations, track usage.
+        </h2>
+        <p class="mt-4 text-gray-400 text-lg leading-relaxed">
+          A licensing platform for the software I sell. Issue keys, lock to IPs or
+          hardware, set expiry, and manage tiers and features per customer. A
+          self-serve customer portal is included.
+        </p>
+
+        <ul class="mt-6 space-y-3 text-sm text-gray-300">
+          {% set lic_points = [
+            ('Tiered licensing', 'Starter / Basic / Pro / Enterprise per product.'),
+            ('IP & hardware locks', 'Bind keys to specific machines or networks.'),
+            ('Real-time validation API', 'Software checks in; you control access.'),
+            ('Per-feature toggles', 'Enable or disable modules per customer, instantly.'),
+          ] %}
+          {% for t, d in lic_points %}
+          <li class="flex items-start gap-3">
+            <span class="check mt-0.5"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>
+            <span><b class="text-white">{{ t }}</b> — {{ d }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          <a href="/licenses/auth/login"
+             class="inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+            Admin sign-in
+          </a>
+          <a href="/licenses/portal/login"
+             class="inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold text-gray-300 bg-white/5 border border-ink-600 rounded-xl hover:bg-white/10 hover:text-white transition">
+            Customer portal
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <div class="card overflow-hidden p-0">
+          <div class="flex items-center gap-2 px-4 py-3 border-b border-ink-600/60 bg-ink-900/60">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500/50"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-yellow-500/50"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-green-500/50"></span>
+            <span class="ml-3 text-[11px] font-mono text-gray-500 truncate">/licenses/admin/licenses</span>
+            <span class="ml-auto text-[10px] uppercase tracking-widest text-gray-600">Preview</span>
+          </div>
+          <div class="p-5 space-y-2.5">
+            <div class="text-[11px] font-bold uppercase tracking-widest text-gray-500 mb-1">Active keys</div>
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-ink-900/60 border border-ink-600/50">
+              <span class="w-2 h-2 rounded-full bg-green-400"></span>
+              <span class="font-mono text-xs accent">A3F7-XKQ2-9JNP-VBHM</span>
+              <span class="ml-auto px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-widest bg-ops-500/15 text-ops-300">Enterprise</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-ink-900/60 border border-ink-600/50">
+              <span class="w-2 h-2 rounded-full bg-green-400"></span>
+              <span class="font-mono text-xs text-gray-300">7K2M-Q3PX-N5RT-9HVZ</span>
+              <span class="ml-auto px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-widest bg-purple-500/15 text-purple-300">Pro</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-ink-900/60 border border-ink-600/50">
+              <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+              <span class="font-mono text-xs text-gray-300">B8XZ-LP4M-3K2J-W5DR</span>
+              <span class="ml-auto px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-widest bg-blue-500/15 text-blue-300">Basic</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-ink-900/60 border border-ink-600/50">
+              <span class="w-2 h-2 rounded-full bg-red-400"></span>
+              <span class="font-mono text-xs text-gray-500 line-through">Q1MT-4FB7-X9YE-PR2H</span>
+              <span class="ml-auto px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-widest bg-red-500/15 text-red-300">Expired</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════ HOW IT WORKS ══ -->
+<section id="how-it-works" class="py-20 border-t border-ink-600/40 scroll-mt-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-2xl mb-12">
+      <div class="text-[11px] font-bold uppercase tracking-[.25em] accent mb-3">How it works</div>
+      <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">From request to resolution.</h2>
+      <p class="mt-4 text-gray-400 text-lg">A real workflow — not a contact form into the void.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-4">
+      {% set steps = [
+        ('1', 'Open a ticket', 'Pick a service and answer a few short questions — on the web or in Discord, your call.'),
+        ('2', 'A private channel opens', 'You get a locked Discord channel mirrored to the web dashboard. Both stay in sync.'),
+        ('3', 'Sorted and archived', 'Resolved, transcript saved and searchable. Reopen any time if it comes back.'),
+      ] %}
+      {% for n, title, desc in steps %}
+      <div class="card p-6">
+        <div class="w-10 h-10 rounded-xl bg-ops-500/15 border border-ops-500/40 accent flex items-center justify-center font-extrabold mb-4">{{ n }}</div>
+        <h3 class="font-bold text-lg mb-2">{{ title }}</h3>
+        <p class="text-sm text-gray-400 leading-relaxed">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════ WHY US ══ -->
+<section id="features" class="py-20 border-t border-ink-600/40 scroll-mt-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid lg:grid-cols-12 gap-12 items-start">
+      <div class="lg:col-span-5">
+        <div class="text-[11px] font-bold uppercase tracking-[.25em] accent mb-3">Why OpsLab</div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Built for real conversations.</h2>
+        <p class="mt-4 text-gray-400 text-lg leading-relaxed">
+          Not a contact form. Not a chatbot loop. Not "we'll get back to you in
+          5–7 business days." A live, two-way line between you and the person
+          doing the work — on whatever platform you actually use.
+        </p>
+      </div>
+
+      <div class="lg:col-span-7 grid sm:grid-cols-2 gap-4">
+        {% set feats = [
+          ('Two-way sync', 'Reply on the web, it lands in Discord. Reply in Discord, it shows on the web.', 'M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586'),
+          ('Private channels', 'Each ticket gets a locked Discord channel — only you and the people on the job.', 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'),
+          ('One point of contact', 'No "let me check with someone." The person you talk to is the person doing it.', 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z'),
+          ('Full transcripts', 'Every ticket archived in full — web and Discord messages both — even after closing.', 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'),
+        ] %}
+        {% for title, desc, icon in feats %}
+        <div class="card p-6">
+          <div class="svc-icon w-10 h-10 rounded-lg flex items-center justify-center mb-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ icon }}"/></svg>
+          </div>
+          <h3 class="font-bold mb-1">{{ title }}</h3>
+          <p class="text-sm text-gray-400 leading-relaxed">{{ desc }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════ REVIEWS ══ -->
+{% if site_reviews %}
+<section id="reviews" class="py-20 border-t border-ink-600/40 scroll-mt-20">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <div class="text-xs font-bold uppercase tracking-widest text-ops-300 mb-2">What people say</div>
+    <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-10">Reviews</h2>
+
+    <div id="revSlider" class="relative min-h-[200px]">
+      {% for r in site_reviews %}
+      <figure class="rev-slide absolute inset-0 transition-opacity duration-700 ease-in-out {{ 'opacity-100' if loop.first else 'opacity-0 pointer-events-none' }}" data-rev="{{ loop.index0 }}">
+        <div class="text-yellow-400 text-2xl mb-4">{{ r.stars }}</div>
+        <blockquote class="text-xl sm:text-2xl font-medium text-gray-100 leading-relaxed max-w-3xl mx-auto">“{{ r.body }}”</blockquote>
+        <figcaption class="mt-5 text-gray-400">
+          <span class="font-semibold text-white">{{ r.name }}</span>
+          {% if r.organisation or r.country %}<span class="text-sm"> · {{ [r.organisation, r.country]|select|join(' · ') }}</span>{% endif %}
+        </figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+
+    {% if site_reviews|length > 1 %}
+    <div id="revDots" class="flex items-center justify-center gap-2 mt-8">
+      {% for r in site_reviews %}
+      <button class="rev-dot w-2.5 h-2.5 rounded-full transition {{ 'bg-ops-400' if loop.first else 'bg-ink-600 hover:bg-ink-500' }}" data-go="{{ loop.index0 }}" aria-label="Go to review {{ loop.index }}"></button>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="mt-10 flex items-center justify-center gap-3">
+      <a href="{{ url_for('reviews.index') }}" class="px-5 py-2.5 text-sm font-semibold text-gray-200 bg-white/5 border border-ink-600 rounded-xl hover:bg-white/10 transition">Read all reviews</a>
+      <a href="{{ url_for('reviews.new') }}" class="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">Leave a review</a>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    var slides = Array.prototype.slice.call(document.querySelectorAll('#revSlider .rev-slide'));
+    var dots   = Array.prototype.slice.call(document.querySelectorAll('#revDots .rev-dot'));
+    if (slides.length < 2) return;
+    var i = 0, timer = null, DELAY = 20000;
+    function show(n){
+      i = (n + slides.length) % slides.length;
+      slides.forEach(function(s, idx){
+        var on = idx === i;
+        s.classList.toggle('opacity-100', on);
+        s.classList.toggle('opacity-0', !on);
+        s.classList.toggle('pointer-events-none', !on);
+      });
+      dots.forEach(function(d, idx){
+        d.classList.toggle('bg-ops-400', idx === i);
+        d.classList.toggle('bg-ink-600', idx !== i);
+      });
+    }
+    function next(){ show(i + 1); }
+    function start(){ stop(); timer = setInterval(next, DELAY); }
+    function stop(){ if (timer) clearInterval(timer); }
+    dots.forEach(function(d){
+      d.addEventListener('click', function(){ show(parseInt(d.dataset.go, 10)); start(); });
+    });
+    var slider = document.getElementById('revSlider');
+    slider.addEventListener('mouseenter', stop);
+    slider.addEventListener('mouseleave', start);
+    start();
+  })();
+  </script>
+</section>
+{% endif %}
+
+
+<!-- ═══════════════════════════════════════════════════════════ FAQ ══ -->
+<section id="faq" class="py-20 border-t border-ink-600/40 scroll-mt-20">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="mb-10">
+      <div class="text-[11px] font-bold uppercase tracking-[.25em] accent mb-3">FAQ</div>
+      <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Common questions.</h2>
+    </div>
+
+    {% set faqs = [
+      ('Do you actually come out in person?',
+       'Yes — for network setup, cabling, Wi-Fi, hardware and anything that needs hands on the equipment. Call, WhatsApp or book a call-out and we sort a time.'),
+      ('How do I get started?',
+       'If it can be done remotely, register and open a ticket — it takes about 30 seconds and quotes are free. For on-site work, just call or message.'),
+      ('How quickly do you respond?',
+       'Usually within a few hours during the day. The Discord bot opens your ticket channel instantly, around the clock.'),
+      ('Is it free?',
+       'Quotes are always free. Paid work is scoped together in the ticket first, so there are no surprises on the bill.'),
+      ('Can I just use Discord and skip the website?',
+       'You can. Every ticket lives on both — if you only touch Discord, the web side just becomes your searchable record.'),
+      ('How do you handle confidentiality?',
+       'Each ticket channel is locked to you and whoever is on the job. NDAs are fine for anything that needs formal confidentiality.'),
+      ('What payment methods do you take?',
+       'We sort it in your ticket once the work is scoped — bank transfer, card or crypto all work.'),
+    ] %}
+
+    <div id="faq-accordion" data-accordion="collapse">
+      {% for q, a in faqs %}
+      <h3 id="faq-head-{{ loop.index }}">
+        <button type="button"
+          class="flex items-center justify-between w-full gap-3 p-5 text-left font-semibold text-white bg-ink-800/60 border border-ink-600 {% if loop.first %}rounded-t-xl{% endif %}{% if not loop.first %} border-t-0{% endif %} hover:bg-ink-800 transition"
+          data-accordion-target="#faq-body-{{ loop.index }}" aria-expanded="false" aria-controls="faq-body-{{ loop.index }}">
+          <span>{{ q }}</span>
+          <svg data-accordion-icon class="w-4 h-4 shrink-0 rotate-180 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+        </button>
+      </h3>
+      <div id="faq-body-{{ loop.index }}" class="hidden" aria-labelledby="faq-head-{{ loop.index }}">
+        <div class="p-5 border border-ink-600 border-t-0 {% if loop.last %}rounded-b-xl{% endif %} bg-ink-900/40 text-sm text-gray-400 leading-relaxed">
+          {{ a }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════ CTA ══ -->
+<section class="py-20">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="card p-8 sm:p-12 bg-gradient-to-br from-ops-700/25 to-ink-900 border-ops-500/30">
+      <div class="grid md:grid-cols-5 gap-8 items-center">
+        <div class="md:col-span-3">
+          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">Let's sort it out.</h2>
+          <p class="mt-3 text-gray-300 text-lg max-w-xl">
+            Open a ticket for remote work, or grab me for an on-site visit. Free to
+            sign up, no card needed.
+          </p>
+        </div>
+        <div class="md:col-span-2 flex flex-col gap-3 md:items-end">
+          {% if current_user.is_authenticated %}
+            <a href="{{ url_for('tickets.new') }}"
+               class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">
+              Open a ticket
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </a>
+            <a href="#onsite"
+               class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 text-sm font-semibold text-white bg-white/5 border border-ink-600 rounded-xl hover:bg-white/10 transition">
+              Book an on-site visit
+            </a>
+          {% else %}
+            <a href="{{ url_for('auth.register') }}"
+               class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">
+              Create your account
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </a>
+            <a href="#onsite"
+               class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 text-sm font-semibold text-white bg-white/5 border border-ink-600 rounded-xl hover:bg-white/10 transition">
+              Book an on-site visit
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

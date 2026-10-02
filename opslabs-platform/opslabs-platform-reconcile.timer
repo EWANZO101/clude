@@ -1,0 +1,9 @@
+[Unit]
+Description=Run OpsLabs Platform credit reconciliation hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

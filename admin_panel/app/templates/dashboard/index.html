@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Companies — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles"><h1>Your companies</h1></div>
+  <div class="page-actions">
+    <a href="{{ url_for('companies.new') }}" class="btn">{% import "_icons.html" as icons %}{{ icons.icon('plus',14) }}New company</a>
+  </div>
+</div>
+
+{% if companies %}
+  <ul class="row-list">
+    {% for company in companies %}
+      <li>
+        <div>
+          <div style="font-weight:600;">{{ company.name }}</div>
+          <div class="muted mono" style="font-size:12px; margin-top:2px;">{{ company.slug }}</div>
+        </div>
+        <a href="{{ url_for('companies.detail', company_id=company.public_id) }}" class="btn btn-secondary btn-sm">Open →</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="panel empty">
+    <p style="margin-bottom:14px;">You're not part of any company yet. Create one to start registering kiosk instances.</p>
+    <a href="{{ url_for('companies.new') }}" class="btn">Create your first company</a>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}What's due{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  {{ ui.page_header("What's due") }}
+
+  {% if missed %}
+    {% for m in missed %}
+      <div class="flex items-start gap-3 p-4 mb-2 text-sm text-red-300 rounded-2xl bg-red-500/10 border border-red-500/20" role="alert">
+        <span class="shrink-0 mt-0.5 text-red-400">{{ ui.icon('alert-triangle', 'w-4 h-4') }}</span>
+        <div>
+          <span class="font-medium text-red-200">Possibly missed {{ m.kind }}:</span>
+          {{ m.name }} — {{ m.amount_minor | money }} was due {{ m.due_date }} ({{ m.days_overdue }} day(s) ago) and no matching transaction was found.
+          {% if m.kind == 'bill' %}
+            <a href="{{ url_for('finance.bills') }}" class="underline hover:no-underline">Check bills &rarr;</a>
+          {% else %}
+            <a href="{{ url_for('finance.subscriptions') }}" class="underline hover:no-underline">Check subscriptions &rarr;</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="grid grid-cols-2 gap-4">
+    {{ ui.stat_tile("Total due (next payment on everything)", everything.total_next_payments_minor | money) }}
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-4 hover:border-slate-700 transition-colors">
+      <p class="text-xs text-slate-500 mb-1.5">Left after everything</p>
+      <p class="text-lg font-semibold tabular-nums {{ 'text-red-400' if everything.left_after_everything_minor < 0 else 'text-emerald-400' }}">{{ everything.left_after_everything_minor | money }}</p>
+    </div>
+  </div>
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    <p class="p-4 text-xs uppercase tracking-wide text-slate-500 flex items-center gap-1.5">{{ ui.icon('receipt', 'w-3.5 h-3.5') }} Bills</p>
+    {% for b in everything.bills %}
+      <div class="px-4 pb-3 flex items-center justify-between text-sm">
+        <p class="text-slate-100">{{ b.name }}</p>
+        <div class="text-right">
+          <p class="text-slate-200 font-medium tabular-nums">{{ b.amount_minor | money }}</p>
+          <p class="text-xs text-slate-500">due {{ b.next_due_date }}</p>
+        </div>
+      </div>
+    {% else %}
+      <p class="px-4 pb-3 text-sm text-slate-500">No active bills.</p>
+    {% endfor %}
+  </div>
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    <p class="p-4 text-xs uppercase tracking-wide text-slate-500 flex items-center gap-1.5">{{ ui.icon('repeat', 'w-3.5 h-3.5') }} Subscriptions</p>
+    {% for s in everything.subscriptions %}
+      <div class="px-4 pb-3 flex items-center justify-between text-sm">
+        <p class="text-slate-100">{{ s.name }}</p>
+        <div class="text-right">
+          <p class="text-slate-200 font-medium tabular-nums">{{ s.amount_minor | money }}</p>
+          <p class="text-xs text-slate-500">due {{ s.next_payment_date }}</p>
+        </div>
+      </div>
+    {% else %}
+      <p class="px-4 pb-3 text-sm text-slate-500">No active subscriptions.</p>
+    {% endfor %}
+  </div>
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    <p class="p-4 text-xs uppercase tracking-wide text-slate-500 flex items-center gap-1.5">{{ ui.icon('alert-triangle', 'w-3.5 h-3.5') }} Debts</p>
+    {% for d in everything.debts %}
+      <div class="px-4 pb-3 flex items-center justify-between text-sm">
+        <p class="text-slate-100">{{ d.creditor_name }}</p>
+        <div class="text-right">
+          <p class="text-slate-200 font-medium tabular-nums">{{ d.monthly_payment_minor | money }} / {{ d.frequency }}</p>
+          {% if d.next_payment_date %}<p class="text-xs text-slate-500">due {{ d.next_payment_date }}</p>{% endif %}
+        </div>
+      </div>
+    {% else %}
+      <p class="px-4 pb-3 text-sm text-slate-500">No debts on record.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

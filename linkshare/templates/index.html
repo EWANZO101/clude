@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}LinkShare — quick photo/video sharing{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Drop a photo or video.<br>Get a link. It's gone in {{ expire_hours|int }} hours.</h1>
+  <p class="sub">Images and videos up to {{ max_mb }}MB. No login required.</p>
+
+  <div id="dropzone" class="dropzone">
+    <input type="file" id="fileInput" accept="image/*,video/*" hidden>
+    <div class="dz-inner" id="dzInner">
+      <div class="dz-icon">⬆</div>
+      <div class="dz-text">Drag & drop, or <span class="link-like">browse</span></div>
+      <div class="dz-hint">JPG, PNG, GIF, WEBP, MP4, MOV, WEBM, AVI, MKV</div>
+    </div>
+    <div class="dz-progress" id="dzProgress" hidden>
+      <div class="bar"><div class="fill" id="progressFill"></div></div>
+      <div class="pct" id="progressPct">0%</div>
+    </div>
+  </div>
+
+  <div id="result" class="result-card" hidden>
+    <div class="result-row">
+      <input type="text" id="resultUrl" readonly>
+      <button id="copyBtn" class="btn-primary">Copy</button>
+    </div>
+    <div class="result-meta">
+      <span id="expireNote"></span>
+      <a id="openLink" href="#" target="_blank" class="link-like">Open link ↗</a>
+    </div>
+  </div>
+
+  <div id="errorBox" class="error-box" hidden></div>
+</section>
+
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}

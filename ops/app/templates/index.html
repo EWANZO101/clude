@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+{% block title %}OpsLab Systems · Web, FiveM, hosting & on-site IT{% endblock %}
+
+{# ────────────────────────────────────────────────────────────────────────
+   HOW TO EDIT YOUR CONTACT DETAILS
+   Phone / WhatsApp / call-out booking live on the dedicated on-site page:
+   app/templates/onsitesupport.html — search that file for "EDIT:".
+   Email lives in the "contact" section below, also marked "EDIT:".
+   Service content (what each of the six divisions offers) lives in
+   app/services_data.py — edit that file to change service page content.
+   ──────────────────────────────────────────────────────────────────────── #}
+
+{% block head_extra %}
+<style>
+  .card {
+    background: #0b1224;
+    border: 1px solid #1b2a4a;
+    border-radius: 16px;
+    transition: border-color .2s ease, transform .2s ease;
+  }
+  .card:hover { border-color: rgba(33,150,243,.45); transform: translateY(-2px); }
+
+  .svc-icon {
+    background: rgba(33,150,243,.10);
+    border: 1px solid rgba(33,150,243,.30);
+    color: #71b7ff;
+  }
+
+  .accent { color: #429fff; }
+
+  .tag {
+    font-size: 11px; padding: 2px 9px; border-radius: 999px;
+    background: rgba(255,255,255,.04); border: 1px solid #1b2a4a; color: #9fb0c9;
+  }
+
+  .check {
+    width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
+    background: rgba(33,150,243,.12); border: 1px solid rgba(33,150,243,.35);
+    display: inline-flex; align-items: center; justify-content: center; color: #71b7ff;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════════════════════════════ HERO ══ -->
+<section class="relative">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 lg:pt-20 pb-14">
+    <div class="grid lg:grid-cols-12 gap-10 items-start">
+
+      <div class="lg:col-span-7">
+        <span class="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full text-[12px] font-semibold tag">
+          <span class="live-dot"></span>
+          Six divisions · One team · One ticket system
+        </span>
+
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
+          One team that builds it,<br>
+          fixes it, and <span class="accent">turns up in person</span>.
+        </h1>
+
+        <p class="mt-6 text-lg text-gray-300 max-w-2xl leading-relaxed">
+          OpsLab Systems is a hands-on technology outfit working across six specialised divisions —
+          websites and web apps, FiveM development, hosting, system setup, tech support, and
+          on-site IT and networking.
+        </p>
+
+        <p class="mt-3 text-base text-gray-400 max-w-2xl leading-relaxed">
+          Everything runs through one ticket system that stays in sync between the website and
+          Discord, so nothing gets lost. You talk to the person actually doing the work.
+        </p>
+
+        <div class="mt-8 flex flex-wrap gap-3">
+          {% if current_user.is_authenticated %}
+            <a href="{{ url_for('tickets.new') }}"
+               class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">
+              Open a ticket
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </a>
+          {% else %}
+            <a href="{{ url_for('auth.register') }}"
+               class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">
+              Get started
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </a>
+          {% endif %}
+          <a href="#services"
+             class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-white/[.05] border border-ink-600 rounded-xl hover:bg-white/[.09] transition">
+            Browse services
+          </a>
+        </div>
+
+        <!-- Honest, concrete trust row — no invented statistics -->
+        <div class="mt-10 grid sm:grid-cols-3 gap-4 max-w-2xl">
+          <div class="flex items-start gap-2.5">
+            <span class="check mt-0.5"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>
+            <span class="text-sm text-gray-300">Talk to the person doing the work — no call-centre.</span>
+          </div>
+          <div class="flex items-start gap-2.5">
+            <span class="check mt-0.5"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>
+            <span class="text-sm text-gray-300">Tickets sync between web &amp; Discord automatically.</span>
+          </div>
+          <div class="flex items-start gap-2.5">
+            <span class="check mt-0.5"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>
+            <span class="text-sm text-gray-300">Remote or on-site — your choice.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Six divisions, compact — mirrors the services dropdown -->
+      <div class="lg:col-span-5">
+        <div class="card p-6">
+          <div class="text-[11px] font-bold uppercase tracking-widest text-gray-500 mb-4">Our six divisions</div>
+          <div class="grid grid-cols-2 gap-2.5">
+            {% for slug, s in SERVICES_ORDERED %}
+            <a href="{{ url_for('services.detail', slug=slug) }}"
+               class="flex items-center gap-2.5 px-3 py-3 rounded-xl bg-white/[.03] border border-ink-600 hover:border-white/20 transition">
+              <span class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    style="background:{{ s.accent }}1f; border:1px solid {{ s.accent }}4d; color:{{ s.accent }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ s.icon }}"/></svg>
+              </span>
+              <span class="text-sm font-semibold text-white leading-tight">{{ s.short_name }}</span>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════ SERVICES ══ -->
+<section id="services" class="py-20 scroll-mt-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-2xl mb-12">
+      <div class="text-[11px] font-bold uppercase tracking-[.25em] accent mb-3">What we do</div>
+      <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Six divisions, all under one roof.</h2>
+      <p class="mt-4 text-gray-400 text-lg">
+        Each has its own dedicated page — what we build, how it works, and how to get started.
+      </p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for slug, s in SERVICES_ORDERED %}
+      <a href="{{ url_for('services.detail', slug=slug) }}" class="card group p-6 block">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-4"
+             style="background:{{ s.accent }}1f; border:1px solid {{ s.accent }}4d; color:{{ s.accent }}">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ s.icon }}"/></svg>
+        </div>
+        <h3 class="text-lg font-bold mb-2">{{ s.name }}</h3>
+        <p class="text-sm text-gray-400 mb-4 leading-relaxed">{{ s.summary }}</p>
+        <div class="flex flex-wrap gap-1.5">
+          {% for t in s.tech[:4] %}<span class="tag">{{ t }}</span>{% endfor %}
+        </div>
+        <div class="mt-4 text-xs font-semibold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition" style="color:{{ s.accent }}">
+          Explore {{ s.short_name }}
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════ WHY US ══ -->
+<section id="features" class="py-20 border-t border-ink-600/40 scroll-mt-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid lg:grid-cols-12 gap-12 items-start">
+      <div class="lg:col-span-5">
+        <div class="text-[11px] font-bold uppercase tracking-[.25em] accent mb-3">Why OpsLab</div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Built for real conversations.</h2>
+        <p class="mt-4 text-gray-400 text-lg leading-relaxed">
+          Not a contact form. Not a chatbot loop. Not "we'll get back to you in
+          5–7 business days." A live, two-way line between you and the person
+          doing the work — on whatever platform you actually use.
+        </p>
+        <a href="#contact" class="mt-6 inline-flex items-center gap-2 text-sm font-semibold accent">
+          Get in touch
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </a>
+      </div>
+
+      <div class="lg:col-span-7 grid sm:grid-cols-2 gap-4">
+        {% set feats = [
+          ('Two-way sync', 'Reply on the web, it lands in Discord. Reply in Discord, it shows on the web.', 'M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586'),
+          ('Private channels', 'Each ticket gets a locked Discord channel — only you and the people on the job.', 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'),
+          ('One point of contact', 'No "let me check with someone." The person you talk to is the person doing it.', 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z'),
+          ('Full transcripts', 'Every ticket archived in full — web and Discord messages both — even after closing.', 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'),
+        ] %}
+        {% for title, desc, icon in feats %}
+        <div class="card p-6">
+          <div class="svc-icon w-10 h-10 rounded-lg flex items-center justify-center mb-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ icon }}"/></svg>
+          </div>
+          <h3 class="font-bold mb-1">{{ title }}</h3>
+          <p class="text-sm text-gray-400 leading-relaxed">{{ desc }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════ PORTFOLIO ══ -->
+<section id="portfolio" class="py-20 border-t border-ink-600/40 scroll-mt-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-2xl mb-12">
+      <div class="text-[11px] font-bold uppercase tracking-[.25em] accent mb-3">Recent work</div>
+      <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Brands and projects we build and run.</h2>
+      <p class="mt-4 text-gray-400 text-lg">Each one's a real, active project. Open a ticket against any of them.</p>
+    </div>
+
+    {% if companies %}
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for c in companies[:6] %}
+      <a href="{{ url_for('tickets.new') }}?company_id={{ c.id }}" class="card group p-6 block">
+        <div class="flex items-start gap-4">
+          {% if c.logo_url %}
+            <img src="{{ c.logo_url }}" alt="{{ c.name }}" class="w-12 h-12 rounded-xl object-cover border border-ink-600/60">
+          {% else %}
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold flex-shrink-0"
+                 style="background: {{ c.accent_color or '#2196f3' }}1f; color: {{ c.accent_color or '#71b7ff' }};">
+              {{ c.name[0]|upper }}
+            </div>
+          {% endif %}
+          <div class="flex-1 min-w-0">
+            <div class="text-base font-bold text-white group-hover:accent transition">{{ c.name }}</div>
+            {% if c.tagline %}<div class="text-xs text-gray-400 mt-1">{{ c.tagline }}</div>{% endif %}
+          </div>
+        </div>
+        {% if c.description %}
+          <p class="text-sm text-gray-400 mt-4 leading-relaxed line-clamp-3">{{ c.description }}</p>
+        {% endif %}
+        <div class="mt-4 pt-4 border-t border-ink-600/40 flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-widest text-gray-500">Active project</span>
+          <span class="text-xs font-semibold accent flex items-center gap-1">
+            Open ticket
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% if companies|length > 6 %}
+    <div class="mt-6 text-center">
+      <a href="{{ url_for('partners.landing') }}" class="text-sm font-semibold accent">See all brands &amp; partners →</a>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="text-center py-12 text-sm text-gray-500">No projects listed yet.</div>
+    {% endif %}
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════ TESTIMONIALS ══ -->
+{% if site_reviews %}
+<section id="testimonials" class="py-20 border-t border-ink-600/40 scroll-mt-20">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <div class="text-xs font-bold uppercase tracking-widest text-ops-300 mb-2">What people say</div>
+    <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-10">Testimonials</h2>
+
+    <div id="revSlider" class="relative min-h-[200px]">
+      {% for r in site_reviews %}
+      <figure class="rev-slide absolute inset-0 transition-opacity duration-700 ease-in-out {{ 'opacity-100' if loop.first else 'opacity-0 pointer-events-none' }}" data-rev="{{ loop.index0 }}">
+        <div class="text-yellow-400 text-2xl mb-4">{{ r.stars }}</div>
+        <blockquote class="text-xl sm:text-2xl font-medium text-gray-100 leading-relaxed max-w-3xl mx-auto">“{{ r.body }}”</blockquote>
+        <figcaption class="mt-5 text-gray-400">
+          <span class="font-semibold text-white">{{ r.name }}</span>
+          {% if r.organisation or r.country %}<span class="text-sm"> · {{ [r.organisation, r.country]|select|join(' · ') }}</span>{% endif %}
+        </figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+
+    {% if site_reviews|length > 1 %}
+    <div id="revDots" class="flex items-center justify-center gap-2 mt-8">
+      {% for r in site_reviews %}
+      <button class="rev-dot w-2.5 h-2.5 rounded-full transition {{ 'bg-ops-400' if loop.first else 'bg-ink-600 hover:bg-ink-500' }}" data-go="{{ loop.index0 }}" aria-label="Go to review {{ loop.index }}"></button>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="mt-10 flex items-center justify-center gap-3">
+      <a href="{{ url_for('reviews.index') }}" class="px-5 py-2.5 text-sm font-semibold text-gray-200 bg-white/5 border border-ink-600 rounded-xl hover:bg-white/10 transition">Read all reviews</a>
+      <a href="{{ url_for('reviews.new') }}" class="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">Leave a review</a>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    var slides = Array.prototype.slice.call(document.querySelectorAll('#revSlider .rev-slide'));
+    var dots   = Array.prototype.slice.call(document.querySelectorAll('#revDots .rev-dot'));
+    if (slides.length < 2) return;
+    var i = 0, timer = null, DELAY = 20000;
+    function show(n){
+      i = (n + slides.length) % slides.length;
+      slides.forEach(function(s, idx){
+        var on = idx === i;
+        s.classList.toggle('opacity-100', on);
+        s.classList.toggle('opacity-0', !on);
+        s.classList.toggle('pointer-events-none', !on);
+      });
+      dots.forEach(function(d, idx){
+        d.classList.toggle('bg-ops-400', idx === i);
+        d.classList.toggle('bg-ink-600', idx !== i);
+      });
+    }
+    function next(){ show(i + 1); }
+    function start(){ stop(); timer = setInterval(next, DELAY); }
+    function stop(){ if (timer) clearInterval(timer); }
+    dots.forEach(function(d){
+      d.addEventListener('click', function(){ show(parseInt(d.dataset.go, 10)); start(); });
+    });
+    var slider = document.getElementById('revSlider');
+    slider.addEventListener('mouseenter', stop);
+    slider.addEventListener('mouseleave', start);
+    start();
+  })();
+  </script>
+</section>
+{% endif %}
+
+
+<!-- ═══════════════════════════════════════════════════════════ CTA ══ -->
+<section class="py-20">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="card p-8 sm:p-12 bg-gradient-to-br from-ops-700/25 to-ink-900 border-ops-500/30">
+      <div class="grid md:grid-cols-5 gap-8 items-center">
+        <div class="md:col-span-3">
+          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">Let's sort it out.</h2>
+          <p class="mt-3 text-gray-300 text-lg max-w-xl">
+            Open a ticket for remote work, or book an on-site visit. Free to
+            sign up, no card needed.
+          </p>
+        </div>
+        <div class="md:col-span-2 flex flex-col gap-3 md:items-end">
+          {% if current_user.is_authenticated %}
+            <a href="{{ url_for('tickets.new') }}"
+               class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">
+              Open a ticket
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </a>
+          {% else %}
+            <a href="{{ url_for('auth.register') }}"
+               class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">
+              Create your account
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </a>
+          {% endif %}
+          <a href="{{ url_for('site.onsitesupport') }}"
+             class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 text-sm font-semibold text-white bg-white/5 border border-ink-600 rounded-xl hover:bg-white/10 transition">
+            Book an on-site visit
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════ CONTACT ══ -->
+<section id="contact" class="pb-20 scroll-mt-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="card p-8 sm:p-10">
+      <div class="grid md:grid-cols-3 gap-8 items-center">
+        <div class="md:col-span-2">
+          <div class="text-[11px] font-bold uppercase tracking-[.25em] accent mb-3">Contact</div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Questions before opening a ticket?</h2>
+          <p class="mt-3 text-gray-400 max-w-xl leading-relaxed">
+            Tickets are the fastest way to get work scoped and moving, but if you just want to ask
+            something first, drop us an email or check On-Site IT &amp; Networking for phone and
+            WhatsApp contact.
+          </p>
+        </div>
+        <div class="flex flex-col gap-3 md:items-end">
+          <!-- EDIT: your email address -->
+          <a href="mailto:hello@opslabsystems.cloud"
+             class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-gray-200 bg-white/5 border border-ink-600 rounded-xl hover:bg-white/10 hover:text-white transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            hello@opslabsystems.cloud
+          </a>
+          <a href="{{ url_for('site.onsitesupport') }}"
+             class="w-full md:w-auto inline-flex items-center justify-center gap-2 text-sm font-semibold accent">
+            Call / WhatsApp via On-Site IT →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

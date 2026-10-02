@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-stolen pulse"></span><h1 class="font-display font-800 text-2xl text-chalk">Stolen bike map</h1></div>
+<div id="map" class="rounded-2xl border border-hair overflow-hidden" style="height:560px"></div>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+{% endblock %}
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map = L.map('map').setView([55.95, -3.19], 6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+fetch('{{ url_for("main.stolen_json") }}').then(r=>r.json()).then(rows=>{
+  rows.forEach(b=>{ L.marker([b.lat,b.lng]).addTo(map).bindPopup(`<strong>${b.title}</strong><br>${b.reg||''}<br>${b.area}<br><a href="${b.url}">View profile</a>`); });
+});
+</script>
+{% endblock %}

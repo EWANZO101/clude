@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Extension requests — Admin — {{ app_name }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+
+<div class="bg-panel border border-border rounded-lg p-4 mb-6">
+  <h2 class="text-sm font-semibold text-gray-200 mb-3">Pending ({{ pending|length }})</h2>
+  {% if pending %}
+    <div class="space-y-4">
+      {% for req in pending %}
+      <div class="border border-border rounded-md p-4">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <p class="text-sm text-gray-200">{{ req.user.email if req.user else "—" }}</p>
+            <p class="text-xs text-gray-500">
+              Requesting {{ req.requested_days }} days —
+              <a href="{{ url_for('exports.detail', export_id=req.export_id) }}" class="text-blue-400 hover:text-blue-300">
+                export {{ req.export_id[:8] }}
+              </a>
+            </p>
+          </div>
+          <span class="text-xs text-gray-600">{{ req.created_at }}</span>
+        </div>
+        <p class="text-sm text-gray-300 bg-surface border border-border rounded-md p-3 mb-3">{{ req.reason }}</p>
+        <form method="POST" class="flex flex-wrap items-end gap-3">
+          <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs text-gray-500 mb-1">Notes (optional)</label>
+            <input type="text" name="admin_notes" class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200" />
+          </div>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" formaction="{{ url_for('admin.approve_extension_request', request_id=req.id) }}"
+                  class="px-3 py-2 rounded-md bg-green-700 hover:bg-green-600 text-white text-xs">Approve</button>
+          <button type="submit" formaction="{{ url_for('admin.decline_extension_request', request_id=req.id) }}"
+                  class="px-3 py-2 rounded-md bg-red-900 hover:bg-red-800 text-white text-xs">Decline</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500">Nothing waiting on review.</p>
+  {% endif %}
+</div>
+
+<div class="bg-panel border border-border rounded-lg p-4">
+  <h2 class="text-sm font-semibold text-gray-200 mb-3">All requests</h2>
+  <table class="w-full text-xs">
+    <thead>
+      <tr class="text-left text-gray-500 border-b border-border">
+        <th class="py-2">Requested</th>
+        <th class="py-2">User</th>
+        <th class="py-2">Export</th>
+        <th class="py-2">Days</th>
+        <th class="py-2">Status</th>
+        <th class="py-2">Reviewed by</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for req in all_requests %}
+      <tr class="border-b border-border/50">
+        <td class="py-1.5 text-gray-400">{{ req.created_at }}</td>
+        <td class="py-1.5 text-gray-300">{{ req.user.email if req.user else "—" }}</td>
+        <td class="py-1.5 text-gray-400">{{ req.export_id[:8] }}</td>
+        <td class="py-1.5 text-gray-400">{{ req.requested_days }}</td>
+        <td class="py-1.5">
+          {% if req.status == "approved" %}<span class="text-green-400">Approved</span>
+          {% elif req.status == "declined" %}<span class="text-red-400">Declined</span>
+          {% else %}<span class="text-yellow-400">Pending</span>{% endif %}
+        </td>
+        <td class="py-1.5 text-gray-500">{{ req.reviewer.email if req.reviewer else "—" }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="py-4 text-center text-gray-500">No requests yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

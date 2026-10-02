@@ -1,0 +1,908 @@
+{% extends "base.html" %}
+{% block title %}txAdmin — {{ panel_name }}{% endblock %}
+{% block content %}
+<input type="hidden" id="csrf_token" value="{{ csrf_token() }}">
+
+<header class="tx-hero">
+  <div class="tx-hero-text">
+    <p class="page-eyebrow">Game Servers</p>
+    <h1 class="tx-title">txAdmin servers</h1>
+    <p class="tx-lede">Spin up FiveM servers in seconds. Logins and databases are generated, stored and ready to copy.</p>
+  </div>
+  <div class="tx-hero-actions">
+    <button class="tx-btn tx-btn-ghost" type="button" id="refresh-btn" title="Refresh">
+      <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-2.6-6.36"/><path d="M21 3v6h-6"/></svg><span>Refresh</span>
+    </button>
+    <button class="tx-btn tx-btn-primary" type="button" id="new-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>New server</span>
+    </button>
+  </div>
+</header>
+
+<nav class="tx-crumbs" id="crumbs" hidden></nav>
+<main id="view"></main>
+
+<!-- Form modal -->
+<div class="modal-overlay tx-overlay" id="form-modal">
+  <div class="tx-modal">
+    <div class="tx-modal-head">
+      <div class="tx-modal-icon" id="form-icon"></div>
+      <div><h3 id="form-title"></h3><p id="form-sub"></p></div>
+      <button class="tx-x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <form id="form-body" class="tx-modal-body" autocomplete="off"></form>
+    <div class="tx-modal-foot">
+      <span class="tx-foot-status" id="form-status"></span>
+      <button class="tx-btn tx-btn-ghost" type="button" data-close>Cancel</button>
+      <button class="tx-btn tx-btn-primary" type="button" id="form-submit">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm modal -->
+<div class="modal-overlay tx-overlay" id="confirm-modal">
+  <div class="tx-modal tx-modal-sm">
+    <div class="tx-modal-head">
+      <div class="tx-modal-icon danger" id="confirm-icon"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg></div>
+      <div><h3 id="confirm-title">Are you sure?</h3></div>
+      <button class="tx-x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="tx-modal-body">
+      <div class="tx-confirm-text" id="confirm-text"></div>
+      <div class="tx-field" id="confirm-type-wrap" style="display:none;">
+        <label>Type <code id="confirm-type-name"></code> to confirm</label>
+        <input type="text" id="confirm-type-input" autocomplete="off">
+      </div>
+    </div>
+    <div class="tx-modal-foot">
+      <span class="tx-foot-status"></span>
+      <button class="tx-btn tx-btn-ghost" type="button" data-close>Cancel</button>
+      <button class="tx-btn tx-btn-danger" type="button" id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Job modal -->
+<div class="modal-overlay tx-overlay" id="job-modal">
+  <div class="tx-modal tx-modal-lg">
+    <div class="tx-modal-head">
+      <div class="tx-modal-icon" id="job-icon"><span class="tx-spinner"></span></div>
+      <div><h3 id="job-title">Working…</h3><p id="job-sub">This keeps running if you close the window.</p></div>
+      <button class="tx-x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="tx-modal-body" style="gap:14px">
+      <div class="tx-job-row"><div class="tx-progress"><div id="job-bar"></div></div><span class="tx-job-pct" id="job-pct">0%</span></div>
+      <div class="tx-term"><div class="tx-term-bar"><i></i><i></i><i></i><span>job log</span></div><pre id="job-log"></pre></div>
+    </div>
+    <div class="tx-modal-foot">
+      <span class="tx-foot-status" id="job-status"></span>
+      <button class="tx-btn tx-btn-ghost" type="button" data-close>Run in background</button>
+      <button class="tx-btn tx-btn-primary" type="button" id="job-done" style="display:none;">Done</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/txadmin.css') }}?v=2">
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const $ = (s, r) => (r || document).querySelector(s);
+  const csrf = () => document.getElementById('csrf_token').value;
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const API = '/tx/api';
+
+  // ---------------------------------------------------------------- icons
+  const P = {
+    copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h10a1 1 0 011 1v1"/>',
+    check: '<path d="M5 12l5 5 9-11"/>',
+    eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    eyeOff: '<path d="M3 3l18 18M10.6 10.6a3 3 0 004.2 4.2M9.9 5.2A10 10 0 0112 5c6.5 0 10 7 10 7a17 17 0 01-3.2 4.2M6.6 6.6A17 17 0 002 12s3.5 7 10 7a9.6 9.6 0 004.4-1"/>',
+    ext: '<path d="M14 4h6v6M20 4l-9 9"/><path d="M19 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1h5"/>',
+    play: '<path d="M7 4.5v15l12-7.5z"/>',
+    stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+    restart: '<path d="M21 12a9 9 0 11-2.6-6.36"/><path d="M21 3v6h-6"/>',
+    dots: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+    panel: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 14h3M8 17h6"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>',
+    server: '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0113 0M16 4.5a3.5 3.5 0 010 7M18.5 20a6.5 6.5 0 00-3-5.5"/>',
+    db: '<ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+    key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M18 5l3 3M15 8l2 2"/>',
+    game: '<rect x="2" y="7" width="20" height="10" rx="3"/><path d="M6 10.5v3M4.5 12h3"/><circle cx="16" cy="10.5" r="1" fill="currentColor"/><circle cx="18.5" cy="12.5" r="1" fill="currentColor"/>',
+    folder: '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
+    log: '<path d="M4 17l6-5-6-5M12 19h8"/>',
+    trash: '<path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>',
+    upload: '<path d="M12 16V4M7 9l5-5 5 5"/><path d="M20 16v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3"/>',
+    refresh: '<path d="M3 12a9 9 0 019-9 9.8 9.8 0 016.7 2.7L21 8M21 3v5h-5M21 12a9 9 0 01-9 9 9.8 9.8 0 01-6.7-2.7L3 16M3 21v-5h5"/>',
+    edit: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>',
+    lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    alert: '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>',
+    sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+    back: '<path d="M15 18l-6-6 6-6"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    box: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/>',
+    wall: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14h18M8 4v5M15 9v5M8 14v6"/>',
+    inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 01-2 2H4a2 2 0 01-2-2v-6z"/>',
+    link: '<path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.7-1.7"/>',
+  };
+  const ico = (n, cls) => '<svg viewBox="0 0 24 24"' + (cls ? ' class="' + cls + '"' : '') + '>' + (P[n] || '') + '</svg>';
+
+  // ---------------------------------------------------------------- helpers
+  async function parse(res) {
+    let d; try { d = await res.json(); } catch (e) { d = { ok: false, error: 'Unexpected response (HTTP ' + res.status + ')' }; }
+    if (res.status === 403) d = { ok: false, error: "You don't have permission to manage txAdmin servers." };
+    return d;
+  }
+  const getJson = async (p) => parse(await fetch(API + p));
+  const postJson = async (p, body) => parse(await fetch(API + p, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() }, body: JSON.stringify(body || {}) }));
+
+  function toast(msg, kind) {
+    const el = document.createElement('div');
+    el.className = 'toast flash-' + (kind || 'success');
+    el.innerHTML = '<span>' + esc(msg) + '</span><span class="toast-close">&times;</span>';
+    const close = () => { el.style.opacity = '0'; setTimeout(() => el.remove(), 200); };
+    el.querySelector('.toast-close').addEventListener('click', close);
+    document.getElementById('toast-stack').appendChild(el);
+    setTimeout(close, kind === 'error' ? 9000 : 3500);
+  }
+  function copy(text, what, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (btn) { btn.classList.add('done'); const prev = btn.innerHTML; btn.innerHTML = ico('check'); setTimeout(() => { btn.classList.remove('done'); btn.innerHTML = prev; }, 1300); }
+      else toast((what || 'Value') + ' copied');
+    }, () => toast("Couldn't copy — select it manually", 'error'));
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-copy]');
+    if (b) { e.preventDefault(); e.stopPropagation(); copy(b.dataset.copy, b.dataset.what, b); }
+  });
+  const copyBtn = (v, what) => v ? '<button class="tx-copy" type="button" title="Copy ' + esc(what || '') + '" data-copy="' + esc(v) + '" data-what="' + esc(what || '') + '">' + ico('copy') + '</button>' : '';
+  function fmtBytes(n) {
+    if (n == null) return '—';
+    const u = ['B', 'KB', 'MB', 'GB']; let i = 0; n = Number(n);
+    while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+    return (i ? n.toFixed(1) : n) + ' ' + u[i];
+  }
+  function sinceToDate(s) {
+    if (!s) return null;
+    const m = String(s).match(/(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/);
+    return m ? new Date(m[1] + 'T' + m[2] + 'Z') : null;
+  }
+  function ago(d) {
+    if (!d) return '—';
+    let s = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+    const dd = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+    return dd ? dd + 'd ' + h + 'h' : h ? h + 'h ' + m + 'm' : m ? m + 'm' : s + 's';
+  }
+  const initials = (name) => (String(name || '?').replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2) || '?').toUpperCase();
+  const slugPreview = (name) => (String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 22) || 'server');
+
+  // ---------------------------------------------------------------- modals
+  const openModal = (id) => document.getElementById(id).classList.add('open');
+  const closeModal = (id) => document.getElementById(id).classList.remove('open');
+  document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => {
+    if (e.target === m || e.target.closest('[data-close]')) m.classList.remove('open');
+  }));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    if (e.key === '/' && !/input|textarea|select/i.test(document.activeElement.tagName) && $('#tx-filter')) { e.preventDefault(); $('#tx-filter').focus(); }
+  });
+
+  function confirmAction({ title, html, typeName, okLabel, danger = true }) {
+    return new Promise(resolve => {
+      $('#confirm-title').textContent = title;
+      $('#confirm-text').innerHTML = html;
+      $('#confirm-icon').className = 'tx-modal-icon' + (danger ? ' danger' : '');
+      $('#confirm-icon').innerHTML = ico(danger ? 'alert' : 'info');
+      const ok = $('#confirm-ok'), input = $('#confirm-type-input');
+      ok.textContent = okLabel || 'Confirm';
+      ok.className = 'tx-btn ' + (danger ? 'tx-btn-danger' : 'tx-btn-primary');
+      $('#confirm-type-wrap').style.display = typeName ? '' : 'none';
+      $('#confirm-type-name').textContent = typeName || '';
+      input.value = ''; ok.disabled = !!typeName;
+      input.oninput = () => { ok.disabled = input.value !== typeName; };
+      input.onkeydown = (e) => { if (e.key === 'Enter' && !ok.disabled) ok.click(); };
+      const modal = $('#confirm-modal');
+      const obs = new MutationObserver(() => { if (!modal.classList.contains('open')) finish(false); });
+      let settled = false;
+      const finish = (v) => {
+        if (settled) return; settled = true; obs.disconnect();
+        const opts = {};
+        $('#confirm-text').querySelectorAll('input[type=checkbox]').forEach(c => { opts[c.name] = c.checked; });
+        closeModal('confirm-modal'); resolve(v ? opts : false);
+      };
+      ok.onclick = () => finish(true);
+      openModal('confirm-modal');
+      obs.observe(modal, { attributes: true, attributeFilter: ['class'] });
+      setTimeout(() => (typeName ? input : ok).focus(), 60);
+    });
+  }
+
+  function formModal({ title, sub, icon, html, submitLabel, onSubmit, onOpen }) {
+    $('#form-title').textContent = title; $('#form-sub').textContent = sub || '';
+    $('#form-icon').innerHTML = ico(icon || 'edit');
+    const form = $('#form-body'); form.innerHTML = html;
+    $('#form-status').textContent = '';
+    const btn = $('#form-submit'); btn.textContent = submitLabel || 'Save'; btn.disabled = false;
+    const submit = async () => {
+      btn.disabled = true; $('#form-status').innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px"><span class="tx-spinner" style="width:14px;height:14px;border-width:2px"></span>Working…</span>';
+      try {
+        const r = await onSubmit(form);
+        if (r && r.ok) closeModal('form-modal');
+        else $('#form-status').innerHTML = '<span style="color:var(--danger)">' + esc((r && r.error) || 'Failed') + '</span>';
+      } finally { btn.disabled = false; }
+    };
+    btn.onclick = submit; form.onsubmit = (e) => { e.preventDefault(); submit(); };
+    openModal('form-modal');
+    if (onOpen) onOpen(form);
+    const first = form.querySelector('input:not([type=hidden]):not([type=checkbox]), textarea');
+    if (first) setTimeout(() => first.focus(), 60);
+  }
+
+  // ---------------------------------------------------------------- jobs
+  let jobTimer = null;
+  function watchJob(jobId, title, onDone) {
+    clearInterval(jobTimer);
+    $('#job-title').textContent = title; $('#job-sub').textContent = 'This keeps running if you close the window.';
+    $('#job-icon').className = 'tx-modal-icon'; $('#job-icon').innerHTML = '<span class="tx-spinner"></span>';
+    $('#job-log').textContent = ''; $('#job-status').textContent = 'Starting…'; $('#job-pct').textContent = '0%';
+    $('#job-done').style.display = 'none';
+    const bar = $('#job-bar'); bar.style.width = '2%'; bar.parentElement.className = 'tx-progress';
+    openModal('job-modal');
+    let finished = false;
+    const tick = async () => {
+      const r = await getJson('/job/' + jobId);
+      if (!r.ok) return;
+      const j = r.job, log = $('#job-log');
+      const atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 20;
+      log.textContent = j.log_text || '';
+      if (atBottom) log.scrollTop = log.scrollHeight;
+      bar.style.width = Math.max(2, j.progress) + '%';
+      $('#job-pct').textContent = j.progress + '%';
+      $('#job-status').textContent = j.status === 'running' ? 'Running…' : j.status;
+      if ((j.status === 'success' || j.status === 'failed') && !finished) {
+        finished = true; clearInterval(jobTimer);
+        const ok = j.status === 'success';
+        bar.parentElement.classList.add(j.status); bar.style.width = '100%';
+        $('#job-icon').className = 'tx-modal-icon ' + (ok ? 'ok' : 'danger');
+        $('#job-icon').innerHTML = ico(ok ? 'check' : 'alert');
+        $('#job-sub').textContent = ok ? 'Completed successfully.' : 'Something went wrong — see the log below.';
+        $('#job-status').innerHTML = ok ? '<span style="color:var(--ok);font-weight:600">Finished</span>' : '<span style="color:var(--danger)">' + esc(j.error || 'Failed') + '</span>';
+        $('#job-done').style.display = '';
+        $('#job-done').onclick = () => closeModal('job-modal');
+        toast(title + (ok ? ' — done' : ' failed'), ok ? 'success' : 'error');
+        if (onDone) onDone(j);
+      }
+    };
+    tick(); jobTimer = setInterval(tick, 1500);
+  }
+
+  // ---------------------------------------------------------------- state
+  let instances = [], filter = 'all', query = '', listTimer = null, lastLoad = null;
+  let me = { full_admin: false }, joinZone = 'opslabsystems.cloud', pendingRequests = 0;
+  const route = () => { const m = location.hash.match(/^#\/i\/(\d+)(?:\/(\w+))?/); return m ? { id: Number(m[1]), tab: m[2] || 'overview' } : {}; };
+  window.addEventListener('hashchange', render);
+  $('#refresh-btn').addEventListener('click', () => render());
+
+  function tone(inst) {
+    const s = inst.status || {};
+    if (['installing', 'working', 'deleting'].includes(inst.state)) return ['busy', inst.state === 'installing' ? 'Installing' : inst.state === 'deleting' ? 'Deleting' : 'Working'];
+    if (inst.state === 'failed' && !s.active) return ['bad', 'Job failed'];
+    if (s.active && s.tx_listening && !s.setup_done) return ['warn', 'Needs setup'];
+    if (s.active && s.tx_listening) return ['ok', s.game_listening ? 'Online' : 'txAdmin up'];
+    if (s.active) return ['warn', 'Starting'];
+    return ['bad', 'Stopped'];
+  }
+  const statusPill = (inst) => { const [t, l] = tone(inst); return '<span class="tx-status ' + t + '"><i></i>' + esc(l) + '</span>'; };
+
+  async function render() {
+    clearInterval(listTimer); clearInterval(logsTimer);
+    const r = route();
+    const crumbs = $('#crumbs');
+    crumbs.hidden = !r.id;
+    crumbs.innerHTML = r.id ? '<a href="#/">' + ico('back') + 'All servers</a><span>/</span><span class="cur" id="crumb-name"></span>' : '';
+    if (r.id) return renderDetail(r.id, r.tab);
+    return renderList(true);
+  }
+
+  // ---------------------------------------------------------------- list
+  async function renderList(first) {
+    if (first && !instances.length) $('#view').innerHTML = '<div class="tx-summary">' + '<div class="tx-sum tx-skel" style="height:72px"></div>'.repeat(4) + '</div><div class="tx-grid">' + '<div class="tx-skel"></div>'.repeat(3) + '</div>';
+    const r = await getJson('/instances');
+    if (route().id) return;
+    if (!r.ok) { $('#view').innerHTML = '<div class="tx-callout warn">' + ico('alert') + '<div>' + esc(r.error) + '</div></div>'; return; }
+    instances = r.instances; lastLoad = new Date();
+    me = r.me || me; joinZone = r.join_zone || joinZone; pendingRequests = r.pending_requests || 0;
+    if (!instances.length) {
+      $('#view').innerHTML = '<div class="tx-empty"><div class="tx-empty-art">' + ico('server') + '</div><h3>No servers yet</h3>' +
+        '<p>Create your first FiveM server. The panel downloads FXServer, sets up a MySQL database and generates your txAdmin login, all in about 15 seconds.</p>' +
+        '<button class="tx-btn tx-btn-primary" id="empty-new">' + ico('plus') + 'Create a server</button></div>';
+      $('#empty-new').addEventListener('click', newServer);
+      return;
+    }
+    const running = instances.filter(i => tone(i)[0] === 'ok').length;
+    const setup = instances.filter(i => tone(i)[1] === 'Needs setup').length;
+    const builds = [...new Set(instances.map(i => i.artifact_build).filter(Boolean))];
+    const counts = { all: instances.length, running, stopped: instances.filter(i => tone(i)[0] === 'bad').length, setup };
+
+    $('#view').innerHTML = requestBanner() +
+      '<div class="tx-summary">' +
+        sum('server', '', instances.length, instances.length === 1 ? 'server' : 'servers') +
+        sum('play', 'ok', running, 'online') +
+        sum('sparkle', 'warn', setup, 'waiting for setup') +
+        sum('box', 'data', builds.length ? builds.join(', ') : '—', 'FXServer build' + (builds.length > 1 ? 's' : '')) +
+      '</div>' +
+      '<div class="tx-toolbar">' +
+        '<label class="tx-search">' + ico('search') + '<input type="text" id="tx-filter" placeholder="Search servers…" value="' + esc(query) + '"><span class="tx-kbd">/</span></label>' +
+        '<div class="tx-seg" id="tx-seg">' + [['all', 'All'], ['running', 'Online'], ['setup', 'Needs setup'], ['stopped', 'Stopped']].map(([k, l]) =>
+          '<button data-f="' + k + '" class="' + (filter === k ? 'on' : '') + '">' + l + ' <span class="n">' + counts[k] + '</span></button>').join('') + '</div>' +
+        '<span class="spacer"></span><span class="tx-updated" id="tx-updated"></span>' +
+      '</div>' +
+      '<div class="tx-grid" id="tx-grid"></div>';
+    $('#tx-filter').addEventListener('input', (e) => { query = e.target.value; paintCards(); });
+    $('#tx-seg').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { filter = b.dataset.f; $('#tx-seg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); paintCards(); }));
+    paintCards();
+    updatedLabel();
+    const rb = $('#review-requests'); if (rb) rb.addEventListener('click', reviewRequests);
+    listTimer = setInterval(async () => {
+      if (document.hidden || route().id || document.querySelector('.modal-overlay.open')) return;
+      const r2 = await getJson('/instances');
+      if (r2.ok && !route().id) { instances = r2.instances; lastLoad = new Date(); paintCards(); }
+    }, 10000);
+  }
+  function updatedLabel() { const el = $('#tx-updated'); if (el && lastLoad) el.textContent = 'updated ' + lastLoad.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+  function sum(icon, cls, value, label) {
+    return '<div class="tx-sum"><div class="tx-sum-ico ' + cls + '">' + ico(icon) + '</div><div><div class="tx-sum-v">' + esc(value) + '</div><div class="tx-sum-l">' + esc(label) + '</div></div></div>';
+  }
+
+  function paintCards() {
+    const grid = $('#tx-grid'); if (!grid) return;
+    updatedLabel();
+    const q = query.trim().toLowerCase();
+    const list = instances.filter(i => {
+      const t = tone(i);
+      if (filter === 'running' && t[0] !== 'ok') return false;
+      if (filter === 'stopped' && t[0] !== 'bad') return false;
+      if (filter === 'setup' && t[1] !== 'Needs setup') return false;
+      return !q || [i.name, i.slug, i.connect, i.db_name, i.tx_username].some(v => String(v || '').toLowerCase().includes(q));
+    });
+    if (!list.length) { grid.innerHTML = '<div class="tx-callout" style="grid-column:1/-1">' + ico('search') + '<div>No servers match this filter.</div></div>'; return; }
+    grid.innerHTML = list.map(card).join('');
+    grid.querySelectorAll('[data-ctl]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); control(Number(b.dataset.id), b.dataset.ctl, b); }));
+  }
+
+  function card(i) {
+    const s = i.status || {}, [t] = tone(i);
+    const busy = t === 'busy';
+    return '<article class="tx-card" data-tone="' + t + '">' +
+      '<div class="tx-card-top"><div class="tx-avatar">' + esc(initials(i.name)) + '</div>' +
+        '<div class="tx-card-id"><a class="tx-card-name" href="#/i/' + i.id + '">' + esc(i.name) + '</a>' +
+          '<div class="tx-chips"><span class="tx-chip">' + ico('box') + (i.artifact_build ? 'b' + esc(i.artifact_build) : 'build ?') + '</span>' +
+          '<span class="tx-chip">' + (i.managed ? 'managed' : 'existing') + '</span><span class="tx-chip">:' + esc(i.tx_port) + '</span>' + portChip(i) + '</div></div>' +
+        statusPill(i) + '</div>' +
+      '<div class="tx-facts">' +
+        fact('txAdmin', '<a href="' + esc(i.tx_url) + '" target="_blank" rel="noopener">' + esc(i.tx_url.replace(/^https?:\/\//, '')) + '</a>', i.tx_url) +
+        fact('Join', esc(i.join || i.connect), 'connect ' + (i.join || i.connect)) +
+        fact('Login', esc(i.tx_username || '—'), i.tx_username) +
+        fact('Database', esc(i.db_name || '—'), i.db_name) +
+      '</div>' +
+      (s.active && !s.setup_done && i.state === 'ready' ? '<div class="tx-card-note">' + ico('sparkle') + 'Open txAdmin to finish setup, it takes about a minute.</div>' : '') +
+      '<div class="tx-card-foot">' +
+        '<a class="tx-btn tx-btn-primary tx-btn-sm" href="/tx/' + i.id + '/panel">' + ico('panel') + 'Control panel</a>' +
+        '<a class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" href="' + esc(i.tx_url) + '" target="_blank" rel="noopener" title="Open txAdmin">' + ico('ext') + '</a>' +
+        (busy ? '' : s.active
+          ? '<button class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" title="Restart service" data-ctl="restart" data-id="' + i.id + '">' + ico('restart') + '</button><button class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" title="Stop service" data-ctl="stop" data-id="' + i.id + '">' + ico('stop') + '</button>'
+          : '<button class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" title="Start service" data-ctl="start" data-id="' + i.id + '">' + ico('play') + '</button>') +
+        '<a class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" href="#/i/' + i.id + '" title="Manage">' + ico('gear') + '</a>' +
+      '</div></article>';
+  }
+  const fact = (label, html, copyVal) => '<div class="tx-fact"><div class="tx-fact-l">' + label + '</div><div class="tx-fact-v">' + html + '</div>' + copyBtn(copyVal, label) + '</div>';
+
+  async function control(id, action, btn) {
+    const inst = instances.find(i => i.id === id) || (current && current.id === id ? current : {});
+    if (action !== 'start') {
+      const ok = await confirmAction({ title: (action === 'stop' ? 'Stop ' : 'Restart ') + (inst.name || 'server'), okLabel: action === 'stop' ? 'Stop service' : 'Restart service', danger: action === 'stop',
+        html: 'This ' + action + 's the whole txAdmin service. Everyone connected will be disconnected.' });
+      if (!ok) return;
+    }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="tx-spinner" style="width:14px;height:14px;border-width:2px"></span>'; }
+    const r = await postJson('/instance/' + id + '/control', { action });
+    if (!r.ok) toast(r.error, 'error'); else toast((inst.name || 'Server') + ' ' + (action === 'stop' ? 'stopped' : action + 'ed'));
+    setTimeout(render, 1200);
+  }
+
+  // ---------------------------------------------------------------- new server
+  let versions = null;
+  async function loadVersions() {
+    if (versions) return versions;
+    const r = await getJson('/versions');
+    versions = r.ok ? r : { versions: {}, cached: [] };
+    return versions;
+  }
+  function buildSelect(v, name) {
+    const ch = v.versions || {}, opts = [];
+    if (ch.recommended) opts.push(['recommended', 'Recommended · build ' + ch.recommended.build + ' (txAdmin ' + (ch.recommended.txadmin || '?') + ')']);
+    if (ch.latest && (!ch.recommended || ch.latest.build !== ch.recommended.build)) opts.push(['latest', 'Latest · build ' + ch.latest.build + ' (txAdmin ' + (ch.latest.txadmin || '?') + ')']);
+    (v.cached || []).forEach(b => { if (!opts.some(o => o[1].includes('build ' + b + ' '))) opts.push([b, 'Build ' + b + ' · already downloaded']); });
+    if (!opts.length) opts.push(['recommended', 'Recommended']);
+    return '<select name="' + name + '">' + opts.map(([val, l]) => '<option value="' + esc(val) + '">' + esc(l) + '</option>').join('') + '</select>';
+  }
+
+  async function newServer() {
+    const v = await loadVersions();
+    formModal({
+      title: 'Create a server', icon: 'sparkle', submitLabel: 'Create server',
+      sub: 'Downloads FXServer, creates a database, a service and your txAdmin login.',
+      html:
+        '<div class="tx-field"><label>Server name</label><input class="big" type="text" name="name" placeholder="e.g. Los Santos RP" maxlength="60"></div>' +
+        '<dl class="tx-preview" id="np-preview"><div class="tx-preview-t">Will be created</div>' +
+          '<dt>Service</dt><dd id="np-unit">txadmin-server</dd><dt>Database</dt><dd id="np-db">tx_server</dd><dt>Ports</dt><dd id="np-ports-preview"></dd><dt>Join</dt><dd id="np-join"></dd><dt>Login</dt><dd id="np-login">admin · password generated</dd></dl>' +
+        '<div class="tx-field"><label>Ports</label><div class="tx-seg" id="np-portmode"><button type="button" class="on" data-pm="auto">Automatic</button><button type="button" data-pm="custom">Choose ports</button></div>' +
+          '<div class="tx-field-row" id="np-ports" style="display:none;margin-top:10px"><div class="tx-field"><label>txAdmin port</label><input type="text" name="tx_port" inputmode="numeric" placeholder="40121"></div>' +
+          '<div class="tx-field"><label>Game port</label><input type="text" name="game_port" inputmode="numeric" placeholder="30121"></div></div>' +
+          (me.full_admin ? '<div class="hint" style="display:flex;gap:6px;align-items:center;color:var(--ok)">' + ico('check') + 'You\'re a full admin, so the firewall ports are opened automatically.</div>'
+            : '<div class="tx-callout warn" style="margin-top:10px">' + ico('wall') + '<div><strong>Ports need approval.</strong> A request goes to the panel admins when you create the server. Players and txAdmin can\'t connect until it\'s approved.</div></div>' +
+              '<div class="tx-field" style="margin-top:10px"><label>Why do you need these ports? <span class="opt">(optional)</span></label><input type="text" name="port_reason" placeholder="e.g. new RP server for our community"></div>') +
+        '</div>' +
+        '<div class="tx-field"><label>Join address <span class="opt">(optional)</span></label><div class="txn-domain-input"><input type="text" name="domain" placeholder="myserver" maxlength="40" spellcheck="false"><span>.' + esc(joinZone) + '</span></div>' +
+          '<div class="hint">Players can join with this name instead of the IP. You can also add your own domain later.</div></div>' +
+        '<details class="tx-adv"><summary>Advanced options</summary><div>' +
+          '<div class="tx-field-row"><div class="tx-field"><label>txAdmin username</label><input type="text" name="tx_username" value="admin" maxlength="20"></div>' +
+          '<div class="tx-field"><label>FXServer build</label>' + buildSelect(v, 'build') + '</div></div>' +
+          (v.warning ? '<div class="tx-callout warn">' + ico('alert') + '<div>' + esc(v.warning) + '</div></div>' : '') +
+          '<div class="tx-field"><label>Cfx.re license key <span class="opt">(optional)</span></label><input type="text" name="cfx_key" placeholder="cfxk_…"><div class="hint">From portal.cfx.re, pre-filled in the setup wizard.</div></div>' +
+          '<div class="tx-field"><label>Notes <span class="opt">(optional)</span></label><textarea name="notes" rows="2"></textarea></div>' +
+        '</div></details>',
+      onOpen: (f) => {
+        const upd = () => {
+          const slug = slugPreview(f.name.value);
+          $('#np-unit').textContent = 'txadmin-' + slug.replace(/_/g, '-') + '.service';
+          $('#np-db').textContent = 'tx_' + slug;
+          $('#np-login').textContent = (f.tx_username.value || 'admin') + ' · password generated';
+          const custom = $('#np-portmode .on').dataset.pm === 'custom';
+          $('#np-ports-preview').textContent = custom ? ((f.tx_port.value || '?') + ' (txAdmin), ' + (f.game_port.value || '?') + ' (game)') : 'next free (txAdmin 40121+, game 30121+)';
+          $('#np-ports-preview').textContent += me.full_admin ? ' · opened automatically' : ' · needs approval';
+          const dl = f.domain.value.trim().toLowerCase();
+          $('#np-join').textContent = dl ? dl + '.' + joinZone : '(IP address)';
+        };
+        $('#np-portmode').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+          $('#np-portmode').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+          $('#np-ports').style.display = b.dataset.pm === 'custom' ? '' : 'none';
+          if (b.dataset.pm === 'custom') setTimeout(() => f.tx_port.focus(), 30);
+          upd();
+        }));
+        f.domain.addEventListener('input', () => { f.domain.value = f.domain.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); upd(); });
+        ['name', 'tx_username', 'tx_port', 'game_port'].forEach(n => f[n].addEventListener('input', upd)); upd();
+      },
+      onSubmit: async (f) => {
+        const custom = $('#np-portmode .on').dataset.pm === 'custom';
+        const r = await postJson('/create', { name: f.name.value, tx_username: f.tx_username.value, build: f.build.value, cfx_key: f.cfx_key.value, notes: f.notes.value,
+          port_mode: custom ? 'custom' : 'auto', tx_port: f.tx_port.value, game_port: f.game_port.value, domain: f.domain.value, port_reason: f.port_reason ? f.port_reason.value : '' });
+        if (r.ok) {
+          location.hash = '#/i/' + r.instance.id;
+          watchJob(r.job_id, 'Creating ' + r.instance.name, () => render());
+          if (r.port_request) toast('Port request sent to the admins');
+          if (r.domain) toast('Join address ready: ' + r.domain.hostname);
+          if (r.domain_error) toast('Server created, but the join address failed: ' + r.domain_error, 'error');
+        }
+        return r;
+      },
+    });
+  }
+  $('#new-btn').addEventListener('click', async () => {
+    if (!instances.length || !me.username) { const r = await getJson('/instances'); if (r.ok) { me = r.me || me; joinZone = r.join_zone || joinZone; } }
+    newServer();
+  });
+
+  // ---------------------------------------------------------------- ports & requests
+  function portChip(i) {
+    const p = i.ports; if (!p || p.open) return '';
+    return p.pending_request ? '<span class="tx-chip txn-chip-warn">' + ico('wall') + 'ports pending</span>' : '<span class="tx-chip txn-chip-bad">' + ico('wall') + 'ports closed</span>';
+  }
+  function requestBanner() {
+    if (!pendingRequests) return '';
+    return '<div class="tx-callout warn txn-banner">' + ico('inbox') + '<div style="flex:1"><strong>' + pendingRequests + ' port request' + (pendingRequests === 1 ? '' : 's') + '</strong> ' +
+      (me.full_admin ? 'waiting for your approval.' : 'from you waiting for an admin.') + '</div>' +
+      '<button class="tx-btn tx-btn-ghost tx-btn-sm" id="review-requests">' + (me.full_admin ? 'Review' : 'View') + '</button></div>';
+  }
+  async function reviewRequests() {
+    const r = await getJson('/port-requests?status=pending');
+    if (!r.ok) return toast(r.error, 'error');
+    formModal({
+      title: 'Port requests', sub: me.full_admin ? 'Approving opens the server\'s txAdmin and game ports in the firewall.' : 'Your requests waiting for an admin.', icon: 'inbox', submitLabel: 'Close',
+      html: r.requests.length ? '<div class="txn-reqs">' + r.requests.map(q =>
+        '<div class="txn-req" data-req="' + q.id + '"><div class="txn-req-main"><div class="txn-req-t">' + esc(q.instance_name) + '</div>' +
+          '<div class="txn-req-d"><code>' + q.tx_port + '/tcp</code> <code>' + q.game_port + '/tcp+udp</code> · by <strong>' + esc(q.requested_by || '?') + '</strong> · ' + esc(new Date(q.created_at).toLocaleString()) + '</div>' +
+          (q.reason ? '<div class="txn-req-r">“' + esc(q.reason) + '”</div>' : '') + '</div>' +
+          '<div class="txn-req-a">' + (me.full_admin
+            ? '<button type="button" class="tx-btn tx-btn-ghost tx-btn-sm" data-qa="deny">Deny</button><button type="button" class="tx-btn tx-btn-primary tx-btn-sm" data-qa="approve">' + ico('check') + 'Approve</button>'
+            : '<button type="button" class="tx-btn tx-btn-ghost tx-btn-sm" data-qa="cancel">Cancel</button>') + '</div></div>').join('') + '</div>'
+        : '<div class="tx-callout ok">' + ico('check') + '<div>No pending requests.</div></div>',
+      onOpen: (f) => f.querySelectorAll('[data-qa]').forEach(b => b.addEventListener('click', async () => {
+        const row = b.closest('[data-req]'), act = b.dataset.qa;
+        let note = '';
+        if (act === 'deny') { note = window.prompt('Reason for denying (optional, shown to the requester):', '') ; if (note === null) return; }
+        b.disabled = true;
+        const res = await postJson('/port-requests/' + row.dataset.req + '/' + act, { note });
+        if (!res.ok) { b.disabled = false; return toast(res.error, 'error'); }
+        row.style.opacity = '.4'; row.querySelector('.txn-req-a').innerHTML = '<span class="tx-badge ' + (act === 'approve' ? 'ok' : 'muted') + '">' + res.request.status + '</span>';
+        toast(act === 'approve' ? 'Ports opened' : act === 'deny' ? 'Request denied' : 'Request cancelled');
+      })),
+      onSubmit: async () => { render(); return { ok: true }; },
+    });
+  }
+  async function portsAction(i) {
+    if (me.full_admin) {
+      const ok = await confirmAction({ title: 'Open ports for ' + i.name, okLabel: 'Open ports', danger: false,
+        html: 'Allow <code>' + i.tx_port + '/tcp</code> (txAdmin) and <code>' + i.game_port + '/tcp+udp</code> (game) from anywhere in the firewall?' });
+      if (!ok) return;
+      const r = await postJson('/instance/' + i.id + '/ports', {});
+      if (!r.ok) return toast(r.error, 'error');
+      toast(r.message); return render();
+    }
+    formModal({
+      title: 'Request ports', sub: i.name, icon: 'wall', submitLabel: 'Send request',
+      html: '<div class="tx-callout">' + ico('info') + '<div>An admin needs to open <code>' + i.tx_port + '/tcp</code> and <code>' + i.game_port + '/tcp+udp</code> before players and txAdmin can be reached from outside.</div></div>' +
+        '<div class="tx-field"><label>Reason <span class="opt">(optional)</span></label><textarea name="reason" rows="3" placeholder="What is this server for?"></textarea></div>',
+      onSubmit: async (f) => { const r = await postJson('/instance/' + i.id + '/ports', { reason: f.reason.value }); if (r.ok) { toast(r.message); render(); } return r; },
+    });
+  }
+
+  // ---------------------------------------------------------------- network panel (ports + join domains)
+  function networkPanel(i) {
+    const p = i.ports || {};
+    const portRow = (port, proto, label) => {
+      const open = p.open || !(p.missing || []).includes(port + '/' + proto) && !(proto === 'tcp+udp' && (p.missing || []).some(m => m.startsWith(port + '/')));
+      return '<div class="tx-vrow"><span class="tx-vk">' + label + '</span><span class="tx-vv">' + port + '/' + proto + '</span><span class="tx-vb"><span class="tx-badge ' + (open ? 'ok' : 'warn') + '">' + (open ? 'open' : 'closed') + '</span></span></div>';
+    };
+    const pr = p.pending_request;
+    const portsAct = p.firewall === 'inactive' ? '<div class="hint" style="margin-top:8px">The firewall is off, so all ports are reachable.</div>'
+      : p.open ? '' : pr ? '<div class="tx-callout warn" style="margin-top:10px">' + ico('inbox') + '<div style="flex:1">Port request by <strong>' + esc(pr.requested_by || '?') + '</strong> is waiting for approval.</div>' +
+          (me.full_admin ? '<button class="tx-btn tx-btn-primary tx-btn-sm" data-approve="' + pr.id + '">Approve</button>' : '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-cancel-req="' + pr.id + '">Cancel</button>') + '</div>'
+      : '<div style="margin-top:10px"><button class="tx-btn tx-btn-primary tx-btn-sm" data-ports="1">' + ico('wall') + (me.full_admin ? 'Open ports' : 'Request ports') + '</button></div>';
+    const lastDenied = (i.port_requests || []).find(q => q.status === 'denied');
+    const denied = !p.open && !pr && lastDenied ? '<div class="hint" style="margin-top:8px;color:var(--danger)">Last request was denied by ' + esc(lastDenied.decided_by || 'an admin') + (lastDenied.decision_note ? ': “' + esc(lastDenied.decision_note) + '”' : '') + '</div>' : '';
+
+    const doms = i.domains || [];
+    const domRows = doms.map(d => '<div class="txn-dom">' +
+        '<div class="txn-dom-ico ' + (d.status === 'active' ? 'ok' : d.status === 'error' ? 'bad' : 'warn') + '">' + ico(d.kind === 'managed' ? 'globe' : 'link') + '</div>' +
+        '<div class="txn-dom-main"><div class="txn-dom-h">' + esc(d.hostname) + ' <span class="tx-badge ' + (d.status === 'active' ? 'ok' : d.status === 'error' ? 'bad' : 'warn') + '">' + esc(d.status) + '</span></div>' +
+          '<div class="txn-dom-d">' + (d.kind === 'managed' ? 'Free subdomain' : 'Your domain · CNAME → <code>' + esc(d.target || '') + '</code>') + (d.detail ? ' · ' + esc(d.detail) : '') + '</div>' +
+          '<div class="txn-dom-c"><code>connect ' + esc(d.connect) + '</code>' + copyBtn('connect ' + d.connect, 'connect command') + '</div></div>' +
+        '<div class="txn-dom-a">' + (d.kind === 'custom' ? '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-dverify="' + d.id + '">Verify</button>' : '') +
+          '<button class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" title="Remove" data-ddel="' + d.id + '" data-dname="' + esc(d.hostname) + '">' + ico('trash') + '</button></div></div>').join('');
+
+    return '<section class="tx-panel" style="margin-bottom:16px"><div class="tx-panel-head"><div class="grow"><h3>Network</h3><p>Firewall ports and join addresses</p></div></div><div class="tx-panel-body">' +
+      vgroup('wall', 'Firewall', portRow(i.tx_port, 'tcp', 'txAdmin') + portRow(i.game_port, 'tcp+udp', 'Game')) + portsAct + denied +
+      '<div class="tx-vault-group"><div class="tx-vault-title">' + ico('globe') + 'Join addresses</div>' +
+        (doms.length ? '<div class="txn-doms">' + domRows + '</div>' : '<div class="hint" style="margin-bottom:10px">Players join with <code>connect ' + esc(i.connect) + '</code>. Add a name so they don\'t need the IP.</div>') +
+        '<div class="txp-chipsrow">' +
+          (dnsInfo.available ? '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-dom-new="managed">' + ico('globe') + 'Free subdomain</button>' : '') +
+          '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-dom-new="custom">' + ico('link') + 'Use my own domain</button></div>' +
+        (!dnsInfo.available && dnsInfo.error ? '<div class="hint" style="margin-top:6px">Free subdomains unavailable: ' + esc(dnsInfo.error) + '</div>' : '') +
+      '</div></div></section>';
+  }
+
+  function wireNetwork(body, i) {
+    body.querySelectorAll('[data-ports]').forEach(b => b.addEventListener('click', () => portsAction(i)));
+    body.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', async () => {
+      const r = await postJson('/port-requests/' + b.dataset.approve + '/approve', {}); if (!r.ok) return toast(r.error, 'error'); toast('Ports opened'); render();
+    }));
+    body.querySelectorAll('[data-cancel-req]').forEach(b => b.addEventListener('click', async () => {
+      const r = await postJson('/port-requests/' + b.dataset.cancelReq + '/cancel', {}); if (!r.ok) return toast(r.error, 'error'); toast('Request cancelled'); render();
+    }));
+    body.querySelectorAll('[data-dverify]').forEach(b => b.addEventListener('click', async () => {
+      b.disabled = true; b.textContent = 'Checking…';
+      const r = await postJson('/domains/' + b.dataset.dverify + '/verify', {});
+      if (!r.ok) { toast(r.error, 'error'); b.disabled = false; b.textContent = 'Verify'; return; }
+      toast(r.domain.status === 'active' ? r.domain.hostname + ' is working' : r.domain.detail, r.domain.status === 'active' ? 'success' : 'error'); render();
+    }));
+    body.querySelectorAll('[data-ddel]').forEach(b => b.addEventListener('click', async () => {
+      const ok = await confirmAction({ title: 'Remove ' + b.dataset.dname + '?', okLabel: 'Remove',
+        html: 'Players using this address won\'t be able to join with it any more.' + (b.closest('.txn-dom').querySelector('.txn-dom-d').textContent.startsWith('Free') ? ' The DNS record is deleted.' : ' Your own DNS record isn\'t touched.') });
+      if (!ok) return;
+      const r = await postJson('/domains/' + b.dataset.ddel + '/delete', {}); if (!r.ok) return toast(r.error, 'error'); toast('Removed'); render();
+    }));
+    body.querySelectorAll('[data-dom-new]').forEach(b => b.addEventListener('click', () => b.dataset.domNew === 'managed' ? newManagedDomain(i) : newCustomDomain(i)));
+  }
+
+  function newManagedDomain(i) {
+    formModal({
+      title: 'Free join subdomain', sub: i.name, icon: 'globe', submitLabel: 'Create address',
+      html: '<div class="tx-field"><label>Name</label><div class="txn-domain-input"><input class="big" type="text" name="label" maxlength="40" spellcheck="false" placeholder="' + esc(slugPreview(i.name).replace(/_/g, '-')) + '"><span>.' + esc(joinZone) + '</span></div>' +
+        '<div class="hint">Lowercase letters, numbers and hyphens. It\'s ready within a minute.</div></div>' +
+        '<dl class="tx-preview"><div class="tx-preview-t">Players will type</div><dt>F8</dt><dd id="nd-prev">connect …</dd></dl>',
+      onOpen: (f) => {
+        const upd = () => { f.label.value = f.label.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); const l = f.label.value || f.label.placeholder; $('#nd-prev').textContent = 'connect ' + l + '.' + joinZone + (i.game_port === 30120 ? '' : ':' + i.game_port); };
+        f.label.addEventListener('input', upd); upd();
+      },
+      onSubmit: async (f) => {
+        const r = await postJson('/instance/' + i.id + '/domains', { kind: 'managed', label: f.label.value || f.label.placeholder });
+        if (r.ok) { toast(r.domain.hostname + ' created'); render(); }
+        return r;
+      },
+    });
+  }
+
+  function newCustomDomain(i) {
+    const managed = (i.domains || []).find(d => d.kind === 'managed');
+    const target = managed ? managed.hostname : 'join.' + joinZone;
+    formModal({
+      title: 'Use your own domain', sub: i.name, icon: 'link', submitLabel: 'Add domain',
+      html: '<div class="tx-field"><label>Your hostname</label><input class="big" type="text" name="hostname" placeholder="play.yourserver.com" spellcheck="false"></div>' +
+        '<div class="txn-steps"><div class="txn-step"><span>1</span><div>At your DNS provider, add a <strong>CNAME</strong> record:' +
+          '<div class="txn-rec"><div><b>Name</b><code id="cd-name">play</code></div><div><b>Target</b><code>' + esc(target) + '</code>' + copyBtn(target, 'target') + '</div><div><b>Proxy</b><code>off / DNS only</code></div></div>' +
+          '<div class="hint">For a root domain (yourserver.com) that can\'t use CNAME, add an <strong>A</strong> record to <code id="cd-ip">this server\'s IP</code> instead.</div></div></div>' +
+        '<div class="txn-step"><span>2</span><div>Click <strong>Add domain</strong>. The panel checks it right away, and you can press <strong>Verify</strong> again later. DNS can take a few minutes to update.</div></div></div>',
+      onOpen: (f) => {
+        getJson('/instances').then(r => { if (r.ok) $('#cd-ip').textContent = r.public_ip; });
+        f.hostname.addEventListener('input', () => { const h = f.hostname.value.trim().toLowerCase(); const parts = h.split('.'); $('#cd-name').textContent = parts.length > 2 ? parts.slice(0, -2).join('.') : '@'; });
+      },
+      onSubmit: async (f) => {
+        const r = await postJson('/instance/' + i.id + '/domains', { kind: 'custom', hostname: f.hostname.value });
+        if (r.ok) { toast(r.domain.status === 'active' ? r.domain.hostname + ' is working' : 'Added. ' + r.domain.detail, r.domain.status === 'error' ? 'error' : 'success'); render(); }
+        return r;
+      },
+    });
+  }
+
+  // ---------------------------------------------------------------- detail
+  let current = null, logsTimer = null, dnsInfo = { available: false };
+
+  function vrow(label, value, opts = {}) {
+    const empty = value == null || value === '';
+    const shown = empty ? (opts.emptyText || 'not set') : opts.secret ? '••••••••••••' : value;
+    return '<div class="tx-vrow"><span class="tx-vk">' + esc(label) + '</span>' +
+      '<span class="tx-vv' + (empty ? ' empty' : opts.secret ? ' secret' : '') + '"' + (opts.secret && !empty ? ' data-secret="' + esc(value) + '"' : '') + '>' +
+        (opts.link && !empty ? '<a href="' + esc(value) + '" target="_blank" rel="noopener">' + esc(value) + '</a>' : esc(shown)) + '</span>' +
+      '<span class="tx-vb">' + (opts.secret && !empty ? '<button class="tx-copy" type="button" data-reveal title="Show">' + ico('eye') + '</button>' : '') + (!empty ? copyBtn(value, label) : '') + '</span></div>';
+  }
+  const vgroup = (icon, title, rows) => '<div class="tx-vault-group"><div class="tx-vault-title">' + ico(icon) + title + '</div><div class="tx-vault-rows">' + rows + '</div></div>';
+
+  async function renderDetail(id, tab) {
+    const r = await getJson('/instance/' + id);
+    if (route().id !== id) return;
+    if (!r.ok) { $('#view').innerHTML = '<div class="tx-callout warn">' + ico('alert') + '<div>' + esc(r.error) + ' · <a href="#/">Back to servers</a></div></div>'; return; }
+    const i = current = r.instance, s = i.status;
+    me = r.me || me; dnsInfo = r.dns || dnsInfo;
+    $('#crumb-name').textContent = i.name;
+    const busy = ['installing', 'working', 'deleting'].includes(i.state);
+    const since = s.active ? sinceToDate(s.since) : null;
+    const tabs = [['overview', 'Overview', 'info'], ['files', 'Server data', 'folder', i.folders.length], ['logs', 'Logs', 'log'], ['settings', 'Settings', 'gear']];
+    if (!tabs.some(t => t[0] === tab)) tab = 'overview';
+
+    $('#view').innerHTML =
+      '<section class="tx-dhero"><div class="tx-dhero-top"><div class="tx-avatar">' + esc(initials(i.name)) + '</div>' +
+        '<div class="tx-dhero-id"><h2>' + esc(i.name) + statusPill(i) + '</h2><div class="tx-chips"><span class="tx-chip">' + esc(i.service_unit) + '</span><span class="tx-chip">' + (i.managed ? 'panel-managed' : 'existing install') + '</span></div></div>' +
+        '<div class="tx-dhero-actions">' +
+          '<a class="tx-btn tx-btn-primary" href="/tx/' + i.id + '/panel">' + ico('panel') + 'Control panel</a>' +
+          '<a class="tx-btn tx-btn-ghost" href="' + esc(i.tx_url) + '" target="_blank" rel="noopener">' + ico('ext') + 'txAdmin</a>' +
+          (busy ? '' : s.active
+            ? '<button class="tx-btn tx-btn-ghost tx-btn-icon" title="Restart service" data-ctl="restart">' + ico('restart') + '</button><button class="tx-btn tx-btn-ghost tx-btn-icon" title="Stop service" data-ctl="stop">' + ico('stop') + '</button>'
+            : '<button class="tx-btn tx-btn-ghost" data-ctl="start">' + ico('play') + 'Start</button>') +
+        '</div></div>' +
+        '<div class="tx-metrics">' +
+          metric('Uptime', s.active ? ago(since) : 'stopped') +
+          metric('txAdmin port', i.tx_port, s.tx_listening) +
+          metric('Game port', i.game_port, s.game_listening) +
+          metric('FXServer', i.artifact_build ? 'build ' + i.artifact_build : 'unknown') +
+          metric('Join', i.join || i.connect, null, 'connect ' + (i.join || i.connect)) +
+        '</div></section>' +
+      '<nav class="tx-tabs">' + tabs.map(([k, l, ic, n]) => '<button class="tx-tab' + (k === tab ? ' on' : '') + '" data-tab="' + k + '">' + ico(ic) + l + (n ? ' <span class="n">' + n + '</span>' : '') + '</button>').join('') + '</nav>' +
+      '<div id="tab-body"></div>';
+
+    $('#view').querySelectorAll('[data-ctl]').forEach(b => b.addEventListener('click', () => control(i.id, b.dataset.ctl, b)));
+    $('#view').querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { location.hash = '#/i/' + i.id + (b.dataset.tab === 'overview' ? '' : '/' + b.dataset.tab); }));
+
+    const body = $('#tab-body');
+    if (tab === 'overview') renderOverview(body, i, busy);
+    else if (tab === 'files') renderFiles(body, i);
+    else if (tab === 'logs') renderLogs(body, i);
+    else renderSettings(body, i, busy);
+
+    if (busy && i.last_job_id && !$('#job-modal').classList.contains('open')) watchJob(i.last_job_id, i.name, () => render());
+  }
+  function metric(label, value, live, copyVal) {
+    const dot = live === true ? '<span class="tx-status ok" style="height:auto;padding:0;border:0;background:none"><i></i></span>' : live === false ? '<span class="tx-status" style="height:auto;padding:0;border:0;background:none"><i></i></span>' : '';
+    return '<div class="tx-metric"><div class="tx-metric-l">' + esc(label) + '</div><div class="tx-metric-v">' + dot + '<span style="overflow:hidden;text-overflow:ellipsis">' + esc(value) + '</span>' + (copyVal ? copyBtn(copyVal, label) : '') + '</div></div>';
+  }
+
+  function renderOverview(body, i, busy) {
+    const s = i.status;
+    const steps = [
+      { done: s.active, t: 'Service running', d: s.active ? i.service_unit + ' is active.' : 'The service is stopped.', action: s.active ? '' : '<button class="tx-btn tx-btn-primary tx-btn-sm" data-ctl2="start">' + ico('play') + 'Start service</button>' },
+      { done: s.tx_listening, t: 'txAdmin reachable', d: s.tx_listening ? 'Listening on port ' + i.tx_port + '.' : 'Waiting for txAdmin to listen on port ' + i.tx_port + '.' },
+      { done: s.configured, t: 'Admin account created', d: s.configured ? 'Log in as <code>' + esc(i.tx_username || '') + '</code>; no PIN needed.' : 'Created automatically on first boot.' },
+      { done: s.setup_done, t: 'Server deployed', d: s.setup_done ? 'Running <code>' + esc((s.profile_path || '').split('/').filter(Boolean).pop() || '') + '</code>.' :
+          'Open txAdmin, pick a recipe (ESX, QBCore…). The database step is already filled in with <code>' + esc(i.db_name || '') + '</code>.',
+        action: s.setup_done || !s.tx_listening ? '' : '<a class="tx-btn tx-btn-primary tx-btn-sm" href="' + esc(i.tx_url) + '" target="_blank" rel="noopener">' + ico('ext') + 'Open setup wizard</a>' },
+      { done: i.ports && i.ports.open, t: 'Ports open to players', d: i.ports && i.ports.open ? 'Firewall allows ' + i.tx_port + '/tcp and ' + i.game_port + '/tcp+udp.' :
+          (i.ports && i.ports.pending_request ? 'Waiting for an admin to approve the port request.' : 'The firewall is blocking ' + esc((i.ports && i.ports.missing || []).join(', ')) + '.'),
+        action: i.ports && !i.ports.open && !i.ports.pending_request ? '<button class="tx-btn tx-btn-primary tx-btn-sm" data-ports="1">' + ico('wall') + (me.full_admin ? 'Open ports' : 'Request ports') + '</button>' : '' },
+      { done: s.game_listening, t: 'Players can connect', d: s.game_listening ? 'Join with <code>connect ' + esc(i.connect) + '</code>.' : 'The game server isn\'t listening on ' + i.game_port + ' yet.' },
+    ];
+    const firstOpen = steps.findIndex(x => !x.done);
+    const allText = ['txAdmin: ' + i.tx_url, 'Username: ' + (i.tx_username || ''), 'Password: ' + (i.tx_password || ''), 'Connect: ' + i.connect,
+      'MySQL host: 127.0.0.1:3306', 'Database: ' + (i.db_name || ''), 'DB user: ' + (i.db_user || ''), 'DB password: ' + (i.db_password || '')].join('\n');
+
+    body.innerHTML = '<div class="tx-two"><div>' +
+      (busy ? '<div class="tx-callout busy" style="margin-bottom:16px"><span class="tx-spinner"></span><div><strong>A job is running</strong> (' + esc(i.state) + '). ' + (i.last_job_id ? '<a href="#" id="show-job">Show progress</a>' : '') + '</div></div>' : '') +
+      '<section class="tx-panel"><div class="tx-panel-head"><div class="grow"><h3>Setup progress</h3><p>' + steps.filter(x => x.done).length + ' of ' + steps.length + ' complete</p></div></div>' +
+        '<div class="tx-panel-body"><ol class="tx-steps">' + steps.map((st, n) =>
+          '<li class="tx-step ' + (st.done ? 'done' : n === firstOpen ? 'now' : '') + '"><div class="tx-step-dot">' + (st.done ? ico('check') : n + 1) + '</div>' +
+          '<div><div class="tx-step-t">' + st.t + '</div><div class="tx-step-d">' + st.d + (n === firstOpen && st.action ? '<div>' + st.action + '</div>' : '') + '</div></div></li>').join('') + '</ol></div></section>' +
+      (i.notes ? '<section class="tx-panel"><div class="tx-panel-head"><div class="grow"><h3>Notes</h3></div></div><div class="tx-panel-body" style="font-size:13px;color:var(--text-secondary);white-space:pre-wrap;line-height:1.6">' + esc(i.notes) + '</div></section>' : '') +
+    '</div><div>' + networkPanel(i) +
+      '<section class="tx-panel"><div class="tx-panel-head"><div class="grow"><h3>Credentials</h3><p>Generated by the panel and stored privately on this server</p></div>' +
+        '<button class="tx-btn tx-btn-ghost tx-btn-sm" id="copy-all">' + ico('copy') + 'Copy all</button>' +
+        '<button class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" id="edit-details" title="Edit saved details">' + ico('edit') + '</button></div>' +
+        '<div class="tx-panel-body">' +
+          vgroup('lock', 'txAdmin login', vrow('URL', i.tx_url, { link: true }) + vrow('Username', i.tx_username) + vrow('Password', i.tx_password, { secret: true, emptyText: 'not recorded, reset it in Settings' })) +
+          vgroup('db', 'MySQL', vrow('Host', '127.0.0.1:3306') + vrow('Database', i.db_name) + vrow('User', i.db_user) + vrow('Password', i.db_password, { secret: true, emptyText: 'not recorded' })) +
+          vgroup('game', 'Game', vrow('Connect', i.connect) + vrow('Cfx.re key', i.cfx_key, { secret: true })) +
+          '<div style="margin-top:16px"><button class="tx-btn tx-btn-ghost tx-btn-sm" id="reset-pw">' + ico('key') + 'Reset txAdmin password</button></div>' +
+        '</div></section>' +
+    '</div></div>';
+
+    body.querySelectorAll('[data-ctl2]').forEach(b => b.addEventListener('click', () => control(i.id, b.dataset.ctl2, b)));
+    wireNetwork(body, i);
+    body.querySelectorAll('[data-reveal]').forEach(b => b.addEventListener('click', () => {
+      const v = b.closest('.tx-vrow').querySelector('.tx-vv');
+      const showing = v.classList.contains('secret');
+      v.textContent = showing ? v.dataset.secret : '••••••••••••';
+      v.classList.toggle('secret', !showing);
+      b.innerHTML = ico(showing ? 'eyeOff' : 'eye'); b.title = showing ? 'Hide' : 'Show';
+    }));
+    $('#copy-all').addEventListener('click', (e) => copy(allText, 'All details', e.currentTarget));
+    $('#edit-details').addEventListener('click', () => editDetails(i));
+    $('#reset-pw').addEventListener('click', () => resetPassword(i));
+    const sj = $('#show-job'); if (sj) sj.addEventListener('click', (e) => { e.preventDefault(); watchJob(i.last_job_id, i.name, () => render()); });
+  }
+
+  function renderFiles(body, i) {
+    body.innerHTML = '<section class="tx-panel"><div class="tx-panel-head"><div class="grow"><h3>Server data folders</h3><p>Servers txAdmin deployed in <code>' + esc(i.txdata_dir) + '</code></p></div></div>' +
+      (i.folders.length ? '<div style="overflow-x:auto"><table class="tx-table"><thead><tr><th>Folder</th><th>Size</th><th>Modified</th><th></th></tr></thead><tbody>' +
+        i.folders.map(f => '<tr><td><div class="name">' + ico('folder') + esc(f.name) + (f.active ? ' <span class="tx-badge ok">active</span>' : ' <span class="tx-badge muted">unused</span>') + '</div></td>' +
+          '<td>' + fmtBytes(f.size) + '</td><td>' + esc(f.modified ? f.modified.replace('T', ' ') : '—') + '</td>' +
+          '<td class="r">' + (f.active || f.external ? '' : '<button class="tx-btn tx-btn-soft-danger tx-btn-sm" data-del-folder="' + esc(f.name) + '">' + ico('trash') + 'Delete</button>') + '</td></tr>').join('') +
+        '</tbody></table></div>'
+        : '<div class="tx-panel-body"><div class="tx-callout">' + ico('info') + '<div>Nothing deployed yet. Run a recipe from txAdmin\'s setup wizard.</div></div></div>') +
+      '</section>';
+    body.querySelectorAll('[data-del-folder]').forEach(b => b.addEventListener('click', () => deleteFolder(i, b.dataset.delFolder)));
+  }
+
+  function renderLogs(body, i) {
+    body.innerHTML = '<div class="tx-term tall"><div class="tx-term-bar"><i></i><i></i><i></i><span>journalctl -u ' + esc(i.service_unit) + '</span>' +
+      '<label><input type="checkbox" id="logs-follow" checked> live</label>' +
+      '<button class="tx-copy" type="button" id="logs-refresh" title="Refresh" style="color:#8a90a3">' + ico('refresh') + '</button></div><pre id="logs">Loading…</pre></div>';
+    $('#logs-refresh').addEventListener('click', () => loadLogs(i.id));
+    loadLogs(i.id);
+    logsTimer = setInterval(() => {
+      if (route().id !== i.id || route().tab !== 'logs') return clearInterval(logsTimer);
+      if ($('#logs-follow') && $('#logs-follow').checked && !document.hidden) loadLogs(i.id);
+    }, 4000);
+  }
+  async function loadLogs(id) {
+    const r = await getJson('/instance/' + id + '/logs?lines=400');
+    const el = $('#logs'); if (!el) return;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 30;
+    el.textContent = r.ok ? (r.logs || '(no output yet)') : r.error;
+    if (atBottom || el.dataset.init !== '1') { el.scrollTop = el.scrollHeight; el.dataset.init = '1'; }
+  }
+
+  function renderSettings(body, i, busy) {
+    const row = (icon, cls, title, desc, btn) => '<div class="tx-setting"><div class="tx-setting-ico ' + cls + '">' + ico(icon) + '</div><div class="grow"><div class="tx-setting-t">' + title + '</div><div class="tx-setting-d">' + desc + '</div></div>' + btn + '</div>';
+    body.innerHTML =
+      '<section class="tx-panel"><div class="tx-panel-head"><div class="grow"><h3>General</h3></div></div>' +
+        row('edit', 'accent', 'Saved details', 'Rename the server, or edit the credentials and notes the panel keeps for it.', '<button class="tx-btn tx-btn-ghost tx-btn-sm" id="s-edit">Edit</button>') +
+        row('key', 'accent', 'txAdmin password', 'Set a new master password. txAdmin restarts to apply it.', '<button class="tx-btn tx-btn-ghost tx-btn-sm" id="s-pw">Reset</button>') +
+        (i.managed ? row('upload', 'accent', 'FXServer version', 'Currently ' + (i.artifact_build ? 'build ' + esc(i.artifact_build) : 'unknown') + '. Switch builds and restart.', '<button class="tx-btn tx-btn-ghost tx-btn-sm" id="s-update"' + (busy ? ' disabled' : '') + '>Update</button>') : '') +
+      '</section>' +
+      '<section class="tx-panel danger"><div class="tx-panel-head"><div class="grow"><h3 style="color:var(--danger)">Danger zone</h3><p>These can\'t be undone without a backup.</p></div></div>' +
+        row('refresh', 'danger', 'Reinstall', 'Wipe txAdmin data and the database, then return to the setup wizard. Your login is kept, and a backup is made by default.', '<button class="tx-btn tx-btn-soft-danger tx-btn-sm" id="s-reinstall"' + (busy ? ' disabled' : '') + '>Reinstall</button>') +
+        row('trash', 'danger', 'Delete server', 'Stop and remove this server' + (i.managed ? ', along with its files, service and (optionally) its database.' : '. Files are only deleted if you choose to.'), '<button class="tx-btn tx-btn-danger tx-btn-sm" id="s-delete"' + (i.state === 'deleting' ? ' disabled' : '') + '>Delete</button>') +
+      '</section>';
+    $('#s-edit').addEventListener('click', () => editDetails(i));
+    $('#s-pw').addEventListener('click', () => resetPassword(i));
+    const u = $('#s-update'); if (u) u.addEventListener('click', () => updateArtifact(i));
+    $('#s-reinstall').addEventListener('click', () => reinstall(i));
+    $('#s-delete').addEventListener('click', () => del(i));
+  }
+
+  // ---------------------------------------------------------------- actions
+  function editDetails(i) {
+    const f = (label, name, value, hint, type) => '<div class="tx-field"><label>' + label + '</label>' + (type === 'textarea' ? '<textarea name="' + name + '" rows="3">' + esc(value || '') + '</textarea>' :
+      '<input type="text" name="' + name + '" value="' + esc(value || '') + '">') + (hint ? '<div class="hint">' + hint + '</div>' : '') + '</div>';
+    formModal({
+      title: 'Edit saved details', sub: i.name, icon: 'edit',
+      html: f('Server name', 'name', i.name) +
+        '<div class="tx-field-row">' + f('txAdmin username', 'tx_username', i.tx_username) + f('txAdmin password', 'tx_password', i.tx_password) + '</div>' +
+        '<div class="tx-callout">' + ico('info') + '<div>These fields only change what the panel remembers. To change the real txAdmin password, use <strong>Reset password</strong>.</div></div>' +
+        '<div class="tx-field-row">' + f('Database', 'db_name', i.db_name) + f('DB user', 'db_user', i.db_user) + '</div>' +
+        f('DB password', 'db_password', i.db_password) + f('Cfx.re license key', 'cfx_key', i.cfx_key) + f('Notes', 'notes', i.notes, '', 'textarea'),
+      onSubmit: async (form) => {
+        const b = {};
+        ['name', 'tx_username', 'tx_password', 'db_name', 'db_user', 'db_password', 'cfx_key', 'notes'].forEach(k => { b[k] = form[k].value; });
+        const r = await postJson('/instance/' + i.id + '/details', b);
+        if (r.ok) { toast('Details saved'); render(); }
+        return r;
+      },
+    });
+  }
+
+  function resetPassword(i) {
+    formModal({
+      title: 'Reset txAdmin password', sub: i.name, icon: 'key', submitLabel: 'Reset & restart',
+      html: '<div class="tx-field"><label>Username</label><input type="text" name="tx_username" value="' + esc(i.tx_username || 'admin') + '"><div class="hint">Must match the master account if txAdmin is already set up.</div></div>' +
+        '<div class="tx-field"><label>New password</label><input type="text" name="password" placeholder="Leave empty to generate a strong one"></div>' +
+        '<div class="tx-callout warn">' + ico('alert') + '<div>txAdmin restarts to apply this, so connected players will be disconnected.</div></div>',
+      onSubmit: async (f) => {
+        const r = await postJson('/instance/' + i.id + '/password', { tx_username: f.tx_username.value.trim(), password: f.password.value });
+        if (r.ok) { toast('Password reset and saved'); setTimeout(render, 1500); }
+        return r;
+      },
+    });
+  }
+
+  async function deleteFolder(i, name) {
+    const ok = await confirmAction({ title: 'Delete server data', typeName: name, okLabel: 'Delete folder',
+      html: 'Permanently delete <code>' + esc(name) + '</code>, including its resources and server.cfg. This isn\'t the folder txAdmin is running.' });
+    if (!ok) return;
+    const r = await postJson('/instance/' + i.id + '/folder/delete', { name });
+    if (!r.ok) return toast(r.error, 'error');
+    toast('Deleted ' + name); render();
+  }
+
+  async function updateArtifact(i) {
+    const v = await loadVersions();
+    formModal({
+      title: 'Update FXServer', sub: i.name + ' · currently build ' + (i.artifact_build || '?'), icon: 'upload', submitLabel: 'Update & restart',
+      html: '<div class="tx-field"><label>Build</label>' + buildSelect(v, 'build') + '</div><div class="tx-callout warn">' + ico('alert') + '<div>The server restarts after switching.</div></div>',
+      onSubmit: async (f) => {
+        const r = await postJson('/instance/' + i.id + '/update', { build: f.build.value });
+        if (r.ok) watchJob(r.job_id, 'Updating ' + i.name, () => render());
+        return r;
+      },
+    });
+  }
+
+  async function reinstall(i) {
+    const opts = await confirmAction({
+      title: 'Reinstall ' + i.name, typeName: i.name, okLabel: 'Reinstall',
+      html: '<p style="margin:0 0 14px">Stops the server, clears txAdmin\'s data (deployed servers, settings, admins) and starts fresh at the setup wizard.' +
+        (i.tx_username ? ' You\'ll log in as <code>' + esc(i.tx_username) + '</code> with the saved password.' : '') + '</p>' +
+        '<div style="display:flex;flex-direction:column;gap:8px">' +
+        (i.db_name ? '<label class="tx-check"><input type="checkbox" name="wipe_db" checked><span><strong>Wipe database</strong><code>' + esc(i.db_name) + '</code> is recreated empty so the recipe installs cleanly.</span></label>' : '') +
+        '<label class="tx-check"><input type="checkbox" name="keep_backup" checked><span><strong>Keep a backup</strong>Old txData is renamed and the database is dumped next to it.</span></label></div>',
+    });
+    if (!opts) return;
+    const r = await postJson('/instance/' + i.id + '/reinstall', { wipe_db: opts.wipe_db !== false && !!i.db_name, keep_backup: opts.keep_backup !== false });
+    if (!r.ok) return toast(r.error, 'error');
+    watchJob(r.job_id, 'Reinstalling ' + i.name, () => render());
+  }
+
+  async function del(i) {
+    const opts = await confirmAction({
+      title: 'Delete ' + i.name, typeName: i.name, okLabel: 'Delete server',
+      html: '<p style="margin:0 0 14px">Stops and disables <code>' + esc(i.service_unit) + '</code> and removes the server from the panel.</p>' +
+        '<div style="display:flex;flex-direction:column;gap:8px">' +
+        '<label class="tx-check"><input type="checkbox" name="delete_files"' + (i.managed ? ' checked' : '') + '><span><strong>Delete files</strong><code>' + esc(i.base_dir) + '</code>' + (i.managed ? '' : ' (existing install, this removes it from disk)') + '</span></label>' +
+        (i.db_name ? '<label class="tx-check"><input type="checkbox" name="drop_db"' + (i.managed ? ' checked' : '') + '><span><strong>Drop database</strong><code>' + esc(i.db_name) + '</code>' + (i.db_user ? ' and MySQL user <code>' + esc(i.db_user) + '</code>' : '') + '</span></label>' : '') +
+        '</div>' + (i.managed ? '' : '<p style="margin:12px 0 0;font-size:12px;color:var(--text-muted)">If you keep the files, the install shows up here again next time.</p>'),
+    });
+    if (!opts) return;
+    const r = await postJson('/instance/' + i.id + '/delete', { delete_files: !!opts.delete_files, drop_db: !!opts.drop_db });
+    if (!r.ok) return toast(r.error, 'error');
+    watchJob(r.job_id, 'Deleting ' + i.name, () => { location.hash = '#/'; render(); });
+  }
+
+  render();
+})();
+</script>
+{% endblock %}

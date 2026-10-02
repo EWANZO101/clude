@@ -1,0 +1,21 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}Inspect Equipment — Admin{% endblock %}
+{% block page_title %}Inspect {{ item.manufacturer }} {{ item.model }}{% endblock %}
+{% block content %}
+<form method="POST" novalidate class="max-w-2xl card p-6">
+  {{ form.hidden_tag() }}
+  <h2 class="font-semibold text-text-primary mb-3">Checklist</h2>
+  <div class="grid sm:grid-cols-2 gap-2 mb-6">
+    {% for key in checklist_keys %}
+    <label class="flex items-center gap-2 text-sm text-text-secondary">
+      <input type="checkbox" name="{{ key }}" class="rounded border-border bg-surface-800 text-brand-600">
+      {{ key.replace("_", " ")|title }}
+    </label>
+    {% endfor %}
+  </div>
+  {{ field(form.result) }}
+  {{ field(form.notes, rows=3) }}
+  <button type="submit" class="btn-primary mt-2">Save inspection</button>
+</form>
+{% endblock %}

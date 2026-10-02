@@ -1,0 +1,61 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Payment History — Admin{% endblock %}
+{% block admin_content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+  <h1 class="font-display" style="font-size:1.7rem;">Payment History</h1>
+</div>
+
+{% set total = payments | sum(attribute='amount') %}
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem;">
+  <div class="card" style="text-align:center;">
+    <div style="font-size:1.8rem;font-family:'Cinzel',serif;color:var(--gold);">${{ "%.2f"|format(total) }}</div>
+    <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem;">Total Collected</div>
+  </div>
+  <div class="card" style="text-align:center;">
+    <div style="font-size:1.8rem;font-family:'Cinzel',serif;color:var(--accent);">{{ payments|length }}</div>
+    <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem;">Transactions</div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Order ID</th>
+          <th>Invoice ID</th>
+          <th>Method</th>
+          <th>Amount</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td style="font-size:0.85rem;color:var(--text-muted);">{{ p.recorded_at.strftime('%b %d, %Y %H:%M') }}</td>
+          <td>
+            {% if p.order_id %}
+            <a href="/admin/orders/{{ p.order_id }}" class="font-mono"
+               style="font-size:0.85rem;color:var(--accent);">{{ p.order_id }}</a>
+            {% else %}—{% endif %}
+          </td>
+          <td class="font-mono" style="font-size:0.82rem;color:var(--gold);">{{ p.invoice_id or '—' }}</td>
+          <td style="font-size:0.9rem;color:var(--text-secondary);">{{ p.method }}</td>
+          <td style="font-size:1rem;font-weight:700;color:var(--gold);">${{ "%.2f"|format(p.amount) }}</td>
+          <td style="font-size:0.85rem;color:var(--text-secondary);">{{ p.notes or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem;font-style:italic;">
+            No payments recorded yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

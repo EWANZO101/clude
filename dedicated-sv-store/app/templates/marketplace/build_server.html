@@ -1,0 +1,174 @@
+{% extends "layouts/public.html" %}
+{% block title %}Build a Server — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-10"
+     x-data='serverBuilder({{ catalog|tojson }}, {{ services_catalog|tojson }}, {{ component_labels|tojson }}, {{ csrf_token()|tojson }})'
+     x-init="quote()">
+  <h1 class="text-2xl font-semibold text-text-primary mb-2">Build a custom server</h1>
+  <p class="text-text-secondary mb-4">Choose your components — pricing and compatibility update automatically.</p>
+
+  <div class="card p-4 mb-8 border-status-warning/40 flex gap-3 items-start">
+    <svg class="w-5 h-5 flex-shrink-0 text-status-warning mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+    <p class="text-sm text-text-secondary">
+      <span class="font-medium text-text-primary">All prices shown here are estimates, not live pricing.</span>
+      Component costs are indicative monthly rates and may differ from the final quote once we confirm stock,
+      datacenter and configuration availability with our team.
+    </p>
+  </div>
+
+  <div class="grid lg:grid-cols-3 gap-8">
+    <div class="lg:col-span-2 space-y-6">
+      <template x-for="ctype in componentTypes" :key="ctype">
+        <div class="card p-5">
+          <h2 class="font-semibold text-text-primary mb-3" x-text="componentLabels[ctype]"></h2>
+          <div class="flex gap-3">
+            <select class="input-field" x-model="selections[ctype].hardware_id" @change="quote()">
+              <option value="">— None —</option>
+              <template x-for="opt in catalog[ctype]" :key="opt.id">
+                <option :value="opt.id" x-text="opt.label + ' (£' + opt.price + '/mo)'"></option>
+              </template>
+            </select>
+            <input type="number" min="1" class="input-field w-24" x-model.number="selections[ctype].quantity" @change="quote()">
+          </div>
+        </div>
+      </template>
+
+      <div class="card p-5">
+        <h2 class="font-semibold text-text-primary mb-3">Additional options</h2>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="field-label">Operating system</label>
+            <input type="text" class="input-field" x-model="operatingSystem" placeholder="Ubuntu 24.04 LTS">
+          </div>
+          <div>
+            <label class="field-label">IP addresses</label>
+            <input type="number" min="1" class="input-field" x-model.number="ipAddresses" @change="quote()">
+          </div>
+          <div>
+            <label class="field-label">Country</label>
+            <input type="text" class="input-field" x-model="country" placeholder="GB">
+          </div>
+          <div>
+            <label class="field-label">Datacenter</label>
+            <input type="text" class="input-field" x-model="datacenterName" placeholder="London DC1">
+          </div>
+        </div>
+        <div class="mt-4">
+          <p class="field-label mb-2">Additional services</p>
+          <template x-for="(price, name) in servicesCatalog" :key="name">
+            <label class="flex items-center gap-2 text-sm text-text-secondary mb-1">
+              <input type="checkbox" :value="name" @change="toggleService(name, $event.target.checked)" class="rounded border-border bg-surface-800 text-brand-600">
+              <span x-text="name"></span>
+              <span class="text-text-muted">+£<span x-text="price"></span>/mo</span>
+            </label>
+          </template>
+        </div>
+      </div>
+
+      <template x-if="violations.length > 0">
+        <div class="card p-5 border-status-danger/40">
+          <h2 class="font-semibold text-status-danger mb-2">Compatibility issues</h2>
+          <ul class="list-disc list-inside text-sm text-text-secondary space-y-1">
+            <template x-for="v in violations" :key="v"><li x-text="v"></li></template>
+          </ul>
+        </div>
+      </template>
+    </div>
+
+    <div class="lg:col-span-1">
+      <div class="card p-5 sticky top-20">
+        <h2 class="font-semibold text-text-primary mb-1">Price summary</h2>
+        <p class="text-xs text-text-muted mb-4">Estimated pricing — not a live quote.</p>
+        <div class="space-y-2 text-sm mb-4">
+          <div class="flex justify-between"><span class="text-text-secondary">Base</span><span x-text="'£' + pricing.base_price.toFixed(2)"></span></div>
+          <template x-for="line in pricing.lines" :key="line.label + line.component_type">
+            <div class="flex justify-between">
+              <span class="text-text-secondary" x-text="line.label + ' x' + line.quantity"></span>
+              <span x-text="'£' + line.line_total.toFixed(2)"></span>
+            </div>
+          </template>
+          <template x-if="pricing.extra_ips > 0">
+            <div class="flex justify-between"><span class="text-text-secondary">Extra IPs</span><span x-text="'£' + pricing.ip_total.toFixed(2)"></span></div>
+          </template>
+          <template x-for="s in pricing.service_lines" :key="s.name">
+            <div class="flex justify-between"><span class="text-text-secondary" x-text="s.name"></span><span x-text="'£' + s.price.toFixed(2)"></span></div>
+          </template>
+        </div>
+        <div class="border-t border-border pt-3 flex justify-between items-baseline">
+          <span class="text-text-secondary text-sm">Total</span>
+          <span class="text-2xl font-semibold text-text-primary" x-text="'£' + pricing.total_monthly.toFixed(2) + '/mo'"></span>
+        </div>
+        <button @click="save()" :disabled="violations.length > 0" class="btn-primary w-full mt-4 disabled:opacity-40">Save configuration</button>
+        <p class="text-xs text-text-muted mt-2 text-center" x-show="!loggedIn">You'll be asked to log in to save.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function serverBuilder(catalog, servicesCatalog, componentLabels, csrfToken) {
+  return {
+    catalog, servicesCatalog, componentLabels, csrfToken,
+    componentTypes: {{ component_types|tojson }},
+    selections: Object.fromEntries({{ component_types|tojson }}.map(t => [t, { hardware_id: "", quantity: 1 }])),
+    additionalServices: [],
+    operatingSystem: "", ipAddresses: 1, country: "", datacenterName: "",
+    violations: [],
+    pricing: { base_price: 0, lines: [], extra_ips: 0, ip_total: 0, service_lines: [], total_monthly: 0, total_setup: 0 },
+    loggedIn: {{ 'true' if current_user.is_authenticated else 'false' }},
+
+    toggleService(name, checked) {
+      if (checked) { this.additionalServices.push(name); }
+      else { this.additionalServices = this.additionalServices.filter(s => s !== name); }
+      this.quote();
+    },
+
+    buildPayload() {
+      const components = Object.entries(this.selections)
+        .filter(([, v]) => v.hardware_id)
+        .map(([k, v]) => ({ component_type: k, hardware_id: v.hardware_id, quantity: v.quantity || 1 }));
+      return {
+        components,
+        ip_addresses: this.ipAddresses,
+        additional_services: this.additionalServices,
+        operating_system: this.operatingSystem,
+        country: this.country,
+        datacenter_name: this.datacenterName,
+      };
+    },
+
+    async quote() {
+      const resp = await fetch("{{ url_for('marketplace.build_server_quote') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": this.csrfToken },
+        body: JSON.stringify(this.buildPayload()),
+      });
+      const data = await resp.json();
+      if (data.success) {
+        this.violations = data.data.violations;
+        this.pricing = data.data.pricing;
+      }
+    },
+
+    async save() {
+      if (!this.loggedIn) {
+        window.location.href = "{{ url_for('auth.login') }}?next={{ request.path }}";
+        return;
+      }
+      const resp = await fetch("{{ url_for('marketplace.build_server_save') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": this.csrfToken },
+        body: JSON.stringify(this.buildPayload()),
+      });
+      const data = await resp.json();
+      if (data.success) {
+        window.location.href = "{{ url_for('customer.configurations') }}";
+      } else {
+        alert(data.error.message);
+      }
+    },
+  };
+}
+</script>
+{% endblock %}

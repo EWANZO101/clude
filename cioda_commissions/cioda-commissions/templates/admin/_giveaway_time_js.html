@@ -1,0 +1,14 @@
+<script>
+// Server stores UTC. Show times in the viewer's local zone, and convert the
+// datetime-local picker (local time) to UTC ISO before the form submits.
+document.querySelectorAll('time[data-utc]').forEach(el => {
+  const d = new Date(el.dataset.utc);
+  if (!isNaN(d)) el.textContent = d.toLocaleString([], {dateStyle: 'medium', timeStyle: 'short'});
+});
+function fillUtc(form) {
+  form.querySelectorAll('input[data-utc-target]').forEach(picker => {
+    const hidden = form.querySelector(`input[name="${picker.dataset.utcTarget}"]`);
+    hidden.value = picker.value ? new Date(picker.value).toISOString() : '';
+  });
+}
+</script>

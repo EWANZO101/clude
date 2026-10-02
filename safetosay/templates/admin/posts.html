@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Posts — Admin — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div class="admin-layout">
+{% include "admin/_sidebar.html" %}
+<div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
+    <h1 style="font-size:1.4rem;font-weight:700">Manage Posts</h1>
+    <span style="color:var(--muted);font-size:.875rem">{{ posts.total }} posts</span>
+  </div>
+
+  <!-- Filters -->
+  <form method="GET" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.25rem">
+    <input type="text" name="q" value="{{ q }}" class="form-input" placeholder="Search by Post ID or title" style="flex:1;min-width:200px">
+    <select name="type" class="form-input" style="width:auto">
+      <option value="all" {% if ftype=='all' %}selected{% endif %}>All Types</option>
+      <option value="main" {% if ftype=='main' %}selected{% endif %}>Stories</option>
+      <option value="advice" {% if ftype=='advice' %}selected{% endif %}>Advice</option>
+    </select>
+    <button type="submit" class="btn btn-primary">Filter</button>
+    {% if q or ftype!='all' %}<a href="{{ url_for('admin_posts') }}" class="btn btn-ghost">Clear</a>{% endif %}
+  </form>
+
+  <div style="display:flex;flex-direction:column;gap:.85rem">
+    {% for post in posts.items %}
+    <div class="card">
+      <div class="card-body">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.85rem">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.4rem">
+              <span class="post-id">{{ post.post_id }}</span>
+              <span style="font-size:.75rem;color:var(--muted);background:var(--surface);padding:.1rem .4rem;border-radius:3px">{{ post.forum_type }}</span>
+              <span class="status-badge {% if post.status=='active' %}badge-active{% elif post.status=='hidden' %}badge-hidden{% elif post.status=='removed' %}badge-removed{% else %}badge-verified{% endif %}">{{ post.status.replace('_',' ') }}</span>
+              {% if post.tag %}<span class="post-tag">{{ post.tag }}</span>{% endif %}
+            </div>
+            <div style="font-weight:600;color:var(--text);font-size:.95rem;margin-bottom:.2rem">{{ post.title }}</div>
+            <div style="font-size:.78rem;color:var(--muted)">by {{ post.author.username }} — {{ post.created_at.strftime('%d %b %Y') }} — {{ post.comments|length }} comments — {{ post.media|length }} attachments</div>
+          </div>
+        </div>
+
+        <!-- Quick actions row -->
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;align-items:center">
+          <!-- Status actions -->
+          {% if post.status != 'active' %}
+          <form method="POST" action="{{ url_for('admin_post_action', post_id=post.post_id) }}" style="display:inline">
+            <input type="hidden" name="action" value="show">
+            <button type="submit" class="btn btn-success btn-sm">✓ Restore</button>
+          </form>
+          {% endif %}
+          {% if post.status != 'hidden' %}
+          <form method="POST" action="{{ url_for('admin_post_action', post_id=post.post_id) }}" style="display:inline">
+            <input type="hidden" name="action" value="hide">
+            <button type="submit" class="btn btn-warn btn-sm">⊘ Hide</button>
+          </form>
+          {% endif %}
+          {% if post.status != 'removed' %}
+          <form method="POST" action="{{ url_for('admin_post_action', post_id=post.post_id) }}" style="display:inline">
+            <input type="hidden" name="action" value="remove">
+            <button type="submit" class="btn btn-danger btn-sm">✕ Remove</button>
+          </form>
+          {% endif %}
+          {% if post.status != 'verified_true' %}
+          <form method="POST" action="{{ url_for('admin_post_action', post_id=post.post_id) }}" style="display:inline">
+            <input type="hidden" name="action" value="verify_true">
+            <button type="submit" class="btn btn-sm" style="background:rgba(88,166,255,.15);color:var(--accent);border:1px solid rgba(88,166,255,.3)">⬆ Mark Verified True</button>
+          </form>
+          {% endif %}
+
+          <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 .15rem"></span>
+
+          <!-- Tag form -->
+          <form method="POST" action="{{ url_for('admin_post_action', post_id=post.post_id) }}" style="display:inline-flex;gap:.3rem;align-items:center">
+            <input type="hidden" name="action" value="tag">
+            <input type="text" name="tag_text" class="form-input" placeholder="Set tag..." value="{{ post.tag or '' }}" style="width:120px;padding:.25rem .5rem;font-size:.78rem">
+            <button type="submit" class="btn btn-ghost btn-sm">Set Tag</button>
+          </form>
+
+          <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 .15rem"></span>
+
+          <!-- Delete -->
+          <form method="POST" action="{{ url_for('admin_post_action', post_id=post.post_id) }}" style="display:inline" onsubmit="return confirm('Permanently delete this post?')">
+            <input type="hidden" name="action" value="delete">
+            <button type="submit" class="btn btn-danger btn-sm">🗑 Delete</button>
+          </form>
+
+          <!-- View -->
+          <a href="{{ url_for('advice_detail' if post.forum_type=='advice' else 'post_detail', post_id=post.post_id) }}" target="_blank" class="btn btn-ghost btn-sm">↗ View</a>
+        </div>
+
+        <!-- Redact tool -->
+        <details style="margin-top:.65rem">
+          <summary style="cursor:pointer;font-size:.78rem;color:var(--muted)">✎ Redact / Find & Replace text</summary>
+          <form method="POST" action="{{ url_for('admin_post_action', post_id=post.post_id) }}" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem">
+            <input type="hidden" name="action" value="redact">
+            <input type="text" name="find_text" class="form-input" placeholder="Text to find..." style="flex:1;min-width:140px;padding:.3rem .6rem;font-size:.82rem">
+            <input type="text" name="replace_with" class="form-input" placeholder="Replace with (default: [REDACTED])" style="flex:1;min-width:180px;padding:.3rem .6rem;font-size:.82rem">
+            <button type="submit" class="btn btn-warn btn-sm">Find & Replace</button>
+          </form>
+        </details>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if posts.pages > 1 %}
+  <div class="pagination">
+    {% if posts.has_prev %}<a href="{{ url_for('admin_posts', page=posts.prev_num, q=q, type=ftype) }}" class="page-btn">← Prev</a>{% endif %}
+    {% for p in posts.iter_pages(left_edge=1,right_edge=1,left_current=2,right_current=2) %}
+      {% if p %}<a href="{{ url_for('admin_posts', page=p, q=q, type=ftype) }}" class="page-btn {% if p==posts.page %}active{% endif %}">{{ p }}</a>
+      {% else %}<span class="page-btn">…</span>{% endif %}
+    {% endfor %}
+    {% if posts.has_next %}<a href="{{ url_for('admin_posts', page=posts.next_num, q=q, type=ftype) }}" class="page-btn">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

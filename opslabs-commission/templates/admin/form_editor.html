@@ -1,0 +1,102 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Form Editor — Admin{% endblock %}
+{% block admin_content %}
+
+<div style="max-width:800px;">
+  <div style="margin-bottom:1.5rem;">
+    <h1 class="font-display" style="font-size:1.7rem;">Commission Form Editor</h1>
+    <p style="color:var(--text-muted);font-size:0.9rem;font-style:italic;">
+      Customize the fields shown on the public commission request form.
+    </p>
+  </div>
+
+  <!-- Current Fields -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1rem;">Current Fields</h2>
+    {% if fields %}
+    <div style="display:grid;gap:0.5rem;">
+      {% for field in fields %}
+      <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem 1rem;
+                  background:var(--bg-elevated);border-radius:8px;flex-wrap:wrap;
+                  border-left:3px solid {{ 'var(--accent)' if field.active else 'var(--border)' }};">
+        <div style="flex:1;min-width:160px;">
+          <div style="font-weight:600;font-size:0.95rem;color:{{ 'var(--text-primary)' if field.active else 'var(--text-muted)' }};">
+            {{ field.label }}
+            {% if field.required %}<span style="color:var(--danger);font-size:0.75rem;margin-left:4px;">REQUIRED</span>{% endif %}
+          </div>
+          <div style="font-size:0.8rem;color:var(--text-muted);">
+            Type: {{ field.field_type }} &nbsp;·&nbsp; Key: <span class="font-mono">{{ field.field_key }}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:0.4rem;">
+          <!-- Toggle active -->
+          <form method="POST" style="display:inline;">
+            <input type="hidden" name="action" value="toggle">
+            <input type="hidden" name="field_id" value="{{ field.id }}">
+            <button type="submit" class="btn btn-ghost btn-sm">
+              {{ '👁 Hide' if field.active else '👁 Show' }}
+            </button>
+          </form>
+          <!-- Delete -->
+          <form method="POST" style="display:inline;"
+                onsubmit="return confirm('Delete this field?')">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="field_id" value="{{ field.id }}">
+            <button type="submit" class="btn btn-danger btn-sm">✕</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted);font-style:italic;">No custom fields. Add one below.</p>
+    {% endif %}
+  </div>
+
+  <!-- Add New Field -->
+  <div class="card">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1rem;">Add New Field</h2>
+    <form method="POST">
+      <input type="hidden" name="action" value="add">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+        <div>
+          <label class="form-label">Field Label *</label>
+          <input type="text" name="label" class="input" required placeholder="e.g. Reference Images">
+        </div>
+        <div>
+          <label class="form-label">Field Type</label>
+          <select name="field_type" class="input" id="fieldTypeSelect">
+            <option value="text">Text (single line)</option>
+            <option value="textarea">Textarea (multi-line)</option>
+            <option value="select">Dropdown / Select</option>
+            <option value="checkbox">Checkbox (yes/no)</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="optionsRow" style="display:none;margin-bottom:1rem;">
+        <label class="form-label">Dropdown Options (one per line)</label>
+        <textarea name="options" class="input" placeholder="Option 1&#10;Option 2&#10;Option 3"
+                  style="min-height:100px;"></textarea>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.25rem;">
+        <input type="checkbox" name="required" id="reqCheck"
+               style="width:16px;height:16px;accent-color:var(--accent);">
+        <label for="reqCheck" style="font-family:'Cinzel',serif;font-size:0.85rem;
+               color:var(--text-secondary);cursor:pointer;">Make this field required</label>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-sm">Add Field</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.getElementById('fieldTypeSelect').addEventListener('change', function() {
+    document.getElementById('optionsRow').style.display =
+      this.value === 'select' ? 'block' : 'none';
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_invoice_badge.html" import invoice_status_badge with context %}
+{% block title %}Invoices — {{ app_name }}{% endblock %}
+{% block page_title %}Invoices{% endblock %}
+{% block content %}
+{% if invoices %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Invoice #</th><th>Total</th><th>Balance due</th><th>Status</th><th>Due</th><th></th></tr></thead>
+    <tbody>
+      {% for invoice in invoices %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ invoice.invoice_number }}</td>
+        <td class="text-text-primary">£{{ invoice.total }}</td>
+        <td class="text-text-secondary">£{{ invoice.balance_due }}</td>
+        <td>{{ invoice_status_badge(invoice.status) }}</td>
+        <td class="text-text-muted">{{ invoice.due_date.strftime("%d %b %Y") if invoice.due_date else "—" }}</td>
+        <td><a href="{{ url_for('customer.invoice_detail', invoice_id=invoice.id) }}" class="text-brand-400 hover:text-brand-300">View</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card p-10 text-center text-text-secondary">No invoices yet.</div>
+{% endif %}
+{% endblock %}

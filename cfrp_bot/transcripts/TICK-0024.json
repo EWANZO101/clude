@@ -1,0 +1,82 @@
+{
+  "ticket_id": "TICK-0024",
+  "ticket_type": "support",
+  "opened_by": "e",
+  "opened_at": "2026-04-02 10:44:20",
+  "closed_by": "Alex Bento | Pierre jordaan",
+  "closed_at": "2026-04-02 10:51 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-02T10:44:20.278000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1460361220329574521> <@344560012997165057>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:45:12.752000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "<@1486786779708260382> can you pull up this users Whitelist Application",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:45:13.202000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "**What are you applying for?**\n\n`1.` [Whitelist](https://web.cfrp.co.za/applications/apply/whitelist)\n`2.` [Dispatch](https://web.cfrp.co.za/applications/apply/dispatch)\n`3.` [East Customs](https://web.cfrp.co.za/applications/apply/east-customs)\n`4.` [EMS](https://web.cfrp.co.za/applications/apply/ems)\n`5.` [Fire](https://web.cfrp.co.za/applications/apply/fire)\n`6.` [LS Customs](https://web.cfrp.co.za/applications/apply/ls-customs)\n`7.` [Police](https://web.cfrp.co.za/applications/apply/police)\n`8.` [Tuner Shop](https://web.cfrp.co.za/applications/apply/tuner-shop)",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:45:25.785000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "no pull up <@344560012997165057>  Application",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:45:42.060000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "<@1486786779708260382> no pull up <@344560012997165057>   Application",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:45:42.464000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "**What are you applying for?**\n\n`1.` [Whitelist](https://web.cfrp.co.za/applications/apply/whitelist)\n`2.` [Dispatch](https://web.cfrp.co.za/applications/apply/dispatch)\n`3.` [East Customs](https://web.cfrp.co.za/applications/apply/east-customs)\n`4.` [EMS](https://web.cfrp.co.za/applications/apply/ems)\n`5.` [Fire](https://web.cfrp.co.za/applications/apply/fire)\n`6.` [LS Customs](https://web.cfrp.co.za/applications/apply/ls-customs)\n`7.` [Police](https://web.cfrp.co.za/applications/apply/police)\n`8.` [Tuner Shop](https://web.cfrp.co.za/applications/apply/tuner-shop)",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:47:55.053000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "<@1486786779708260382> how are you doing",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:48:27.180000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "Hi there! I'm doing great, thanks for asking! I'm always happy to assist with any questions or issues you may have about CFRP. How can I help you today?",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

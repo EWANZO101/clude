@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ company.name }} — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('companies.detail', company_id=company.public_id) }}" class="crumb">← {{ company.name }}</a>
+    <h1>Edit company details</h1>
+  </div>
+</div>
+
+<div class="panel" style="max-width:560px;">
+  <h2>Details</h2>
+  <form method="post">
+    <label>Company name</label>
+    <input type="text" name="name" value="{{ company.name }}" required>
+    <label>Contact email</label>
+    <input type="email" name="contact_email" value="{{ company.contact_email or '' }}">
+    <label>Contact phone</label>
+    <input type="tel" name="contact_phone" value="{{ company.contact_phone or '' }}">
+    <label>Address</label>
+    <textarea name="address" rows="3" style="font-family:inherit; font-size:13.5px;">{{ company.address or '' }}</textarea>
+    <button type="submit" style="margin-top:18px;">Save changes</button>
+  </form>
+</div>
+
+<div class="panel" style="max-width:560px;">
+  <h2>Company-wide update schedule</h2>
+  <p class="muted">Overrides the system default of 9:00 PM UK for every instance in
+    this company that doesn't have its own kiosk-specific time set.</p>
+  <form method="post">
+    <label>Default update time (UK local, HH:MM)</label>
+    <input type="text" name="default_update_time" placeholder="21:00"
+           value="{{ company.default_update_time.strftime('%H:%M') if company.default_update_time else '' }}">
+    <label class="checkline">
+      <input type="checkbox" name="clear_update_time">
+      Clear override (use 9:00 PM UK system default)
+    </label>
+    <label>Update countdown (minutes shown to the kiosk before it starts)</label>
+    <input type="text" name="update_countdown_minutes" value="{{ company.update_countdown_minutes }}">
+    <button type="submit" style="margin-top:18px;">Save schedule settings</button>
+  </form>
+</div>
+{% endblock %}

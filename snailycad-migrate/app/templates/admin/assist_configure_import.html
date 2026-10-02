@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Configure restore for {{ job.user.email }} — Admin — {{ app_name }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+
+<h1 class="text-lg font-semibold text-gray-100 mb-2">Configure restore for {{ job.user.email if job.user else "—" }}</h1>
+<p class="text-sm text-gray-500 mb-2">
+  Expires {{ job.admin_access_expires_at }}. The user's agent is
+  {% if job.status == "awaiting_admin" %}already connected and waiting{% else %}not connected yet — this will be ready as soon as it checks in{% endif %}.
+</p>
+{% if job.assist_note %}
+  <div class="bg-surface border border-border rounded-md p-3 mb-6 text-sm text-gray-300">{{ job.assist_note }}</div>
+{% endif %}
+
+<form method="POST" novalidate class="max-w-2xl bg-panel border border-border rounded-lg p-6 space-y-5">
+  {{ form.hidden_tag() }}
+  {% include "_form_errors.html" %}
+
+  <div>
+    {{ form.source_export_id.label(class="block text-sm text-gray-400 mb-1") }}
+    {{ form.source_export_id(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+  </div>
+
+  <div class="flex items-center gap-2">
+    {{ form.restore_files(class="rounded border-border bg-surface", id="restore_files") }}
+    {{ form.restore_files.label(class="text-sm text-gray-300") }}
+  </div>
+
+  <div id="target_path_field">
+    {{ form.target_path.label(class="block text-sm text-gray-400 mb-1") }}
+    {{ form.target_path(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200", placeholder="/opt/snailycad or D:\\SnailyCAD") }}
+    <p class="text-xs text-gray-600 mt-1">{{ form.target_path.description }}</p>
+  </div>
+
+  <div class="border-t border-border pt-4">
+    <p class="text-sm font-semibold text-gray-300 mb-3">Database restore (optional)</p>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div class="sm:col-span-2">
+        {{ form.db_type.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_type(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.db_host.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_host(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.db_port.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_port(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.db_name.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_name(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+        <p class="text-xs text-gray-600 mt-1">{{ form.db_name.description }}</p>
+      </div>
+      <div>
+        {{ form.db_user.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_user(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.db_password.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_password(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.sqlite_target_path.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.sqlite_target_path(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+    </div>
+    <p class="text-xs text-gray-600 mt-2">
+      Leave the database name blank to restore every database from the backup (each auto-created
+      if it doesn't already exist on the target).
+    </p>
+  </div>
+
+  {{ form.submit(class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md py-2") }}
+  <p class="text-xs text-gray-600">
+    Once you submit, the user's agent picks this up automatically on its next check-in — no
+    further action needed from them.
+  </p>
+</form>
+
+<script>
+  const restoreFiles = document.getElementById('restore_files');
+  const targetPathField = document.getElementById('target_path_field');
+  function toggleTargetPath() {
+    targetPathField.classList.toggle('opacity-40', !restoreFiles.checked);
+  }
+  restoreFiles.addEventListener('change', toggleTargetPath);
+  toggleTargetPath();
+</script>
+{% endblock %}

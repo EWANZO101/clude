@@ -1,0 +1,23 @@
+{% extends "layouts/seller_dashboard.html" %}
+{% block title %}Customers — Seller Portal{% endblock %}
+{% block page_title %}Customers{% endblock %}
+{% block content %}
+{% if rows %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Customer</th><th>Orders</th><th>Total spent</th></tr></thead>
+    <tbody>
+      {% for user, order_count, total_spent in rows %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ user.full_name }}</td>
+        <td class="text-text-secondary">{{ order_count }}</td>
+        <td class="text-text-primary">£{{ total_spent }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card p-10 text-center text-text-secondary">No customers yet.</div>
+{% endif %}
+{% endblock %}

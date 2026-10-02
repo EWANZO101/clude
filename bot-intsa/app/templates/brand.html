@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block header %}Brand{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 bg-base-900 border border-base-700 rounded-xl p-6">
+    {% set usernames = brand.as_list('username_suggestions') %}
+    <div class="text-sm text-slate-500 mb-1">@{{ usernames[0] if usernames else brand.name }}</div>
+    <p class="text-slate-200 mb-4">{{ brand.bio }}</p>
+    <div class="flex flex-wrap gap-2 mb-4">
+      {% for c in brand.as_list('colors') %}
+        <span class="w-6 h-6 rounded-full border border-base-700" style="background:{{ c }}" title="{{ c }}"></span>
+      {% endfor %}
+    </div>
+    <div class="text-sm text-slate-400 mb-1">Voice</div>
+    <p class="text-slate-200 mb-4">{{ brand.voice }}</p>
+    <div class="text-sm text-slate-400 mb-1">Content pillars</div>
+    <div class="flex flex-wrap gap-2 mb-4">
+      {% for p in brand.as_list('content_pillars') %}
+        <span class="px-3 py-1 bg-base-800 rounded-full text-xs">{{ p }}</span>
+      {% endfor %}
+    </div>
+    <div class="text-sm text-slate-400 mb-1">CTA</div>
+    <p class="text-slate-200">{{ brand.cta }}</p>
+  </div>
+  <div class="bg-base-900 border border-base-700 rounded-xl p-6">
+    <h3 class="text-white font-semibold mb-3">Refine</h3>
+    <form method="post" action="{{ url_for('brand.refine', brand_id=brand.id) }}" class="space-y-3">
+      <textarea name="instruction" rows="4" placeholder="e.g. Make it more premium" class="w-full bg-base-800 border border-base-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500"></textarea>
+      <button class="w-full px-4 py-2 bg-accent-600 hover:bg-accent-500 rounded-lg text-sm font-medium text-white">Apply</button>
+    </form>
+    <div class="mt-4 text-sm text-slate-400">Username ideas</div>
+    <ul class="text-sm text-slate-300 mt-1 space-y-1">
+      {% for u in usernames %}<li>@{{ u }}</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

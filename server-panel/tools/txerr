@@ -1,0 +1,370 @@
+#!/usr/bin/env python3
+"""txerr — live FiveM server errors for Claude Code sessions linked from the
+OpsLab panel (claude.ai/code Remote Control).
+
+Hook modes (wired up by the panel in <folder>/.claude/settings.local.json):
+  txerr watch     async + asyncRewake hook (SessionStart, Stop): waits in the
+                  background for a NEW error in a resource inside this folder,
+                  then exits 2 with the error on stderr, which wakes Claude.
+  txerr context   UserPromptSubmit hook: adds unseen errors / queued "fix this"
+                  requests to the prompt as additionalContext.
+
+Commands Claude (or you) can run:
+  txerr errors [resource]     recent errors for resources in this folder
+  txerr restart <resource>    restart a resource on the live server
+  txerr console [lines]       tail of the live server console
+  txerr resources             resources inside this folder
+"""
+import json
+import os
+import sys
+import time
+import urllib.request
+
+DATA = os.environ.get("TXERR_DATA", "/root/server-panel-data/txadmin")
+CONF = os.path.join(DATA, "claude-hooks.json")
+STATE = os.path.join(DATA, "claude-state")
+WATCH_MAX = 6 * 3600          # a watcher gives up quietly after 6h
+POLL = 2
+BATCH_WAIT = 4                # collect related errors for a few seconds before waking
+
+
+def conf():
+    try:
+        with open(CONF) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def project_dir(hook=None):
+    return os.path.realpath((hook or {}).get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+
+
+def server_for(path, c):
+    for s in c.get("servers", []):
+        root = os.path.realpath(s["resources_root"])
+        if path == root or path.startswith(root + os.sep):
+            return s
+    return None
+
+
+def resources_in(path):
+    """Resource names under path (a folder with fxmanifest.lua is a resource)."""
+    out = set()
+    if os.path.isfile(os.path.join(path, "fxmanifest.lua")) or os.path.isfile(os.path.join(path, "__resource.lua")):
+        return {os.path.basename(path)}
+    for dp, dns, fns in os.walk(path):
+        dns[:] = [d for d in dns if not d.startswith(".") and d != "node_modules"]
+        if "fxmanifest.lua" in fns or "__resource.lua" in fns:
+            out.add(os.path.basename(dp))
+            dns[:] = []
+    return out
+
+
+def load_errors(server):
+    errs = []
+    try:
+        with open(server["errors_file"]) as f:
+            for line in f:
+                try:
+                    errs.append(json.loads(line))
+                except ValueError:
+                    pass
+    except OSError:
+        pass
+    return errs
+
+
+def load_pushes(server):
+    out = []
+    try:
+        with open(server["push_file"]) as f:
+            for line in f:
+                try:
+                    out.append(json.loads(line))
+                except ValueError:
+                    pass
+    except OSError:
+        pass
+    return out
+
+
+def state_path(session_id):
+    os.makedirs(STATE, mode=0o700, exist_ok=True)
+    return os.path.join(STATE, f"{(session_id or 'nosession').replace('/', '_')}.json")
+
+
+def load_state(session_id):
+    try:
+        with open(state_path(session_id)) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {"seen": {}, "pushes": []}
+
+
+def save_state(session_id, st):
+    p = state_path(session_id)
+    tmp = p + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(st, f)
+    os.replace(tmp, p)
+
+
+def fmt(err, server):
+    loc = (err.get("file") or "") + (f":{err['line']}" if err.get("line") else "")
+    head = f"Live error on FiveM server \"{server['name']}\" in resource {err['resource']}" + (f" ({loc})" if loc else "")
+    head += f", seen {err['count']}×" if err.get("count", 1) > 1 else ""
+    lines = [head, "  " + err["message"]]
+    if err.get("reason") and err["reason"] not in err["message"]:
+        lines.append("  Cause: " + err["reason"])
+    det = [d for d in (err.get("detail") or []) if d.strip()][:12]
+    if det:
+        lines.append("  Detail:")
+        lines += ["    " + d[:300] for d in det]
+    return "\n".join(lines)
+
+
+FOOTER = ("\n(From the live server console via the OpsLab panel. After fixing, run `txerr restart <resource>` "
+          "to reload it on the server, then `txerr errors <resource>` to check the error is gone. "
+          "Restarting affects players who are online.)")
+
+
+def unseen(server, mine, st):
+    """Errors in this folder that are new, or happened again since last shown."""
+    out = []
+    for e in load_errors(server):
+        if e["resource"] not in mine:
+            continue
+        seen = st["seen"].get(e["sig"])
+        if seen is None or e.get("count", 1) > seen:
+            out.append(e)
+    return out
+
+
+def mark(st, errs):
+    for e in errs:
+        st["seen"][e["sig"]] = e.get("count", 1)
+
+
+def pending_pushes(server, mine, st):
+    done = set(st.get("pushes", []))
+    return [p for p in load_pushes(server) if p["id"] not in done and (p.get("resource") in mine or not p.get("resource"))]
+
+
+def read_hook():
+    if sys.stdin.isatty():
+        return {}
+    try:
+        return json.load(sys.stdin)
+    except ValueError:
+        return {}
+
+
+# ---------------------------------------------------------------- hook: watch (async, rewakes Claude)
+
+def cmd_watch():
+    hook = read_hook()
+    c = conf()
+    path = project_dir(hook)
+    server = server_for(path, c)
+    if not server:
+        return 0
+    sid = hook.get("session_id") or "nosession"
+    # one watcher per session: a newer one replaces an older one
+    lock = state_path(sid) + ".watch"
+    with open(lock, "w") as f:
+        f.write(str(os.getpid()))
+    mine = resources_in(path)
+    st = load_state(sid)
+    if hook.get("hook_event_name") == "SessionStart" and not st["seen"]:
+        mark(st, [e for e in load_errors(server) if e["resource"] in mine])   # old errors aren't news
+        save_state(sid, st)
+    started = time.time()
+    while time.time() - started < WATCH_MAX:
+        try:
+            with open(lock) as f:
+                if f.read().strip() != str(os.getpid()):
+                    return 0          # superseded by a newer watcher
+        except OSError:
+            return 0
+        st = load_state(sid)
+        new, pushes = unseen(server, mine, st), pending_pushes(server, mine, st)
+        if new or pushes:
+            time.sleep(BATCH_WAIT)
+            st = load_state(sid)
+            new, pushes = unseen(server, mine, st), pending_pushes(server, mine, st)
+            if not (new or pushes):
+                continue
+            parts = []
+            for p in pushes:
+                parts.append(f"The user clicked “Fix with Claude” in the server panel for this error:\n{p['text']}")
+            if new:
+                parts.append("\n\n".join(fmt(e, server) for e in new[:5]) + (f"\n(+{len(new) - 5} more)" if len(new) > 5 else ""))
+            mark(st, new)
+            st["pushes"] = list(set(st.get("pushes", [])) | {p["id"] for p in pushes})
+            save_state(sid, st)
+            sys.stderr.write("\n\n".join(parts) + FOOTER + "\n")
+            return 2                  # asyncRewake: wake Claude with stderr
+        time.sleep(POLL)
+    return 0
+
+
+# ---------------------------------------------------------------- hook: context (UserPromptSubmit)
+
+def cmd_context():
+    hook = read_hook()
+    c = conf()
+    path = project_dir(hook)
+    server = server_for(path, c)
+    if not server:
+        return 0
+    sid = hook.get("session_id") or "nosession"
+    mine = resources_in(path)
+    st = load_state(sid)
+    new, pushes = unseen(server, mine, st), pending_pushes(server, mine, st)
+    if not (new or pushes):
+        return 0
+    parts = [f"Fix requested from the server panel:\n{p['text']}" for p in pushes]
+    if new:
+        parts.append("Recent live server errors in this folder:\n" + "\n\n".join(fmt(e, server) for e in new[:5]))
+    mark(st, new)
+    st["pushes"] = list(set(st.get("pushes", [])) | {p["id"] for p in pushes})
+    save_state(sid, st)
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit",
+                                             "additionalContext": "\n\n".join(parts) + FOOTER}}))
+    return 0
+
+
+# ---------------------------------------------------------------- commands for Claude
+
+def api(server, c, method, path, body=None):
+    req = urllib.request.Request(c["api_base"] + f"/servers/{server['id']}" + path, method=method,
+                                 data=json.dumps(body).encode() if body is not None else None,
+                                 headers={"Authorization": "Bearer " + c["token"], "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as exc:
+        try:
+            return json.loads(exc.read())
+        except ValueError:
+            return {"ok": False, "error": f"HTTP {exc.code}"}
+    except OSError as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def need_server():
+    c = conf()
+    path = project_dir()
+    s = server_for(path, c)
+    if not s:
+        print("txerr: this folder isn't inside a txAdmin server's resources folder linked from the panel.", file=sys.stderr)
+        sys.exit(1)
+    return c, s, path
+
+
+def cmd_errors(args):
+    c, s, path = need_server()
+    mine = resources_in(path)
+    errs = [e for e in load_errors(s) if e["resource"] in mine and (not args or e["resource"] == args[0])]
+    if not errs:
+        print("No recent errors" + (f" for {args[0]}" if args else " in this folder") + ".")
+        return 0
+    now = time.time()
+    for e in reversed(errs[-15:]):
+        ago = int(now - e["last"])
+        print(fmt(e, s) + f"\n  Last seen {ago // 60}m{ago % 60:02d}s ago\n")
+    return 0
+
+
+def cmd_restart(args):
+    if not args:
+        print("usage: txerr restart <resource>", file=sys.stderr)
+        return 1
+    c, s, path = need_server()
+    if args[0] not in resources_in(path):
+        print(f"txerr: {args[0]} isn't a resource inside this folder.", file=sys.stderr)
+        return 1
+    before = max([e["id"] for e in load_errors(s)] or [0])
+    r = api(s, c, "POST", "/resources/restart", {"name": args[0]})
+    if not r.get("ok"):
+        print("Restart failed: " + str(r.get("error")), file=sys.stderr)
+        return 1
+    print(f"Restarted {args[0]}. Watching the console for 8 seconds…")
+    time.sleep(8)
+    errs = [e for e in load_errors(s) if e["resource"] == args[0] and (e["id"] > before or e["last"] > time.time() - 9)]
+    if errs:
+        print("Errors after restart:\n")
+        for e in errs:
+            print(fmt(e, s) + "\n")
+        return 1
+    print(f"No errors from {args[0]} after the restart.")
+    return 0
+
+
+def cmd_console(args):
+    c, s, _ = need_server()
+    n = int(args[0]) if args and args[0].isdigit() else 80
+    try:
+        with open(s["log_path"], encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()[-n:]
+        sys.stdout.write("".join(lines))
+    except OSError as exc:
+        print(f"Can't read the console log: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def cmd_resources(_):
+    _, _, path = need_server()
+    print("\n".join(sorted(resources_in(path))))
+    return 0
+
+
+def cmd_intro():
+    """SessionStart (sync): tell Claude what this folder is and how to use txerr."""
+    hook = read_hook()
+    c = conf()
+    path = project_dir(hook)
+    server = server_for(path, c)
+    if not server:
+        return 0
+    mine = sorted(resources_in(path))
+    text = (f"This folder is part of the LIVE FiveM server \"{server['name']}\" (txAdmin), linked from the OpsLab panel. "
+            f"Files here are the real server files: edits take effect when the resource restarts. "
+            f"It contains {len(mine)} resource(s): {', '.join(mine[:40])}{' …' if len(mine) > 40 else ''}.\n"
+            "Live server errors from these resources are sent to you automatically as they happen.\n"
+            "Tools: `txerr errors [resource]` (recent errors), `txerr restart <resource>` (reload it on the live server "
+            "and report any errors; players online are affected, so mention it before restarting), "
+            "`txerr console [lines]` (live console tail), `txerr resources`.")
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": text}}))
+    return 0
+
+
+def main():
+    args = sys.argv[1:]
+    cmd = args[0] if args else "help"
+    if cmd == "intro":
+        return cmd_intro()
+    if cmd == "watch":
+        return cmd_watch()
+    if cmd == "context":
+        return cmd_context()
+    if cmd == "errors":
+        return cmd_errors(args[1:])
+    if cmd == "restart":
+        return cmd_restart(args[1:])
+    if cmd == "console":
+        return cmd_console(args[1:])
+    if cmd == "resources":
+        return cmd_resources(args[1:])
+    print(__doc__)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        sys.exit(0)

@@ -1,0 +1,40 @@
+{% extends "layouts/seller_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Servers — Seller Portal{% endblock %}
+{% block page_title %}Servers{% endblock %}
+{% block header_actions %}
+<a href="{{ url_for('seller.server_new') }}" class="btn-primary">Add server</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead>
+      <tr><th>Title</th><th>Status</th><th>Inventory</th><th>Price</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for server in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ server.title }}</td>
+        <td>
+          {% if server.status.value == "published" %}<span class="badge-success">Published</span>
+          {% elif server.status.value == "draft" %}<span class="badge-neutral">Draft</span>
+          {% else %}<span class="badge-danger">Disabled</span>{% endif %}
+        </td>
+        <td><span class="badge-info">{{ server.inventory_status|hwval }}</span></td>
+        <td class="text-text-secondary">£{{ server.monthly_price }}/mo</td>
+        <td class="whitespace-nowrap">
+          <a href="{{ url_for('seller.server_edit', server_id=server.id) }}" class="text-brand-400 hover:text-brand-300 text-sm mr-3">Edit</a>
+          <form method="POST" action="{{ url_for('seller.server_toggle', server_id=server.id) }}" class="inline">
+            {% include "components/_csrf.html" %}
+            <button type="submit" class="text-text-secondary hover:text-text-primary text-sm">{{ "Deactivate" if server.is_active else "Activate" }}</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-center text-text-muted py-8">You haven't listed any servers yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "seller.servers") }}
+</div>
+{% endblock %}

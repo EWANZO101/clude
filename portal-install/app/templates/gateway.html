@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Welcome · OpsLab Systems</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{ --ops:#2196f3; --ops2:#1769aa; }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; min-height:100vh; font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+      color:#e7edf5; background:#0a0f16;
+      background-image:radial-gradient(60rem 40rem at 80% -10%, rgba(33,150,243,.16), transparent 60%),
+                       radial-gradient(50rem 40rem at -10% 110%, rgba(33,150,243,.10), transparent 55%);
+      display:flex; align-items:center; justify-content:center; padding:24px;
+    }
+    .wrap{ width:100%; max-width:920px; }
+    .brand{ display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:18px; }
+    .logo{ width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--ops),var(--ops2));
+           display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;box-shadow:0 6px 20px rgba(33,150,243,.4); }
+    h1{ font-size:clamp(1.7rem,4vw,2.6rem); font-weight:800; text-align:center; margin:.2em 0 .15em; letter-spacing:-.02em; }
+    .sub{ text-align:center; color:#9fb0c3; margin:0 auto 34px; max-width:34rem; }
+    .grid{ display:grid; grid-template-columns:1fr; gap:18px; }
+    @media(min-width:720px){ .grid{ grid-template-columns:1fr 1fr; } }
+    .card{
+      display:flex; flex-direction:column; text-decoration:none; color:inherit;
+      background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.10);
+      border-radius:20px; padding:28px; transition:transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .card:hover{ transform:translateY(-4px); border-color:rgba(33,150,243,.6); background:rgba(33,150,243,.07); }
+    .ic{ width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;
+         background:rgba(33,150,243,.14); border:1px solid rgba(33,150,243,.35); color:#7cc0ff; }
+    .ic svg{ width:26px;height:26px; }
+    .card h2{ font-size:1.3rem; font-weight:700; margin:0 0 8px; }
+    .card p{ color:#9fb0c3; margin:0; line-height:1.55; font-size:.95rem; flex:1; }
+    .go{ display:inline-flex; align-items:center; gap:8px; margin-top:20px; font-weight:600; color:#7cc0ff; }
+    .go svg{ width:18px;height:18px; transition:transform .18s ease; }
+    .card:hover .go svg{ transform:translateX(4px); }
+    .foot{ text-align:center; color:#5e6b7a; font-size:.8rem; margin-top:30px; }
+    .foot a{ color:#9fb0c3; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <span class="logo">O</span>
+      <span style="font-weight:700;font-size:1.05rem;">OpsLab Systems</span>
+    </div>
+    <h1>Welcome to OpsLab Systems</h1>
+    <p class="sub">How can we help you today? Choose the option that best fits what you're after.</p>
+
+    <div class="grid">
+      <a class="card" href="/enter?to=cloud">
+        <span class="ic">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 1.51A4.002 4.002 0 003 15z"/></svg>
+        </span>
+        <h2>Cloud &amp; Online Services</h2>
+        <p>Hosting, cloud infrastructure, remote support and managed services.</p>
+        <span class="go">Continue to website
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="/enter?to=onsite">
+        <span class="ic">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </span>
+        <h2>Onsite &amp; In-Person Services</h2>
+        <p>Local IT support, installations, business visits and hardware setup.</p>
+        <span class="go">View on-site services
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </span>
+      </a>
+    </div>
+
+    <a class="card partner-card" href="/partners" style="margin-top:18px;display:flex;align-items:center;gap:16px;text-align:left;flex-wrap:wrap;">
+      <span class="ic" style="flex-shrink:0;background:rgba(124,92,255,.14);color:#b9a8ff;box-shadow:inset 0 0 0 1px rgba(124,92,255,.3);">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a3 3 0 10-3-3"/></svg>
+      </span>
+      <span style="flex:1;">
+        <h2 style="margin:0 0 4px;">Register your company or community</h2>
+        <p style="margin:0;">Run a business or developer community? Become a partner with OpsLab Systems and get your own page.</p>
+      </span>
+      <span class="go" style="margin:0;white-space:nowrap;">Become a partner
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </span>
+    </a>
+
+    <p class="foot">Across the Scottish Borders &amp; beyond · <a href="/enter?to=cloud">Skip &amp; go to site</a></p>
+  </div>
+</body>
+</html>

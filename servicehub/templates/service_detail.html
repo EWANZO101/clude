@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ service.name }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>{{ service.name }}</h1>
+    <div class="desc">{{ service.description or 'No description' }}</div>
+  </div>
+  <span class="badge {{ status.active }}">
+    <span class="dot"></span>{{ status.active }}
+  </span>
+</div>
+
+<div class="detail-grid">
+  <div class="card">
+    <div class="kv">
+      <div class="row"><span class="k">Unit</span><span class="v">{{ service.unit_name }}</span></div>
+      <div class="row"><span class="k">Path</span><span class="v">{{ service.working_dir }}</span></div>
+      <div class="row"><span class="k">Command</span><span class="v">{{ service.command }}</span></div>
+      <div class="row"><span class="k">Port</span><span class="v">{{ service.port or '—' }}</span></div>
+      <div class="row"><span class="k">User</span><span class="v">{{ service.run_user }}</span></div>
+      <div class="row"><span class="k">Restart policy</span><span class="v">{{ service.restart_policy }}</span></div>
+      <div class="row"><span class="k">Enabled at boot</span><span class="v">{{ status.enabled }}</span></div>
+      {% if service.notes %}
+      <div class="row"><span class="k">Notes</span><span class="v">{{ service.notes }}</span></div>
+      {% endif %}
+    </div>
+
+    <div class="actions" style="margin-top:18px;">
+      <form class="inline" method="post" action="{{ url_for('service_action', service_id=service.id, action='start') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" type="submit">Start</button>
+      </form>
+      <form class="inline" method="post" action="{{ url_for('service_action', service_id=service.id, action='restart') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" type="submit">Restart</button>
+      </form>
+      <form class="inline" method="post" action="{{ url_for('service_action', service_id=service.id, action='stop') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" type="submit">Stop</button>
+      </form>
+      {% if status.enabled == 'enabled' %}
+      <form class="inline" method="post" action="{{ url_for('service_action', service_id=service.id, action='disable') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" type="submit">Disable at boot</button>
+      </form>
+      {% else %}
+      <form class="inline" method="post" action="{{ url_for('service_action', service_id=service.id, action='enable') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" type="submit">Enable at boot</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <div class="actions" style="margin-top:8px;">
+      <a href="{{ url_for('service_edit', service_id=service.id) }}" class="btn">Edit</a>
+      <button class="btn" type="button" onclick="toggleNginx()">Nginx snippet</button>
+      <form class="inline" method="post" action="{{ url_for('service_delete', service_id=service.id) }}"
+            onsubmit="return confirm('Delete {{ service.name }}? This stops it, removes the systemd unit, and deletes it from ServiceHub.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-danger" type="submit">Delete</button>
+      </form>
+    </div>
+
+    <div id="nginx-box" class="snippet-box" style="display:none; margin-top:16px;">
+      <pre id="nginx-pre">loading…</pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <strong style="font-size:13px; color:var(--text-dim); font-family:var(--mono);">RECENT LOGS</strong>
+      <button class="btn btn-sm" type="button" onclick="loadLogs()">Refresh</button>
+    </div>
+    <pre class="logs" id="logs">loading…</pre>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadLogs() {
+  const el = document.getElementById('logs');
+  el.textContent = 'loading…';
+  try {
+    const res = await fetch("{{ url_for('service_logs', service_id=service.id) }}");
+    const data = await res.json();
+    el.textContent = data.logs || '(no output)';
+    el.scrollTop = el.scrollHeight;
+  } catch (e) {
+    el.textContent = 'failed to load logs';
+  }
+}
+loadLogs();
+setInterval(loadLogs, 8000);
+
+let nginxLoaded = false;
+async function toggleNginx() {
+  const box = document.getElementById('nginx-box');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  if (box.style.display === 'block' && !nginxLoaded) {
+    const res = await fetch("{{ url_for('nginx_snippet', service_id=service.id) }}");
+    const data = await res.json();
+    document.getElementById('nginx-pre').textContent = data.snippet;
+    nginxLoaded = true;
+  }
+}
+</script>
+{% endblock %}

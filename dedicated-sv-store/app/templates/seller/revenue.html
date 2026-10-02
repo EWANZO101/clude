@@ -1,0 +1,31 @@
+{% extends "layouts/seller_dashboard.html" %}
+{% from "components/_stat_card.html" import stat_card with context %}
+{% block title %}Revenue — Seller Portal{% endblock %}
+{% block page_title %}Revenue{% endblock %}
+{% block content %}
+<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  {{ stat_card("Gross revenue", "£" ~ totals.gross_revenue) }}
+  {{ stat_card("Paid orders", totals.paid_order_count) }}
+  {{ stat_card("Commission paid", "£" ~ totals.commission) }}
+  {{ stat_card("Net earnings", "£" ~ totals.net) }}
+</div>
+
+<div class="card">
+  <div class="p-4 border-b border-border">
+    <h2 class="font-semibold text-text-primary">Monthly revenue</h2>
+  </div>
+  <table class="table-base">
+    <thead><tr><th>Month</th><th>Revenue</th></tr></thead>
+    <tbody>
+      {% for month, total in monthly %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ month.strftime("%B %Y") }}</td>
+        <td class="text-text-secondary">£{{ total }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="2" class="text-center text-text-muted py-8">No revenue yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

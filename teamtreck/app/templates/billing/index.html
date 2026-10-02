@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Billing - TeamTreck{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Billable Time Report</h1>
+
+<form method="GET" class="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800 mb-6 flex flex-wrap items-end gap-3">
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">From</label>
+        <input type="date" name="start" value="{{ range_start }}" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+    </div>
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">To</label>
+        <input type="date" name="end" value="{{ range_end }}" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+    </div>
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Client</label>
+        <select name="client_id" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+            <option value="">All</option>
+            {% for c in clients %}
+            <option value="{{ c.id }}" {{ 'selected' if filter_client_id == c.id|string }}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="px-4 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium">Apply</button>
+</form>
+
+{% for key, data in client_totals.items() %}
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 mb-4 overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+        <h2 class="font-semibold">{{ data.name }}</h2>
+        <div class="text-right">
+            <div class="font-mono text-lg">{{ data.total_seconds|hms }}</div>
+            {% if data.total_amount %}
+            <div class="text-sm text-green-600 dark:text-green-400 font-semibold">{{ '%.2f'|format(data.total_amount) }} {{ data.currency }}</div>
+            {% endif %}
+        </div>
+    </div>
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800/50">
+                <th class="px-5 py-2">Project</th>
+                <th class="px-5 py-2">Rate</th>
+                <th class="px-5 py-2">Time</th>
+                <th class="px-5 py-2">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pkey, proj in data.projects.items() %}
+            <tr class="border-b border-gray-50 dark:border-gray-800/30">
+                <td class="px-5 py-2">{{ proj.name }}</td>
+                <td class="px-5 py-2 text-gray-500 dark:text-gray-400">{{ '%.2f'|format(proj.rate) if proj.rate else '—' }}</td>
+                <td class="px-5 py-2 font-mono">{{ proj.seconds|hms }}</td>
+                <td class="px-5 py-2 {{ 'text-green-600 dark:text-green-400 font-semibold' if proj.amount else 'text-gray-400' }}">
+                    {{ '%.2f'|format(proj.amount) if proj.amount else '—' }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-gray-500 dark:text-gray-400 text-sm">No billable time in this range.</p>
+{% endfor %}
+{% endblock %}

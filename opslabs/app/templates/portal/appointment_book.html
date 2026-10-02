@@ -1,0 +1,61 @@
+{% extends "portal/_base.html" %}
+{% set active_page = 'appointments' %}
+{% block portal_title %}Book a time{% endblock %}
+{% block portal_content %}
+<div class="pcard p-6 sm:p-8 max-w-2xl">
+  <form method="get" class="flex flex-wrap items-end gap-3 mb-6 pb-6 border-b border-ink-600/60">
+    <div>
+      <label class="block text-sm font-semibold mb-1.5">Pick a date</label>
+      <input type="date" name="day" value="{{ day_str }}" class="form-input" onchange="this.form.submit()">
+    </div>
+    <span class="text-xs text-gray-500 pb-2.5">Times shown in Europe/London (24h)</span>
+  </form>
+
+  <form method="post" id="bookForm">
+    <input type="hidden" name="day" value="{{ day_str }}">
+    <input type="hidden" name="slot" id="slotField">
+    <input type="hidden" name="duration" value="30">
+
+    <label class="block text-sm font-semibold mb-1.5">Subject <span class="text-red-400">*</span></label>
+    <input name="subject" required class="form-input w-full mb-5" placeholder="What's it about?">
+
+    <label class="block text-sm font-semibold mb-2">Available slots — {{ day.strftime('%A %d %b %Y') }}</label>
+    {% if slots %}
+      <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-5">
+        {% for s in slots %}
+        <button type="button" data-slot="{{ s }}"
+          class="slot px-3 py-2.5 rounded-lg text-sm font-semibold bg-ink-900/60 border border-ink-600 hover:border-ops-500/60 transition">
+          {{ s }}
+        </button>
+        {% endfor %}
+      </div>
+      <label class="block text-sm font-semibold mb-1.5">Notes (optional)</label>
+      <textarea name="notes" rows="3" class="form-textarea w-full mb-5" placeholder="Anything useful beforehand…"></textarea>
+      <button id="submitBtn" disabled class="px-5 py-2.5 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition">
+        Request selected time
+      </button>
+    {% else %}
+      <div class="p-4 rounded-xl bg-ink-900/50 border border-ink-600 text-sm text-gray-400">
+        No free slots that day (closed, fully booked, or a blackout date). Try another date.
+      </div>
+    {% endif %}
+  </form>
+</div>
+
+<script>
+  (function () {
+    var chosen = null;
+    document.querySelectorAll('.slot').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.slot').forEach(function (x) {
+          x.classList.remove('border-ops-500','bg-ops-500/15','text-ops-300');
+        });
+        b.classList.add('border-ops-500','bg-ops-500/15','text-ops-300');
+        chosen = b.dataset.slot;
+        document.getElementById('slotField').value = chosen;
+        document.getElementById('submitBtn').disabled = false;
+      });
+    });
+  })();
+</script>
+{% endblock %}

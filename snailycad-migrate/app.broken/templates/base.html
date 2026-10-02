@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#05080f">
+<title>{% block title %}OpsLab Systems · Build. Support. Scale. Together.{% endblock %}</title>
+
+<meta name="description" content="OpsLab Systems — custom websites, FiveM scripts, hosting, system setup. One roof, one team, one ticket system. Live sync between web and Discord.">
+<meta property="og:title" content="OpsLab Systems · Build. Support. Scale. Together.">
+<meta property="og:description" content="From custom websites to FiveM scripts, hosting to system setup — under one roof, one team, one ticket system.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Tailwind + Flowbite -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.5.2/flowbite.min.css">
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'], mono: ['"JetBrains Mono"', 'monospace'] },
+        colors: {
+          ink: { 950:'#04070e', 900:'#070b16', 800:'#0b1224', 700:'#111c33', 600:'#1b2a4a', 500:'#2a3d63' },
+          ops: { 50:'#e8f3ff', 100:'#d0e7ff', 200:'#a1cfff', 300:'#71b7ff', 400:'#429fff', 500:'#2196f3', 600:'#1976d2', 700:'#0d47a1', 800:'#0a3782', 900:'#072564' },
+        },
+        boxShadow: {
+          glow:      '0 0 0 1px rgba(33,150,243,.25), 0 12px 40px -8px rgba(33,150,243,.35)',
+          'glow-sm': '0 0 0 1px rgba(33,150,243,.2),  0 6px 20px -4px rgba(33,150,243,.25)',
+        },
+        keyframes: {
+          'fade-up':   { '0%':{opacity:'0', transform:'translateY(8px)'}, '100%':{opacity:'1', transform:'translateY(0)'} },
+          'pulse-soft':{ '0%,100%':{opacity:'1'}, '50%':{opacity:'.5'} },
+        },
+        animation: {
+          'fade-up':    'fade-up .5s ease-out both',
+          'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  html, body { background: #04070e; color: #e6edf7; }
+  body {
+    background-image:
+      radial-gradient(900px 600px at 85% -10%, rgba(33,150,243,.10), transparent 60%),
+      radial-gradient(700px 500px at 10% 20%, rgba(13,71,161,.10), transparent 60%),
+      linear-gradient(180deg, #04070e, #060a14);
+    background-attachment: fixed;
+  }
+  /* Subtle grid overlay */
+  .grid-overlay {
+    background-image: linear-gradient(rgba(33,150,243,.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(33,150,243,.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  }
+  /* Status pills */
+  .pill { display:inline-flex; align-items:center; gap:6px; padding: 3px 10px; border-radius:999px; font-size: 11px; font-weight:700; letter-spacing:.6px; text-transform: uppercase; }
+  .pill-open    { background: rgba(34,197,94,.12);  color: #86efac; border:1px solid rgba(34,197,94,.3);}
+  .pill-pending { background: rgba(245,158,11,.12); color: #fcd34d; border:1px solid rgba(245,158,11,.3);}
+  .pill-closed  { background: rgba(148,163,184,.12);color: #cbd5e1; border:1px solid rgba(148,163,184,.3);}
+  .pill-low     { background: rgba(148,163,184,.12);color: #cbd5e1; border:1px solid rgba(148,163,184,.3);}
+  .pill-normal  { background: rgba(33,150,243,.12); color: #93c5fd; border:1px solid rgba(33,150,243,.3);}
+  .pill-high    { background: rgba(245,158,11,.12); color: #fcd34d; border:1px solid rgba(245,158,11,.3);}
+  .pill-urgent  { background: rgba(239,68,68,.12);  color: #fca5a5; border:1px solid rgba(239,68,68,.3);}
+  .pill-admin   { background: rgba(33,150,243,.15); color: #93c5fd; border:1px solid rgba(33,150,243,.35);}
+  .pill-staff   { background: rgba(168,85,247,.15); color: #d8b4fe; border:1px solid rgba(168,85,247,.35);}
+  .pill-user    { background: rgba(148,163,184,.12);color: #cbd5e1; border:1px solid rgba(148,163,184,.3);}
+
+  /* Card hover gleam */
+  .gleam { position: relative; overflow: hidden; }
+  .gleam::after {
+    content: ''; position: absolute; inset: -1px; border-radius: inherit;
+    background: linear-gradient(120deg, transparent 40%, rgba(33,150,243,.15) 50%, transparent 60%);
+    transform: translateX(-100%); transition: transform .6s ease; pointer-events: none;
+  }
+  .gleam:hover::after { transform: translateX(100%); }
+
+  /* Live indicator */
+  .live-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.25); animation: pulse-soft 2s infinite; }
+
+  /* Conversation bubble styles */
+  .msg { padding: 14px 16px; border-radius: 14px; margin-bottom: 12px; max-width: 80%; border: 1px solid #1b2a4a;}
+  .msg.from-me      { margin-left: auto; background: linear-gradient(135deg, rgba(33,150,243,.18), rgba(33,150,243,.06)); border-color: rgba(33,150,243,.35);}
+  .msg.from-them    { background: #0b1224; }
+  .msg.from-discord { background: linear-gradient(135deg, rgba(88,101,242,.12), transparent); border-color: rgba(88,101,242,.4);}
+  .msg.from-system  { background: transparent; border-style: dashed; color: #8aa0c0; font-size: 13px; max-width: 100%; text-align: center;}
+  .msg.internal     { border-color: rgba(245,158,11,.45); background: rgba(245,158,11,.06);}
+
+  /* Inputs */
+  .form-input, .form-textarea, .form-select { background: #0b1224 !important; border: 1px solid #1b2a4a !important; color: #e6edf7 !important; border-radius: 10px !important;}
+  .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: #2196f3 !important; box-shadow: 0 0 0 3px rgba(33,150,243,.25) !important;}
+
+  /* Scrollbar */
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: #04070e; }
+  *::-webkit-scrollbar-thumb { background: #1b2a4a; border-radius: 5px; }
+  *::-webkit-scrollbar-thumb:hover { background: #2a3d63; }
+
+  /* Selection */
+  ::selection { background: rgba(33,150,243,.4); color: white; }
+
+  /* ===== Navbar (glassmorphism, readable over anything) ===== */
+  .site-nav {
+    background: linear-gradient(180deg, rgba(7,11,22,.55), rgba(7,11,22,.30));
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%);
+    border-bottom: 1px solid rgba(27,42,74,.40);
+    transition: background .3s ease, border-color .3s ease, box-shadow .3s ease;
+  }
+  /* Firms up once the page is scrolled so text stays legible over content */
+  .site-nav[data-scrolled="true"] {
+    background: linear-gradient(180deg, rgba(5,8,15,.92), rgba(5,8,15,.80));
+    border-bottom-color: rgba(33,150,243,.22);
+    box-shadow: 0 10px 30px -14px rgba(0,0,0,.7);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .site-nav { background: rgba(6,10,20,.92); }  /* graceful fallback */
+  }
+
+  .navlink {
+    display:flex; align-items:center; gap:.4rem; white-space:nowrap;
+    padding:.5rem .7rem; border-radius:.65rem; font-size:.86rem; font-weight:500;
+    color:#c4d2e8; transition:color .15s, background .15s, box-shadow .15s;
+  }
+  .navlink:hover { color:#fff; background:rgba(255,255,255,.06); }
+  .navlink.active { color:#fff; background:rgba(33,150,243,.14); box-shadow:inset 0 0 0 1px rgba(33,150,243,.30); }
+  .navlink-onsite { color:#9fd0ff; box-shadow:inset 0 0 0 1px rgba(33,150,243,.30); }
+  .navlink-onsite:hover { color:#fff; background:rgba(33,150,243,.12); }
+
+  /* Mobile / tablet drawer */
+  .nav-drawer {
+    overflow:hidden; max-height:0; opacity:0;
+    transition:max-height .32s cubic-bezier(.4,0,.2,1), opacity .25s ease;
+  }
+  .nav-drawer.open { max-height:85vh; opacity:1; overflow-y:auto; }
+  .nav-backdrop { opacity:0; pointer-events:none; transition:opacity .25s ease; }
+  .nav-backdrop.open { opacity:1; pointer-events:auto; }
+  .mlink {
+    display:flex; align-items:center; gap:.7rem; min-height:48px;
+    padding:.65rem .85rem; border-radius:.8rem; font-size:1rem; font-weight:500;
+    color:#dbe6f5; transition:background .15s;
+  }
+  .mlink:hover, .mlink:active { background:rgba(255,255,255,.06); }
+  .mlink.active { background:rgba(33,150,243,.14); box-shadow:inset 0 0 0 1px rgba(33,150,243,.30); color:#fff; }
+  body.nav-locked { overflow:hidden; }
+</style>
+{% block head_extra %}{% endblock %}
+</head>
+<body class="font-sans antialiased min-h-screen flex flex-col">
+
+<!-- ============ TOP NAV ============ -->
+{% set ep = (request.endpoint or '') %}
+{% set is_home  = ep == 'main.index' %}
+{% set is_dash  = ep.startswith('portal.') %}
+{% set is_tix   = ep.startswith('tickets.') %}
+{% set is_admin = ep.startswith('admin.') %}
+<nav id="siteNav" class="site-nav sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16 gap-2">
+
+      <!-- Brand -->
+      <a href="{{ url_for('main.index') }}" class="flex items-center gap-2.5 group shrink-0">
+        <svg viewBox="0 0 64 64" width="30" height="30" class="transition-transform group-hover:rotate-6">
+          <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="#2196f3" stroke-width="4"/>
+          <polygon points="32,4 56,18 32,32" fill="#2196f3"/>
+          <polygon points="32,32 56,18 56,46 32,60" fill="#ffffff" opacity=".95"/>
+        </svg>
+        <span class="font-extrabold text-base sm:text-lg tracking-tight leading-none">
+          <span class="text-ops-500">OpsLab</span><span class="text-white"> Systems</span>
+        </span>
+      </a>
+
+      <!-- Desktop links -->
+      <div class="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
+        <a href="{{ url_for('main.index') }}" class="navlink {{ 'active' if is_home }}">Home</a>
+        <a href="{{ url_for('main.index') }}#onsite" class="navlink navlink-onsite">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          On-site
+        </a>
+        {% if not current_user.is_authenticated %}
+          <a href="{{ url_for('main.index') }}#services" class="navlink">Services</a>
+          <a href="{{ url_for('main.index') }}#how-it-works" class="navlink">How it works</a>
+          <a href="{{ url_for('main.index') }}#features" class="navlink">Why us</a>
+        {% endif %}
+        <a href="/licenses/" class="navlink">
+          <svg class="w-3.5 h-3.5 text-ops-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+          Licenses
+        </a>
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('portal.dashboard') }}" class="navlink {{ 'active' if is_dash }}">Dashboard</a>
+          <a href="{{ url_for('tickets.index') }}" class="navlink {{ 'active' if is_tix }}">My Tickets</a>
+          {% if current_user.is_staff %}<a href="{{ url_for('admin.dashboard') }}" class="navlink {{ 'active' if is_admin }}">Admin</a>{% endif %}
+        {% endif %}
+      </div>
+
+      <!-- Desktop actions -->
+      <div class="flex items-center gap-2 shrink-0">
+        <div class="hidden lg:flex items-center gap-2">
+          {% if current_user.is_authenticated %}
+            <div class="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-xl bg-white/5 border border-ink-600">
+              <div class="w-7 h-7 rounded-full bg-gradient-to-br from-ops-400 to-ops-700 flex items-center justify-center text-xs font-bold shrink-0">{{ (current_user.username or current_user.name or current_user.email or "?")[0].upper() }}</div>
+              <div class="leading-tight hidden xl:block">
+                <div class="text-xs font-semibold max-w-[120px] truncate">{{ current_user.username or current_user.name or current_user.email }}</div>
+                <div class="text-[10px] text-ops-400 uppercase tracking-wider">{{ current_user.role or 'user' }}</div>
+              </div>
+            </div>
+            <a href="{{ url_for('tickets.new') }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-lg shadow-glow-sm hover:shadow-glow transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              <span class="hidden xl:inline">New Ticket</span><span class="xl:hidden">New</span>
+            </a>
+            <a href="{{ url_for('auth.logout') }}" title="Sign out" class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 border border-ink-600 transition">
+              <span class="sr-only">Sign out</span>
+              <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            </a>
+          {% else %}
+            <a href="{{ url_for('auth.login') }}" class="px-3 py-2 text-sm font-medium text-gray-300 hover:text-white rounded-lg hover:bg-white/5 transition">Sign in</a>
+            <a href="{{ url_for('auth.register') }}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-lg shadow-glow-sm hover:shadow-glow transition">Get Started</a>
+          {% endif %}
+        </div>
+
+        <!-- Hamburger -->
+        <button id="navToggle" type="button" aria-controls="mobileNav" aria-expanded="false"
+          class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-200 hover:text-white hover:bg-white/5 border border-ink-600 transition">
+          <span class="sr-only">Open main menu</span>
+          <svg id="navIconOpen" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <svg id="navIconClose" class="w-6 h-6 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== Mobile / tablet drawer ===== -->
+    <div id="mobileNav" class="nav-drawer lg:hidden">
+      <div class="flex flex-col gap-1 py-3 border-t border-ink-600/60">
+        {% if current_user.is_authenticated %}
+          <div class="flex items-center gap-3 px-3 py-3 mb-1 rounded-2xl bg-white/5 border border-ink-600">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-ops-400 to-ops-700 flex items-center justify-center text-sm font-bold shrink-0">{{ (current_user.username or current_user.name or current_user.email or "?")[0].upper() }}</div>
+            <div class="leading-tight min-w-0">
+              <div class="text-sm font-semibold truncate">{{ current_user.username or current_user.name or current_user.email }}</div>
+              <div class="text-[10px] text-ops-400 uppercase tracking-wider">{{ current_user.role or 'user' }}</div>
+            </div>
+          </div>
+        {% endif %}
+
+        <a href="{{ url_for('main.index') }}" class="mlink {{ 'active' if is_home }}">Home</a>
+        <a href="{{ url_for('main.index') }}#onsite" class="mlink text-ops-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          On-site &amp; networking
+        </a>
+        <a href="{{ url_for('main.index') }}#services" class="mlink">Services</a>
+        <a href="{{ url_for('main.index') }}#how-it-works" class="mlink">How it works</a>
+        <a href="{{ url_for('main.index') }}#features" class="mlink">Why us</a>
+        <a href="/licenses/" class="mlink">
+          <svg class="w-5 h-5 text-ops-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+          Licenses
+        </a>
+
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('portal.dashboard') }}" class="mlink {{ 'active' if is_dash }}">Dashboard</a>
+          <a href="{{ url_for('tickets.index') }}" class="mlink {{ 'active' if is_tix }}">My Tickets</a>
+          {% if current_user.is_staff %}<a href="{{ url_for('admin.dashboard') }}" class="mlink {{ 'active' if is_admin }}">Admin</a>{% endif %}
+          <div class="mt-2 pt-3 border-t border-ink-600/60 flex flex-col gap-2">
+            <a href="{{ url_for('tickets.new') }}" class="inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              New Ticket
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-gray-300 bg-white/5 border border-ink-600 rounded-xl hover:bg-white/10 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+              Sign out
+            </a>
+          </div>
+        {% else %}
+          <div class="mt-2 pt-3 border-t border-ink-600/60 flex flex-col gap-2">
+            <a href="{{ url_for('auth.register') }}" class="inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm transition">Get Started</a>
+            <a href="{{ url_for('auth.login') }}" class="inline-flex items-center justify-center px-4 py-3 text-sm font-semibold text-gray-300 bg-white/5 border border-ink-600 rounded-xl hover:bg-white/10 transition">Sign in</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>
+<!-- Backdrop behind the mobile drawer -->
+<div id="navBackdrop" class="nav-backdrop lg:hidden fixed inset-x-0 bottom-0 top-16 z-40 bg-black/50" style="-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);"></div>
+
+<script>
+  (function () {
+    var nav   = document.getElementById('siteNav');
+    var btn   = document.getElementById('navToggle');
+    var panel = document.getElementById('mobileNav');
+    var back  = document.getElementById('navBackdrop');
+    var iOpen = document.getElementById('navIconOpen');
+    var iClose= document.getElementById('navIconClose');
+
+    // Glass → solid on scroll (keeps text readable over page content)
+    if (nav) {
+      var onScroll = function () {
+        nav.setAttribute('data-scrolled', window.scrollY > 8 ? 'true' : 'false');
+      };
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+    }
+
+    if (!btn || !panel) return;
+
+    function setOpen(open) {
+      panel.classList.toggle('open', open);
+      if (back) back.classList.toggle('open', open);
+      if (iOpen)  iOpen.classList.toggle('hidden', open);
+      if (iClose) iClose.classList.toggle('hidden', !open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      document.body.classList.toggle('nav-locked', open);
+    }
+    btn.addEventListener('click', function () {
+      setOpen(!panel.classList.contains('open'));
+    });
+    if (back) back.addEventListener('click', function () { setOpen(false); });
+    panel.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setOpen(false);
+    });
+    window.addEventListener('resize', function () {
+      if (window.innerWidth >= 1024) setOpen(false);
+    });
+  })();
+</script>
+
+<!-- ============ FLASHES ============ -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-4 space-y-2">
+      {% for cat, msg in messages %}
+        <div class="flex items-start gap-3 p-4 rounded-xl border
+          {% if cat == 'success' %}bg-green-500/10 border-green-500/30 text-green-200
+          {% elif cat == 'error' %}bg-red-500/10 border-red-500/30 text-red-200
+          {% elif cat == 'warning' %}bg-yellow-500/10 border-yellow-500/30 text-yellow-200
+          {% else %}bg-ops-500/10 border-ops-500/30 text-ops-200{% endif %}">
+          <span class="text-sm">{{ msg }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ============ PAGE ============ -->
+<main class="flex-1 w-full">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="mt-24 border-t border-ink-600/60 bg-ink-950/50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+    <div class="grid md:grid-cols-4 gap-8">
+      <div class="md:col-span-2">
+        <div class="flex items-center gap-2.5 mb-4">
+          <svg viewBox="0 0 64 64" width="28" height="28">
+            <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="#2196f3" stroke-width="4"/>
+            <polygon points="32,4 56,18 32,32" fill="#2196f3"/>
+            <polygon points="32,32 56,18 56,46 32,60" fill="#ffffff" opacity=".95"/>
+          </svg>
+          <span class="font-extrabold text-lg"><span class="text-ops-500">OpsLab</span><span class="text-white"> Systems</span></span>
+        </div>
+        <p class="text-sm text-gray-400 max-w-md leading-relaxed">
+          Build. Support. Scale. Together.<br>
+          From custom websites to FiveM scripts, hosting to system setup — under one roof, one team, one ticket system.
+        </p>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Platform</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          <li><a href="{{ url_for('main.index') }}#onsite" class="hover:text-white transition">On-site IT &amp; networking</a></li>
+          <li><a href="{{ url_for('main.index') }}#services" class="hover:text-white transition">Services</a></li>
+          <li><a href="{{ url_for('main.index') }}#how-it-works" class="hover:text-white transition">How it works</a></li>
+          <li><a href="{{ url_for('main.index') }}#features" class="hover:text-white transition">Why us</a></li>
+          <li><a href="/api/v1/health" class="hover:text-white transition">API status</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Account</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          {% if current_user.is_authenticated %}
+          <li><a href="{{ url_for('tickets.index') }}" class="hover:text-white transition">My Tickets</a></li>
+          <li><a href="/licenses/" class="hover:text-white transition">License Manager</a></li>
+          <li><a href="{{ url_for('tickets.new') }}" class="hover:text-white transition">Open a ticket</a></li>
+          <li><a href="{{ url_for('auth.logout') }}" class="hover:text-white transition">Sign out</a></li>
+          {% else %}
+          <li><a href="{{ url_for('auth.login') }}" class="hover:text-white transition">Sign in</a></li>
+          <li><a href="{{ url_for('auth.register') }}" class="hover:text-white transition">Sign up</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+    <div class="mt-10 pt-6 border-t border-ink-600/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
+      <span>© <span id="year"></span> OpsLab Systems. All rights reserved.</span>
+      <span class="flex items-center gap-2"><span class="live-dot"></span> All systems operational</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.5.2/flowbite.min.js"></script>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

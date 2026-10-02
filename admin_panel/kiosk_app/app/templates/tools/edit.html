@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ tool.name }} — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('tools.list_tools') }}">← Tools</a></p>
+<div class="panel" style="max-width:480px;">
+  <h1>Edit Tool</h1>
+  <form method="post">
+    <label>Name</label>
+    <input type="text" name="name" value="{{ tool.name }}" required>
+    <label>Description</label>
+    <textarea name="description" rows="3" style="width:100%; padding:10px 12px; border-radius:7px; border:1px solid var(--panel-border); background:var(--bg); color:var(--text);">{{ tool.description or '' }}</textarea>
+    <label>Type / category</label>
+    <input type="text" name="category" value="{{ tool.category or '' }}" list="category-options" placeholder="e.g. Power tools">
+    <datalist id="category-options">
+      {% for c in category_suggestions %}<option value="{{ c }}">{% endfor %}
+    </datalist>
+    <label>Purchase price</label>
+    <input type="text" name="purchase_price" value="{{ tool.purchase_price or '' }}">
+    <button type="submit" style="margin-top:18px;">Save changes</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,6 @@
+Backing up existing server_supervisor.py...
+Writing update_checker.py ...
+ERROR: failed to write update_checker.py
+Press any key to continue . . . 
+Terminate batch job (Y/N)? 
+^C

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Scan Your Badge{% endblock %}
+{% block content %}
+<div class="kiosk-screen idle-screen" id="idleScreen">
+  <div class="idle-center">
+    <i class="fas fa-id-badge idle-icon"></i>
+    <h1 class="idle-title">Scan Your Badge</h1>
+    <p class="idle-subtitle">Or type your badge code below</p>
+
+    <input type="text" id="scanInput" class="scan-input" autocomplete="off"
+           autocapitalize="off" spellcheck="false" placeholder="Waiting for scan…" />
+
+    <div id="idleError" class="scan-error" style="display:none;"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  Kiosk.initIdleScreen();
+</script>
+{% endblock %}

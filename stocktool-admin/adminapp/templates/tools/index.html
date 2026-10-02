@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Tools{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <div>
+      <h1 class="page-title"><i class="fas fa-wrench" style="color:#34d399;"></i> Tools</h1>
+      <p class="page-subtitle">{{ tools|length }} tool{{ 's' if tools|length != 1 }}</p>
+    </div>
+    {% if current_user.is_admin %}
+    <a href="{{ url_for('tools.add') }}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Add Tool
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="padding:14px;margin-bottom:16px;">
+  <form method="GET">
+    <div class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label" style="margin-bottom:4px;">Search</label>
+        <input type="text" name="q" class="form-input" placeholder="Name, number, serial…"
+               value="{{ search }}" />
+      </div>
+      <div class="filter-field" style="min-width:140px;max-width:180px;">
+        <label class="form-label" style="margin-bottom:4px;">Status</label>
+        <select name="status" class="form-select">
+          <option value="">All</option>
+          {% for s in ToolStatus.ALL %}
+          <option value="{{ s }}" {% if s == status_filter %}selected{% endif %}>
+            {{ ToolStatus.LABELS[s] }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field" style="min-width:130px;max-width:170px;">
+        <label class="form-label" style="margin-bottom:4px;">Category</label>
+        <select name="category" class="form-select">
+          <option value="">All</option>
+          {% for cat in categories %}
+          <option value="{{ cat }}" {% if cat == category %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
+        {% if overdue_filter == 'true' %}
+        <a href="{{ url_for('tools.index', q=search, status=status_filter, category=category) }}"
+           class="btn btn-danger"><i class="fas fa-triangle-exclamation"></i> Overdue only</a>
+        {% else %}
+        <a href="{{ url_for('tools.index', q=search, status=status_filter, category=category, overdue='true') }}"
+           class="btn btn-secondary"><i class="fas fa-triangle-exclamation"></i> Overdue only</a>
+        {% endif %}
+        <a href="{{ url_for('tools.index') }}" class="btn btn-secondary">Clear</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Desktop table -->
+<div class="card desktop-table">
+  <div class="table-wrap">
+    <table style="width:100%;border-collapse:collapse;min-width:600px;">
+      <thead>
+        <tr class="table-header">
+          <th style="padding:11px 16px;text-align:left;">Tool</th>
+          <th style="padding:11px 16px;text-align:left;" class="hide-tablet">Brand / Model</th>
+          <th style="padding:11px 16px;text-align:left;" class="hide-tablet">Location</th>
+          <th style="padding:11px 16px;text-align:center;">Status</th>
+          <th style="padding:11px 16px;text-align:left;">Checked Out By</th>
+          <th style="padding:11px 16px;text-align:center;">View</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if tools %}
+          {% for tool in tools %}
+          <tr class="table-row">
+            <td style="padding:11px 16px;">
+              <a href="{{ url_for('tools.view', tool_id=tool.id) }}"
+                 style="font-weight:500;color:#34d399;text-decoration:none;">{{ tool.name }}</a>
+              {% if tool.tool_number %}
+              <div style="font-size:12px;color:#4b5563;">#{{ tool.tool_number }}</div>
+              {% endif %}
+            </td>
+            <td style="padding:11px 16px;color:#9ca3af;font-size:13px;" class="hide-tablet">
+              {{ tool.brand or '' }}{% if tool.brand and tool.model %} · {% endif %}{{ tool.model or '' }}
+              {% if not tool.brand and not tool.model %}—{% endif %}
+            </td>
+            <td style="padding:11px 16px;color:#9ca3af;font-size:13px;" class="hide-tablet">
+              {{ tool.location or '—' }}
+            </td>
+            <td style="padding:11px 16px;text-align:center;">
+              <span class="badge {{ tool.status_badge }}">{{ tool.status_label }}</span>
+              {% if tool.is_overdue %}
+              <span class="badge bg-red-900 text-red-300" title="Checked out {{ tool.hours_checked_out }}h ago">
+                <i class="fas fa-triangle-exclamation"></i> Overdue
+              </span>
+              {% endif %}
+            </td>
+            <td style="padding:11px 16px;font-size:13px;color:#d1d5db;">
+              {% if tool.checked_out_by %}
+                {{ tool.checked_out_by }}
+                {% if tool.checked_out_at %}
+                <div style="font-size:11px;color:#4b5563;">
+                  {{ tool.checked_out_at.strftime('%d %b %H:%M') }}
+                </div>
+                {% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td style="padding:11px 16px;text-align:center;">
+              <a href="{{ url_for('tools.view', tool_id=tool.id) }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="6" style="padding:40px;text-align:center;color:#4b5563;">
+            <i class="fas fa-wrench" style="font-size:28px;display:block;margin-bottom:10px;"></i>
+            No tools found.
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('tools.add') }}" style="color:#34d399;margin-left:4px;">Add one →</a>
+            {% endif %}
+          </td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Mobile card list -->
+<div class="mobile-card-list">
+  {% if tools %}
+    {% for tool in tools %}
+    <a href="{{ url_for('tools.view', tool_id=tool.id) }}" style="text-decoration:none;display:block;">
+      <div class="m-card">
+        <div class="m-card-row">
+          <div style="min-width:0;">
+            <div style="font-size:15px;font-weight:600;color:#34d399;
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ tool.name }}
+            </div>
+            {% if tool.tool_number %}
+            <div style="font-size:12px;color:#4b5563;">#{{ tool.tool_number }}</div>
+            {% endif %}
+          </div>
+          <span class="badge {{ tool.status_badge }}" style="flex-shrink:0;">{{ tool.status_label }}</span>
+        </div>
+        {% if tool.is_overdue %}
+        <div style="margin-top:4px;">
+          <span class="badge bg-red-900 text-red-300"><i class="fas fa-triangle-exclamation"></i> Overdue</span>
+        </div>
+        {% endif %}
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;">
+          {% if tool.brand or tool.model %}
+          <span style="font-size:12px;color:#6b7280;">
+            {{ tool.brand or '' }}{% if tool.brand and tool.model %} · {% endif %}{{ tool.model or '' }}
+          </span>
+          {% endif %}
+          {% if tool.location %}
+          <span style="font-size:12px;color:#6b7280;">
+            <i class="fas fa-location-dot"></i> {{ tool.location }}
+          </span>
+          {% endif %}
+          {% if tool.checked_out_by %}
+          <span style="font-size:12px;color:#9ca3af;">
+            <i class="fas fa-user"></i> {{ tool.checked_out_by }}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  {% else %}
+    <div style="text-align:center;padding:40px;color:#4b5563;">
+      <i class="fas fa-wrench" style="font-size:32px;display:block;margin-bottom:12px;"></i>
+      No tools found.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

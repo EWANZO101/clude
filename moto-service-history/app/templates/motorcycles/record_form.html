@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import field, btn_primary, btn_secondary %}
+{% block title %}{{ title }} — {{ m.display_name }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <p class="text-xs font-mono text-ink-faint mb-2 uppercase tracking-wide">{{ m.display_name }}</p>
+  <h1 class="font-bold text-2xl mb-6">{{ title }}</h1>
+  <form method="post" enctype="multipart/form-data" class="card p-6">
+    {{ form.hidden_tag() }}
+    <div class="grid sm:grid-cols-2 gap-4">
+      {% for f in form %}
+        {% if f.name != 'csrf_token' %}
+          {{ field(f, wide=(f.type in ('TextAreaField','MultipleFileField'))) }}
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div class="flex items-center gap-3 pt-6 mt-6 border-t border-asphalt-border">
+      {{ btn_primary('Save') }}
+      {{ btn_secondary('Cancel', url_for('moto.view', moto_id=m.id)) }}
+    </div>
+  </form>
+
+  {% if record and record.documents.count() %}
+  <div class="mt-6 card p-6">
+    <h2 class="font-semibold text-sm uppercase tracking-wide text-ink-faint mb-4">Attached files</h2>
+    <ul class="space-y-2">
+      {% for doc in record.documents %}
+      <li class="flex items-center justify-between text-sm">
+        <a href="{{ url_for('main.serve_upload', filename=doc.filename) }}" target="_blank" class="text-odometer hover:underline font-mono">{{ doc.filename.split('/')[-1] }}</a>
+        <form method="post" action="{{ url_for('moto.document_delete', moto_id=m.id, doc_id=doc.id) }}" onsubmit="return confirm('Remove this file?');">
+          <button class="text-xs text-danger hover:text-danger/80">Remove</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

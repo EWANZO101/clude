@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if plan else 'New' }} plan — Admin{% endblock %}
+{% block content %}
+<h1>{{ 'Edit plan' if plan else 'New plan' }}</h1>
+<div class="card" style="max-width:520px;">
+  <form method="POST">
+    <label>Product</label>
+    <select name="product_id" required>
+      {% for prod in products %}
+        <option value="{{ prod.id }}" {{ 'selected' if plan and plan.product_id == prod.id }}>{{ prod.name }}</option>
+      {% endfor %}
+    </select>
+
+    <label>Plan name <span style="color:#9aa3af;">(e.g. "Pro Monthly")</span></label>
+    <input type="text" name="name" value="{{ plan.name if plan else '' }}" required>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div>
+        <label>Billing period</label>
+        <select name="billing_period">
+          {% for period in ['monthly', 'yearly', 'one_off', 'lifetime'] %}
+            <option value="{{ period }}" {{ 'selected' if plan and plan.billing_period == period }}>{{ period }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Currency</label>
+        <input type="text" name="currency" value="{{ plan.currency if plan else 'usd' }}" maxlength="10">
+      </div>
+    </div>
+
+    <label>Price <span style="color:#9aa3af;">(in cents — 1999 = $19.99, 0 = free)</span></label>
+    <input type="number" name="price_cents" value="{{ plan.price_cents if plan else 0 }}" min="0">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div>
+        <label>Credit allowance <span style="color:#9aa3af;">(per period)</span></label>
+        <input type="number" name="credit_allowance" value="{{ plan.credit_allowance if plan else 0 }}" min="0">
+      </div>
+      <div>
+        <label>Trial days <span style="color:#9aa3af;">(0 = none)</span></label>
+        <input type="number" name="trial_days" value="{{ plan.trial_days if plan else 0 }}" min="0">
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div>
+        <label>User limit <span style="color:#9aa3af;">(0 = unlimited)</span></label>
+        <input type="number" name="user_limit" value="{{ plan.user_limit if plan else 0 }}" min="0">
+      </div>
+      <div>
+        <label>Company limit <span style="color:#9aa3af;">(0 = unlimited)</span></label>
+        <input type="number" name="company_limit" value="{{ plan.company_limit if plan else 0 }}" min="0">
+      </div>
+    </div>
+
+    <label>Usage limits <span style="color:#9aa3af;">(JSON object, e.g. {"api_calls_per_day": 1000})</span></label>
+    <input type="text" name="usage_limits" value="{{ plan.usage_limits if plan else '{}' }}">
+
+    <label>Stripe Price ID <span style="color:#9aa3af;">(from the Stripe Dashboard — create the product/price there first, e.g. price_1AbC...)</span></label>
+    <input type="text" name="stripe_price_id" value="{{ plan.stripe_price_id if plan and plan.stripe_price_id else '' }}" placeholder="price_...">
+
+    <label>Stripe Product ID <span style="color:#9aa3af;">(optional, for reference)</span></label>
+    <input type="text" name="stripe_product_id" value="{{ plan.stripe_product_id if plan and plan.stripe_product_id else '' }}" placeholder="prod_...">
+
+    <label style="display:flex;align-items:center;gap:0.5rem;margin-top:1rem;">
+      <input type="checkbox" name="is_active" style="width:auto;" {{ 'checked' if not plan or plan.is_active }}>
+      Active (assignable to companies)
+    </label>
+
+    <p style="font-size:0.8rem;color:#9aa3af;margin-top:1rem;">
+      A plan needs a Stripe Price ID before customers can check out for it. Manual
+      assignment from a company's page still works without one, for testing.
+    </p>
+
+    <button type="submit">{{ 'Save' if plan else 'Create plan' }}</button>
+  </form>
+</div>
+{% endblock %}

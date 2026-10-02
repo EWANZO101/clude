@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Roadmap · OpsLab Systems{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-6">
+  <div class="text-[11px] font-bold uppercase tracking-[.25em] accent mb-3">Roadmap</div>
+  <h1 class="text-3xl sm:text-5xl font-semibold tracking-tight leading-[1.05]">
+    What we're building next.
+  </h1>
+  <p class="mt-6 text-lg text-gray-300 max-w-2xl leading-relaxed">
+    A live look at what's in progress and what's coming — {{ total }} item{{ '' if total == 1 else 's' }} on the board right now.
+  </p>
+</section>
+
+<section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  {% if total == 0 %}
+  <div class="card p-10 text-center">
+    <h3 class="text-base font-bold text-white">Nothing on the board yet</h3>
+    <p class="text-sm text-gray-400 mt-2 leading-relaxed">Check back soon — this page updates as work gets planned and picked up.</p>
+  </div>
+  {% else %}
+  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 items-start">
+    {% for status in status_order %}
+    {% set meta = status_meta[status] %}
+    {% set items = columns.get(status, []) %}
+    <div class="flex flex-col gap-3">
+      <div class="flex items-center gap-2 px-1">
+        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:{{ meta.color }}"></span>
+        <h2 class="text-sm font-bold text-white uppercase tracking-wide">{{ meta.label }}</h2>
+        <span class="text-xs text-gray-500 font-semibold ml-auto">{{ items|length }}</span>
+      </div>
+
+      {% if items %}
+        {% for it in items %}
+        <div class="card p-4">
+          {% if it.category %}
+          <span class="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mb-2"
+                style="background:{{ meta.color }}1f; border:1px solid {{ meta.color }}4d; color:{{ meta.color }}">
+            {{ it.category }}
+          </span>
+          {% endif %}
+          <h3 class="text-sm font-bold text-white leading-snug">{{ it.title }}</h3>
+          {% if it.description %}
+          <p class="text-xs text-gray-400 mt-2 leading-relaxed">{{ it.description }}</p>
+          {% endif %}
+          {% if it.target_date %}
+          <p class="text-[11px] text-gray-500 mt-3 font-semibold">Target: {{ it.target_date.strftime('%b %Y') }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="card p-4 border-dashed">
+          <p class="text-xs text-gray-500 italic">Nothing here right now.</p>
+        </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+
+<section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+  <div class="card p-8 sm:p-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+    <div>
+      <h2 class="text-xl font-semibold tracking-tight">Want to see something added?</h2>
+      <p class="text-gray-400 mt-2">Open a ticket and let us know what you'd find useful.</p>
+    </div>
+    <a href="{{ url_for('tickets.new') if current_user.is_authenticated else url_for('auth.register') }}"
+       class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-xl transition shrink-0">
+      Open a ticket
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+    </a>
+  </div>
+</section>
+{% endblock %}

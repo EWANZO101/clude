@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="eyebrow mb-1">Activity</p>
+<h1 class="font-display font-800 text-2xl text-chalk mb-5">Alerts &amp; notifications</h1>
+<div class="space-y-2">
+{% for n in notes %}
+  <a href="{{ n.url or '#' }}" class="card p-4 flex justify-between items-center {{ 'border-plate/40' if not n.is_read }}">
+    <span class="text-sm text-chalk">{{ n.text }}</span>
+    <span class="eyebrow">{{ n.created_at|ago }}</span>
+  </a>
+{% else %}<div class="card p-10 text-center text-mute text-sm">Nothing yet. You're all caught up.</div>{% endfor %}
+</div>
+{% endblock %}

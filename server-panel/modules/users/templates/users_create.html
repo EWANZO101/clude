@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}New User — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">Access control</p>
+    <h1 class="page-title">New user</h1>
+  </div>
+</div>
+
+<div class="card" style="max-width:440px;">
+  <form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="field">
+      {{ form.username.label }}
+      {{ form.username() }}
+      {% for e in form.username.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.email.label }}
+      {{ form.email() }}
+      {% for e in form.email.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.role_id.label }}
+      {{ form.role_id() }}
+    </div>
+
+    <div class="field">
+      {{ form.password.label }}
+      {{ form.password() }}
+      {% for e in form.password.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.confirm_password.label }}
+      {{ form.confirm_password() }}
+      {% for e in form.confirm_password.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <button class="btn btn-primary" type="submit">Create user</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Integrity check result{% endblock %}
+{% block content %}
+<h1 class="page-title mb-6">Integrity check — {{ run.started_at.strftime('%Y-%m-%d %H:%M:%S') }}</h1>
+{% if not run.issues %}
+<div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow text-green-600">No issues found. The ledger is internally consistent.</div>
+{% else %}
+<div class="space-y-4">
+  {% for issue in run.issues %}
+  <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border-l-4
+    {% if issue.severity == 'high' %}border-red-500{% elif issue.severity == 'medium' %}border-yellow-500{% else %}border-gray-400{% endif %}">
+    <div class="flex justify-between">
+      <div class="font-medium">{{ issue.check_name.replace('_',' ')|capitalize }}</div>
+      <div class="text-xs uppercase text-gray-500">{{ issue.severity }}</div>
+    </div>
+    <p class="text-sm mt-2"><span class="font-medium">What happened:</span> {{ issue.what_happened }}</p>
+    <p class="text-sm mt-1"><span class="font-medium">Why it matters:</span> {{ issue.why_it_matters }}</p>
+    <p class="text-sm mt-1"><span class="font-medium">Recommended action:</span> {{ issue.recommended_action }}</p>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

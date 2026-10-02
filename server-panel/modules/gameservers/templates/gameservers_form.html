@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if server else 'New' }} Game Server — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">FiveM / FXServer</p>
+    <h1 class="page-title">{{ 'Edit ' + server.name if server else 'Add game server' }}</h1>
+  </div>
+</div>
+
+<div class="card" style="max-width:560px;">
+  <form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="field">
+      {{ form.name.label }}
+      {{ form.name() }}
+      {% for e in form.name.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.service_unit.label }}
+      {{ form.service_unit() }}
+      {% if form.service_unit.description %}<div style="font-size:12.5px;color:var(--text-muted);margin-top:6px;">{{ form.service_unit.description }}</div>{% endif %}
+      {% for e in form.service_unit.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.http_host.label }}
+      {{ form.http_host() }}
+      {% for e in form.http_host.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.http_port.label }}
+      {{ form.http_port() }}
+      {% for e in form.http_port.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <hr style="border-color:var(--border-subtle); margin:18px 0;">
+    <p class="page-sub" style="margin-bottom:12px;">RCON (optional) — required only for the console tab</p>
+
+    <div class="field">
+      {{ form.rcon_host.label }}
+      {{ form.rcon_host() }}
+      {% if form.rcon_host.description %}<div style="font-size:12.5px;color:var(--text-muted);margin-top:6px;">{{ form.rcon_host.description }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      {{ form.rcon_port.label }}
+      {{ form.rcon_port() }}
+      {% if form.rcon_port.description %}<div style="font-size:12.5px;color:var(--text-muted);margin-top:6px;">{{ form.rcon_port.description }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      {{ form.rcon_password.label }}
+      {{ form.rcon_password(autocomplete="new-password") }}
+      {% if form.rcon_password.description %}<div style="font-size:12.5px;color:var(--text-muted);margin-top:6px;">{{ form.rcon_password.description }}</div>{% endif %}
+      {% if server and server.has_rcon() %}<div style="font-size:12.5px;color:var(--text-muted);margin-top:6px;">A password is already saved — leave blank to keep it.</div>{% endif %}
+    </div>
+
+    <div class="field">
+      {{ form.ban_resource_note.label }}
+      {{ form.ban_resource_note() }}
+      {% if form.ban_resource_note.description %}<div style="font-size:12.5px;color:var(--text-muted);margin-top:6px;">{{ form.ban_resource_note.description }}</div>{% endif %}
+    </div>
+
+    <button class="btn btn-primary" type="submit">{{ 'Save' if server else 'Add server' }}</button>
+  </form>
+</div>
+{% endblock %}

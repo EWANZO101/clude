@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}{{ client.full_name }} — Clients — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('platform.list_clients') }}" class="crumb">← Clients</a>
+    <h1>{{ client.full_name }}</h1>
+    <div class="page-sub">
+      <span class="mono">{{ client.email }}</span>
+      {% if client.is_active %}
+        <span class="pill pill-green">Active</span>
+      {% else %}
+        <span class="pill pill-red">Disabled</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Account</h2>
+  <table class="kv-table">
+    <tr><th>Client ID</th><td><code style="font-size:11.5px;">{{ client.public_id }}</code></td></tr>
+    <tr><th>Signed up</th><td>{{ client.created_at | friendly_dt }}</td></tr>
+    <tr><th>Last login</th><td>{{ client.last_login_at | friendly_dt if client.last_login_at else 'never' }}</td></tr>
+  </table>
+  <div style="display:flex; gap:10px; margin-top:14px;">
+    <form method="post" action="{{ url_for('platform.toggle_client_active', client_id=client.public_id) }}">
+      {% if client.is_active %}
+        <button type="submit" class="btn-danger btn-sm">Disable account</button>
+      {% else %}
+        <button type="submit" class="btn-secondary btn-sm">Enable account</button>
+      {% endif %}
+    </form>
+    <form method="post" action="{{ url_for('platform.reset_client_password', client_id=client.public_id) }}"
+          onsubmit="return confirm('Reset the password for {{ client.email|e }}? A new temporary password will be generated and shown once.');">
+      <button type="submit" class="btn-secondary btn-sm">Reset password</button>
+    </form>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Assigned instances</h2>
+  <p class="muted" style="margin-top:0;">Everything this client can see and operate through the Client Portal.</p>
+  {% if assignments %}
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Instance</th><th>Company</th><th>Granted</th><th></th></tr></thead>
+      <tbody>
+        {% for a in assignments %}
+          <tr>
+            <td style="font-weight:600;">{{ a.instance.display_name() }}</td>
+            <td class="muted">{{ a.instance.company.name }}</td>
+            <td class="muted">{{ a.created_at | friendly_dtstr }} by {{ a.granted_by.full_name }}</td>
+            <td class="row-actions">
+              <form method="post" action="{{ url_for('platform.revoke_client_instance', client_id=client.public_id, assignment_id=a.id) }}"
+                    onsubmit="return confirm('Revoke {{ client.email|e }}\'s access to {{ a.instance.display_name()|e }}?');">
+                <button type="submit" class="btn btn-danger btn-sm">Revoke</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted" style="margin:0;">Not assigned to any instance yet.</p>
+  {% endif %}
+
+  {% if available_instances %}
+    <form method="post" action="{{ url_for('platform.assign_client_instance', client_id=client.public_id) }}" class="form-row" style="margin-top:16px;">
+      <div>
+        <label>Assign to instance</label>
+        <select name="instance_id">
+          {% for i in available_instances %}
+            <option value="{{ i.public_id }}">{{ i.company.name }} / {{ i.display_name() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="flex:0 0 auto;">
+        <button type="submit">Assign</button>
+      </div>
+    </form>
+  {% elif assignments %}
+    <p class="muted" style="font-size:12.5px; margin-top:16px; margin-bottom:0;">Already assigned to every instance on the platform.</p>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2>Recent activity</h2>
+  {% if recent_activity %}
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>When</th><th>Instance</th><th>Action</th><th class="wrap-cell">Detail</th></tr></thead>
+      <tbody>
+        {% for a in recent_activity %}
+          <tr>
+            <td>{{ a.created_at | friendly_dt }}</td>
+            <td class="muted">{{ a.instance.display_name() if a.instance else '—' }}</td>
+            <td class="mono">{{ a.action }}</td>
+            <td class="muted wrap-cell">{{ a.detail or '—' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted" style="margin:0;">No activity yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

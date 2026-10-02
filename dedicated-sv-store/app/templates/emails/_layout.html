@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background-color:#05070a;font-family:Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#05070a;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#0f131b;border:1px solid #232a37;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="padding:24px 32px;border-bottom:1px solid #232a37;">
+              <span style="color:#e6e9ef;font-weight:600;font-size:16px;">OpsLabs Servers</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;color:#e6e9ef;font-size:14px;line-height:1.6;">
+              {% block email_content %}{% endblock %}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid #232a37;color:#6b7484;font-size:12px;">
+              &copy; {{ current_year }} OpsLabs Servers. All rights reserved.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

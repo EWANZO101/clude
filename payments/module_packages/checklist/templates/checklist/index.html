@@ -1,0 +1,35 @@
+{% extends "layout/base.html" %}
+{% block title %}Checklists{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <div class="flex items-center justify-between flex-wrap gap-2">
+    <h1 class="text-xl font-semibold">Checklists</h1>
+    <div class="flex gap-2">
+      <a href="{{ url_for('checklist.generate') }}" class="bg-surface-card border border-surface-border text-sm px-4 py-2 rounded-lg">Generate from text</a>
+      <form method="POST" action="{{ url_for('checklist.new_list') }}" class="flex gap-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input name="name" placeholder="New checklist name" class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm">
+        <button class="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 rounded-lg">Create</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="flex gap-2 text-sm">
+    <a href="{{ url_for('checklist.index') }}" class="px-3 py-1.5 rounded-lg {{ 'bg-accent text-white' if not show_archived else 'bg-surface-card border border-surface-border text-slate-300' }}">Active</a>
+    <a href="{{ url_for('checklist.index', archived=1) }}" class="px-3 py-1.5 rounded-lg {{ 'bg-accent text-white' if show_archived else 'bg-surface-card border border-surface-border text-slate-300' }}">Archived</a>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for l in lists %}
+      <a href="{{ url_for('checklist.view_list', list_id=l.id) }}" class="block bg-surface-card border border-surface-border rounded-2xl p-5 hover:border-accent transition">
+        <p class="font-medium mb-2">{{ l.name }}</p>
+        <div class="h-1.5 bg-surface rounded-full overflow-hidden">
+          <div class="h-full bg-accent" style="width: {{ l.progress }}%"></div>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">{{ l.progress }}% complete</p>
+      </a>
+    {% else %}
+      <p class="text-sm text-slate-500 col-span-full">No checklists yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

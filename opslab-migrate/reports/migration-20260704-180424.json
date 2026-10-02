@@ -1,0 +1,693 @@
+{
+  "source": "102.211.207.197",
+  "destination": "51.89.167.197",
+  "projects": [
+    {
+      "name": "nginx-manager",
+      "framework": "flask",
+      "databases": [],
+      "status": "done",
+      "checks": [
+        {
+          "name": "service nginx-manager.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "96015 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "11001 MB available"
+        }
+      ],
+      "size": 4827595,
+      "sha256": "42e3898b0060ffef371991c457c43f6c2bcb6bafddb7403e3f31de3d8aadcff8",
+      "transfer_seconds": 23.068559646606445
+    },
+    {
+      "name": "nova-app",
+      "framework": "flask",
+      "databases": [],
+      "status": "done",
+      "checks": [
+        {
+          "name": "service nova-app.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "port 5001 listening",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "HTTP response",
+          "passed": false,
+          "detail": "no port answered"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "96013 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "11053 MB available"
+        }
+      ],
+      "size": 27757413,
+      "sha256": "86c1257701823c216aad6bae3dcfec858b4691ca526c3a83b127ed2f51960099",
+      "transfer_seconds": 24.49828577041626
+    },
+    {
+      "name": "opslab-books",
+      "framework": "flask",
+      "databases": [
+        {
+          "engine": "sqlite",
+          "uri": "sqlite:////opt/opslab-books/data/opslab.db",
+          "name": "opslab.db",
+          "host": "localhost",
+          "port": 0,
+          "user": "",
+          "password": "",
+          "sqlite_path": "/opt/opslab-books/data/opslab.db"
+        }
+      ],
+      "status": "done",
+      "checks": [
+        {
+          "name": "service opslab-books.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "port 5050 listening",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "HTTP :5050 responds",
+          "passed": true,
+          "detail": "status 200"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "database sqlite:opslab.db",
+          "passed": true,
+          "detail": "/opt/opslab-books/data/opslab.db"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95815 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10864 MB available"
+        }
+      ],
+      "size": 55921981,
+      "sha256": "891eb38d80f7bf67ecd60921c19b4c57dac0b76c445d6b6eceb0353aca1ec498",
+      "transfer_seconds": 15.509271144866943
+    },
+    {
+      "name": "cloudpanel",
+      "framework": "flask",
+      "databases": [
+        {
+          "engine": "sqlite",
+          "uri": "sqlite:///:memory:",
+          "name": ":memory:",
+          "host": "localhost",
+          "port": 0,
+          "user": "",
+          "password": "",
+          "sqlite_path": "/root/.gunicorn/cloudpanel/:memory:"
+        }
+      ],
+      "status": "done",
+      "checks": [
+        {
+          "name": "database sqlite::memory:",
+          "passed": false,
+          "detail": "missing: /root/.gunicorn/cloudpanel/:memory:"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95570 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10940 MB available"
+        }
+      ],
+      "size": 159501,
+      "sha256": "d561d0081b1f49ccdad38e972299f482976d1a98da788eb24f0e2000d0b28983",
+      "transfer_seconds": 10.28343152999878
+    },
+    {
+      "name": "cbot",
+      "framework": "unknown",
+      "databases": [],
+      "status": "done",
+      "checks": [
+        {
+          "name": "service cbot-contact.service active",
+          "passed": false,
+          "detail": "activating"
+        },
+        {
+          "name": "service cbot.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95444 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10901 MB available"
+        }
+      ],
+      "size": 8811483,
+      "sha256": "0456abb18fae7b83f4b160f5e43514d11df7bb1d3f0ad750b640d7d1b04de980",
+      "transfer_seconds": 11.747087478637695
+    },
+    {
+      "name": "cfrp_bot",
+      "framework": "unknown",
+      "databases": [],
+      "status": "done",
+      "checks": [
+        {
+          "name": "service ai-support.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "service ollama.service active",
+          "passed": false,
+          "detail": "failed"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95458 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10893 MB available"
+        }
+      ],
+      "size": 16594505,
+      "sha256": "8b93c8169672d9d235f83b8d9b0661af03dfd369d0a1d1cbce7743f453f1b314",
+      "transfer_seconds": 12.459969282150269
+    },
+    {
+      "name": "cioda-commissions",
+      "framework": "flask",
+      "databases": [
+        {
+          "engine": "sqlite",
+          "uri": "sqlite:////root/cioda_commissions/cioda-commissions/instance/commissions.db",
+          "name": "commissions.db",
+          "host": "localhost",
+          "port": 0,
+          "user": "",
+          "password": "",
+          "sqlite_path": "/root/cioda_commissions/cioda-commissions/instance/commissions.db"
+        }
+      ],
+      "status": "done",
+      "checks": [
+        {
+          "name": "service cioda-discord-bot.service active",
+          "passed": false,
+          "detail": "activating"
+        },
+        {
+          "name": "service cioda_commissions.service active",
+          "passed": false,
+          "detail": "failed"
+        },
+        {
+          "name": "port 5002 listening",
+          "passed": false,
+          "detail": "not listening"
+        },
+        {
+          "name": "HTTP response",
+          "passed": false,
+          "detail": "no port answered"
+        },
+        {
+          "name": "database sqlite:commissions.db",
+          "passed": true,
+          "detail": "/root/cioda_commissions/cioda-commissions/instance/commissions.db"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95378 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10878 MB available"
+        }
+      ],
+      "size": 156753,
+      "sha256": "81407614ee06a1169b3d0ef7d192a7cdb848046e91e86ced63e6c9b6d380a7cd",
+      "transfer_seconds": 10.152335166931152
+    },
+    {
+      "name": "license",
+      "framework": "unknown",
+      "databases": [
+        {
+          "engine": "sqlite",
+          "uri": "sqlite:////root/license/instance/license_manager.db",
+          "name": "license_manager.db",
+          "host": "localhost",
+          "port": 0,
+          "user": "",
+          "password": "",
+          "sqlite_path": "/root/license/instance/license_manager.db"
+        }
+      ],
+      "status": "done",
+      "checks": [
+        {
+          "name": "database sqlite:license_manager.db",
+          "passed": true,
+          "detail": "/root/license/instance/license_manager.db"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95348 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10875 MB available"
+        }
+      ],
+      "size": 12355494,
+      "sha256": "93b58dd7979ff751c71abcde64ef9f4805fb7e335c01f0f9353f5018b5c628a3",
+      "transfer_seconds": 12.254535913467407
+    },
+    {
+      "name": "motoguard",
+      "framework": "flask",
+      "databases": [
+        {
+          "engine": "sqlite",
+          "uri": "sqlite:////root/motoguard/motoguard/instance/motoguard.db",
+          "name": "motoguard.db",
+          "host": "localhost",
+          "port": 0,
+          "user": "",
+          "password": "",
+          "sqlite_path": "/root/motoguard/motoguard/instance/motoguard.db"
+        }
+      ],
+      "status": "done",
+      "checks": [
+        {
+          "name": "service motoguard.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "port 5070 listening",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "HTTP :5070 responds",
+          "passed": true,
+          "detail": "status 200"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "database sqlite:motoguard.db",
+          "passed": true,
+          "detail": "/root/motoguard/motoguard/instance/motoguard.db"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95256 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10702 MB available"
+        }
+      ],
+      "size": 14717609,
+      "sha256": "8627a710f5d74c77b2646dfbe507594370ee31ce7a55c02cc43b394614cd8746",
+      "transfer_seconds": 12.025070428848267
+    },
+    {
+      "name": "ops",
+      "framework": "unknown",
+      "databases": [],
+      "status": "done",
+      "checks": [
+        {
+          "name": "service ops-bot.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "service opslabs-app.service active",
+          "passed": false,
+          "detail": "activating"
+        },
+        {
+          "name": "service opslabs-bot.service active",
+          "passed": false,
+          "detail": "activating"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95238 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10724 MB available"
+        }
+      ],
+      "size": 9315446,
+      "sha256": "875c41f7c87dc27fa4561e627a93248b6ca341a064cb024f1dda96f0c97326e1",
+      "transfer_seconds": 11.875108242034912
+    },
+    {
+      "name": "opslabs",
+      "framework": "flask",
+      "databases": [
+        {
+          "engine": "sqlite",
+          "uri": "sqlite:////root/opslabs/instance/opslabs.db",
+          "name": "opslabs.db",
+          "host": "localhost",
+          "port": 0,
+          "user": "",
+          "password": "",
+          "sqlite_path": "/root/opslabs/instance/opslabs.db"
+        }
+      ],
+      "status": "done",
+      "checks": [
+        {
+          "name": "service opslabs-app.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "service opslabs-bot.service active",
+          "passed": false,
+          "detail": "activating"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "database sqlite:opslabs.db",
+          "passed": true,
+          "detail": "/root/opslabs/instance/opslabs.db"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "94999 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10550 MB available"
+        }
+      ],
+      "size": 57669351,
+      "sha256": "d6e44ae34635cee9aefb44effeb0f05acccc045bca57f4919c2ff7c9f40cda0c",
+      "transfer_seconds": 15.568702936172485
+    },
+    {
+      "name": "portal-install",
+      "framework": "flask",
+      "databases": [],
+      "status": "done",
+      "checks": [
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "94863 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10692 MB available"
+        }
+      ],
+      "size": 123050,
+      "sha256": "4444dc99aa76fb52dec3012c1783a9110a7b53583c7caafe6523acf12cf3f5ce",
+      "transfer_seconds": 10.185566663742065
+    },
+    {
+      "name": "rq-bot",
+      "framework": "unknown",
+      "databases": [],
+      "status": "done",
+      "checks": [
+        {
+          "name": "service rq-bot.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "94815 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10572 MB available"
+        }
+      ],
+      "size": 9468548,
+      "sha256": "a3371120f7d05a42512ad44d56382f2277b84a7dfe5fca62b11ddfd0e82095f0",
+      "transfer_seconds": 11.685110807418823
+    },
+    {
+      "name": "safetosay",
+      "framework": "flask",
+      "databases": [
+        {
+          "engine": "sqlite",
+          "uri": "sqlite:////root/safetosay/instance/forum.db",
+          "name": "forum.db",
+          "host": "localhost",
+          "port": 0,
+          "user": "",
+          "password": "",
+          "sqlite_path": "/root/safetosay/instance/forum.db"
+        }
+      ],
+      "status": "done",
+      "checks": [
+        {
+          "name": "service safetosay.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "port 5003 listening",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "HTTP :5003 responds",
+          "passed": true,
+          "detail": "status 200"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "database sqlite:forum.db",
+          "passed": true,
+          "detail": "/root/safetosay/instance/forum.db"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "94713 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10470 MB available"
+        }
+      ],
+      "size": 16886708,
+      "sha256": "09b3b42af6cb49954f19026986f823dac0673697d8726d3f460de7c48ff6b08e",
+      "transfer_seconds": 12.422238111495972
+    },
+    {
+      "name": "spn",
+      "framework": "unknown",
+      "databases": [],
+      "status": "done",
+      "checks": [
+        {
+          "name": "service spn.service active",
+          "passed": false,
+          "detail": "activating"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "94761 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10498 MB available"
+        }
+      ],
+      "size": 3307,
+      "sha256": "a636838e4e2d32e25b82c042e1e77240662652a68087d1f0fb29400e14328553",
+      "transfer_seconds": 10.011015176773071
+    },
+    {
+      "name": "whitelist-app",
+      "framework": "flask",
+      "databases": [
+        {
+          "engine": "sqlite",
+          "uri": "sqlite:////root/whitelist-app/instance/whitelist.db",
+          "name": "whitelist.db",
+          "host": "localhost",
+          "port": 0,
+          "user": "",
+          "password": "",
+          "sqlite_path": "/root/whitelist-app/instance/whitelist.db"
+        },
+        {
+          "engine": "postgresql",
+          "uri": "postgresql://user:password@localhost:5432/whitelist_db",
+          "name": "whitelist_db",
+          "host": "localhost",
+          "port": 5432,
+          "user": "user",
+          "password": "password",
+          "sqlite_path": ""
+        }
+      ],
+      "status": "done",
+      "checks": [
+        {
+          "name": "service whitelist-app.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "service whitelist-bot.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "database sqlite:whitelist.db",
+          "passed": true,
+          "detail": "/root/whitelist-app/instance/whitelist.db"
+        },
+        {
+          "name": "database postgresql:whitelist_db",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "94511 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10347 MB available"
+        }
+      ],
+      "size": 41139986,
+      "sha256": "503fcd2f46111ab9907ed098901138ebca766be090d975292b3353dfb6eefaa3",
+      "transfer_seconds": 14.870625019073486
+    }
+  ],
+  "warnings": [
+    "nova-app: 1 verification check(s) still failing after healing",
+    "cloudpanel: 1 verification check(s) still failing after healing",
+    "cbot: 1 verification check(s) still failing after healing",
+    "cfrp_bot: 1 verification check(s) still failing after healing",
+    "cioda-commissions: 4 verification check(s) still failing after healing",
+    "ops: 2 verification check(s) still failing after healing",
+    "opslabs: 1 verification check(s) still failing after healing",
+    "spn: 1 verification check(s) still failing after healing",
+    "whitelist-app: 1 verification check(s) still failing after healing"
+  ],
+  "heal_actions": [
+    "nova-app: restarted service nova-app.service",
+    "nova-app: restarted service nova-app.service",
+    "nova-app: restarted service nova-app.service",
+    "cbot: installed missing module discord",
+    "cbot: restarted service cbot.service",
+    "cfrp_bot: installed missing module flask",
+    "cfrp_bot: restarted service ai-support.service",
+    "opslabs: installed missing module discord"
+  ],
+  "disk_free_mb": 94510,
+  "duration_seconds": 741.4509401321411
+}

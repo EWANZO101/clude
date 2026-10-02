@@ -1,0 +1,24 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Add a company{% endblock %}
+{% block content %}
+<div class="max-w-lg space-y-5">
+  {{ ui.page_header("Add a company", "Type a company number and Companies House fills in the rest.") }}
+  <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+    <div class="flex items-start gap-3">
+      <span class="w-9 h-9 rounded-lg bg-accent/15 text-accent flex items-center justify-center shrink-0">{{ ui.icon('building', 'w-4 h-4') }}</span>
+      <div>
+        <p class="text-sm text-slate-200 font-medium">Look up by company number</p>
+        <p class="text-xs text-slate-500 mt-0.5">We'll pull the registered name, office address, SIC codes, current directors/PSC, and the real confirmation statement and accounts due dates straight from Companies House — nothing to type by hand.</p>
+      </div>
+    </div>
+    <form method="POST" action="{{ url_for('main.lookup_company') }}" class="flex gap-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input name="company_number" placeholder="e.g. 12345678" required autofocus
+             class="flex-1 bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      {{ ui.button("Look up", type="submit", variant="primary", icon_name="building") }}
+    </form>
+  </div>
+  <p class="text-xs text-slate-500 text-center">Prefer to type everything yourself? <a href="{{ url_for('main.new_company') }}" class="text-accent hover:text-accent-hover">Add manually instead</a>.</p>
+</div>
+{% endblock %}

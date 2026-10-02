@@ -1,0 +1,33 @@
+#!/bin/bash
+# Runs automatically as part of `installer`/pkgbuild after files are laid
+# down. NOT RUN/VERIFIED IN THIS SANDBOX (macOS-only).
+#
+# IMPORTANT LIMIT (see BUILD_STATUS.txt / TODO.txt): macOS Accessibility
+# (needed by pynput for activity monitoring) and Screen Recording (needed
+# by mss for screenshots) permissions CANNOT be granted programmatically.
+# This is an Apple security requirement, not a gap in this script - the
+# user must grant them manually via System Settings. All this script can
+# do is:
+#   1. Launch the binary once so macOS registers it and shows the
+#      permission-request dialogs (which then sit "pending" until the
+#      user flips the switches themselves).
+#   2. Open System Settings directly to the right panes so the user
+#      doesn't have to hunt for them.
+#   3. Point at the browser extension folder for URL tracking, which
+#      needs NO special macOS permissions (see BUILD_STATUS.txt).
+
+LOGGED_IN_USER=$(stat -f%Su /dev/console)
+
+# Trigger the permission prompts by touching the binary as the actual user
+# (not root, which is who postinstall scripts normally run as).
+sudo -u "$LOGGED_IN_USER" /usr/local/bin/teamtreck-agent --version >/dev/null 2>&1 || true
+
+# Open the two relevant System Settings panes.
+sudo -u "$LOGGED_IN_USER" open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility" || true
+sudo -u "$LOGGED_IN_USER" open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture" || true
+
+# Point Finder at the browser extension for URL tracking (recommended
+# method - needs no macOS permissions at all).
+sudo -u "$LOGGED_IN_USER" open "/Library/Application Support/TeamTreck Agent/browser-extension" || true
+
+exit 0

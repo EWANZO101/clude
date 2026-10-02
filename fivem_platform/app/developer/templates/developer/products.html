@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Products — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-semibold text-white">Products</h1>
+    <a href="{{ url_for('developer.new_product') }}" class="bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition">
+      New product
+    </a>
+  </div>
+
+  {% if products %}
+    <div class="space-y-2">
+      {% for p in products %}
+        <a href="{{ url_for('developer.product_detail', product_id=p.product_id) }}"
+           class="flex items-center justify-between gap-3 bg-surface-card border border-surface-border rounded-lg px-4 py-3 hover:border-brand transition">
+          <div class="min-w-0 flex-1">
+            <div class="text-white text-sm font-medium truncate">{{ p.name }}</div>
+            <div class="text-gray-500 text-xs font-mono truncate">{{ p.product_id }} · v{{ p.version }} · {{ p.product_type }}</div>
+          </div>
+          <span class="text-xs px-2 py-1 rounded-full flex-shrink-0 {{ 'bg-emerald-950 text-emerald-400' if p.is_active else 'bg-gray-800 text-gray-500' }}">
+            {{ 'active' if p.is_active else 'disabled' }}
+          </span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500">No products yet. <a href="{{ url_for('developer.new_product') }}" class="text-brand hover:text-brand-hover">Create your first one</a>.</p>
+  {% endif %}
+</div>
+{% endblock %}

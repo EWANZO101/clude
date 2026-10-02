@@ -1,0 +1,73 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_order_badges.html" import status_badge with context %}
+{% from "components/_progress_stepper.html" import progress_stepper with context %}
+{% block title %}{{ order.order_number }} — Admin{% endblock %}
+{% block page_title %}{{ order.order_number }}{% endblock %}
+{% block content %}
+{% set progress = order.progress_info %}
+<div class="card p-5 mb-6">
+  {{ progress_stepper(progress.steps, progress.current_index, progress.percent, stopped=progress.stopped, stopped_label=progress.stopped_label) }}
+</div>
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-6">
+    <div class="card">
+      <table class="table-base">
+        <thead><tr><th>Item</th><th>Qty</th><th>Monthly</th></tr></thead>
+        <tbody>
+          {% for item in order.items %}
+          <tr>
+            <td class="font-medium text-text-primary">{{ item.title_snapshot }}</td>
+            <td>{{ item.quantity }}</td>
+            <td class="text-text-secondary">£{{ item.line_total }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card p-5">
+      <h2 class="font-semibold text-text-primary mb-4">Timeline</h2>
+      <div class="space-y-3">
+        {% for entry in order.status_history %}
+        <div class="flex gap-3 text-sm">
+          <span class="text-text-muted whitespace-nowrap">{{ entry.created_at.strftime("%d %b %Y %H:%M") }}</span>
+          <span class="text-text-secondary">{{ entry.note or (entry.new_status|hwval ~ " status set") }}</span>
+        </div>
+        {% else %}
+        <p class="text-text-muted text-sm">No status updates yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="card p-5 space-y-4">
+    <dl class="space-y-2 text-sm">
+      <div class="flex justify-between"><dt class="text-text-muted">Customer</dt><dd class="text-text-primary">{{ order.user.email }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Seller</dt><dd class="text-text-primary">{{ order.seller.business_name if order.seller else "Platform" }}</dd></div>
+      <div class="flex justify-between border-t border-border pt-2"><dt class="text-text-primary font-medium">Total</dt><dd class="text-text-primary font-semibold">£{{ order.total }}</dd></div>
+    </dl>
+
+    <form method="POST" class="space-y-2">
+      {% include "components/_csrf.html" %}
+      <input type="hidden" name="action" value="set_status">
+      <label class="field-label">Order status</label>
+      <select name="status" class="input-field">
+        {% for status in statuses %}
+        <option value="{{ status.value }}" {{ "selected" if status == order.status }}>{{ status|hwval }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-secondary w-full">Update status</button>
+    </form>
+
+    <form method="POST" class="space-y-2">
+      {% include "components/_csrf.html" %}
+      <input type="hidden" name="action" value="set_payment_status">
+      <label class="field-label">Payment status</label>
+      <select name="payment_status" class="input-field">
+        {% for status in payment_statuses %}
+        <option value="{{ status.value }}" {{ "selected" if status == order.payment_status }}>{{ status|hwval }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-secondary w-full">Update payment status</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

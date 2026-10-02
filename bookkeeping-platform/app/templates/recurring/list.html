@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Recurring expenses{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Recurring expenses</h1>
+  <div class="flex gap-2">
+    <form method="POST" action="{{ url_for('recurring.run_due_now') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded text-sm">Run due now</button>
+    </form>
+    <a href="{{ url_for('recurring.new_recurring_expense') }}" class="btn btn-primary btn-sm">+ New recurring expense</a>
+  </div>
+</div>
+<p class="page-subtitle">A daily background job also runs these automatically — "Run due now" is just for testing/catching up.</p>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">Description</th><th class="p-3 text-right">Amount</th><th class="p-3">Frequency</th><th class="p-3">Next run</th><th class="p-3">Status</th><th class="p-3"></th></tr></thead>
+    <tbody>
+      {% for item in items %}
+      <tr class="row-border">
+        <td class="p-3">{{ item.description }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(item.amount) }}</td>
+        <td class="p-3 capitalize">{{ item.frequency }}</td>
+        <td class="p-3">{{ item.next_run_date }}</td>
+        <td class="p-3">{{ 'Active' if item.is_active else 'Paused' }}</td>
+        <td class="p-3 text-right">
+          <form method="POST" action="{{ url_for('recurring.toggle_recurring_expense', item_id=item.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="link text-sm">{{ 'Pause' if item.is_active else 'Activate' }}</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="empty-state">No recurring expenses yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

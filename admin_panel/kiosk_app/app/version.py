@@ -1,0 +1,2 @@
+VERSION = "1.0.19"
+RELEASED = "11 Sep 2026"

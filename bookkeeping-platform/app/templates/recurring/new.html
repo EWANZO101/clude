@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}New recurring expense{% endblock %}
+{% block content %}
+<h1 class="page-title mb-6">New recurring expense</h1>
+<form method="POST" class="card card-padded space-y-4 max-w-lg">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div><label class="label-field">Description</label><input name="description" required class="input-field w-full"></div>
+  <div><label class="label-field">Amount</label><input name="amount" required class="input-field w-full"></div>
+  <div><label class="label-field">Frequency</label>
+    <select name="frequency" class="input-field w-full">
+      {% for f in frequencies %}<option value="{{ f }}" {{ 'selected' if f == 'monthly' }}>{{ f|capitalize }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="grid grid-cols-2 gap-4">
+    <div><label class="label-field">Start date</label><input type="date" name="start_date" class="input-field w-full"></div>
+    <div><label class="label-field">End date (optional)</label><input type="date" name="end_date" class="input-field w-full"></div>
+  </div>
+  <div><label class="label-field">Supplier (optional)</label>
+    <select name="supplier_id" class="input-field w-full">
+      <option value="">—</option>
+      {% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><label class="label-field">Expense category</label>
+    <select name="expense_account_id" required class="input-field w-full">
+      {% for a in expense_accounts %}<option value="{{ a.id }}">{{ a.code }} {{ a.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><label class="label-field">Paid from</label>
+    <select name="paid_from_account_id" required class="input-field w-full">
+      {% for a in asset_accounts %}<option value="{{ a.id }}">{{ a.code }} {{ a.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <button class="btn btn-primary">Save recurring expense</button>
+</form>
+{% endblock %}

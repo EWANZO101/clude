@@ -1,0 +1,114 @@
+/* =========================================================
+   OpsLabSystems design tokens — v2 (clean modern SaaS palette,
+   replacing the original amber/rack-gear identity entirely).
+
+   Two independent axes, both persisted client-side and applied
+   before first paint (see the inline script in base.html head):
+
+     data-mode="dark" | "light"           → surface & text tokens
+     data-accent="indigo" | "teal" | "rose"  → accent hue
+
+   Component styles never hard-code a color — they read these
+   variables, so every theme combination is free.
+   ========================================================= */
+
+:root,
+[data-mode="dark"] {
+  --bg-void: #0b0d12;
+  --bg-page: #0b0d12;
+  --bg-panel: #12151c;
+  --bg-panel-raised: #191d27;
+  --bg-panel-hover: #212633;
+  --border-subtle: #232838;
+  --border-strong: #333a4d;
+
+  --text-primary: #eef0f5;
+  --text-secondary: #9aa1b4;
+  --text-muted: #626a82;
+
+  --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.4), 0 14px 28px -20px rgba(0, 0, 0, 0.6);
+  --shadow-pop: 0 24px 50px -22px rgba(0, 0, 0, 0.7);
+  --scrim: rgba(5, 6, 10, 0.6);
+
+  color-scheme: dark;
+}
+
+[data-mode="light"] {
+  --bg-void: #f4f5f8;
+  --bg-page: #f4f5f8;
+  --bg-panel: #ffffff;
+  --bg-panel-raised: #f8f9fc;
+  --bg-panel-hover: #eef0f5;
+  --border-subtle: #e4e6ee;
+  --border-strong: #cdd1e0;
+
+  --text-primary: #14161f;
+  --text-secondary: #565d72;
+  --text-muted: #8a90a3;
+
+  --shadow-card: 0 1px 0 rgba(20, 22, 31, 0.03), 0 14px 28px -20px rgba(20, 22, 31, 0.16);
+  --shadow-pop: 0 24px 50px -22px rgba(20, 22, 31, 0.24);
+  --scrim: rgba(20, 22, 31, 0.35);
+
+  color-scheme: light;
+}
+
+/* ---- Accent variants (default: indigo, the OpsLabSystems brand color) ---- */
+:root,
+[data-accent="indigo"] {
+  --accent: #6672ff;
+  --accent-bright: #98a1ff;
+  --accent-deep: #4147d1;
+  --accent-dim: rgba(102, 114, 255, 0.14);
+  --accent-ink: #ffffff;
+  --accent-glow: #6672ff;
+}
+
+[data-accent="teal"] {
+  --accent: #2dd4bf;
+  --accent-bright: #7fe9db;
+  --accent-deep: #14967f;
+  --accent-dim: rgba(45, 212, 191, 0.14);
+  --accent-ink: #04211c;
+  --accent-glow: #2dd4bf;
+}
+
+[data-accent="rose"] {
+  --accent: #fb64a3;
+  --accent-bright: #ff9dc4;
+  --accent-deep: #c9317a;
+  --accent-dim: rgba(251, 100, 163, 0.14);
+  --accent-ink: #3d0f24;
+  --accent-glow: #fb64a3;
+}
+
+:root {
+  --data: #4fb8ff;
+  --data-dim: rgba(79, 184, 255, 0.14);
+
+  --ok: #34d399;
+  --ok-dim: rgba(52, 211, 153, 0.14);
+  --warn: #f5b842;
+  --warn-dim: rgba(245, 184, 66, 0.14);
+  --danger: #f2495c;
+  --danger-dim: rgba(242, 73, 92, 0.14);
+
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Space Grotesk", "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", "Courier New", monospace;
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  --sidebar-w: 252px;
+  --sidebar-w-rail: 72px;
+  --topbar-h: 60px;
+}
+
+[data-mode="light"] .danger-dim,
+[data-mode="light"] [class*="badge-danger"] {
+  --danger-dim: rgba(242, 73, 92, 0.1);
+}

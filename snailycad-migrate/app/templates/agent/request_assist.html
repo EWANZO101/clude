@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Get help from an admin — {{ app_name }}{% endblock %}
+{% block content %}
+<h1 class="text-lg font-semibold text-gray-100 mb-2">Let an admin handle this for you</h1>
+<p class="text-sm text-gray-500 mb-6 max-w-2xl">
+  Not sure about install paths or database details? Grant an admin 12 hours of access —
+  you just download and run the agent like normal, and an admin fills in the technical
+  details remotely. Nothing happens until they do; the access grant expires automatically
+  after 12 hours either way.
+</p>
+
+<form method="POST" novalidate class="max-w-2xl bg-panel border border-border rounded-lg p-6 space-y-5">
+  {{ form.hidden_tag() }}
+  {% include "_form_errors.html" %}
+
+  <div>
+    {{ form.kind.label(class="block text-sm text-gray-400 mb-1") }}
+    {{ form.kind(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200", id="assist_kind") }}
+  </div>
+
+  <div id="source_export_field">
+    {{ form.source_export_id.label(class="block text-sm text-gray-400 mb-1") }}
+    {{ form.source_export_id(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+  </div>
+
+  <div>
+    {{ form.note.label(class="block text-sm text-gray-400 mb-1") }}
+    {{ form.note(rows=3, class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+    <p class="text-xs text-gray-600 mt-1">{{ form.note.description }}</p>
+  </div>
+
+  {{ form.submit(class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md py-2") }}
+</form>
+
+<script>
+  const kindSelect = document.getElementById('assist_kind');
+  const sourceField = document.getElementById('source_export_field');
+  function toggleSource() {
+    sourceField.classList.toggle('hidden', kindSelect.value !== 'import');
+  }
+  kindSelect.addEventListener('change', toggleSource);
+  toggleSource();
+</script>
+{% endblock %}

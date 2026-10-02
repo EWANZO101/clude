@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ role_name }} — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.list_roles') }}">← Roles</a></p>
+<h1>{{ role_name }}{% if is_baseline %}<span class="muted" style="font-weight:400; font-size:16px;"> (built-in)</span>{% endif %}</h1>
+
+<div class="panel" style="max-width:520px;">
+  <h2 style="margin-top:0; font-size:15px;">Login</h2>
+  <form method="post" action="{{ url_for('admin.toggle_role_login', role_name=role_name) }}">
+    <label style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+      <input type="checkbox" name="login_enabled" {{ 'checked' if login_enabled }} style="width:auto;">
+      Logins enabled for this role
+    </label>
+    <p class="muted" style="font-size:12.5px;">Turning this off blocks every account with this role from logging in — badge, username, and password alike — without touching individual accounts. Useful during a stock audit.</p>
+    <button type="submit" style="margin-top:10px;">Save</button>
+  </form>
+</div>
+
+<div class="panel" style="max-width:520px;">
+  <h2 style="margin-top:0; font-size:15px;">Sidebar visibility</h2>
+  <p class="muted" style="font-size:12.5px;">Unchecking an item hides its link AND blocks the page itself for this role — this isn't just cosmetic.</p>
+  <form method="post" action="{{ url_for('admin.update_sidebar', role_name=role_name) }}">
+    {% set ns = namespace(section='') %}
+    {% for key, label, section in sidebar_items %}
+      {% if section != ns.section %}
+        {% set ns.section = section %}
+        <div class="muted" style="font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin-top:14px;">{{ section }}</div>
+      {% endif %}
+      <label style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+        <input type="checkbox" name="item_{{ key }}" {{ 'checked' if sidebar_state[key] }} style="width:auto;">
+        {{ label }}
+      </label>
+    {% endfor %}
+    <button type="submit" style="margin-top:14px;">Save Sidebar</button>
+  </form>
+</div>
+{% endblock %}

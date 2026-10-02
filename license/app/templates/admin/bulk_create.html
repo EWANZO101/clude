@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Bulk Create Licenses - License Manager{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold">Bulk Create Licenses</h1>
+    <p class="text-gray-500">Generate multiple license keys at once</p>
+</div>
+
+<form method="POST" class="max-w-xl space-y-6">
+    <div class="bg-dark-800 border border-dark-600 rounded-xl p-6 space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Number of Licenses *</label>
+            <input type="number" name="count" value="10" min="1" max="100" required
+                class="w-full px-4 py-2.5 bg-dark-700 border border-dark-500 rounded-lg focus:outline-none focus:border-emerald-500">
+            <p class="text-xs text-gray-500 mt-1">Maximum 100 at once</p>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Product *</label>
+            <select name="product_id" required
+                class="w-full px-4 py-2.5 bg-dark-700 border border-dark-500 rounded-lg focus:outline-none focus:border-emerald-500">
+                {% for product in products %}
+                <option value="{{ product.id }}">{{ product.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Tier *</label>
+            <select name="tier_id" required
+                class="w-full px-4 py-2.5 bg-dark-700 border border-dark-500 rounded-lg focus:outline-none focus:border-emerald-500">
+                {% for tier in tiers %}
+                <option value="{{ tier.id }}">{{ tier.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Duration</label>
+            <select name="duration"
+                class="w-full px-4 py-2.5 bg-dark-700 border border-dark-500 rounded-lg focus:outline-none focus:border-emerald-500">
+                <option value="lifetime">Lifetime</option>
+                <option value="monthly">30 Days</option>
+                <option value="yearly">1 Year</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="flex gap-4">
+        <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg">
+            Generate Licenses
+        </button>
+        <a href="{{ url_for('admin.licenses') }}" class="px-6 py-2.5 bg-dark-700 hover:bg-dark-600 rounded-lg border border-dark-500">
+            Cancel
+        </a>
+    </div>
+</form>
+{% endblock %}

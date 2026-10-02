@@ -1,0 +1,46 @@
+{% extends "layouts/seller_dashboard.html" %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}Components — {{ server.title }}{% endblock %}
+{% block page_title %}{{ server.title }} — Components{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Type</th><th>Item</th><th>Qty</th><th></th></tr></thead>
+      <tbody>
+        {% for component in server.components %}
+        {% set hw = component.resolve_hardware() %}
+        <tr>
+          <td class="text-text-secondary">{{ component.component_type.value }}</td>
+          <td class="font-medium text-text-primary">{{ component.label_override or (hw.model_name if hw else "Unknown") }}</td>
+          <td>{{ component.quantity }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('seller.server_component_delete', server_id=server.id, component_id=component.id) }}">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-status-danger hover:opacity-80 text-sm">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-text-muted py-8">No components added yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Add component</h2>
+    <form method="GET" class="mb-4">
+      {{ field(form.component_type) }}
+      <button type="submit" class="btn-secondary w-full">Choose type</button>
+    </form>
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      <input type="hidden" name="component_type" value="{{ selected_type }}">
+      {{ field(form.hardware_id) }}
+      {{ field(form.quantity) }}
+      {{ field(form.label_override) }}
+      <button type="submit" class="btn-primary w-full">Add component</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

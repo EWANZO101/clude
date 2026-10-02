@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}API logs — Admin{% endblock %}
+{% block content %}
+<h1 class="font-bold text-2xl mb-6">API logs</h1>
+<div class="card divide-y divide-asphalt-border">
+  {% for log in logs %}
+  <div class="p-4 text-sm">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <span class="font-mono text-xs uppercase {{ 'text-danger' if log.status == 'error' else 'text-okay' }}">{{ log.source }} · {{ log.status }}</span>
+      <span class="text-xs text-ink-faint font-mono">{{ log.created_at.strftime('%d %b %Y %H:%M') }}</span>
+    </div>
+    <p class="text-ink-muted mt-1 font-mono text-xs">{{ log.registration or '' }}</p>
+    <p class="text-ink-muted mt-1">{{ log.message }}</p>
+  </div>
+  {% else %}
+  <p class="p-4 text-sm text-ink-muted">No log entries yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}ISP Support Request · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto max-w-2xl px-4 py-12 sm:py-16">
+  <div class="mb-8">
+    <h1 class="font-display text-2xl font-semibold text-ink">ISP Support &amp; Customer Authorisation</h1>
+    <p class="mt-2 text-sm text-ink-muted">
+      If you're having an internet service problem I can't resolve myself, I may be able to
+      contact your Internet Service Provider (ISP) on your behalf. To do that I need enough
+      information to identify your account and for your ISP to discuss it with me.
+    </p>
+  </div>
+
+  {% include "partials/flash.html" %}
+
+  <div class="card p-5 sm:p-6 mb-6 text-sm text-ink-muted leading-relaxed space-y-2">
+    <p class="font-medium text-ink">Please only fill in what your ISP has actually asked for.</p>
+    <p>
+      Full name, your ISP's name, and a description of the problem are the only required fields
+      below. Everything else — account numbers, date of birth, security questions, billing
+      details — should only be filled in if your specific ISP requires it for this request.
+      If you're not sure what's needed, leave it blank and contact your ISP first.
+    </p>
+    <p>
+      <strong class="text-ink">Never enter your ISP password, online banking details, payment-card
+      security information, or one-time verification codes anywhere on this form.</strong>
+      I will never ask you for these. If your ISP needs to send you a verification code, you'll
+      need to be available to complete that step yourself directly with them.
+    </p>
+  </div>
+
+  <form method="POST" action="{{ url_for('isp_support.request_form') }}" class="card p-5 sm:p-6 space-y-6">
+    {{ form.hidden_tag() }}
+
+    <div class="space-y-4">
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Your details</p>
+
+      <div>
+        <label class="field-label" for="{{ form.full_name.id }}">{{ form.full_name.label.text }}</label>
+        {{ form.full_name(class_="field-input") }}
+        {% for e in form.full_name.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="field-label" for="{{ form.email.id }}">{{ form.email.label.text }}</label>
+          {{ form.email(class_="field-input") }}
+          {% for e in form.email.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.phone.id }}">{{ form.phone.label.text }}</label>
+          {{ form.phone(class_="field-input") }}
+        </div>
+      </div>
+
+      <div>
+        <label class="field-label" for="{{ form.isp_name.id }}">{{ form.isp_name.label.text }}</label>
+        {{ form.isp_name(class_="field-input") }}
+        {% for e in form.isp_name.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div>
+        <label class="field-label" for="{{ form.problem_description.id }}">{{ form.problem_description.label.text }}</label>
+        {{ form.problem_description(class_="field-input min-h-[120px]", rows=4) }}
+        {% for e in form.problem_description.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+      </div>
+    </div>
+
+    <details class="border-t border-border pt-4">
+      <summary class="cursor-pointer text-sm font-medium text-accent hover:underline w-fit">
+        My ISP has asked for account verification details
+      </summary>
+      <div class="mt-4 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="field-label" for="{{ form.account_number.id }}">{{ form.account_number.label.text }}</label>
+            {{ form.account_number(class_="field-input") }}
+          </div>
+          <div>
+            <label class="field-label" for="{{ form.customer_number.id }}">{{ form.customer_number.label.text }}</label>
+            {{ form.customer_number(class_="field-input") }}
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label" for="{{ form.full_address.id }}">{{ form.full_address.label.text }}</label>
+          {{ form.full_address(class_="field-input") }}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.service_address.id }}">{{ form.service_address.label.text }}</label>
+          {{ form.service_address(class_="field-input") }}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="field-label" for="{{ form.date_of_birth.id }}">{{ form.date_of_birth.label.text }}</label>
+            {{ form.date_of_birth(class_="field-input") }}
+          </div>
+          <div>
+            <label class="field-label" for="{{ form.last_bill_date.id }}">{{ form.last_bill_date.label.text }}</label>
+            {{ form.last_bill_date(class_="field-input") }}
+          </div>
+          <div>
+            <label class="field-label" for="{{ form.last_bill_amount.id }}">{{ form.last_bill_amount.label.text }}</label>
+            {{ form.last_bill_amount(class_="field-input") }}
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="border-t border-border pt-4">
+      <summary class="cursor-pointer text-sm font-medium text-accent hover:underline w-fit">
+        My ISP has asked for a security question
+      </summary>
+      <div class="mt-4 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="field-label" for="{{ form.mothers_maiden_name.id }}">{{ form.mothers_maiden_name.label.text }}</label>
+            {{ form.mothers_maiden_name(class_="field-input") }}
+          </div>
+          <div>
+            <label class="field-label" for="{{ form.childhood_nickname.id }}">{{ form.childhood_nickname.label.text }}</label>
+            {{ form.childhood_nickname(class_="field-input") }}
+          </div>
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.security_question.id }}">{{ form.security_question.label.text }}</label>
+          {{ form.security_question(class_="field-input") }}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.security_answer.id }}">{{ form.security_answer.label.text }}</label>
+          {{ form.security_answer(class_="field-input") }}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.other_security_info.id }}">{{ form.other_security_info.label.text }}</label>
+          {{ form.other_security_info(class_="field-input", rows=3) }}
+        </div>
+      </div>
+    </details>
+
+    <div class="border-t border-border pt-4 space-y-3">
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Authorisation</p>
+
+      {% for field in [form.consent_authorised, form.consent_accurate, form.consent_purpose, form.consent_additional_verification, form.consent_no_password_request] %}
+      <label class="flex items-start gap-3 text-sm text-ink-muted">
+        {{ field(class_="mt-0.5 h-4 w-4 rounded border-border bg-surface-raised text-accent focus:ring-accent focus:ring-offset-base shrink-0") }}
+        <span>{{ field.label.text }}</span>
+      </label>
+      {% for e in field.errors %}<p class="field-error ml-7">{{ e }}</p>{% endfor %}
+      {% endfor %}
+    </div>
+
+    <button type="submit" class="btn-primary w-full">Submit request</button>
+  </form>
+
+  <p class="mt-6 text-center text-xs text-ink-faint">
+    Read the full <a href="{{ url_for('isp_support.thank_you') }}#privacy" class="underline hover:text-ink-muted">privacy notice</a>
+    for what's collected, why, and how to request deletion.
+  </p>
+</div>
+{% endblock %}

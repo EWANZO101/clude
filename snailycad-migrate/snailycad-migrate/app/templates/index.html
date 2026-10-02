@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ app_name }} — Migrate SnailyCAD instances{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+  <h1 class="text-2xl font-semibold text-gray-100 mb-3">Migrate your SnailyCAD instance in minutes</h1>
+  <p class="text-gray-400 mb-6">
+    Export a complete, verified package from any Windows or Linux SnailyCAD install,
+    then restore it anywhere with a single import.
+  </p>
+  <div class="flex gap-3">
+    <a href="{{ url_for('auth.register') }}"
+       class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-500">Create an account</a>
+    <a href="{{ url_for('auth.login') }}"
+       class="px-4 py-2 rounded-md bg-panel border border-border text-sm text-gray-300 hover:text-gray-100">Log in</a>
+  </div>
+</div>
+
+<div class="grid sm:grid-cols-3 gap-4 mt-12">
+  <div class="bg-panel border border-border rounded-lg p-4">
+    <h3 class="text-sm font-semibold text-gray-100 mb-1">Cross-platform</h3>
+    <p class="text-xs text-gray-500">Windows ↔ Linux migrations handled automatically.</p>
+  </div>
+  <div class="bg-panel border border-border rounded-lg p-4">
+    <h3 class="text-sm font-semibold text-gray-100 mb-1">Verified packages</h3>
+    <p class="text-xs text-gray-500">Integrity hashes and manifests on every export.</p>
+  </div>
+  <div class="bg-panel border border-border rounded-lg p-4">
+    <h3 class="text-sm font-semibold text-gray-100 mb-1">Temporary sessions</h3>
+    <p class="text-xs text-gray-500">One-time migrations auto-expire after 12 hours.</p>
+  </div>
+</div>
+{% endblock %}

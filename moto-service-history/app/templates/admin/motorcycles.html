@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Motorcycles — Admin{% endblock %}
+{% block content %}
+<h1 class="font-bold text-2xl mb-6">All motorcycles</h1>
+<div class="card divide-y divide-asphalt-border">
+  {% for m in motorcycles %}
+  <div class="flex items-center justify-between gap-3 p-4 flex-wrap">
+    <div>
+      <p class="text-sm text-ink font-medium">{{ m.display_name }}</p>
+      <p class="text-xs text-ink-faint font-mono mt-1">{{ m.registration or '—' }} · owner: {{ m.owner.username }}</p>
+    </div>
+    <div class="flex items-center gap-3 text-xs">
+      {% if m.share_enabled %}
+      <a href="{{ url_for('public.profile', token=m.share_token) }}" target="_blank" class="text-odometer hover:underline">Public link</a>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <p class="p-4 text-sm text-ink-muted">No motorcycles yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

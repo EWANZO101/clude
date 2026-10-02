@@ -1,0 +1,37 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Choose your bank{% endblock %}
+{% block content %}
+<div class="max-w-lg space-y-5">
+  {{ ui.page_header("Choose your bank", "Every UK bank below supports secure Open Banking sign-in — you log in directly with your own bank, nothing is shared with us but read-only account access.") }}
+
+  <form method="GET" class="relative">
+    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">{{ ui.icon('search', 'w-3.5 h-3.5') }}</span>
+    <input name="q" value="{{ search }}" placeholder="Search banks…" autofocus
+           class="w-full bg-surface border border-surface-border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+  </form>
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border max-h-[28rem] overflow-y-auto">
+    {% for inst in institutions %}
+      <a href="{{ url_for('bank.gocardless_connect', company_id=company.id, institution_id=inst.id, institution_name=inst.name) }}"
+         class="p-3 flex items-center gap-3 text-sm hover:bg-surface-hover transition-colors">
+        {% if inst.logo %}
+          <img src="{{ inst.logo }}" alt="" class="w-8 h-8 rounded-md bg-white object-contain shrink-0">
+        {% else %}
+          <span class="w-8 h-8 rounded-md bg-surface flex items-center justify-center text-slate-500 shrink-0">{{ ui.icon('landmark', 'w-4 h-4') }}</span>
+        {% endif %}
+        <span class="text-slate-200">{{ inst.name }}</span>
+      </a>
+    {% else %}
+      {% call ui.empty_state("No banks found", "Try a different search.", "landmark") %}{% endcall %}
+    {% endfor %}
+  </div>
+
+  <p class="text-xs text-slate-500 text-center">
+    Banking with Monzo or Starling? Connect directly instead — one tap in the app, no bank login page:
+    <a href="{{ url_for('bank.connect', company_id=company.id, provider_key='monzo') }}" class="text-accent hover:text-accent-hover">Monzo</a>
+    ·
+    <a href="{{ url_for('bank.connect', company_id=company.id, provider_key='starling') }}" class="text-accent hover:text-accent-hover">Starling</a>
+  </p>
+</div>
+{% endblock %}

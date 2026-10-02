@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Setup{% endblock %}
+{% block content %}
+<div class="center-panel">
+  <div class="brand"><span class="mark">SH</span> ServiceHub</div>
+  <div class="card">
+    <p class="hint" style="margin-bottom:16px;">No admin account exists yet. Create the first one to continue.</p>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Username</label>
+      <input type="text" name="username" autocomplete="username" required>
+
+      <label>Password</label>
+      <input type="password" name="password" autocomplete="new-password" required>
+
+      <label>Confirm password</label>
+      <input type="password" name="confirm" autocomplete="new-password" required>
+
+      <button class="btn btn-primary" style="margin-top:20px; width:100%;" type="submit">Create admin account</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

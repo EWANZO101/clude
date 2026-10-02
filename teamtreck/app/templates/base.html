@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" class="{{ 'dark' if current_user.is_authenticated and current_user.theme_pref == 'dark' else '' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TeamTreck{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe',
+                            300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1',
+                            600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-150">
+    {% if current_user.is_authenticated %}
+    <nav class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-6">
+                <a href="{{ url_for('main.dashboard') }}" class="font-bold text-lg text-brand-600 dark:text-brand-400">TeamTreck</a>
+                <a href="{{ url_for('main.dashboard') }}" class="text-sm text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400">Dashboard</a>
+                <a href="{{ url_for('time.index') }}" class="text-sm text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400">Time Tracking</a>
+                <a href="{{ url_for('timesheets.index') }}" class="text-sm text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400">Timesheets</a>
+                <a href="{{ url_for('monitoring.index') }}" class="text-sm text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400">Monitoring</a>
+                <a href="{{ url_for('url_tracking.index') }}" class="text-sm text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400">Websites</a>
+                <a href="{{ url_for('projects.index') }}" class="text-sm text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400">Projects</a>
+                {% if current_user.is_manager %}
+                <a href="{{ url_for('team.index') }}" class="text-sm text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400">Team</a>
+                <a href="{{ url_for('billing.index') }}" class="text-sm text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400">Billing</a>
+                <a href="{{ url_for('analytics.index') }}" class="text-sm text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400">Analytics</a>
+                <a href="{{ url_for('reports.index') }}" class="text-sm text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400">Reports</a>
+                <a href="{{ url_for('planning.index') }}" class="text-sm text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400">Planning</a>
+                {% endif %}
+            </div>
+            <div class="flex items-center gap-4">
+                <button id="theme-toggle" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700" title="Toggle theme">
+                    <svg id="icon-sun" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                </button>
+                <span class="text-sm text-gray-500 dark:text-gray-400">{{ current_user.name }}</span>
+                <a href="{{ url_for('auth.logout') }}" class="text-sm text-red-500 hover:text-red-600">Logout</a>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-lg text-sm {{ 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' if category == 'error' else 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

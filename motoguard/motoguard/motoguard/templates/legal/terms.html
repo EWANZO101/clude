@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Terms &amp; Conditions — MotoGuard{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto legal">
+  <p class="eyebrow mb-1">Legal</p>
+  <h1 class="font-display font-800 text-3xl text-chalk mb-1">Terms &amp; Conditions</h1>
+  <p class="text-mute text-sm mb-6">Last updated: 17 June 2026</p>
+
+  <div class="space-y-5 text-sm leading-relaxed text-chalk/90">
+    <p>These terms govern your use of MotoGuard, operated by OpsLab Systems ("we", "us"). By creating an account or using the service you agree to them. <strong>This is a template and should be reviewed by a qualified adviser before you rely on it.</strong></p>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">1. Eligibility &amp; accounts</h2>
+      <p>You must be at least 16 to use MotoGuard. You are responsible for keeping your login details secure and for activity under your account. Provide accurate information and keep it up to date.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">2. What MotoGuard is — and isn't</h2>
+      <p>MotoGuard is a community tool to register bikes, raise the alarm if one is stolen, and share sightings. It is <strong>not</strong> a security service, insurer, or substitute for the police. We do not guarantee that a bike will be recovered. Always report theft to the police and obtain a crime reference number.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">3. Acceptable use</h2>
+      <ul class="list-disc ml-5 space-y-1">
+        <li>Only register bikes you own or are authorised to manage.</li>
+        <li>Do not file false or malicious theft reports or sightings.</li>
+        <li>Do not harass, threaten, defame or impersonate others.</li>
+        <li>Do not post unlawful, infringing or misleading content.</li>
+        <li>Do not attempt to disrupt, scrape, or gain unauthorised access to the service.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">4. Sightings &amp; safety</h2>
+      <p>If you see a bike reported stolen, <strong>do not approach it or attempt to recover it yourself</strong>. Note the location and report it to the police and via MotoGuard. You act on your own responsibility.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">5. Your content</h2>
+      <p>You keep ownership of content you submit (details, photos, posts). You grant us a licence to host and display it as needed to operate the service — for example, showing a stolen listing to other users. You are responsible for content you submit and confirm you have the right to share it.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">6. Vehicle &amp; third-party data</h2>
+      <p>MOT and tax information is retrieved from DVSA/DVLA services and is provided "as is". We are not responsible for the accuracy of third-party data or services.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">7. Availability</h2>
+      <p>We aim to keep MotoGuard available but provide it "as is" and "as available", without warranties. We may change, suspend or withdraw features at any time.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">8. Liability</h2>
+      <p>To the fullest extent permitted by law, we are not liable for any loss arising from use of (or inability to use) the service, including loss, theft or damage to any vehicle. Nothing in these terms excludes liability that cannot be excluded by law.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">9. Suspension &amp; termination</h2>
+      <p>We may suspend or remove accounts that breach these terms or the law. You may delete your account at any time from your profile.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">10. Governing law</h2>
+      <p>These terms are governed by the law of Scotland, and disputes are subject to the courts of Scotland.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">11. Changes</h2>
+      <p>We may update these terms; continued use after changes means you accept the updated terms.</p>
+    </section>
+
+    <p class="text-mute pt-2">Questions? Email <strong>support@opslabsystems.cloud</strong>. See also our <a href="{{ url_for('main.privacy') }}" class="text-link">Privacy Policy</a>.</p>
+  </div>
+</div>
+{% endblock %}

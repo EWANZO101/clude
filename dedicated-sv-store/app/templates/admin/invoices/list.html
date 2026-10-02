@@ -1,0 +1,28 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_invoice_badge.html" import invoice_status_badge with context %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Invoices — Admin{% endblock %}
+{% block page_title %}Invoices{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Invoice #</th><th>Customer</th><th>Total</th><th>Balance due</th><th>Status</th><th>Issued</th><th></th></tr></thead>
+    <tbody>
+      {% for invoice in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ invoice.invoice_number }}</td>
+        <td class="text-text-secondary">{{ invoice.user.email }}</td>
+        <td class="text-text-primary">£{{ invoice.total }}</td>
+        <td class="text-text-secondary">£{{ invoice.balance_due }}</td>
+        <td>{{ invoice_status_badge(invoice.status) }}</td>
+        <td class="text-text-muted">{{ invoice.created_at.strftime("%d %b %Y") }}</td>
+        <td><a href="{{ url_for('admin.invoice_detail', invoice_id=invoice.id) }}" class="text-brand-400 hover:text-brand-300">View</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center text-text-muted py-8">No invoices yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.invoices") }}
+</div>
+{% endblock %}

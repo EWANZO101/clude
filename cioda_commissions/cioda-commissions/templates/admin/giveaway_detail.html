@@ -1,0 +1,207 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}{{ g.prize }} — Giveaways{% endblock %}
+{% block admin_content %}
+
+<div style="margin-bottom:1.25rem;">
+  <a href="/admin/giveaways" style="font-size:0.82rem;color:var(--text-muted);">← All giveaways</a>
+  <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-top:0.35rem;">
+    <h1 class="font-display" style="font-size:1.6rem;margin:0;">🎁 {{ g.prize }}</h1>
+    {% include "admin/_giveaway_status.html" %}
+  </div>
+  <div style="font-size:0.85rem;color:var(--text-muted);margin-top:0.3rem;">
+    <span class="font-mono">{{ g.giveaway_id }}</span> · {{ prize_types.get(g.prize_type, '') }} ·
+    {{ win_modes.get(g.win_mode, '') }} · ping: {{ ping_modes.get(g.ping_mode or '', 'none') }} ·
+    created by {{ g.created_by or 'unknown' }} ·
+    <a href="{{ public_url }}" target="_blank" style="color:var(--accent);">public page ↗</a>
+  </div>
+</div>
+
+{% if prize_details %}
+<div class="card" style="margin-bottom:1rem;padding:0.8rem 1rem;font-size:0.9rem;color:var(--text-secondary);">
+  🎁 {{ prize_details|replace('**', '') }}{% if g.code_valid_days %} · codes valid {{ g.code_valid_days }} days{% else %} · codes never expire{% endif %}
+</div>
+{% endif %}
+
+<!-- ── Summary + actions ── -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin-bottom:1.25rem;">
+  <div class="card" style="padding:0.9rem 1rem;">
+    <div class="form-label" style="margin:0;">Entries</div>
+    <div class="font-display" style="font-size:1.5rem;">{{ entries|length }}</div>
+  </div>
+  <div class="card" style="padding:0.9rem 1rem;">
+    <div class="form-label" style="margin:0;">Winners</div>
+    <div class="font-display" style="font-size:1.5rem;">{{ winners|length if g.status == 'ended' else g.winners_count }}</div>
+  </div>
+  <div class="card" style="padding:0.9rem 1rem;">
+    <div class="form-label" style="margin:0;">{{ 'Ends' if g.status == 'active' else 'Ended' }}</div>
+    <div style="font-size:0.95rem;color:var(--text-primary);">
+      <time data-utc="{{ (g.ends_at if g.status == 'active' else (g.ended_at or g.ends_at)).isoformat() }}Z">
+        {{ g.ends_at.strftime('%b %d, %H:%M') }} UTC</time>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:1.25rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+  {% if g.status == 'active' %}
+    <form method="POST" action="/admin/giveaways/{{ g.giveaway_id }}/end"
+          data-confirm="End now and draw winners?" data-confirm-msg="Entries close immediately and {{ g.winners_count }} winner(s) are picked and pinged in Discord." data-confirm-yes="End & draw">
+      <button type="submit" class="btn btn-gold btn-sm">🏁 End now &amp; draw</button>
+    </form>
+    <form method="POST" action="/admin/giveaways/{{ g.giveaway_id }}/cancel"
+          data-confirm="Cancel this giveaway?" data-confirm-msg="No winners will be drawn. The Discord post is marked cancelled." data-confirm-yes="Cancel giveaway">
+      <button type="submit" class="btn btn-ghost btn-sm">🚫 Cancel</button>
+    </form>
+  {% elif g.status == 'ended' and winners %}
+    <form method="POST" action="/admin/giveaways/{{ g.giveaway_id }}/reroll"
+          data-confirm="Reroll all winners?" data-confirm-msg="Current winners are replaced with new picks and they won't be picked again." data-confirm-yes="Reroll all">
+      <button type="submit" class="btn btn-primary btn-sm">🔁 Reroll all winners</button>
+    </form>
+  {% endif %}
+  <form method="POST" action="/admin/giveaways/{{ g.giveaway_id }}/delete" style="margin-left:auto;"
+        data-confirm="Delete this giveaway?" data-confirm-msg="It and all its entries are removed permanently." data-confirm-yes="Delete">
+    <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:var(--danger);">🗑 Delete</button>
+  </form>
+</div>
+
+{% if g.status == 'ended' or winners %}
+<!-- ── Winners ── -->
+<div class="card" style="margin-bottom:1.25rem;padding:0;">
+  <div style="padding:0.85rem 1rem;border-bottom:1px solid var(--border);">
+    <div class="font-display" style="font-size:0.78rem;color:var(--gold);letter-spacing:.06em;">🏆 WINNERS</div>
+  </div>
+  {% for w in winners %}
+  <div style="padding:0.7rem 1rem;display:flex;align-items:center;gap:0.75rem;border-top:{{ '1px solid var(--border)' if not loop.first else 'none' }};">
+    <div style="flex:1;">
+      <div style="color:var(--text-primary);font-weight:600;">{{ w.display }}</div>
+      <div class="font-mono" style="font-size:0.72rem;color:var(--text-muted);">{{ w.email if w.is_email else w.discord_user_id }}</div>
+    </div>
+    {% if w.prize_code %}
+    <code style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--accent);background:var(--accent-glow);
+                 padding:0.2rem 0.55rem;border-radius:5px;">{{ w.prize_code }}</code>
+    {% endif %}
+    {% if g.status == 'ended' %}
+    <form method="POST" action="/admin/giveaways/{{ g.giveaway_id }}/reroll"
+          data-confirm="Reroll {{ w.display }}?" data-confirm-msg="They're replaced by one new random winner." data-confirm-yes="Reroll">
+      <input type="hidden" name="entry_id" value="{{ w.id }}">
+      <button type="submit" class="btn btn-ghost btn-sm">🔁 Reroll</button>
+    </form>
+    {% endif %}
+  </div>
+  {% else %}
+  <div style="padding:1rem;color:var(--text-muted);font-style:italic;">No winners — nobody was left to pick.</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if g.status == 'active' %}
+<!-- ── Edit ── -->
+<div class="card" style="margin-bottom:1.25rem;padding:0;">
+  <div style="padding:0.85rem 1rem;border-bottom:1px solid var(--border);">
+    <div class="font-display" style="font-size:0.78rem;color:var(--accent);letter-spacing:.06em;">✏ EDIT</div>
+  </div>
+  <form method="POST" action="/admin/giveaways/{{ g.giveaway_id }}/edit" style="padding:1rem;" onsubmit="fillUtc(this)">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.75rem;margin-bottom:0.85rem;">
+      <div style="grid-column:1/-1;">
+        <label class="form-label">Prize</label>
+        <input type="text" name="prize" class="input" value="{{ g.prize }}" maxlength="200" required>
+      </div>
+      <div style="grid-column:1/-1;">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="input" rows="3" maxlength="2000">{{ g.description or '' }}</textarea>
+      </div>
+      <div>
+        <label class="form-label">Extend / change: duration from now</label>
+        <input type="text" name="duration" class="input" placeholder="leave blank to keep">
+      </div>
+      <div>
+        <label class="form-label">…or new end time</label>
+        <input type="datetime-local" class="input" data-utc-target="ends_at_utc">
+        <input type="hidden" name="ends_at_utc">
+      </div>
+      <div>
+        <label class="form-label">Winners</label>
+        <input type="number" name="winners_count" class="input" min="1" max="50" value="{{ g.winners_count }}">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Save changes</button>
+  </form>
+</div>
+{% endif %}
+
+<!-- ── Discord post ── -->
+<div class="card" style="margin-bottom:1.25rem;padding:0;">
+  <div style="padding:0.85rem 1rem;border-bottom:1px solid var(--border);">
+    <div class="font-display" style="font-size:0.78rem;color:#818cf8;letter-spacing:.06em;">💬 DISCORD POST</div>
+  </div>
+  <div style="padding:1rem;">
+    <p style="margin:0 0 0.75rem;font-size:0.88rem;color:var(--text-secondary);">
+      {% if g.discord_message_id %}
+        Posted in channel <span class="font-mono">{{ g.discord_channel_id }}</span> (message <span class="font-mono">{{ g.discord_message_id }}</span>).
+        The entry count refreshes automatically every few seconds.
+      {% else %}
+        Not posted yet — the last attempt to post in <span class="font-mono">{{ g.discord_channel_id }}</span> failed.
+      {% endif %}
+    </p>
+    <form method="POST" action="/admin/giveaways/{{ g.giveaway_id }}/repost" style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <button type="submit" class="btn btn-ghost btn-sm">{{ '↻ Refresh post' if g.discord_message_id else '📣 Post to #giveaways' }}</button>
+      {% if g.discord_message_id %}
+      <button type="submit" name="fresh" value="1" class="btn btn-ghost btn-sm" title="Use if the original message was deleted">➕ Post a new copy</button>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- ── Entrants ── -->
+<div class="card" style="padding:0;overflow:hidden;">
+  <div style="padding:0.85rem 1rem;border-bottom:1px solid var(--border);">
+    <div class="font-display" style="font-size:0.78rem;color:var(--accent);letter-spacing:.06em;">👥 ENTRANTS ({{ entries|length }})</div>
+  </div>
+  {% if entries %}
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;">
+      <tbody>
+        {% for e in entries %}
+        <tr style="border-top:{{ '1px solid var(--border)' if not loop.first else 'none' }};{{ 'opacity:0.5;' if e.status == 'rerolled' }}">
+          <td style="padding:0.6rem 1rem;">
+            <div style="color:var(--text-primary);">{{ e.display }}
+              {% if e.status == 'winner' %}<span style="color:var(--gold);">🏆</span>{% endif %}
+              {% if e.status == 'rerolled' %}<span style="font-size:0.75rem;color:var(--text-muted);">(rerolled)</span>{% endif %}
+            </div>
+            <div class="font-mono" style="font-size:0.72rem;color:var(--text-muted);">{{ e.email if e.is_email else e.discord_user_id }}</div>
+          </td>
+          <td style="padding:0.6rem 0.75rem;font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">
+            {{ {'discord': '💬 Discord', 'email': '✉ Email'}.get(e.source, '🌐 Website') }}
+          </td>
+          <td style="padding:0.6rem 0.75rem;font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">
+            <time data-utc="{{ e.entered_at.isoformat() }}Z">{{ e.entered_at.strftime('%b %d, %H:%M') }} UTC</time>
+          </td>
+          <td style="padding:0.6rem 0.75rem;text-align:right;">
+            {% if e.status == 'entered' %}
+            <form method="POST" action="/admin/giveaways/{{ g.giveaway_id }}/entries/{{ e.id }}/remove"
+                  data-confirm="Remove {{ e.display }}?" data-confirm-msg="Their entry is deleted. They can re-enter while the giveaway is open." data-confirm-yes="Remove">
+              <button type="submit" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.6rem;font-size:0.75rem;">✕</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-style:italic;">No entries yet.</div>
+  {% endif %}
+</div>
+
+<script>
+// Any form with data-confirm asks first via the shared in-page modal.
+document.querySelectorAll('form[data-confirm]').forEach(form => {
+  form.addEventListener('submit', ev => {
+    ev.preventDefault();
+    showConfirm(form.dataset.confirm, form.dataset.confirmMsg, { yes: form.dataset.confirmYes })
+      .then(ok => { if (ok) form.submit(); });
+  });
+});
+</script>
+{% include "admin/_giveaway_time_js.html" %}
+{% endblock %}

@@ -1,0 +1,1 @@
+{"customer": "stocktools", "days_until_expiry": 227, "expires_at": "2027-04-23T00:00:00", "features": ["import_export", "barcode_print", "multi_kiosk"], "product": "STOCKTOOL", "tier": "pro", "tier_name": "Pro", "valid": true, "_cached_at": "2026-09-07T18:54:52.960891"}

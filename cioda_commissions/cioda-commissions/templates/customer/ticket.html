@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Ticket {{ ticket.ticket_id }}{% endblock %}
+{% block body %}
+<nav class="nav-bar">
+  <a class="nav-logo" href="/">Cioda's <span>Commissions</span></a>
+  {% if ticket.order_link %}
+  <a href="/order/{{ ticket.order_link }}" class="btn btn-ghost btn-sm">← Back to Order</a>
+  {% endif %}
+</nav>
+<main style="max-width:700px;margin:0 auto;padding:2rem 1.5rem;" class="fade-in">
+  <div style="margin-bottom:1.5rem;">
+    <div class="font-mono" style="font-size:0.85rem;color:var(--text-muted);">{{ ticket.ticket_id }}</div>
+    <h1 class="font-display" style="font-size:1.5rem;">{{ ticket.subject or 'Support Ticket' }}</h1>
+    {% if ticket.expires_at %}
+    <div style="font-size:0.85rem;color:var(--text-muted);margin-top:0.25rem;">
+      {% set expired = ticket.expires_at < now %}
+      {% if not expired %}
+        Expires: {{ ticket.expires_at.strftime('%b %d at %H:%M UTC') }}
+      {% else %}
+        <span style="color:var(--danger);">This ticket has expired.</span>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div style="display:grid;gap:0.75rem;margin-bottom:2rem;">
+    {% for msg in messages %}
+    <div style="
+      padding:1rem 1.1rem;border-radius:12px;max-width:85%;
+      {% if msg.sender == 'customer' %}
+        margin-left:auto;background:var(--accent-dim);color:#fff;
+      {% else %}
+        background:var(--bg-elevated);border:1px solid var(--border);
+      {% endif %}
+    ">
+      <div style="font-size:0.78rem;opacity:0.7;margin-bottom:0.35rem;font-family:'Cinzel',serif;">
+        {{ 'You' if msg.sender == 'customer' else '🎨 Cioda' }}
+        &nbsp;·&nbsp;{{ msg.created_at.strftime('%b %d, %H:%M') }}
+      </div>
+      <div style="white-space:pre-wrap;font-size:0.95rem;">{{ msg.message }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% set is_expired = ticket.expires_at and ticket.expires_at < now %}
+  {% set is_closed  = ticket.status != 'Open' %}
+  {% if not is_expired and not is_closed %}
+  <div class="card">
+    <form method="POST">
+      <input type="hidden" name="action" value="reply">
+      <label class="form-label">Your Reply</label>
+      <textarea name="message" class="input" required
+        placeholder="Type your message…" style="min-height:100px;margin-bottom:1rem;"></textarea>
+      <button type="submit" class="btn btn-primary btn-sm">Send Reply</button>
+    </form>
+  </div>
+  {% else %}
+  <div style="text-align:center;color:var(--text-muted);font-style:italic;padding:1.5rem;
+              background:var(--bg-elevated);border-radius:10px;">
+    This ticket is {{ 'expired' if is_expired else 'closed' }} and cannot receive further replies.
+  </div>
+  {% endif %}
+</main>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — OpsLabs Platform{% endblock %}
+{% block content %}
+<h1>Welcome, {{ current_user.email }}</h1>
+
+<div class="card">
+  <h2>Account</h2>
+  <p>Email: {{ current_user.email }}<br>
+     Role: {{ current_user.role }}<br>
+     Status: <span class="badge {{ current_user.status }}">{{ current_user.status }}</span></p>
+</div>
+
+<div class="card">
+  <h2>{{ 'Company' if not current_user.company.is_personal else 'Personal account' }}</h2>
+  <p>{{ current_user.company.name }}
+     — <span class="badge {{ current_user.company.status }}">{{ current_user.company.status }}</span></p>
+</div>
+
+<div class="card">
+  <h2>Billing</h2>
+  {% set current = current_user.company.current_subscription %}
+  {% if current %}
+    <p>Plan: <strong>{{ current.plan.name }}</strong> ({{ current.plan.product.name }})<br>
+       Status: <span class="badge active">{{ current.status }}</span>
+       {% if current.cancel_at_period_end %} — cancels at period end{% endif %}<br>
+       {% if current.current_period_end %}Renews: {{ current.current_period_end.strftime('%Y-%m-%d') }}{% endif %}</p>
+  {% else %}
+    <p style="color:#9aa3af;">No active subscription.</p>
+  {% endif %}
+
+  {% if entitlements %}
+    <p>Purchased: {% for e in entitlements %}{{ e.plan.name }}{{ ', ' if not loop.last }}{% endfor %}</p>
+  {% endif %}
+
+  {% if not billing_ready %}
+    <p style="font-size:0.85rem;color:#9aa3af;">Billing isn't configured on this platform yet.</p>
+  {% else %}
+    {% if current_user.company.stripe_customer_id %}
+      <form method="POST" action="{{ url_for('billing.portal') }}">
+        <button class="secondary" type="submit">Manage billing</button>
+      </form>
+    {% endif %}
+
+    {% if available_plans and current_user.has_company_role('owner', 'admin') %}
+      <h2 style="margin-top:1.5rem;">Available plans</h2>
+      <div style="display:grid;gap:0.75rem;">
+        {% for p in available_plans %}
+          <div style="border:1px solid #23262e;border-radius:8px;padding:0.85rem;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <strong>{{ p.name }}</strong> — {{ p.product.name }}<br>
+              <span style="color:#9aa3af;font-size:0.85rem;">
+                {{ '%.2f'|format(p.price_cents / 100) }} {{ p.currency|upper }} / {{ p.billing_period }}
+                {% if p.trial_days %} — {{ p.trial_days }}-day trial{% endif %}
+              </span>
+            </div>
+            <form method="POST" action="{{ url_for('billing.checkout', plan_id=p.id) }}">
+              <button type="submit" style="margin:0;">Subscribe</button>
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Credits</h2>
+  <p style="font-size:1.5rem;font-weight:700;">{{ current_user.company.credit_balance }} <span style="font-size:0.9rem;color:#9aa3af;font-weight:400;">credits</span></p>
+  <form method="POST" action="{{ url_for('auth.demo_use_credit') }}">
+    <button class="secondary" type="submit">Use 1 credit (demo)</button>
+  </form>
+  <p style="font-size:0.8rem;color:#9aa3af;margin-top:0.5rem;">
+    Demo action to prove the credit system works end-to-end — a real product feature
+    will spend credits the same way once one exists.
+  </p>
+</div>
+
+<div class="card">
+  <h2>Custom Domain</h2>
+  {% if not domains_ready %}
+    <p style="color:#9aa3af;font-size:0.85rem;">Custom domains aren't configured on this platform yet.</p>
+  {% elif not current_user.has_company_role('owner', 'admin') %}
+    <p style="color:#9aa3af;font-size:0.85rem;">Ask a company owner/admin to manage domains.</p>
+  {% else %}
+    {% for d in current_user.company.domains %}
+      <div style="border:1px solid #23262e;border-radius:8px;padding:0.85rem;margin-bottom:0.75rem;">
+        <p>
+          <strong>{{ d.hostname }}</strong>
+          <span class="badge {{ 'active' if d.status == 'active' else 'suspended' }}">{{ d.status }}</span>
+        </p>
+        {% if d.status != 'active' %}
+          <p style="font-size:0.85rem;color:#9aa3af;">
+            CNAME record: <code>{{ d.hostname }}</code> &rarr; <code>{{ d.cname_target }}</code>
+            (created automatically). {% if d.failure_reason %}{{ d.failure_reason }}{% endif %}
+          </p>
+        {% endif %}
+        <form class="inline" method="POST" action="{{ url_for('domains.verify_domain', domain_id=d.id) }}">
+          <button class="secondary" type="submit">Check status</button>
+        </form>
+        <form class="inline" method="POST" action="{{ url_for('domains.remove_domain', domain_id=d.id) }}"
+              onsubmit="return confirm('Disconnect {{ d.hostname }}?');">
+          <button class="danger" type="submit">Disconnect</button>
+        </form>
+      </div>
+    {% endfor %}
+
+    <form method="POST" action="{{ url_for('domains.add_domain') }}" style="margin-top:0.5rem;">
+      <label>Connect a domain</label>
+      <input type="text" name="hostname" placeholder="app.yourcompany.com" required>
+      <button type="submit">Add domain</button>
+    </form>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Available Features</h2>
+  {% if features %}
+    <ul>
+      {% for f in features %}<li>{{ f }}</li>{% endfor %}
+    </ul>
+  {% else %}
+    <p style="color:#9aa3af;font-size:0.85rem;">No features included yet — subscribe to a plan to unlock some.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Usage</h2>
+  <p style="font-size:0.85rem;color:#9aa3af;">{{ spent_30d }} credits spent in the last 30 days.</p>
+  {% if usage_entries %}
+    <table>
+      <tr><th>When</th><th>Change</th><th>Reason</th></tr>
+      {% for u in usage_entries %}
+        <tr>
+          <td>{{ u.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td style="color:{{ '#86efac' if u.delta > 0 else '#fca5a5' }};">{{ '+' if u.delta > 0 }}{{ u.delta }}</td>
+          <td>{{ u.reason }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% endif %}
+</div>
+
+{% if not current_user.company.is_personal and current_user.has_company_role('owner', 'admin') %}
+<div class="card">
+  <h2>Team</h2>
+  <ul>
+    {% for member in current_user.company.users %}
+      <li>{{ member.email }} — {{ member.role }}</li>
+    {% endfor %}
+  </ul>
+  {% if pending_invites %}
+    <p style="font-size:0.85rem;color:#9aa3af;">Pending invites:</p>
+    <ul>
+      {% for inv in pending_invites %}
+        <li>{{ inv.email }} — {{ inv.role }} (expires {{ inv.expires_at.strftime('%Y-%m-%d') }})</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  <form method="POST" action="{{ url_for('auth.invite_member') }}">
+    <label>Invite by email</label>
+    <input type="email" name="email" required>
+    <label>Role</label>
+    <select name="role">
+      <option value="member">Member</option>
+      <option value="admin">Admin</option>
+    </select>
+    <button type="submit">Send invite</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

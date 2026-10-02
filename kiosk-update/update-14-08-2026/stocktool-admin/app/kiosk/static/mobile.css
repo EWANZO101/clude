@@ -1,0 +1,50 @@
+.mobile-body {
+  background: #111827; color: #f3f4f6; font-family: 'Inter', system-ui, sans-serif;
+  margin: 0; min-height: 100vh; -webkit-tap-highlight-color: transparent;
+}
+.mobile-wrap { max-width: 480px; margin: 0 auto; padding: 20px; }
+
+.mobile-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.mobile-header i { font-size: 28px; color: #2563eb; }
+.mobile-title { font-size: 18px; font-weight: 800; }
+.mobile-subtitle { font-size: 13px; color: #6b7280; }
+
+.mobile-card {
+  background: #1f2937; border-radius: 16px; padding: 20px; margin-bottom: 16px;
+}
+.mobile-hint { font-size: 14px; color: #9ca3af; margin: 0 0 16px; line-height: 1.5; }
+
+.mobile-btn {
+  width: 100%; padding: 16px; border-radius: 12px; border: none;
+  font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.mobile-btn-primary { background: #2563eb; color: white; }
+.mobile-btn-secondary { background: #374151; color: #d1d5db; }
+
+.mobile-or { text-align: center; font-size: 12px; color: #4b5563; margin: 12px 0; }
+
+.mobile-input {
+  width: 100%; padding: 14px 16px; border-radius: 12px; border: 2px solid #374151;
+  background: #111827; color: #f9fafb; font-size: 16px; margin-bottom: 10px; box-sizing: border-box;
+}
+
+.mobile-error {
+  margin-top: 12px; font-size: 13px; color: #fca5a5;
+  background: #450a0a; border-radius: 10px; padding: 10px 14px;
+}
+
+.mobile-connected {
+  display: flex; align-items: center; gap: 8px; font-size: 15px;
+  color: #6ee7b7; margin-bottom: 12px;
+}
+.mobile-connected i { font-size: 18px; }
+
+.mobile-reader { border-radius: 12px; overflow: hidden; margin-bottom: 14px; background: #000; }
+
+.mobile-result {
+  margin-bottom: 14px; font-size: 14px; color: #93c5fd;
+  background: #1e3a5f; border-radius: 10px; padding: 12px 16px;
+}
+
+.mobile-footer { text-align: center; font-size: 12px; color: #4b5563; padding: 10px 0 30px; }

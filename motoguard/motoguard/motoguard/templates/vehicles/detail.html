@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% from "_macros.html" import loc_picker, plate with context %}
+{% block content %}
+{% if v.status == 'stolen' %}
+<div class="rounded-2xl border border-stolen/40 bg-stolen/10 p-4 mb-5 flex flex-wrap items-center justify-between gap-3">
+  <div class="flex items-center gap-3">
+    <span class="w-3 h-3 rounded-full bg-stolen pulse"></span>
+    <span class="font-display font-800 text-xl text-[#FF8A82] uppercase tracking-wide">Reported stolen</span>
+  </div>
+  <span class="eyebrow">{{ v.public_location }} · {{ v.stolen_at|ago }}</span>
+</div>
+{% endif %}
+
+{% if social_post %}
+<div class="card p-5 mb-5">
+  <div class="flex items-center justify-between mb-2 gap-2 flex-wrap">
+    <div><p class="eyebrow text-plate">Share kit</p><h3 class="font-display font-700 text-chalk mt-1">Ready-to-paste alert post</h3></div>
+    <button type="button" id="copyPost" class="btn btn-primary btn-sm">Copy post</button>
+  </div>
+  <p class="text-mute text-sm mb-3">Everything you registered, formatted for Facebook, Instagram or X. We've also emailed you a copy.</p>
+  <textarea id="postText" readonly rows="12" class="input font-mono text-sm leading-relaxed">{{ social_post }}</textarea>
+</div>
+{% endif %}
+
+<div class="grid md:grid-cols-2 gap-7">
+  <div>
+    {% if v.photos %}
+      <img src="{{ url_for('static', filename='uploads/' + v.photos[0].filename) }}" class="rounded-2xl w-full object-cover border border-hair mb-2">
+      <div class="flex gap-2">{% for p in v.photos[1:] %}<img src="{{ url_for('static', filename='uploads/' + p.filename) }}" class="h-16 w-16 rounded-lg object-cover border border-hair">{% endfor %}</div>
+    {% else %}
+      <div class="card h-60 flex items-center justify-center text-mute">No photo on file</div>
+    {% endif %}
+  </div>
+
+  <div>
+    <div class="flex items-center gap-3 mb-3">{{ plate(v.reg_number) }}
+      {% set cls = {'stolen':'tag-stolen','recovered':'tag-recovered'}.get(v.status,'tag-active') %}
+      <span class="tag {{ cls }}"><span class="dot"></span>{{ v.status }}</span>
+    </div>
+    <h1 class="font-display font-800 text-3xl text-chalk">{{ v.title }}</h1>
+    <p class="text-mute mt-1">{{ v.color or 'Colour n/a' }}</p>
+    {% if v.description %}<p class="text-chalk/90 mt-4 leading-relaxed">{{ v.description }}</p>{% endif %}
+    <p class="eyebrow mt-4">Area · {{ v.public_location }}</p>
+
+    <div class="flex flex-wrap gap-2 mt-5">
+      {% if v.status == 'stolen' %}
+        <a href="{{ url_for('sightings.report', vehicle_id=v.id) }}" class="btn btn-recover">I've seen this bike</a>
+      {% endif %}
+      {% if current_user.is_authenticated and not is_owner %}
+        <a href="{{ url_for('messaging.start', user_id=v.owner_id, vehicle_id=v.id) }}" class="btn btn-ghost">Message owner</a>
+      {% endif %}
+    </div>
+
+    {% if is_owner %}
+    <div class="card-2 p-4 mt-6">
+      <p class="eyebrow mb-3">Owner controls</p>
+      {% if v.status != 'stolen' %}
+        <form method="post" action="{{ url_for('vehicles.mark_stolen', vehicle_id=v.id) }}" class="space-y-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div>
+            <label class="label">Last seen</label>
+            {{ loc_picker('stolen', 'last_city', 'last_region', 'last_country', 'last_lat', 'last_lng',
+                          v.last_city or '', v.last_region or '', v.last_country or '', v.last_lat or '', v.last_lng or '', true) }}
+          </div>
+          <label class="flex items-center gap-2 text-xs text-mute"><input type="checkbox" name="auto_forum" class="accent-plate"> Also start a community thread</label>
+          <button class="btn btn-danger btn-block">Mark stolen &amp; alert local riders</button>
+        </form>
+      {% else %}
+        <form method="post" action="{{ url_for('vehicles.mark_recovered', vehicle_id=v.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-recover btn-block">Mark recovered — it's home</button></form>
+      {% endif %}
+      <a href="{{ url_for('vehicles.edit', vehicle_id=v.id) }}" class="btn btn-ghost btn-block mt-3">Edit bike details</a>
+      <form method="post" action="{{ url_for('vehicles.delete', vehicle_id=v.id) }}" onsubmit="return confirm('Delete this bike?')" class="mt-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="text-stolen text-xs hover:underline">Remove this bike</button></form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if is_owner and sightings %}
+<section class="mt-10">
+  <p class="eyebrow mb-3">Sightings · {{ sightings|length }}</p>
+  <div class="grid sm:grid-cols-2 gap-3">
+  {% for s in sightings %}
+    <div class="card p-4">
+      <div class="flex justify-between items-center">
+        <span class="text-sm text-chalk font-medium">{{ s.seen_city or 'Unknown' }}{{ ', ' + s.seen_region if s.seen_region }}</span>
+        <span class="tag {{ 'tag-recovered' if s.status=='verified' else 'tag-active' }}"><span class="dot"></span>{{ s.status }}</span>
+      </div>
+      <p class="text-mute text-sm mt-1">{{ s.notes }}</p>
+      {% if s.photo %}<img src="{{ url_for('static', filename='uploads/' + s.photo) }}" class="h-28 rounded-lg mt-2 border border-hair">{% endif %}
+      <p class="eyebrow mt-2">{{ s.created_at|ago }} · {{ 'anonymous' if s.contact_pref=='anonymous' else 'open to contact' }}</p>
+    </div>
+  {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if social_post %}
+<script>
+(function(){
+  var b=document.getElementById('copyPost'), t=document.getElementById('postText');
+  if(!b||!t) return;
+  b.addEventListener('click', function(){
+    t.select(); t.setSelectionRange(0, 99999);
+    var done=function(){ var o=b.textContent; b.textContent='Copied ✓'; setTimeout(function(){b.textContent=o;},1800); };
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t.value).then(done, function(){document.execCommand('copy');done();}); }
+    else { document.execCommand('copy'); done(); }
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

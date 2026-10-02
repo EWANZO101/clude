@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}My companies · OpsLab Systems{% endblock %}
+{% set colors = {'gray':'bg-white/5 text-gray-300 border-ink-600','amber':'bg-amber-500/15 text-amber-300 border-amber-500/30','blue':'bg-blue-500/15 text-blue-300 border-blue-500/30','green':'bg-green-500/15 text-green-300 border-green-500/30','red':'bg-red-500/15 text-red-300 border-red-500/30'} %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <div class="flex items-center justify-between gap-4 mb-8">
+    <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight">My companies</h1>
+    <a href="{{ url_for('partners.new') }}" class="px-5 py-2.5 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-xl whitespace-nowrap">+ New company</a>
+  </div>
+
+  {% for cat, msg in get_flashed_messages(with_categories=true) %}
+    <div class="mb-5 text-sm px-4 py-2.5 rounded-lg bg-green-500/10 border border-green-500/30 text-green-200">{{ msg }}</div>
+  {% endfor %}
+
+  {% if companies %}
+  <div class="space-y-4">
+    {% for c in companies %}
+    <div class="rounded-2xl border border-ink-600 bg-ink-800/40 p-5">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <div class="font-bold text-lg text-white">{{ c.name }}</div>
+          <div class="text-xs text-gray-500 mt-0.5">/partners/{{ c.slug }} · submitted {{ c.created_at.strftime('%d %b %Y') }}</div>
+        </div>
+        <span class="px-2.5 py-1 rounded-lg text-xs font-bold border {{ colors.get(c.status_color, colors['gray']) }}">{{ c.status_label }}</span>
+      </div>
+
+      <div class="mt-4">
+        <div class="h-2 rounded-full bg-ink-900 overflow-hidden">
+          <div class="h-full bg-ops-600 hover:bg-ops-500" style="width: {{ c.progress }}%"></div>
+        </div>
+      </div>
+
+      {% if c.status == 'rejected' and c.rejection_reason %}
+      <div class="mt-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-200 text-sm p-3">
+        <div class="font-semibold mb-1">Reason for rejection</div>{{ c.rejection_reason }}
+      </div>
+      {% endif %}
+      {% if c.review_notes %}
+      <div class="mt-3 rounded-lg bg-ink-900/40 border border-ink-600/60 text-sm text-gray-300 p-3">
+        <div class="font-semibold text-ops-300 mb-1">Admin feedback / requested changes</div>{{ c.review_notes }}
+      </div>
+      {% endif %}
+
+      <div class="mt-4 flex gap-2">
+        {% if c.is_public %}
+        <a href="{{ url_for('partners.public', slug=c.slug) }}" class="px-4 py-2 text-xs font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-lg">View live page</a>
+        {% else %}
+        <a href="{{ url_for('partners.public', slug=c.slug) }}" class="px-4 py-2 text-xs font-semibold text-gray-200 bg-white/5 border border-ink-600 rounded-lg">Preview</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="rounded-2xl border border-ink-600 bg-ink-800/40 p-10 text-center">
+    <p class="text-gray-400">You haven't registered a company yet.</p>
+    <a href="{{ url_for('partners.new') }}" class="inline-block mt-4 px-5 py-2.5 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-xl">Register a company</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

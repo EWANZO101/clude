@@ -1,0 +1,641 @@
+{% extends "base.html" %}
+{% block title %}Open a Ticket · OpsLab Systems{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* Service tile: visual category picker that drives the hidden form fields */
+  .svc-tile {
+    background: #0c0c0e;
+    border: 1px solid rgba(255,255,255,.08);
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .svc-tile:hover { border-color: rgba(255,255,255,.16); }
+  .svc-tile.selected {
+    border-color: rgba(250,250,250,.7);
+    background: #131316;
+    box-shadow: 0 0 0 1px rgba(250,250,250,.35);
+  }
+  .svc-tile.selected .check { opacity: 1; transform: scale(1); }
+  .check {
+    opacity: 0; transform: scale(.6); transition: all .2s ease;
+  }
+
+  /* Priority radio chips already styled in base.html .form-input etc.
+     This adds a bigger hit area + ring */
+  .pri-tile {
+    transition: all .15s ease;
+  }
+  .pri-tile:has(input:checked) {
+    background: #131316;
+    border-color: rgba(250,250,250,.6);
+    box-shadow: 0 0 0 1px rgba(250,250,250,.3);
+  }
+
+  /* Char counter that turns colour as you get close to limits */
+  .counter-ok      { color: #71717a; }
+  .counter-warn    { color: #fcd34d; }
+  .counter-danger  { color: #fca5a5; }
+
+  .kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: rgba(39,39,42,.6);
+    border: 1px solid rgba(39,39,42,1);
+    border-bottom-width: 2px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #a1a1aa;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-xs text-gray-500 mb-6">
+    <a href="{{ url_for('tickets.index') }}" class="hover:text-ops-400 transition">Tickets</a>
+    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <span class="text-gray-300">New Ticket</span>
+  </nav>
+
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="text-[11px] font-bold uppercase tracking-[.25em] text-ops-400 mb-2">Open a ticket</div>
+    <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight">Tell us what's up.</h1>
+    <p class="text-sm text-gray-400 mt-2 max-w-2xl">
+      We'll route it to the right specialist and open a private Discord channel automatically.
+      Replies sync between web and chat — within seconds.
+    </p>
+  </div>
+
+  <form method="post" id="new-ticket-form" class="relative">
+    <div class="absolute -inset-4 hidden rounded-3xl blur-3xl opacity-50 pointer-events-none"></div>
+
+    <div class="relative bg-ink-800/70 backdrop-blur-xl border border-ink-600 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-8">
+
+
+      <!-- ─── 0. Company dropdown (NEW) ─────────────────────────────── -->
+      <div>
+        <div class="flex items-baseline justify-between mb-3">
+          <label class="block text-xs font-bold text-gray-300 uppercase tracking-widest" for="company_select">
+            <span class="text-ops-400">1.</span> Choose a company <span class="text-red-400">*</span>
+          </label>
+          <span class="text-[11px] text-gray-500">Defaults to OpsLabs</span>
+        </div>
+        <select id="company_select" name="company_id_picker"
+                class="form-select w-full px-3 py-3 text-sm font-semibold">
+          {% set _default_id = (form.get('company_id') or request.args.get('company_id'))|int(0) %}
+          {% set _opslabs = (companies|selectattr('name', 'in', ['Ops Labs', 'OpsLabs', 'OpsLab Systems', 'OpsLabs Systems', 'Ops Lab Systems'])|list|first) %}
+          {% if not _opslabs and companies %}{% set _opslabs = companies[0] %}{% endif %}
+          {% if not _default_id and _opslabs %}
+            {% set _default_id = _opslabs.id %}
+          {% endif %}
+          {% for c in companies %}
+            <option value="{{ c.id }}" {% if c.id == _default_id %}selected{% endif %}>
+              {{ c.name }}{% if c.tagline %} — {{ c.tagline }}{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- ─── 2. Service picker (visual) ────────────────────────────── -->
+      <div>
+        <div class="flex items-baseline justify-between mb-3">
+          <label class="block text-xs font-bold text-gray-300 uppercase tracking-widest">
+            <span class="text-ops-400">2.</span> Choose a service <span class="text-red-400">*</span>
+          </label>
+          <span class="text-[11px] text-gray-500">Click a tile below</span>
+        </div>
+
+        <!-- Hidden fields the form actually posts -->
+        <input type="hidden" name="company_id" id="company_id" value="{{ form.get('company_id', '') }}">
+        <input type="hidden" name="category_id" id="category_id" value="{{ form.get('category_id', '') }}">
+
+        {# Build a flat list of (company, category) pairs.
+           If categories exist we present a tile per category; if not, fall back to company-only tiles. #}
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3" id="service-tiles">
+          {% set tile_icons = {
+            'Website Development': '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M3 7l2-3h14l2 3M8 13h.01M12 13h.01M16 13h.01"/></svg>',
+            'FiveM Development':   '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 10l-2 2v3a2 2 0 002 2h6a2 2 0 002-2v-3l-2-2M9 10V7a3 3 0 016 0v3M9 10h6"/></svg>',
+            'Tech Support':        '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>',
+            'Hosting Support':     '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7c0-1.105 3.582-2 8-2s8 .895 8 2-3.582 2-8 2-8-.895-8-2zm0 0v10c0 1.105 3.582 2 8 2s8-.895 8-2V7M4 12c0 1.105 3.582 2 8 2s8-.895 8-2"/></svg>',
+            'System Setup':        '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>',
+            'Other':               '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
+          } %}
+          {% set default_icon = '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>' %}
+
+          {% for c in companies %}
+            {% set cats = c.categories.filter_by(is_active=True).all() if c.categories.__class__.__name__ == 'AppenderQuery' else (c.categories.all() if c.categories else []) %}
+            {% if cats and cats|length > 0 %}
+              {% for cat in cats %}
+                <button type="button"
+                        class="svc-tile group text-left p-4 rounded-2xl relative" aria-pressed="false"
+                        data-company="{{ c.id }}" data-category="{{ cat.id }}" data-name="{{ cat.name }}">
+                  <div class="absolute top-3 right-3 check">
+                    <svg class="w-5 h-5 text-ops-400" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                  <div class="w-9 h-9 rounded-lg bg-ops-500/10 border border-ops-500/30 text-ops-400 flex items-center justify-center mb-3">
+                    {{ tile_icons.get(cat.name, default_icon) | safe }}
+                  </div>
+                  <div class="text-sm font-semibold text-white">{{ cat.name }}</div>
+                  {% if cat.description %}
+                    <div class="text-[11px] text-gray-500 mt-1 line-clamp-2">{{ cat.description }}</div>
+                  {% endif %}
+                </button>
+              {% endfor %}
+            {% else %}
+              <button type="button"
+                      class="svc-tile group text-left p-4 rounded-2xl relative" aria-pressed="false"
+                      data-company="{{ c.id }}" data-category="" data-name="{{ c.name }}">
+                <div class="absolute top-3 right-3 check">
+                  <svg class="w-5 h-5 text-ops-400" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <div class="w-9 h-9 rounded-lg bg-ops-500/10 border border-ops-500/30 text-ops-400 flex items-center justify-center mb-3">
+                  {{ default_icon | safe }}
+                </div>
+                <div class="text-sm font-semibold text-white">{{ c.name }}</div>
+                {% if c.tagline %}
+                  <div class="text-[11px] text-gray-500 mt-1 line-clamp-2">{{ c.tagline }}</div>
+                {% endif %}
+              </button>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <p id="service-hint" class="text-[11px] text-amber-300/80 mt-2 hidden">Pick the service that best matches your issue.</p>
+      </div>
+
+      <!-- ─── 2. Subject ────────────────────────────────────────────── -->
+      <div>
+        <div class="flex items-baseline justify-between mb-2">
+          <label for="subject" class="block text-xs font-bold text-gray-300 uppercase tracking-widest">
+            <span class="text-ops-400">3.</span> Subject <span class="text-red-400">*</span>
+          </label>
+          <span class="text-[11px]" id="subject-counter">0 / 200</span>
+        </div>
+        <input name="subject" id="subject" required maxlength="200" value="{{ form.get('subject', '') }}"
+               class="form-input w-full px-4 py-3 text-sm"
+               placeholder="One-line summary, e.g. 'Server crashing on startup'">
+      </div>
+
+      <!-- ─── 3. Priority ───────────────────────────────────────────── -->
+      <div>
+        <label class="block text-xs font-bold text-gray-300 mb-3 uppercase tracking-widest">
+          <span class="text-ops-400">4.</span> Priority
+        </label>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {% set pris = [
+            ('low',    'Low',    '⚪', 'Whenever — no rush'),
+            ('normal', 'Normal', '🔵', 'Standard turnaround'),
+            ('high',   'High',   '🟠', 'Need it soon'),
+            ('urgent', 'Urgent', '🔴', 'Production down')
+          ] %}
+          {% for val, label, emoji, desc in pris %}
+          <label class="pri-tile cursor-pointer block p-3 rounded-xl border border-ink-600 bg-ink-900/40 hover:bg-white/5 transition">
+            <input type="radio" name="priority" value="{{ val }}" {% if val == form.get('priority', 'normal') %}checked{% endif %} class="sr-only">
+            <div class="flex items-center gap-2">
+              <span class="text-base">{{ emoji }}</span>
+              <span class="text-sm font-semibold">{{ label }}</span>
+            </div>
+            <div class="text-[10px] text-gray-500 mt-1">{{ desc }}</div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- ─── 4. Description ────────────────────────────────────────── -->
+      <div>
+        <div class="flex items-baseline justify-between mb-2">
+          <label for="body" class="block text-xs font-bold text-gray-300 uppercase tracking-widest">
+            <span class="text-ops-400">5.</span> Describe your issue <span class="text-red-400">*</span>
+          </label>
+          <span class="text-[11px] text-gray-500" id="body-counter">0 chars</span>
+        </div>
+        <textarea name="body" id="body" required rows="8"
+                  class="form-textarea w-full px-4 py-3 text-sm font-mono leading-relaxed"
+                  placeholder="What's happening? What have you tried? Paste error logs as-is — we read them.&#10;&#10;The more detail, the faster we can help.">{{ form.get('body', '') }}</textarea>
+        <div class="flex items-center justify-between mt-2">
+          <p class="text-[11px] text-gray-500">💡 Tip: paste full error logs or screenshots — we read everything.</p>
+          <span class="text-[11px] text-gray-500" id="draft-status"></span>
+        </div>
+      </div>
+
+      <!-- ─── 6. Attachments (optional) ─────────────────────────────── -->
+      <div>
+        <div class="flex items-baseline justify-between mb-2">
+          <label class="block text-xs font-bold text-gray-300 uppercase tracking-widest">
+            <span class="text-ops-400">6.</span> Screenshots &amp; videos
+          </label>
+          <span class="text-[11px] text-gray-500">Optional · up to 2 GB each · videos up to 5 min</span>
+        </div>
+        <div id="drop-zone" class="rounded-xl border border-dashed border-ink-600 bg-ink-900/40 p-4 text-center text-xs text-gray-400">
+          <input type="file" id="new-files" class="hidden" multiple accept="image/*,video/*,.heic,.heif,.mkv,.avi">
+          <button type="button" id="new-attach-btn" class="font-semibold text-ops-400 hover:text-ops-300">Choose files</button>
+          <span>or drag them here</span>
+        </div>
+        <div id="new-tray" class="hidden mt-3 grid sm:grid-cols-2 gap-2"></div>
+      </div>
+
+      <!-- ─── 7. Reply channel ─────────────────────────────────────── -->
+      {% set _rv = form.get('reply_via', 'web') %}
+      <div>
+        <label class="block text-xs font-bold text-gray-300 mb-3 uppercase tracking-widest">
+          <span class="text-ops-400">7.</span> How should we reply?
+        </label>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {% for val, label, desc in [('web', '🌐 Website', 'Reply here on the site'),
+                                      ('discord', '💬 Discord DMs', 'Chat with our bot in DMs'),
+                                      ('both', '🔁 Both', 'Reply from either place')] %}
+          <label class="pri-tile cursor-pointer block p-3 rounded-xl border border-ink-600 bg-ink-900/40 hover:bg-white/5 transition">
+            <input type="radio" name="reply_via" value="{{ val }}" {% if val == _rv %}checked{% endif %} class="sr-only">
+            <div class="text-sm font-semibold">{{ label }}</div>
+            <div class="text-[10px] text-gray-500 mt-1">{{ desc }}</div>
+          </label>
+          {% endfor %}
+        </div>
+
+        <div id="discord-panel" class="hidden mt-4 rounded-xl border border-[#5865f2]/40 bg-[#5865f2]/5 p-4 space-y-4 text-sm">
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded-full bg-[#5865f2]/30 text-[#c7d2fe] text-xs font-bold flex items-center justify-center shrink-0">1</div>
+            <div>
+              <div class="font-semibold text-white">Join the OpsLabs Discord</div>
+              <a id="invite-link" href="https://discord.gg/6FtYZj7RMc" target="_blank" rel="noopener"
+                 class="inline-flex items-center gap-2 mt-2 px-3 py-1.5 rounded-lg bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold">
+                Join OpsLabs on Discord ↗
+              </a>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded-full bg-[#5865f2]/30 text-[#c7d2fe] text-xs font-bold flex items-center justify-center shrink-0">2</div>
+            <div>
+              <div class="font-semibold text-white">Allow the bot to DM you</div>
+              <p class="text-[12px] text-gray-400 mt-1">
+                <b>Desktop:</b> right-click the OpsLabs server icon → <b>Privacy Settings</b> → turn on <b>Direct Messages</b>.<br>
+                <b>Mobile:</b> tap the server name → <b>Settings</b> → turn on <b>Allow Direct Messages</b>.
+              </p>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded-full bg-[#5865f2]/30 text-[#c7d2fe] text-xs font-bold flex items-center justify-center shrink-0">3</div>
+            <div class="flex-1">
+              <div class="font-semibold text-white">Link your Discord account</div>
+              <div id="link-linked" class="{% if not current_user.discord_id %}hidden {% endif %}mt-1 text-green-300 text-[12px]">
+                ✅ Linked as <b id="linked-name">{{ current_user.discord_username or 'your Discord account' }}</b>
+              </div>
+              <div id="link-unlinked" class="{% if current_user.discord_id %}hidden{% endif %}">
+                <button type="button" id="get-code-btn" class="mt-2 px-3 py-1.5 rounded-lg border border-[#5865f2]/60 text-[#c7d2fe] hover:bg-[#5865f2]/20 text-xs font-semibold">Get my link code</button>
+                <div id="code-box" class="hidden mt-2 text-[12px] text-gray-300">
+                  In any OpsLabs Discord channel type
+                  <code id="link-command" class="px-1.5 py-0.5 rounded bg-ink-900 text-[#c7d2fe] font-mono select-all"></code>
+                  <button type="button" id="copy-cmd" class="ml-1 text-[11px] text-ops-400 hover:text-ops-300">Copy</button>
+                  <br>or DM the code <code id="link-code" class="px-1.5 py-0.5 rounded bg-ink-900 font-mono select-all"></code> to the <b>OPSLABS</b> bot.
+                  <div class="text-gray-500 mt-1" id="link-wait">Waiting for you to link… (code expires in 15 minutes)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded-full bg-[#5865f2]/30 text-[#c7d2fe] text-xs font-bold flex items-center justify-center shrink-0">4</div>
+            <div>
+              <div class="font-semibold text-white">Check the bot can reach you</div>
+              <button type="button" id="test-dm-btn" class="mt-2 px-3 py-1.5 rounded-lg border border-ink-600 text-gray-300 hover:bg-white/5 text-xs font-semibold disabled:opacity-40" {% if not current_user.discord_id %}disabled{% endif %}>Send me a test DM</button>
+              <span id="test-dm-result" class="ml-2 text-[12px]"></span>
+            </div>
+          </div>
+          <p id="discord-hint" class="text-[11px] text-amber-300/80">Link your Discord account (step 3) to continue on Discord — or pick “Website”.</p>
+        </div>
+      </div>
+
+      <!-- Submit row -->
+      <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-2 border-t border-ink-600/40">
+        <div class="flex items-center gap-3 text-xs text-gray-500">
+          <a href="{{ url_for('tickets.index') }}" class="hover:text-white transition">Cancel</a>
+          <span class="opacity-30">·</span>
+          <span>Press <span class="kbd">⌘</span> + <span class="kbd">↵</span> to submit</span>
+        </div>
+        <button type="submit" id="submit-btn"
+                class="inline-flex items-center justify-center gap-2 px-7 py-3 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100">
+          <span id="submit-label">Create ticket</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Reassurance row -->
+  <div class="grid sm:grid-cols-3 gap-3 mt-6">
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-ink-800/40 border border-ink-600">
+      <div class="w-9 h-9 rounded-lg bg-ops-500/15 text-ops-400 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+      <div class="text-xs leading-tight">
+        <div class="font-semibold text-white">Private channel</div>
+        <div class="text-gray-400">Only you & assigned staff</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-ink-800/40 border border-ink-600">
+      <div class="w-9 h-9 rounded-lg bg-ops-500/15 text-ops-400 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </div>
+      <div class="text-xs leading-tight">
+        <div class="font-semibold text-white">Live sync</div>
+        <div class="text-gray-400">Web ↔ Discord, &lt; 5s</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-ink-800/40 border border-ink-600">
+      <div class="w-9 h-9 rounded-lg bg-ops-500/15 text-ops-400 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <div class="text-xs leading-tight">
+        <div class="font-semibold text-white">Tracked forever</div>
+        <div class="text-gray-400">Searchable transcripts</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="{{ url_for('static', filename='js/ticket-uploads.js') }}"></script>
+<script>
+(function () {
+  // ─── Elements (declared up-front so nothing is used before it exists) ─
+  const form          = document.getElementById('new-ticket-form');
+  const companySelect = document.getElementById('company_select');
+  const companyIn     = document.getElementById('company_id');
+  const categoryIn    = document.getElementById('category_id');
+  const tiles         = Array.from(document.querySelectorAll('.svc-tile'));
+  const serviceHint   = document.getElementById('service-hint');
+  const submitBtn     = document.getElementById('submit-btn');
+  const subject       = document.getElementById('subject');
+  const body          = document.getElementById('body');
+  const sCounter      = document.getElementById('subject-counter');
+  const bCounter      = document.getElementById('body-counter');
+  const draftStat     = document.getElementById('draft-status');
+  const DRAFT_KEY     = 'opslab.draft.new-ticket';
+  let uploader        = null;   // set up in the Attachments section below
+  let discordLinked   = {{ 'true' if current_user.discord_id else 'false' }};
+  const SUBJECT_MAX   = parseInt(subject.getAttribute('maxlength') || '200', 10);
+  // Server re-rendered after a validation error → trust its values over the draft.
+  const serverFilled  = !!(subject.value || body.value);
+
+  // ─── Service tiles ─────────────────────────────────────────────────
+  function visibleTiles() {
+    return tiles.filter(t => t.dataset.company === companyIn.value);
+  }
+
+  function selectTile(tile) {
+    tiles.forEach(t => { t.classList.remove('selected'); t.setAttribute('aria-pressed', 'false'); });
+    if (tile) {
+      tile.classList.add('selected');
+      tile.setAttribute('aria-pressed', 'true');
+      companyIn.value  = tile.dataset.company;
+      categoryIn.value = tile.dataset.category || '';
+      if (companySelect && companySelect.value !== tile.dataset.company) {
+        companySelect.value = tile.dataset.company;
+      }
+    } else {
+      categoryIn.value = '';
+    }
+    validate();
+  }
+
+  // Show only the chosen company's services; keep selection if still valid.
+  function applyCompany(companyId) {
+    companyIn.value = companyId || '';
+    let keep = null;
+    tiles.forEach(t => {
+      const match = t.dataset.company === companyIn.value;
+      t.style.display = match ? '' : 'none';
+      if (match && t.dataset.category === categoryIn.value && (categoryIn.value || t.classList.contains('selected'))) keep = t;
+    });
+    const vis = visibleTiles();
+    // A company with no service categories has one tile — pick it automatically.
+    if (!keep && vis.length === 1 && !vis[0].dataset.category) keep = vis[0];
+    selectTile(keep);
+  }
+
+  tiles.forEach(t => t.addEventListener('click', () => selectTile(t)));
+  if (companySelect) companySelect.addEventListener('change', () => applyCompany(companySelect.value));
+
+  // ─── Counters ──────────────────────────────────────────────────────
+  function updateSubjectCounter() {
+    const len = subject.value.length;
+    sCounter.textContent = `${len} / ${SUBJECT_MAX}`;
+    const cls = len > SUBJECT_MAX - 5 ? 'counter-danger' : (len > SUBJECT_MAX - 20 ? 'counter-warn' : 'counter-ok');
+    sCounter.className = 'text-[11px] ' + cls;
+  }
+  function updateBodyCounter() {
+    bCounter.textContent = `${body.value.length.toLocaleString()} chars`;
+  }
+
+  // ─── Validation ────────────────────────────────────────────────────
+  function serviceOk() {
+    const vis = visibleTiles();
+    const needsCategory = vis.some(t => t.dataset.category);
+    return !!companyIn.value && (!needsCategory || !!categoryIn.value);
+  }
+  function validate() {
+    const okService = serviceOk();
+    serviceHint.classList.toggle('hidden', okService);
+    const filesOk = !uploader || (!uploader.busy() && !uploader.hasErrors());
+    const rv = (form.querySelector('input[name=reply_via]:checked') || {}).value || 'web';
+    const discordOk = rv === 'web' || discordLinked;
+    const hint = document.getElementById('discord-hint');
+    if (hint) hint.classList.toggle('hidden', discordOk);
+    submitBtn.disabled = !(okService && subject.value.trim() && body.value.trim() && filesOk && discordOk);
+  }
+
+  // ─── Draft autosave (per-browser) ──────────────────────────────────
+  let saveTimer;
+  function saveDraft() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({
+          subject: subject.value, body: body.value,
+          company: companyIn.value, category: categoryIn.value, ts: Date.now(),
+        }));
+        draftStat.textContent = '✓ Draft saved';
+        setTimeout(() => draftStat.textContent = '', 1800);
+      } catch (e) {}
+    }, 600);
+  }
+  function loadDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return null;
+      const d = JSON.parse(raw);
+      if (Date.now() - (d.ts || 0) > 7 * 24 * 3600 * 1000) { localStorage.removeItem(DRAFT_KEY); return null; }
+      return d;
+    } catch (e) { return null; }
+  }
+
+  subject.addEventListener('input', () => { updateSubjectCounter(); validate(); saveDraft(); });
+  body.addEventListener('input',    () => { updateBodyCounter();    validate(); saveDraft(); });
+  tiles.forEach(t => t.addEventListener('click', saveDraft));
+
+  // ─── Cmd/Ctrl+Enter submit ─────────────────────────────────────────
+  body.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !submitBtn.disabled) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+
+  // ─── Attachments ───────────────────────────────────────────────────
+  const fileInput = document.getElementById('new-files');
+  const dropZone  = document.getElementById('drop-zone');
+  // If the upload script failed to load, the form still works — just without files.
+  if (window.TicketUploads) {
+    uploader = new TicketUploads.Uploader({
+      input: fileInput, tray: document.getElementById('new-tray'), onChange: () => validate(),
+    });
+    document.getElementById('new-attach-btn').addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-ops-500'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-ops-500'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault(); dropZone.classList.remove('border-ops-500');
+      uploader.add(Array.from(e.dataTransfer.files || []));
+    });
+    body.addEventListener('paste', (e) => {
+      const files = Array.from((e.clipboardData || {}).files || []);
+      if (files.length) { e.preventDefault(); uploader.add(files); }
+    });
+  } else {
+    dropZone.textContent = 'File uploads are unavailable right now — you can add files on the ticket page later.';
+  }
+
+  // ─── Reply channel: Discord DMs ────────────────────────────────────
+  const discordPanel = document.getElementById('discord-panel');
+  const testBtn      = document.getElementById('test-dm-btn');
+  const testResult   = document.getElementById('test-dm-result');
+  let linkPoll = null;
+
+  function showLinked(name) {
+    discordLinked = true;
+    document.getElementById('linked-name').textContent = name || 'your Discord account';
+    document.getElementById('link-linked').classList.remove('hidden');
+    document.getElementById('link-unlinked').classList.add('hidden');
+    testBtn.disabled = false;
+    if (linkPoll) { clearInterval(linkPoll); linkPoll = null; }
+    validate();
+  }
+  function applyReplyVia() {
+    const rv = (form.querySelector('input[name=reply_via]:checked') || {}).value || 'web';
+    discordPanel.classList.toggle('hidden', rv === 'web');
+    validate();
+  }
+  form.querySelectorAll('input[name=reply_via]').forEach(r => r.addEventListener('change', applyReplyVia));
+
+  try {
+    fetch('/account/discord/status', { headers: { 'Accept': 'application/json' } })
+      .then(r => r.json()).then(d => {
+        if (d.invite_url) document.getElementById('invite-link').href = d.invite_url;
+        if (d.linked) showLinked(d.discord_username);
+      }).catch(() => {});
+  } catch (e) {}   // never let this block the rest of the form's setup
+
+  document.getElementById('get-code-btn').addEventListener('click', async () => {
+    try {
+      const r = await fetch('/account/discord/code', { method: 'POST', headers: { 'Accept': 'application/json' } });
+      const d = await r.json();
+      if (!d.ok) throw new Error();
+      if (d.linked) return showLinked(d.discord_username);
+      document.getElementById('link-command').textContent = d.command;
+      document.getElementById('link-code').textContent = d.code;
+      document.getElementById('code-box').classList.remove('hidden');
+      document.getElementById('get-code-btn').textContent = 'Get a new code';
+      if (linkPoll) clearInterval(linkPoll);
+      const started = Date.now();
+      linkPoll = setInterval(async () => {
+        if (Date.now() - started > d.expires_minutes * 60000) {
+          clearInterval(linkPoll); linkPoll = null;
+          document.getElementById('link-wait').textContent = 'Code expired — get a new one.';
+          return;
+        }
+        try {
+          const s = await (await fetch('/account/discord/status')).json();
+          if (s.linked) showLinked(s.discord_username);
+        } catch (e) {}
+      }, 3000);
+    } catch (e) { alert('Could not get a link code. Please try again.'); }
+  });
+  document.getElementById('copy-cmd').addEventListener('click', () => {
+    try { navigator.clipboard.writeText(document.getElementById('link-command').textContent); } catch (e) {}
+  });
+  testBtn.addEventListener('click', async () => {
+    testBtn.disabled = true; testResult.textContent = 'Sending…'; testResult.className = 'ml-2 text-[12px] text-gray-400';
+    try {
+      const d = await (await fetch('/account/discord/test-dm', { method: 'POST' })).json();
+      if (d.ok) { testResult.textContent = '✅ Check your Discord DMs!'; testResult.className = 'ml-2 text-[12px] text-green-300'; }
+      else if (d.in_guild === false) { testResult.textContent = '❌ You’re not in the OpsLabs server yet — do step 1.'; testResult.className = 'ml-2 text-[12px] text-red-300'; }
+      else { testResult.textContent = '❌ ' + (d.error || 'The bot can’t DM you — check step 2.'); testResult.className = 'ml-2 text-[12px] text-red-300'; }
+    } catch (e) { testResult.textContent = '❌ Could not reach the server.'; testResult.className = 'ml-2 text-[12px] text-red-300'; }
+    testBtn.disabled = false;
+  });
+
+  // ─── Submit ────────────────────────────────────────────────────────
+  // The draft is kept until the ticket page confirms creation (view.html
+  // clears it), so a failed submit never loses what was typed.
+  const submitLabel = document.getElementById('submit-label');
+  form.addEventListener('submit', async (e) => {
+    validate();
+    if (submitBtn.disabled) { e.preventDefault(); return; }
+    submitBtn.disabled = true;
+    submitLabel.textContent = 'Creating…';
+    if (!uploader || !uploader.count()) return;   // plain form post, no files
+
+    // With files: create the ticket via fetch, upload, then attach them.
+    e.preventDefault();
+    const reset = (msg) => { alert(msg); submitBtn.disabled = false; submitLabel.textContent = 'Create ticket'; validate(); };
+    let created;
+    try {
+      const r = await fetch(form.action || location.pathname, {
+        method: 'POST', body: new FormData(form), headers: { 'Accept': 'application/json' },
+      });
+      created = await r.json();
+    } catch (err) { return reset('Could not reach the server. Please try again.'); }
+    if (!created.ok) return reset(created.error || 'Could not create the ticket.');
+
+    submitLabel.textContent = 'Uploading files…';
+    await uploader.uploadAll(created.id);
+    const ids = uploader.readyIds();
+    if (ids.length) {
+      const fd = new FormData();
+      ids.forEach(id => fd.append('attachment_ids', id));
+      try { await fetch(`/tickets/${created.id}/reply`, { method: 'POST', body: fd }); } catch (err) {}
+    }
+    if (uploader.hasErrors()) {
+      alert('Your ticket was created, but some files could not be attached. You can add them again on the ticket page.');
+    }
+    location.href = created.url;
+  });
+
+  // ─── Initial state ─────────────────────────────────────────────────
+  const draft = serverFilled ? null : loadDraft();
+  if (draft) {
+    if (draft.subject) subject.value = draft.subject;
+    if (draft.body)    body.value    = draft.body;
+    if (draft.company && tiles.some(t => t.dataset.company === draft.company)) {
+      categoryIn.value = draft.category || '';
+      if (companySelect) companySelect.value = draft.company;
+    }
+    draftStat.textContent = '✓ Restored draft';
+    setTimeout(() => draftStat.textContent = '', 2500);
+  }
+  applyCompany(companySelect ? companySelect.value : (companyIn.value || (tiles[0] && tiles[0].dataset.company)));
+  updateSubjectCounter();
+  updateBodyCounter();
+  applyReplyVia();
+})();
+</script>
+{% endblock %}

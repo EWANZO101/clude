@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_macros.html" import plate with context %}
+{% block content %}
+<section class="py-10 sm:py-16">
+  <p class="eyebrow mb-4">Great Britain &amp; Northern Ireland · Motorcycle &amp; moped recovery</p>
+  <h1 class="font-display font-900 text-chalk leading-[0.92] text-5xl sm:text-7xl max-w-3xl">
+    If it's stolen,<br>the street finds it.
+  </h1>
+  <p class="text-mute mt-6 max-w-xl text-lg leading-relaxed">
+    Register your bike in a minute. The day it goes missing, every rider in range gets the plate — and the sightings come straight back to you.
+  </p>
+  <div class="flex flex-wrap gap-3 mt-8">
+    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register your bike</a>
+    <a href="{{ url_for('main.stolen_map') }}" class="btn btn-ghost">See what's missing</a>
+  </div>
+  <div class="flex items-center gap-7 mt-10">
+    <div><div class="font-display font-800 text-3xl text-stolen">{{ stolen_count }}</div><div class="eyebrow mt-1">On the watchlist</div></div>
+    <div class="w-px h-10 bg-hair"></div>
+    <div><div class="font-display font-800 text-3xl text-recover">{{ recovered }}</div><div class="eyebrow mt-1">Brought home</div></div>
+  </div>
+</section>
+
+{% if recent_stolen %}
+<section class="mb-12">
+  <div class="flex items-center gap-2 mb-3">
+    <span class="w-2 h-2 rounded-full bg-stolen pulse"></span>
+    <p class="eyebrow">Active watchlist — keep an eye out</p>
+  </div>
+  <div class="card overflow-hidden py-4">
+    <div class="marquee px-3">
+      {% for v in recent_stolen + recent_stolen %}
+        <a href="{{ url_for('vehicles.detail', vehicle_id=v.id) }}" class="shrink-0" title="{{ v.title }}">{{ plate(v.reg_number, true) }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="grid sm:grid-cols-3 gap-3 mb-6">
+  {% set steps = [
+    ('01','Register','Plate, photos, where it lives. Two minutes. Lookup pulls the make and model for you.'),
+    ('02','Raise the alarm','If it''s taken, you flip one switch. Riders within range get the plate and last-seen area.'),
+    ('03','Get it back','Sightings land in your inbox in real time. Map the trail, work with the community.')
+  ] %}
+  {% for n, t, d in steps %}
+  <div class="card card-hover p-5">
+    <div class="eyebrow text-plate">{{ n }}</div>
+    <h3 class="font-display font-700 text-xl text-chalk mt-2">{{ t }}</h3>
+    <p class="text-mute text-sm mt-2 leading-relaxed">{{ d }}</p>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

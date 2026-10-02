@@ -1,0 +1,410 @@
+{% extends "base.html" %}
+{% block title %}Open a Ticket · OpsLab Systems{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* Service tile: visual category picker that drives the hidden form fields */
+  .svc-tile {
+    background: linear-gradient(180deg, rgba(11,18,36,.55), rgba(7,11,22,.45));
+    border: 1.5px solid rgba(27,42,74,.7);
+    transition: all .2s ease;
+  }
+  .svc-tile:hover {
+    border-color: rgba(33,150,243,.4);
+    transform: translateY(-1px);
+  }
+  .svc-tile.selected {
+    border-color: rgba(33,150,243,.7);
+    background: linear-gradient(180deg, rgba(33,150,243,.10), rgba(33,150,243,.02));
+    box-shadow: 0 0 0 1px rgba(33,150,243,.4), 0 12px 30px -10px rgba(33,150,243,.25);
+  }
+  .svc-tile.selected .check { opacity: 1; transform: scale(1); }
+  .check {
+    opacity: 0; transform: scale(.6); transition: all .2s ease;
+  }
+
+  /* Priority radio chips already styled in base.html .form-input etc.
+     This adds a bigger hit area + ring */
+  .pri-tile {
+    transition: all .15s ease;
+  }
+  .pri-tile:has(input:checked) {
+    background: rgba(33,150,243,.10);
+    border-color: rgba(33,150,243,.6);
+    box-shadow: 0 0 0 1px rgba(33,150,243,.4);
+  }
+
+  /* Char counter that turns colour as you get close to limits */
+  .counter-ok      { color: #6b7280; }
+  .counter-warn    { color: #fcd34d; }
+  .counter-danger  { color: #fca5a5; }
+
+  .kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: rgba(27,42,74,.6);
+    border: 1px solid rgba(27,42,74,1);
+    border-bottom-width: 2px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #93c5fd;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-xs text-gray-500 mb-6">
+    <a href="{{ url_for('tickets.index') }}" class="hover:text-ops-400 transition">Tickets</a>
+    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <span class="text-gray-300">New Ticket</span>
+  </nav>
+
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="text-[11px] font-bold uppercase tracking-[.25em] text-ops-400 mb-2">Open a ticket</div>
+    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Tell us what's up.</h1>
+    <p class="text-sm text-gray-400 mt-2 max-w-2xl">
+      We'll route it to the right specialist and open a private Discord channel automatically.
+      Replies sync between web and chat — within seconds.
+    </p>
+  </div>
+
+  <form method="post" id="new-ticket-form" class="relative">
+    <div class="absolute -inset-4 bg-gradient-to-tr from-ops-700/15 to-ops-400/10 rounded-3xl blur-3xl opacity-50 pointer-events-none"></div>
+
+    <div class="relative bg-ink-800/70 backdrop-blur-xl border border-ink-600 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-8">
+
+
+      <!-- ─── 0. Company dropdown (NEW) ─────────────────────────────── -->
+      <div>
+        <div class="flex items-baseline justify-between mb-3">
+          <label class="block text-xs font-bold text-gray-300 uppercase tracking-widest" for="company_select">
+            <span class="text-ops-400">1.</span> Choose a company <span class="text-red-400">*</span>
+          </label>
+          <span class="text-[11px] text-gray-500">Defaults to OpsLabs</span>
+        </div>
+        <select id="company_select" name="company_id_picker"
+                class="form-select w-full px-3 py-3 text-sm font-semibold">
+          {% set _default_id = request.args.get('company_id')|int(0) %}
+          {% set _opslabs = (companies|selectattr('name', 'in', ['OpsLabs', 'OpsLab Systems', 'OpsLabs Systems'])|list|first) %}
+          {% if not _default_id and _opslabs %}
+            {% set _default_id = _opslabs.id %}
+          {% endif %}
+          {% for c in companies %}
+            <option value="{{ c.id }}" {% if c.id == _default_id %}selected{% endif %}>
+              {{ c.name }}{% if c.tagline %} — {{ c.tagline }}{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- ─── 2. Service picker (visual) ────────────────────────────── -->
+      <div>
+        <div class="flex items-baseline justify-between mb-3">
+          <label class="block text-xs font-bold text-gray-300 uppercase tracking-widest">
+            <span class="text-ops-400">2.</span> Choose a service <span class="text-red-400">*</span>
+          </label>
+          <span class="text-[11px] text-gray-500">Click a tile below</span>
+        </div>
+
+        <!-- Hidden fields the form actually posts -->
+        <input type="hidden" name="company_id" id="company_id" required>
+        <input type="hidden" name="category_id" id="category_id">
+
+        {# Build a flat list of (company, category) pairs.
+           If categories exist we present a tile per category; if not, fall back to company-only tiles. #}
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3" id="service-tiles">
+          {% set tile_icons = {
+            'Website Development': '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M3 7l2-3h14l2 3M8 13h.01M12 13h.01M16 13h.01"/></svg>',
+            'FiveM Development':   '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 10l-2 2v3a2 2 0 002 2h6a2 2 0 002-2v-3l-2-2M9 10V7a3 3 0 016 0v3M9 10h6"/></svg>',
+            'Tech Support':        '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>',
+            'Hosting Support':     '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7c0-1.105 3.582-2 8-2s8 .895 8 2-3.582 2-8 2-8-.895-8-2zm0 0v10c0 1.105 3.582 2 8 2s8-.895 8-2V7M4 12c0 1.105 3.582 2 8 2s8-.895 8-2"/></svg>',
+            'System Setup':        '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>',
+            'Other':               '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
+          } %}
+          {% set default_icon = '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>' %}
+
+          {% for c in companies %}
+            {% set cats = c.categories.filter_by(is_active=True).all() if c.categories.__class__.__name__ == 'AppenderQuery' else (c.categories.all() if c.categories else []) %}
+            {% if cats and cats|length > 0 %}
+              {% for cat in cats %}
+                <button type="button"
+                        class="svc-tile group text-left p-4 rounded-2xl relative"
+                        data-company="{{ c.id }}" data-category="{{ cat.id }}" data-name="{{ cat.name }}">
+                  <div class="absolute top-3 right-3 check">
+                    <svg class="w-5 h-5 text-ops-400" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                  <div class="w-9 h-9 rounded-lg bg-ops-500/10 border border-ops-500/30 text-ops-400 flex items-center justify-center mb-3">
+                    {{ tile_icons.get(cat.name, default_icon) | safe }}
+                  </div>
+                  <div class="text-sm font-semibold text-white">{{ cat.name }}</div>
+                  {% if cat.description %}
+                    <div class="text-[11px] text-gray-500 mt-1 line-clamp-2">{{ cat.description }}</div>
+                  {% endif %}
+                </button>
+              {% endfor %}
+            {% else %}
+              <button type="button"
+                      class="svc-tile group text-left p-4 rounded-2xl relative"
+                      data-company="{{ c.id }}" data-category="" data-name="{{ c.name }}">
+                <div class="absolute top-3 right-3 check">
+                  <svg class="w-5 h-5 text-ops-400" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <div class="w-9 h-9 rounded-lg bg-ops-500/10 border border-ops-500/30 text-ops-400 flex items-center justify-center mb-3">
+                  {{ default_icon | safe }}
+                </div>
+                <div class="text-sm font-semibold text-white">{{ c.name }}</div>
+                {% if c.tagline %}
+                  <div class="text-[11px] text-gray-500 mt-1 line-clamp-2">{{ c.tagline }}</div>
+                {% endif %}
+              </button>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- ─── 2. Subject ────────────────────────────────────────────── -->
+      <div>
+        <div class="flex items-baseline justify-between mb-2">
+          <label for="subject" class="block text-xs font-bold text-gray-300 uppercase tracking-widest">
+            <span class="text-ops-400">3.</span> Subject <span class="text-red-400">*</span>
+          </label>
+          <span class="text-[11px]" id="subject-counter">0 / 180</span>
+        </div>
+        <input name="subject" id="subject" required maxlength="180"
+               class="form-input w-full px-4 py-3 text-sm"
+               placeholder="One-line summary, e.g. 'Server crashing on startup'">
+      </div>
+
+      <!-- ─── 3. Priority ───────────────────────────────────────────── -->
+      <div>
+        <label class="block text-xs font-bold text-gray-300 mb-3 uppercase tracking-widest">
+          <span class="text-ops-400">4.</span> Priority
+        </label>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {% set pris = [
+            ('low',    'Low',    '⚪', 'Whenever — no rush'),
+            ('normal', 'Normal', '🔵', 'Standard turnaround'),
+            ('high',   'High',   '🟠', 'Need it soon'),
+            ('urgent', 'Urgent', '🔴', 'Production down')
+          ] %}
+          {% for val, label, emoji, desc in pris %}
+          <label class="pri-tile cursor-pointer block p-3 rounded-xl border border-ink-600 bg-ink-900/40 hover:bg-white/5 transition">
+            <input type="radio" name="priority" value="{{ val }}" {% if val == 'normal' %}checked{% endif %} class="sr-only">
+            <div class="flex items-center gap-2">
+              <span class="text-base">{{ emoji }}</span>
+              <span class="text-sm font-semibold">{{ label }}</span>
+            </div>
+            <div class="text-[10px] text-gray-500 mt-1">{{ desc }}</div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- ─── 4. Description ────────────────────────────────────────── -->
+      <div>
+        <div class="flex items-baseline justify-between mb-2">
+          <label for="body" class="block text-xs font-bold text-gray-300 uppercase tracking-widest">
+            <span class="text-ops-400">5.</span> Describe your issue <span class="text-red-400">*</span>
+          </label>
+          <span class="text-[11px] text-gray-500" id="body-counter">0 chars</span>
+        </div>
+        <textarea name="body" id="body" required rows="8"
+                  class="form-textarea w-full px-4 py-3 text-sm font-mono leading-relaxed"
+                  placeholder="What's happening? What have you tried? Paste error logs as-is — we read them.&#10;&#10;The more detail, the faster we can help."></textarea>
+        <div class="flex items-center justify-between mt-2">
+          <p class="text-[11px] text-gray-500">💡 Tip: paste full error logs or screenshots — we read everything.</p>
+          <span class="text-[11px] text-gray-500" id="draft-status"></span>
+        </div>
+      </div>
+
+      <!-- Submit row -->
+      <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-2 border-t border-ink-600/40">
+        <div class="flex items-center gap-3 text-xs text-gray-500">
+          <a href="{{ url_for('tickets.index') }}" class="hover:text-white transition">Cancel</a>
+          <span class="opacity-30">·</span>
+          <span>Press <span class="kbd">⌘</span> + <span class="kbd">↵</span> to submit</span>
+        </div>
+        <button type="submit" id="submit-btn"
+                class="inline-flex items-center justify-center gap-2 px-7 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow hover:scale-[1.01] transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100">
+          <span id="submit-label">Create ticket</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Reassurance row -->
+  <div class="grid sm:grid-cols-3 gap-3 mt-6">
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-ink-800/40 border border-ink-600">
+      <div class="w-9 h-9 rounded-lg bg-ops-500/15 text-ops-400 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+      <div class="text-xs leading-tight">
+        <div class="font-semibold text-white">Private channel</div>
+        <div class="text-gray-400">Only you & assigned staff</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-ink-800/40 border border-ink-600">
+      <div class="w-9 h-9 rounded-lg bg-ops-500/15 text-ops-400 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </div>
+      <div class="text-xs leading-tight">
+        <div class="font-semibold text-white">Live sync</div>
+        <div class="text-gray-400">Web ↔ Discord, &lt; 5s</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-ink-800/40 border border-ink-600">
+      <div class="w-9 h-9 rounded-lg bg-ops-500/15 text-ops-400 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <div class="text-xs leading-tight">
+        <div class="font-semibold text-white">Tracked forever</div>
+        <div class="text-gray-400">Searchable transcripts</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // ─── Service tile selector ─────────────────────────────────────────
+  const tiles      = document.querySelectorAll('.svc-tile');
+  const companyIn  = document.getElementById('company_id');
+  // ─── Company dropdown sync (added by patch_companies_homepage.py) ───
+  const companySelect = document.getElementById('company_select');
+  function filterTilesByCompany() {
+    if (!companySelect) return;
+    const selectedCompanyId = companySelect.value;
+    companyIn.value = selectedCompanyId;
+    document.querySelectorAll('.svc-tile').forEach(t => {
+      const match = t.dataset.company === selectedCompanyId;
+      t.style.display = match ? '' : 'none';
+      if (!match && t.classList.contains('selected')) {
+        t.classList.remove('selected');
+        categoryIn.value = '';
+      }
+    });
+    // Auto-select first visible tile if none chosen
+    if (!categoryIn.value) {
+      const firstVisible = document.querySelector('.svc-tile:not([style*="display: none"])');
+      if (firstVisible) firstVisible.click();
+    }
+  }
+  if (companySelect) {
+    companySelect.addEventListener('change', filterTilesByCompany);
+    // Initial filter on page load
+    filterTilesByCompany();
+  }
+
+  const categoryIn = document.getElementById('category_id');
+  const submitBtn  = document.getElementById('submit-btn');
+
+  tiles.forEach(t => t.addEventListener('click', () => {
+    tiles.forEach(o => o.classList.remove('selected'));
+    t.classList.add('selected');
+    companyIn.value  = t.dataset.company;
+    categoryIn.value = t.dataset.category || '';
+    validate();
+  }));
+
+  // ─── Subject + body counters ───────────────────────────────────────
+  const subject = document.getElementById('subject');
+  const body    = document.getElementById('body');
+  const sCounter = document.getElementById('subject-counter');
+  const bCounter = document.getElementById('body-counter');
+
+  function updateSubjectCounter() {
+    const len = subject.value.length;
+    sCounter.textContent = `${len} / 180`;
+    sCounter.className = len > 160 ? 'text-[11px] counter-warn' : (len > 175 ? 'text-[11px] counter-danger' : 'text-[11px] counter-ok');
+  }
+  function updateBodyCounter() {
+    const len = body.value.length;
+    bCounter.textContent = `${len.toLocaleString()} chars`;
+  }
+  subject.addEventListener('input', () => { updateSubjectCounter(); validate(); saveDraft(); });
+  body.addEventListener('input',    () => { updateBodyCounter();    validate(); saveDraft(); });
+
+  // ─── Validation ────────────────────────────────────────────────────
+  function validate() {
+    const ok = companyIn.value && subject.value.trim() && body.value.trim();
+    submitBtn.disabled = !ok;
+  }
+  validate();
+
+  // ─── Cmd/Ctrl+Enter submit ─────────────────────────────────────────
+  body.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !submitBtn.disabled) {
+      e.preventDefault();
+      document.getElementById('new-ticket-form').requestSubmit();
+    }
+  });
+
+  // ─── Submit feedback ───────────────────────────────────────────────
+  document.getElementById('new-ticket-form').addEventListener('submit', () => {
+    submitBtn.disabled = true;
+    document.getElementById('submit-label').textContent = 'Creating…';
+    localStorage.removeItem('opslab.draft.new-ticket');
+  });
+
+  // ─── Draft autosave (per-browser) ──────────────────────────────────
+  const DRAFT_KEY  = 'opslab.draft.new-ticket';
+  const draftStat  = document.getElementById('draft-status');
+  let saveTimer;
+
+  function saveDraft() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      const payload = {
+        subject: subject.value,
+        body:    body.value,
+        company: companyIn.value,
+        category: categoryIn.value,
+        ts: Date.now(),
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+      draftStat.textContent = '✓ Draft saved';
+      setTimeout(() => draftStat.textContent = '', 1800);
+    }, 600);
+  }
+
+  function restoreDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      // 7-day expiry
+      if (Date.now() - (d.ts || 0) > 7 * 24 * 3600 * 1000) {
+        localStorage.removeItem(DRAFT_KEY); return;
+      }
+      if (d.subject) subject.value = d.subject;
+      if (d.body)    body.value    = d.body;
+      if (d.company) {
+        const tile = document.querySelector(
+          `.svc-tile[data-company="${d.company}"][data-category="${d.category || ''}"]`
+        );
+        if (tile) tile.click();
+      }
+      updateSubjectCounter();
+      updateBodyCounter();
+      validate();
+      draftStat.textContent = '✓ Restored draft';
+      setTimeout(() => draftStat.textContent = '', 2500);
+    } catch (e) {}
+  }
+  restoreDraft();
+</script>
+{% endblock %}

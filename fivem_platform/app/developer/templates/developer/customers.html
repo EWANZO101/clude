@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Customers — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-semibold text-white">Customers</h1>
+    {% if grouped %}
+      <a href="{{ url_for('developer.export_customers') }}" class="text-sm text-brand hover:text-brand-hover">Export CSV</a>
+    {% endif %}
+  </div>
+
+  {% if grouped %}
+    <div class="space-y-4">
+      {% for email, licenses in grouped.items() %}
+        <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+          <div class="text-white text-sm font-medium mb-2 truncate">{{ email }}</div>
+          <div class="space-y-1">
+            {% for lic in licenses %}
+              <div class="flex items-center justify-between gap-2 flex-wrap text-xs text-gray-400">
+                <span class="font-mono flex-shrink-0">{{ lic.license_key }}</span>
+                <span class="truncate">{{ lic.product.name }}</span>
+                <span class="px-2 py-0.5 rounded-full flex-shrink-0
+                  {% if lic.status == 'active' %} bg-emerald-950 text-emerald-400
+                  {% elif lic.status == 'suspended' %} bg-amber-950 text-amber-400
+                  {% else %} bg-red-950 text-red-400 {% endif %}">
+                  {{ lic.status }}
+                </span>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500">No customers yet — they'll show up here once licenses are assigned to an email.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<title>StockTool Kiosk — Admin Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode: 'class' };
+</script>
+<style>
+  .dragging { opacity: 0.4; }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+<div id="app" class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="w-60 shrink-0 bg-slate-900 border-r border-slate-800 hidden md:flex flex-col">
+    <div class="px-4 py-4 border-b border-slate-800">
+      <div class="text-sm font-semibold">StockTool Kiosk</div>
+      <div class="text-xs text-slate-400">Admin Panel</div>
+    </div>
+    <nav id="nav-list" class="flex-1 overflow-y-auto py-2 text-sm"></nav>
+    <div class="px-4 py-3 border-t border-slate-800 text-xs text-slate-400" id="whoami">Not logged in</div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 flex flex-col min-w-0">
+    <header class="border-b border-slate-800 px-6 py-3 flex items-center justify-between">
+      <h1 id="page-title" class="text-base font-semibold">Admin Panel</h1>
+      <button id="logout-btn" class="text-xs text-slate-400 hover:text-slate-200 hidden">Log out</button>
+    </header>
+
+    <div class="flex-1 overflow-y-auto p-6">
+
+      <!-- LOGIN -->
+      <section id="view-login" class="max-w-sm mx-auto mt-16 bg-slate-900 border border-slate-800 rounded-xl p-6">
+        <h2 class="text-lg font-semibold mb-1">Log in</h2>
+        <p class="text-sm text-slate-400 mb-4">Same badge code or username as the kiosk screen.</p>
+        <input id="login-input" type="text" placeholder="Badge code or username"
+               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm mb-3 outline-none focus:border-indigo-500">
+        <button id="login-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 rounded-lg py-2 text-sm font-medium">Log in</button>
+        <p id="login-error" class="text-xs text-rose-400 mt-3 hidden"></p>
+      </section>
+
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" class="hidden">
+        <div id="dash-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+      </section>
+
+      <!-- ROLES -->
+      <section id="view-roles" class="hidden max-w-4xl">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wide">Roles &amp; Permissions</h2>
+          <button id="new-role-btn" class="bg-indigo-600 hover:bg-indigo-500 text-sm rounded-lg px-3 py-1.5">+ New role</button>
+        </div>
+        <div id="roles-list" class="space-y-3"></div>
+      </section>
+
+      <!-- USERS -->
+      <section id="view-users" class="hidden max-w-3xl">
+        <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">Users</h2>
+        <table class="w-full text-sm">
+          <thead><tr class="text-left text-slate-400 border-b border-slate-800">
+            <th class="py-2">Username</th><th>Badge</th><th>Role</th><th>Active</th><th></th>
+          </tr></thead>
+          <tbody id="users-body"></tbody>
+        </table>
+      </section>
+
+      <!-- SIDEBAR BUILDER -->
+      <section id="view-sidebar-builder" class="hidden max-w-4xl">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wide">Sidebar Builder</h2>
+          <button id="new-page-btn" class="bg-indigo-600 hover:bg-indigo-500 text-sm rounded-lg px-3 py-1.5">+ New page</button>
+        </div>
+        <table class="w-full text-sm">
+          <thead><tr class="text-left text-slate-400 border-b border-slate-800">
+            <th class="py-2">Order</th><th>Title</th><th>Key</th><th>Route</th><th>Enabled</th><th></th>
+          </tr></thead>
+          <tbody id="pages-body"></tbody>
+        </table>
+      </section>
+
+      <!-- PAGE BUILDER (drag-and-drop canvas for a custom page) -->
+      <section id="view-page-builder" class="hidden max-w-3xl">
+        <div class="flex items-center justify-between mb-1">
+          <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wide" id="builder-page-title">Page Builder</h2>
+          <button id="builder-back-btn" class="text-xs text-slate-400 hover:text-slate-200">&larr; Back to Sidebar Builder</button>
+        </div>
+        <p class="text-xs text-slate-500 mb-4">Drag the ⠿ handle to reorder. Changes save immediately.</p>
+
+        <div id="builder-canvas" class="space-y-2 mb-4"></div>
+
+        <div class="bg-slate-900 border border-slate-800 border-dashed rounded-xl p-4">
+          <div class="text-xs font-medium text-slate-400 mb-2">+ Add a component</div>
+          <div class="flex flex-wrap gap-2 mb-3">
+            <button data-add-type="heading" class="text-xs bg-slate-800 hover:bg-slate-700 rounded-lg px-3 py-1.5">Heading</button>
+            <button data-add-type="text" class="text-xs bg-slate-800 hover:bg-slate-700 rounded-lg px-3 py-1.5">Text block</button>
+            <button data-add-type="stat_card" class="text-xs bg-slate-800 hover:bg-slate-700 rounded-lg px-3 py-1.5">Stat card</button>
+            <button data-add-type="data_table" class="text-xs bg-slate-800 hover:bg-slate-700 rounded-lg px-3 py-1.5">Data table</button>
+            <button data-add-type="divider" class="text-xs bg-slate-800 hover:bg-slate-700 rounded-lg px-3 py-1.5">Divider</button>
+          </div>
+          <div id="builder-add-form"></div>
+        </div>
+      </section>
+
+      <!-- PAGE RENDER (read-only view of a custom page's built content) -->
+      <section id="view-page-render" class="hidden max-w-3xl">
+        <div id="page-render-body" class="space-y-4"></div>
+      </section>
+
+      <!-- CUSTOM FIELDS -->
+      <section id="view-custom-fields" class="hidden max-w-4xl">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wide">Custom Fields</h2>
+          <button id="new-field-btn" class="bg-indigo-600 hover:bg-indigo-500 text-sm rounded-lg px-3 py-1.5">+ New field</button>
+        </div>
+        <table class="w-full text-sm">
+          <thead><tr class="text-left text-slate-400 border-b border-slate-800">
+            <th class="py-2">Entity</th><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th></th>
+          </tr></thead>
+          <tbody id="fields-body"></tbody>
+        </table>
+      </section>
+
+      <!-- KIOSK TOKENS -->
+      <section id="view-kiosk-tokens" class="hidden max-w-3xl">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wide">Kiosk Tokens</h2>
+          <button id="new-token-btn" class="bg-indigo-600 hover:bg-indigo-500 text-sm rounded-lg px-3 py-1.5">+ Issue token</button>
+        </div>
+        <p class="text-xs text-slate-500 mb-4">Valid 12 hours. Lets a session already logged into the kiosk open this Admin Panel without re-entering a badge code.</p>
+        <table class="w-full text-sm">
+          <thead><tr class="text-left text-slate-400 border-b border-slate-800">
+            <th class="py-2">Token</th><th>Issued</th><th>Expires</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody id="tokens-body"></tbody>
+        </table>
+      </section>
+
+      <!-- AUDIT LOG -->
+      <section id="view-audit-log" class="hidden max-w-4xl">
+        <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">Audit Log</h2>
+        <table class="w-full text-sm">
+          <thead><tr class="text-left text-slate-400 border-b border-slate-800">
+            <th class="py-2">When</th><th>Actor</th><th>Action</th><th>Detail</th>
+          </tr></thead>
+          <tbody id="audit-body"></tbody>
+        </table>
+      </section>
+
+      <!-- PLACEHOLDER (pages not built yet in this part) -->
+      <section id="view-placeholder" class="hidden">
+        <div class="max-w-md mx-auto mt-16 text-center text-slate-500 text-sm">
+          <p id="placeholder-text">This page's schema exists but its screen hasn't been built yet.</p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<div id="toast" class="fixed bottom-4 right-4 bg-slate-800 border border-slate-700 text-sm px-4 py-2 rounded-lg opacity-0 pointer-events-none transition-opacity"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let TOKEN = localStorage.getItem("stocktool_admin_token") || "";
+let ME = null;
+let SIDEBAR_PAGES = [];
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.remove("opacity-0");
+  setTimeout(() => t.classList.add("opacity-0"), 2500);
+}
+
+async function api(path, options = {}) {
+  const resp = await fetch(path, {
+    ...options,
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}`, ...(options.headers || {}) },
+  });
+  let body = null;
+  try { body = await resp.json(); } catch (e) {}
+  if (resp.status === 401) { doLogout(); }
+  if (!resp.ok) throw new Error((body && body.error) || `Request failed (${resp.status})`);
+  return body;
+}
+
+function showView(name) {
+  document.querySelectorAll("main section[id^='view-']").forEach(s => s.classList.add("hidden"));
+  const el = $(`view-${name}`);
+  if (el) el.classList.remove("hidden");
+}
+
+function doLogout() {
+  TOKEN = ""; ME = null;
+  localStorage.removeItem("stocktool_admin_token");
+  $("sidebar").classList.add("hidden"); $("sidebar").classList.remove("md:flex");
+  $("logout-btn").classList.add("hidden");
+  showView("login");
+}
+
+// ── Login ──────────────────────────────────────────────────────────
+$("login-btn").addEventListener("click", async () => {
+  const raw = $("login-input").value.trim();
+  $("login-error").classList.add("hidden");
+  if (!raw) return;
+  try {
+    const resp = await fetch("/api/admin-panel/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ badge_code: raw }),
+    });
+    const body = await resp.json();
+    if (!resp.ok) throw new Error(body.error || "Login failed.");
+    TOKEN = body.token;
+    localStorage.setItem("stocktool_admin_token", TOKEN);
+    await afterLogin();
+  } catch (e) {
+    $("login-error").textContent = e.message;
+    $("login-error").classList.remove("hidden");
+  }
+});
+$("login-input").addEventListener("keydown", (e) => { if (e.key === "Enter") $("login-btn").click(); });
+$("logout-btn").addEventListener("click", doLogout);
+
+async function afterLogin() {
+  ME = await api("/api/admin-panel/me");
+  $("whoami").textContent = `${ME.username} — ${ME.role}`;
+  $("sidebar").classList.remove("hidden"); $("sidebar").classList.add("md:flex");
+  $("logout-btn").classList.remove("hidden");
+  await loadSidebar();
+  navigateTo(SIDEBAR_PAGES[0] ? SIDEBAR_PAGES[0].key : "dashboard");
+}
+
+// ── Sidebar / navigation ─────────────────────────────────────────────
+async function loadSidebar() {
+  try {
+    const r = await fetch("/api/admin-panel/sidebar", { headers: { "Authorization": `Bearer ${TOKEN}` } });
+    const body = await r.json();
+    SIDEBAR_PAGES = (body.pages || []).filter(p => !p.parent_id);
+    const nav = $("nav-list");
+    nav.innerHTML = "";
+    for (const p of SIDEBAR_PAGES) {
+      const a = document.createElement("a");
+      a.href = "#"; a.dataset.key = p.key;
+      a.className = "block px-4 py-2 text-slate-300 hover:bg-slate-800 hover:text-white cursor-pointer";
+      a.textContent = p.title;
+      a.addEventListener("click", (e) => { e.preventDefault(); navigateTo(p.key); });
+      nav.appendChild(a);
+    }
+  } catch (e) {
+    toast(`Couldn't load sidebar: ${e.message}`);
+  }
+}
+
+const BUILT_VIEWS = {
+  "dashboard": loadDashboard,
+  "roles": loadRoles,
+  "users": loadUsers,
+  "sidebar-builder": loadPages,
+  "custom-fields": loadCustomFields,
+  "kiosk-tokens": loadTokens,
+  "audit-log": loadAuditLog,
+};
+
+function navigateTo(key) {
+  const page = SIDEBAR_PAGES.find(p => p.key === key);
+  $("page-title").textContent = page ? page.title : key;
+  if (BUILT_VIEWS[key]) {
+    showView(key);
+    BUILT_VIEWS[key]();
+  } else if (page) {
+    // Custom page -- render whatever's been built for it in the Page
+    // Builder (empty canvas just shows nothing, not an error).
+    showView("page-render");
+    loadPageRender(page.id);
+  } else {
+    showView("placeholder");
+    $("placeholder-text").textContent = `"${page ? page.title : key}" exists in the sidebar/page schema but its screen hasn't been built yet.`;
+  }
+}
+
+// ── Page render (read-only view of a custom page's built content) ────
+async function loadPageRender(pageId) {
+  try {
+    const r = await api(`/api/admin-panel/pages/${pageId}/render`);
+    $("page-render-body").innerHTML = r.components.length
+      ? r.components.map(renderComponentReadOnly).join("")
+      : `<div class="text-sm text-slate-500 mt-8 text-center">Nothing here yet. Add components to this page from Sidebar Builder &rarr; Edit content.</div>`;
+  } catch (e) { toast(e.message); }
+}
+
+function renderComponentReadOnly(c) {
+  if (c.type === "heading") return `<h3 class="text-lg font-semibold">${c.text}</h3>`;
+  if (c.type === "text") return `<p class="text-sm text-slate-300">${c.text}</p>`;
+  if (c.type === "divider") return `<hr class="border-slate-800">`;
+  if (c.type === "stat_card") return `
+    <div class="inline-block bg-slate-900 border border-slate-800 rounded-xl p-4 mr-3">
+      <div class="text-2xl font-semibold">${c.value}</div>
+      <div class="text-xs text-slate-400 mt-1">${c.label}</div>
+    </div>`;
+  if (c.type === "data_table") return `
+    <table class="w-full text-sm">
+      <thead><tr class="text-left text-slate-400 border-b border-slate-800">
+        ${c.columns.map(col => `<th class="py-2 capitalize">${col.replace(/_/g, " ")}</th>`).join("")}
+      </tr></thead>
+      <tbody>${c.rows.map(row => `
+        <tr class="border-b border-slate-900">${c.columns.map(col => `<td class="py-2">${row[col] ?? ""}</td>`).join("")}</tr>
+      `).join("")}</tbody>
+    </table>`;
+  return "";
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const d = await api("/api/admin-panel/dashboard");
+    const cards = [
+      ["Items", d.item_count], ["Tools", d.tool_count], ["Projects", d.project_count],
+      ["Active users", d.user_count], ["Roles", d.role_count], ["Live kiosk tokens", d.pending_kiosk_tokens],
+    ];
+    $("dash-grid").innerHTML = cards.map(([label, val]) => `
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div class="text-2xl font-semibold">${val}</div>
+        <div class="text-xs text-slate-400 mt-1">${label}</div>
+      </div>`).join("");
+  } catch (e) { toast(e.message); }
+}
+
+// ── Roles ─────────────────────────────────────────────────────────
+async function loadRoles() {
+  try {
+    const [rolesResp, permsResp] = await Promise.all([
+      api("/api/admin-panel/roles"), api("/api/admin-panel/permissions"),
+    ]);
+    const catalog = permsResp.permissions;
+    const list = $("roles-list");
+    list.innerHTML = "";
+    for (const role of rolesResp.roles) {
+      const card = document.createElement("div");
+      card.className = "bg-slate-900 border border-slate-800 rounded-xl p-4";
+      const permChecks = Object.entries(catalog).map(([key, desc]) => `
+        <label class="flex items-center gap-2 text-xs text-slate-300 py-0.5">
+          <input type="checkbox" data-perm="${key}" ${role.permissions.includes(key) ? "checked" : ""} class="rounded bg-slate-950 border-slate-700">
+          ${desc}
+        </label>`).join("");
+      card.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <div class="font-medium text-sm">${role.display_name} <span class="text-slate-500 text-xs">(${role.name})</span></div>
+          ${role.is_system ? '<span class="text-xs text-slate-500">default</span>' :
+            `<button class="text-xs text-rose-400 hover:text-rose-300" data-delete-role="${role.id}">Delete</button>`}
+        </div>
+        <div class="grid grid-cols-2 gap-x-4">${permChecks}</div>
+        <button class="mt-3 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg px-3 py-1.5" data-save-role="${role.id}">Save</button>`;
+      list.appendChild(card);
+    }
+    list.querySelectorAll("[data-save-role]").forEach(btn => btn.addEventListener("click", async () => {
+      const roleId = btn.dataset.saveRole;
+      const card = btn.closest("div.bg-slate-900");
+      const permissions = [...card.querySelectorAll("input[data-perm]:checked")].map(i => i.dataset.perm);
+      try {
+        await api(`/api/admin-panel/roles/${roleId}`, { method: "PUT", body: JSON.stringify({ permissions }) });
+        toast("Role saved.");
+      } catch (e) { toast(e.message); }
+    }));
+    list.querySelectorAll("[data-delete-role]").forEach(btn => btn.addEventListener("click", async () => {
+      try {
+        await api(`/api/admin-panel/roles/${btn.dataset.deleteRole}`, { method: "DELETE" });
+        loadRoles();
+      } catch (e) { toast(e.message); }
+    }));
+  } catch (e) { toast(e.message); }
+}
+
+$("new-role-btn").addEventListener("click", async () => {
+  const displayName = prompt("Role display name (e.g. 'Warehouse Lead'):");
+  if (!displayName) return;
+  try {
+    await api("/api/admin-panel/roles", { method: "POST", body: JSON.stringify({
+      name: displayName.toLowerCase().replace(/\s+/g, "_"), display_name: displayName, permissions: [],
+    }) });
+    loadRoles();
+  } catch (e) { toast(e.message); }
+});
+
+// ── Users ─────────────────────────────────────────────────────────
+async function loadUsers() {
+  try {
+    const [usersResp, rolesResp] = await Promise.all([api("/api/admin-panel/users"), api("/api/admin-panel/roles")]);
+    const roleOptions = rolesResp.roles.map(r => `<option value="${r.name}">${r.display_name}</option>`).join("");
+    $("users-body").innerHTML = usersResp.users.map(u => `
+      <tr class="border-b border-slate-900">
+        <td class="py-2">${u.username}</td><td>${u.badge_code || ""}</td>
+        <td><select data-user-role="${u.id}" class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs">${roleOptions}</select></td>
+        <td>${u.is_active ? "yes" : "no"}</td>
+        <td><button class="text-xs text-indigo-400" data-save-user="${u.id}">Save</button></td>
+      </tr>`).join("");
+    $("users-body").querySelectorAll("select[data-user-role]").forEach(sel => {
+      sel.value = usersResp.users.find(u => u.id == sel.dataset.userRole).role;
+    });
+    $("users-body").querySelectorAll("[data-save-user]").forEach(btn => btn.addEventListener("click", async () => {
+      const sel = document.querySelector(`select[data-user-role="${btn.dataset.saveUser}"]`);
+      try {
+        await api(`/api/admin-panel/users/${btn.dataset.saveUser}/role`, { method: "PUT", body: JSON.stringify({ role: sel.value }) });
+        toast("Role updated.");
+      } catch (e) { toast(e.message); }
+    }));
+  } catch (e) { toast(e.message); }
+}
+
+// ── Sidebar Builder (pages) ─────────────────────────────────────────
+async function loadPages() {
+  try {
+    const r = await api("/api/admin-panel/pages");
+    $("pages-body").innerHTML = r.pages.map(p => `
+      <tr class="border-b border-slate-900">
+        <td class="py-2">${p.order}</td><td>${p.title}</td><td class="text-slate-500">${p.key}</td>
+        <td class="text-slate-500">${p.route || "—"}</td>
+        <td><input type="checkbox" data-toggle-page="${p.id}" ${p.is_enabled ? "checked" : ""} class="rounded bg-slate-950 border-slate-700"></td>
+        <td class="whitespace-nowrap">
+          <button class="text-xs text-indigo-400 hover:text-indigo-300 mr-2" data-edit-content="${p.id}" data-page-title="${p.title}">Edit content</button>
+          ${p.is_system ? "" : `<button class="text-xs text-rose-400" data-delete-page="${p.id}">Delete</button>`}
+        </td>
+      </tr>`).join("");
+    $("pages-body").querySelectorAll("[data-edit-content]").forEach(btn => btn.addEventListener("click", () => {
+      openPageBuilder(parseInt(btn.dataset.editContent, 10), btn.dataset.pageTitle);
+    }));
+    $("pages-body").querySelectorAll("[data-toggle-page]").forEach(cb => cb.addEventListener("change", async () => {
+      try {
+        await api(`/api/admin-panel/pages/${cb.dataset.togglePage}`, { method: "PUT", body: JSON.stringify({ is_enabled: cb.checked }) });
+        toast("Saved."); loadSidebar();
+      } catch (e) { toast(e.message); }
+    }));
+    $("pages-body").querySelectorAll("[data-delete-page]").forEach(btn => btn.addEventListener("click", async () => {
+      try { await api(`/api/admin-panel/pages/${btn.dataset.deletePage}`, { method: "DELETE" }); loadPages(); loadSidebar(); }
+      catch (e) { toast(e.message); }
+    }));
+  } catch (e) { toast(e.message); }
+}
+$("new-page-btn").addEventListener("click", async () => {
+  const title = prompt("Page title:");
+  if (!title) return;
+  try {
+    await api("/api/admin-panel/pages", { method: "POST", body: JSON.stringify({
+      key: title.toLowerCase().replace(/\s+/g, "-"), title, order: 999,
+    }) });
+    loadPages(); loadSidebar();
+  } catch (e) { toast(e.message); }
+});
+
+// ── Custom fields ─────────────────────────────────────────────────
+async function loadCustomFields() {
+  try {
+    const r = await api("/api/admin-panel/custom-fields");
+    $("fields-body").innerHTML = r.fields.map(f => `
+      <tr class="border-b border-slate-900">
+        <td class="py-2">${f.entity_type}</td><td>${f.name}</td><td>${f.label}</td>
+        <td class="text-slate-500">${f.field_type}</td><td>${f.required ? "yes" : "no"}</td>
+        <td><button class="text-xs text-rose-400" data-delete-field="${f.id}">Delete</button></td>
+      </tr>`).join("");
+    $("fields-body").querySelectorAll("[data-delete-field]").forEach(btn => btn.addEventListener("click", async () => {
+      try { await api(`/api/admin-panel/custom-fields/${btn.dataset.deleteField}`, { method: "DELETE" }); loadCustomFields(); }
+      catch (e) { toast(e.message); }
+    }));
+  } catch (e) { toast(e.message); }
+}
+$("new-field-btn").addEventListener("click", async () => {
+  const entity_type = prompt("Entity (item/tool/project/wire/user):");
+  const name = prompt("Field name (machine key, e.g. warranty_expires):");
+  const label = prompt("Field label (shown to users):");
+  const field_type = prompt("Field type (text/number/dropdown/checkbox/date/...):", "text");
+  if (!entity_type || !name || !label || !field_type) return;
+  try {
+    await api("/api/admin-panel/custom-fields", { method: "POST", body: JSON.stringify({ entity_type, name, label, field_type }) });
+    loadCustomFields();
+  } catch (e) { toast(e.message); }
+});
+
+// ── Kiosk tokens ─────────────────────────────────────────────────
+async function loadTokens() {
+  try {
+    const r = await api("/api/admin-panel/kiosk-token/list");
+    $("tokens-body").innerHTML = r.tokens.map(t => `
+      <tr class="border-b border-slate-900">
+        <td class="py-2 font-mono text-xs">${t.token.slice(0, 12)}…</td>
+        <td class="text-slate-500 text-xs">${new Date(t.created_at).toLocaleString()}</td>
+        <td class="text-slate-500 text-xs">${new Date(t.expires_at).toLocaleString()}</td>
+        <td>${t.revoked ? '<span class="text-rose-400">revoked</span>' : (t.is_valid ? '<span class="text-emerald-400">valid</span>' : '<span class="text-slate-500">expired</span>')}</td>
+        <td>${(!t.revoked && t.is_valid) ? `<button class="text-xs text-rose-400" data-revoke-token="${t.id}">Revoke</button>` : ""}</td>
+      </tr>`).join("");
+    $("tokens-body").querySelectorAll("[data-revoke-token]").forEach(btn => btn.addEventListener("click", async () => {
+      try { await api(`/api/admin-panel/kiosk-token/${btn.dataset.revokeToken}/revoke`, { method: "POST" }); loadTokens(); }
+      catch (e) { toast(e.message); }
+    }));
+  } catch (e) { toast(e.message); }
+}
+$("new-token-btn").addEventListener("click", async () => {
+  try {
+    const r = await api("/api/admin-panel/kiosk-token/issue", { method: "POST" });
+    prompt("New token (copy it now):", r.token);
+    loadTokens();
+  } catch (e) { toast(e.message); }
+});
+
+// ── Audit log ───────────────────────────────────────────────────
+async function loadAuditLog() {
+  try {
+    const r = await api("/api/admin-panel/audit-log");
+    $("audit-body").innerHTML = r.entries.map(e => `
+      <tr class="border-b border-slate-900">
+        <td class="py-2 text-slate-500 text-xs">${new Date(e.created_at).toLocaleString()}</td>
+        <td>${e.actor_username || "—"}</td><td class="font-mono text-xs">${e.action}</td>
+        <td class="text-slate-500 text-xs">${e.detail || ""}</td>
+      </tr>`).join("");
+  } catch (e) { toast(e.message); }
+}
+
+// ── Page Builder (drag-and-drop canvas for a custom page) ────────────
+let BUILDER_PAGE_ID = null;
+let ENTITY_SCHEMA = null;
+let CANVAS_DND_INIT = false;
+
+function openPageBuilder(pageId, title) {
+  BUILDER_PAGE_ID = pageId;
+  $("page-title").textContent = "Page Builder";
+  $("builder-page-title").textContent = `Page Builder — ${title}`;
+  $("builder-add-form").innerHTML = "";
+  showView("page-builder");
+  loadBuilderCanvas();
+}
+$("builder-back-btn").addEventListener("click", () => { showView("sidebar-builder"); loadPages(); });
+
+async function getEntitySchema() {
+  if (!ENTITY_SCHEMA) ENTITY_SCHEMA = (await api("/api/admin-panel/page-builder/entity-schema")).entities;
+  return ENTITY_SCHEMA;
+}
+
+async function loadBuilderCanvas() {
+  try {
+    const r = await api(`/api/admin-panel/pages/${BUILDER_PAGE_ID}/components`);
+    renderBuilderCanvas(r.components);
+  } catch (e) { toast(e.message); }
+}
+
+function summarizeComponent(c) {
+  const cfg = c.config;
+  if (c.component_type === "heading" || c.component_type === "text") return cfg.text || "(empty)";
+  if (c.component_type === "stat_card") {
+    return `${cfg.label || ""} — count of ${cfg.entity_type}` + (cfg.filter_field ? ` where ${cfg.filter_field} = ${cfg.filter_value}` : "");
+  }
+  if (c.component_type === "data_table") return `${cfg.entity_type} table — columns: ${(cfg.columns || []).join(", ") || "all"}`;
+  if (c.component_type === "divider") return "—— divider ——";
+  return "";
+}
+
+function renderBuilderCanvas(components) {
+  const canvas = $("builder-canvas");
+  canvas.innerHTML = components.length ? components.map(c => `
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-start gap-3" draggable="true" data-comp-id="${c.id}">
+      <div class="cursor-grab text-slate-600 select-none pt-1" title="Drag to reorder">⠿</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">${c.component_type.replace(/_/g, " ")}</div>
+        <div class="text-sm text-slate-300 truncate">${summarizeComponent(c)}</div>
+      </div>
+      <button class="text-xs text-rose-400 shrink-0" data-delete-comp="${c.id}">Delete</button>
+    </div>`).join("") : `<div class="text-sm text-slate-500 text-center py-6 border border-dashed border-slate-800 rounded-xl">No components yet — add one below.</div>`;
+
+  canvas.querySelectorAll("[data-comp-id]").forEach(el => {
+    el.addEventListener("dragstart", () => el.classList.add("dragging"));
+    el.addEventListener("dragend", () => el.classList.remove("dragging"));
+  });
+  canvas.querySelectorAll("[data-delete-comp]").forEach(btn => btn.addEventListener("click", async () => {
+    try {
+      await api(`/api/admin-panel/pages/${BUILDER_PAGE_ID}/components/${btn.dataset.deleteComp}`, { method: "DELETE" });
+      loadBuilderCanvas();
+    } catch (e) { toast(e.message); }
+  }));
+
+  if (!CANVAS_DND_INIT) { initCanvasDragDrop(); CANVAS_DND_INIT = true; }
+}
+
+// Native HTML5 drag-and-drop: reorders the DOM live as you drag over
+// the canvas, then persists the final order on drop.
+function initCanvasDragDrop() {
+  const canvas = $("builder-canvas");
+  canvas.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    const dragging = canvas.querySelector(".dragging");
+    if (!dragging) return;
+    const afterEl = getDragAfterElement(canvas, e.clientY);
+    if (afterEl == null) canvas.appendChild(dragging);
+    else canvas.insertBefore(dragging, afterEl);
+  });
+  canvas.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    const order = [...canvas.querySelectorAll("[data-comp-id]")].map(el => parseInt(el.dataset.compId, 10));
+    try {
+      await api(`/api/admin-panel/pages/${BUILDER_PAGE_ID}/components/reorder`, { method: "PUT", body: JSON.stringify({ order }) });
+    } catch (e2) { toast(e2.message); loadBuilderCanvas(); }
+  });
+}
+
+function getDragAfterElement(container, y) {
+  const els = [...container.querySelectorAll("[data-comp-id]:not(.dragging)")];
+  return els.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) return { offset, element: child };
+    return closest;
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+// ── Add-component forms (one per palette button) ─────────────────────
+document.querySelectorAll("[data-add-type]").forEach(btn => btn.addEventListener("click", () => showAddForm(btn.dataset.addType)));
+
+async function showAddForm(type) {
+  const container = $("builder-add-form");
+
+  if (type === "divider") {
+    return submitAddComponent(type, {});
+  }
+
+  if (type === "heading" || type === "text") {
+    container.innerHTML = `
+      <div class="flex gap-2">
+        <input id="add-field-text" type="text" placeholder="${type === "heading" ? "Heading text" : "Paragraph text"}"
+               class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+        <button id="add-field-submit" class="bg-indigo-600 hover:bg-indigo-500 text-sm rounded-lg px-3 py-2">Add</button>
+      </div>`;
+    $("add-field-submit").addEventListener("click", () => submitAddComponent(type, { text: $("add-field-text").value }));
+    return;
+  }
+
+  const schema = await getEntitySchema();
+  const entityOptions = Object.keys(schema).map(e => `<option value="${e}">${e}</option>`).join("");
+
+  if (type === "stat_card") {
+    container.innerHTML = `
+      <div class="grid grid-cols-2 gap-2 mb-2">
+        <input id="add-sc-label" type="text" placeholder="Label (e.g. 'Low stock items')" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+        <select id="add-sc-entity" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm">${entityOptions}</select>
+      </div>
+      <button id="add-field-submit" class="bg-indigo-600 hover:bg-indigo-500 text-sm rounded-lg px-3 py-2">Add</button>`;
+    $("add-field-submit").addEventListener("click", () => submitAddComponent(type, {
+      label: $("add-sc-label").value || "Count", entity_type: $("add-sc-entity").value,
+    }));
+    return;
+  }
+
+  if (type === "data_table") {
+    container.innerHTML = `
+      <select id="add-dt-entity" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm mb-2">${entityOptions}</select>
+      <div id="add-dt-columns" class="flex flex-wrap gap-3 mb-2 text-xs"></div>
+      <button id="add-field-submit" class="bg-indigo-600 hover:bg-indigo-500 text-sm rounded-lg px-3 py-2">Add</button>`;
+    const renderCols = () => {
+      const cols = schema[$("add-dt-entity").value] || [];
+      $("add-dt-columns").innerHTML = cols.map(c => `
+        <label class="flex items-center gap-1 text-slate-300"><input type="checkbox" value="${c}" checked class="rounded bg-slate-950 border-slate-700">${c}</label>`).join("");
+    };
+    renderCols();
+    $("add-dt-entity").addEventListener("change", renderCols);
+    $("add-field-submit").addEventListener("click", () => {
+      const columns = [...$("add-dt-columns").querySelectorAll("input:checked")].map(i => i.value);
+      submitAddComponent(type, { entity_type: $("add-dt-entity").value, columns, limit: 25 });
+    });
+  }
+}
+
+async function submitAddComponent(type, config) {
+  try {
+    await api(`/api/admin-panel/pages/${BUILDER_PAGE_ID}/components`, {
+      method: "POST", body: JSON.stringify({ component_type: type, config }),
+    });
+    $("builder-add-form").innerHTML = "";
+    loadBuilderCanvas();
+  } catch (e) { toast(e.message); }
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+if (TOKEN) { afterLogin().catch(() => doLogout()); } else { showView("login"); }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#09090b">
+<title>{% block title %}OpsLab Systems · Build. Support. Scale. Together.{% endblock %}</title>
+
+<meta name="description" content="OpsLab Systems — custom websites, FiveM scripts, hosting, system setup. One roof, one team, one ticket system. Live sync between web and Discord.">
+<meta property="og:title" content="OpsLab Systems · Build. Support. Scale. Together.">
+<meta property="og:description" content="From custom websites to FiveM scripts, hosting to system setup — under one roof, one team, one ticket system.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Tailwind + Flowbite -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.5.2/flowbite.min.css">
+<script>
+  /* Design tokens. `ink` = neutral surfaces, `ops` = brand accent, `gray` is
+     re-pointed at a neutral zinc scale so every template loses the blue cast. */
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['"JetBrains Mono"', 'monospace'] },
+        colors: {
+          ink:  { 950:'#09090b', 900:'#0c0c0e', 800:'#131316', 700:'#1a1a1e', 600:'#27272a', 500:'#3f3f46' },
+          ops:  { 50:'#eff6ff', 100:'#dbeafe', 200:'#bfdbfe', 300:'#93c5fd', 400:'#60a5fa', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 800:'#1e40af', 900:'#1e3a8a' },
+          gray: { 50:'#fafafa', 100:'#f4f4f5', 200:'#e4e4e7', 300:'#d4d4d8', 400:'#a1a1aa', 500:'#71717a', 600:'#52525b', 700:'#3f3f46', 800:'#27272a', 900:'#18181b', 950:'#09090b' },
+        },
+        boxShadow: {
+          glow:      '0 1px 2px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.06) inset',
+          'glow-sm': '0 1px 2px rgba(0,0,0,.35)',
+        },
+        letterSpacing: { wider: '.03em', widest: '.08em' },
+        keyframes: {
+          'fade-up':   { '0%':{opacity:'0', transform:'translateY(6px)'}, '100%':{opacity:'1', transform:'translateY(0)'} },
+          'pulse-soft':{ '0%,100%':{opacity:'1'}, '50%':{opacity:'.5'} },
+        },
+        animation: {
+          'fade-up':    'fade-up .4s ease-out both',
+          'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  :root {
+    --bg: #09090b; --surface: #131316; --surface-2: #1a1a1e;
+    --line: rgba(255,255,255,.08); --line-strong: rgba(255,255,255,.14);
+    --text: #ededef; --muted: #a1a1aa; --faint: #71717a;
+    --accent: #3b82f6; --accent-strong: #2563eb;
+  }
+  html, body { background: var(--bg); color: var(--text); }
+  body { font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; }
+  h1, h2, h3 { letter-spacing: -.02em; }
+
+  /* Kept for templates that still reference them — now a quiet dot grid */
+  .grid-overlay {
+    background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 100%);
+  }
+
+  /* Status pills */
+  .pill { display:inline-flex; align-items:center; gap:6px; padding: 2px 8px; border-radius:6px; font-size: 11.5px; font-weight:500; line-height:1.5; border:1px solid transparent; }
+  .pill-open    { background: rgba(34,197,94,.10);  color: #4ade80; border-color: rgba(34,197,94,.2);}
+  .pill-pending { background: rgba(245,158,11,.10); color: #fbbf24; border-color: rgba(245,158,11,.2);}
+  .pill-closed  { background: rgba(161,161,170,.10);color: #a1a1aa; border-color: rgba(161,161,170,.2);}
+  .pill-low     { background: rgba(161,161,170,.10);color: #a1a1aa; border-color: rgba(161,161,170,.2);}
+  .pill-normal  { background: rgba(59,130,246,.10); color: #60a5fa; border-color: rgba(59,130,246,.2);}
+  .pill-high    { background: rgba(245,158,11,.10); color: #fbbf24; border-color: rgba(245,158,11,.2);}
+  .pill-urgent  { background: rgba(239,68,68,.10);  color: #f87171; border-color: rgba(239,68,68,.2);}
+  .pill-admin   { background: rgba(59,130,246,.10); color: #60a5fa; border-color: rgba(59,130,246,.2);}
+  .pill-staff   { background: rgba(168,85,247,.10); color: #c084fc; border-color: rgba(168,85,247,.2);}
+  .pill-user    { background: rgba(161,161,170,.10);color: #a1a1aa; border-color: rgba(161,161,170,.2);}
+
+  /* Former hover gleam — replaced by a plain border lift */
+  .gleam { transition: border-color .15s ease; }
+  .gleam:hover { border-color: var(--line-strong) !important; }
+
+  .live-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.15); }
+
+  /* Conversation bubbles */
+  .msg { padding: 12px 14px; border-radius: 10px; margin-bottom: 10px; max-width: 80%; border: 1px solid var(--line); background: var(--surface); }
+  .msg.from-me      { margin-left: auto; background: rgba(59,130,246,.08); border-color: rgba(59,130,246,.22);}
+  .msg.from-them    { background: var(--surface); }
+  .msg.from-discord { background: rgba(88,101,242,.07); border-color: rgba(88,101,242,.25);}
+  .msg.from-system  { background: transparent; border-style: dashed; color: var(--muted); font-size: 13px; max-width: 100%; text-align: center;}
+  .msg.internal     { border-color: rgba(245,158,11,.3); background: rgba(245,158,11,.05);}
+
+  /* Inputs */
+  .form-input, .form-textarea, .form-select { background: var(--bg) !important; border: 1px solid var(--line-strong) !important; color: var(--text) !important; border-radius: 8px !important; transition: border-color .15s, box-shadow .15s; }
+  .form-input::placeholder, .form-textarea::placeholder { color: #52525b; }
+  .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(59,130,246,.18) !important; outline: none; }
+
+  /* Scrollbar */
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: #27272a; border-radius: 5px; border: 2px solid var(--bg); }
+  *::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+  ::selection { background: rgba(59,130,246,.35); color: white; }
+
+  /* ===== Navbar ===== */
+  .site-nav {
+    background: rgba(9,9,11,.72);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid transparent;
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .site-nav[data-scrolled="true"] { background: rgba(9,9,11,.88); border-bottom-color: var(--line); }
+
+  .navlink {
+    display:flex; align-items:center; gap:.35rem; white-space:nowrap;
+    padding:.4rem .7rem; border-radius:6px; font-size:.875rem; font-weight:500;
+    color: var(--muted); transition: color .15s, background .15s;
+  }
+  .navlink:hover { color: var(--text); background: rgba(255,255,255,.04); }
+  .navlink.active { color: var(--text); }
+
+  /* Mobile drawer */
+  .nav-drawer { overflow:hidden; max-height:0; opacity:0; transition:max-height .3s cubic-bezier(.4,0,.2,1), opacity .2s ease; }
+  .nav-drawer.open { max-height:85vh; opacity:1; overflow-y:auto; }
+  .nav-backdrop { opacity:0; pointer-events:none; transition:opacity .2s ease; }
+  .nav-backdrop.open { opacity:1; pointer-events:auto; }
+  .mlink { display:flex; align-items:center; gap:.7rem; min-height:44px; padding:.55rem .75rem; border-radius:8px; font-size:.95rem; font-weight:500; color:#d4d4d8; transition:background .15s; }
+  .mlink:hover, .mlink:active { background:rgba(255,255,255,.04); }
+  .mlink.active { background:rgba(255,255,255,.06); color:#fff; }
+  body.nav-locked { overflow:hidden; }
+
+  /* Dropdowns */
+  .svc-drop, .drop { display:none; }
+  .svc-drop-wrap:hover .svc-drop, .svc-drop-wrap:focus-within .svc-drop,
+  .drop-wrap:hover .drop, .drop-wrap:focus-within .drop { display:block; }
+  .svc-drop-wrap::after, .drop-wrap::after { content:''; position:absolute; left:0; right:0; top:100%; height:10px; } /* hover bridge */
+  .svc-drop, .drop {
+    position:absolute; top: calc(100% + 8px);
+    background: #111113; border: 1px solid var(--line-strong); border-radius: 12px;
+    box-shadow: 0 16px 40px -12px rgba(0,0,0,.7), 0 0 0 1px rgba(0,0,0,.4);
+    animation: fade-up .15s ease-out both; z-index: 60;
+  }
+  .svc-drop { left:50%; transform:translateX(-50%); width: 560px; max-width: 90vw; padding: 8px; }
+  .svc-drop-item { display:flex; align-items:center; gap:12px; padding:10px; border-radius:8px; transition: background .12s ease; }
+  .svc-drop-item:hover { background: rgba(255,255,255,.04); }
+  .drop { min-width: 200px; padding: 5px; }
+  .drop-left  { left: 0; }
+  .drop-right { right: 0; }
+  .drop-item { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:6px; font-size:.86rem; font-weight:500; color:#d4d4d8; transition: background .12s, color .12s; white-space:nowrap; }
+  .drop-item:hover { background: rgba(255,255,255,.05); color:#fff; }
+  .drop-item.active { color:#fff; }
+  .drop-divider { margin:5px 2px; border-top:1px solid var(--line); }
+  @keyframes fade-up { from { opacity:0; margin-top:-4px } to { opacity:1; margin-top:0 } }
+
+  /* Shared button helpers for new markup */
+  .ui-btn { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; height:2.25rem; padding:0 .9rem; border-radius:8px; font-size:.875rem; font-weight:500; transition: background .15s, border-color .15s, color .15s; white-space:nowrap; }
+  .ui-btn-primary { background:#fafafa; color:#09090b; }
+  .ui-btn-primary:hover { background:#e4e4e7; color:#09090b; }
+  .ui-btn-accent { background: var(--accent-strong); color:#fff; }
+  .ui-btn-accent:hover { background: var(--accent); color:#fff; }
+  .ui-btn-ghost { border:1px solid var(--line-strong); color:#e4e4e7; background: transparent; }
+  .ui-btn-ghost:hover { background: rgba(255,255,255,.05); color:#fff; }
+  .ui-btn-lg { height:2.75rem; padding:0 1.25rem; font-size:.9rem; }
+</style>
+{% block head_extra %}{% endblock %}
+</head>
+<body class="font-sans antialiased min-h-screen flex flex-col">
+
+{% macro logo(size=24) -%}
+<svg viewBox="0 0 64 64" width="{{ size }}" height="{{ size }}" aria-hidden="true">
+  <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="#fafafa" stroke-width="5" stroke-linejoin="round"/>
+  <polygon points="32,4 56,18 32,32" fill="#3b82f6"/>
+  <polygon points="32,32 56,18 56,46 32,60" fill="#fafafa"/>
+</svg>
+{%- endmacro %}
+
+<!-- ============ TOP NAV ============ -->
+{% set ep = (request.endpoint or '') %}
+{% set is_home  = ep == 'main.index' %}
+{% set is_dash  = ep.startswith('portal.') %}
+{% set is_tix   = ep.startswith('tickets.') %}
+{% set is_admin = ep.startswith('admin.') %}
+<nav id="siteNav" class="site-nav sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-14 gap-2">
+
+      <!-- Brand -->
+      <a href="{{ url_for('main.index') }}" class="flex items-center gap-2.5 shrink-0">
+        {{ logo(22) }}
+        <span class="font-semibold text-[15px] tracking-tight text-white leading-none">OpsLab <span class="text-gray-400 font-medium">Systems</span></span>
+      </a>
+
+      <!-- Desktop links -->
+      <div class="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
+        <a href="{{ url_for('main.index') }}" class="navlink {{ 'active' if is_home }}">Home</a>
+
+        <div class="svc-drop-wrap relative">
+          <button type="button" class="navlink">
+            Services
+            <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="svc-drop">
+            <div class="grid grid-cols-2 gap-0.5">
+              {% for sub, slug, svc in SUBDOMAINS_ORDERED %}
+              <a href="{{ sub_url(sub) }}" class="svc-drop-item">
+                <span class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-white/[.03] border border-white/[.08]" style="color:{{ svc.accent }}">
+                  <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ svc.icon }}"/></svg>
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-sm font-medium text-white">{{ svc.short_name }}</span>
+                  <span class="block text-xs text-gray-500 truncate">{{ sub }}.{{ PUBLIC_DOMAIN }}</span>
+                </span>
+              </a>
+              {% endfor %}
+            </div>
+            <a href="{{ url_for('main.index') }}#services" class="mt-1 flex items-center justify-between px-3 py-2.5 text-xs font-medium text-gray-400 hover:text-white border-t border-white/[.06]">
+              <span>All services</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </a>
+          </div>
+        </div>
+
+        {% set is_company = ep == 'main.about' or request.path.startswith('/reviews') or request.path.startswith('/roadmap') or request.path.startswith('/partners') or request.path.startswith('/licenses') %}
+        <div class="drop-wrap relative">
+          <button type="button" class="navlink {{ 'active' if is_company }}">
+            Company
+            <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="drop drop-left">
+            <a href="{{ url_for('main.index') }}#about" class="drop-item">About</a>
+            <a href="{{ url_for('reviews.index') }}" class="drop-item {{ 'active' if request.path.startswith('/reviews') }}">Reviews</a>
+            <a href="{{ url_for('roadmap.index') }}" class="drop-item {{ 'active' if request.path.startswith('/roadmap') }}">Roadmap</a>
+            <a href="{{ url_for('partners.landing') }}" class="drop-item {{ 'active' if request.path.startswith('/partners') }}">Partners</a>
+            <div class="drop-divider"></div>
+            <a href="/licenses/" class="drop-item {{ 'active' if request.path.startswith('/licenses') }}">Licenses</a>
+          </div>
+        </div>
+
+        <a href="{{ url_for('main.index') }}#contact" class="navlink">Contact</a>
+      </div>
+
+      <!-- Desktop actions -->
+      <div class="flex items-center gap-2 shrink-0">
+        <div class="hidden lg:flex items-center gap-2">
+          {% if current_user.is_authenticated %}
+            <a href="{{ url_for('tickets.new') }}" class="ui-btn ui-btn-primary !h-8 !px-3">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/></svg>
+              New ticket
+            </a>
+            <div class="drop-wrap relative">
+              <button type="button" class="flex items-center gap-2 p-1 pr-2 rounded-lg hover:bg-white/5 transition">
+                <div class="w-7 h-7 rounded-full bg-ink-600 border border-white/10 flex items-center justify-center text-xs font-semibold text-white shrink-0">{{ (current_user.username or current_user.name or current_user.email or "?")[0].upper() }}</div>
+                <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+              <div class="drop drop-right !min-w-[230px]">
+                <div class="px-2.5 py-2 mb-1 border-b border-white/[.06]">
+                  <div class="text-sm font-medium text-white truncate">{{ current_user.username or current_user.name or current_user.email }}</div>
+                  <div class="text-xs text-gray-500 capitalize">{{ current_user.role or 'user' }}</div>
+                </div>
+                <a href="{{ url_for('portal.dashboard') }}" class="drop-item {{ 'active' if is_dash }}">Dashboard</a>
+                <a href="{{ url_for('tickets.index') }}" class="drop-item {{ 'active' if is_tix }}">My tickets</a>
+                {% if current_user.is_staff %}<a href="{{ url_for('admin.dashboard') }}" class="drop-item {{ 'active' if is_admin }}">Admin console</a>{% endif %}
+                <div class="drop-divider"></div>
+                <a href="{{ url_for('auth.logout') }}" class="drop-item">Sign out</a>
+              </div>
+            </div>
+          {% else %}
+            <a href="{{ url_for('auth.login') }}" class="navlink">Sign in</a>
+            <a href="{{ url_for('auth.register') }}" class="ui-btn ui-btn-primary !h-8 !px-3.5">Get started</a>
+          {% endif %}
+        </div>
+
+        <!-- Hamburger -->
+        <button id="navToggle" type="button" aria-controls="mobileNav" aria-expanded="false"
+          class="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 transition">
+          <span class="sr-only">Open main menu</span>
+          <svg id="navIconOpen" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/></svg>
+          <svg id="navIconClose" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== Mobile / tablet drawer ===== -->
+    <div id="mobileNav" class="nav-drawer lg:hidden">
+      <div class="flex flex-col gap-0.5 py-3 border-t border-white/[.06]">
+        {% if current_user.is_authenticated %}
+          <div class="flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-white/[.03] border border-white/[.06]">
+            <div class="w-9 h-9 rounded-full bg-ink-600 border border-white/10 flex items-center justify-center text-sm font-semibold shrink-0">{{ (current_user.username or current_user.name or current_user.email or "?")[0].upper() }}</div>
+            <div class="leading-tight min-w-0">
+              <div class="text-sm font-medium truncate">{{ current_user.username or current_user.name or current_user.email }}</div>
+              <div class="text-xs text-gray-500 capitalize">{{ current_user.role or 'user' }}</div>
+            </div>
+          </div>
+        {% endif %}
+
+        <a href="{{ url_for('main.index') }}" class="mlink {{ 'active' if is_home }}">Home</a>
+
+        <div class="px-3 pt-4 pb-1 text-xs font-medium text-gray-500">Services</div>
+        {% for sub, slug, svc in SUBDOMAINS_ORDERED %}
+        <a href="{{ sub_url(sub) }}" class="mlink">
+          <svg class="w-4 h-4 shrink-0" style="color:{{ svc.accent }}" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ svc.icon }}"/></svg>
+          {{ svc.short_name }}
+        </a>
+        {% endfor %}
+
+        <div class="px-3 pt-4 pb-1 text-xs font-medium text-gray-500">Company</div>
+        <a href="{{ url_for('main.index') }}#about" class="mlink">About</a>
+        <a href="{{ url_for('reviews.index') }}" class="mlink {{ 'active' if request.path.startswith('/reviews') }}">Reviews</a>
+        <a href="{{ url_for('roadmap.index') }}" class="mlink {{ 'active' if request.path.startswith('/roadmap') }}">Roadmap</a>
+        <a href="{{ url_for('partners.landing') }}" class="mlink {{ 'active' if request.path.startswith('/partners') }}">Partners</a>
+        <a href="/licenses/" class="mlink {{ 'active' if request.path.startswith('/licenses') }}">Licenses</a>
+        <a href="{{ url_for('main.index') }}#contact" class="mlink">Contact</a>
+
+        {% if current_user.is_authenticated %}
+          <div class="px-3 pt-4 pb-1 text-xs font-medium text-gray-500">Account</div>
+          <a href="{{ url_for('portal.dashboard') }}" class="mlink {{ 'active' if is_dash }}">Dashboard</a>
+          <a href="{{ url_for('tickets.index') }}" class="mlink {{ 'active' if is_tix }}">My tickets</a>
+          {% if current_user.is_staff %}<a href="{{ url_for('admin.dashboard') }}" class="mlink {{ 'active' if is_admin }}">Admin console</a>{% endif %}
+          <div class="mt-3 pt-3 border-t border-white/[.06] grid grid-cols-2 gap-2">
+            <a href="{{ url_for('tickets.new') }}" class="ui-btn ui-btn-primary ui-btn-lg">New ticket</a>
+            <a href="{{ url_for('auth.logout') }}" class="ui-btn ui-btn-ghost ui-btn-lg">Sign out</a>
+          </div>
+        {% else %}
+          <div class="mt-3 pt-3 border-t border-white/[.06] grid grid-cols-2 gap-2">
+            <a href="{{ url_for('auth.login') }}" class="ui-btn ui-btn-ghost ui-btn-lg">Sign in</a>
+            <a href="{{ url_for('auth.register') }}" class="ui-btn ui-btn-primary ui-btn-lg">Get started</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>
+<!-- Backdrop behind the mobile drawer -->
+<div id="navBackdrop" class="nav-backdrop lg:hidden fixed inset-x-0 bottom-0 top-14 z-40 bg-black/60"></div>
+
+<script>
+  (function () {
+    var nav   = document.getElementById('siteNav');
+    var btn   = document.getElementById('navToggle');
+    var panel = document.getElementById('mobileNav');
+    var back  = document.getElementById('navBackdrop');
+    var iOpen = document.getElementById('navIconOpen');
+    var iClose= document.getElementById('navIconClose');
+
+    // Hairline border appears once the page is scrolled
+    if (nav) {
+      var onScroll = function () {
+        nav.setAttribute('data-scrolled', window.scrollY > 4 ? 'true' : 'false');
+      };
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+    }
+
+    if (!btn || !panel) return;
+
+    function setOpen(open) {
+      panel.classList.toggle('open', open);
+      if (back) back.classList.toggle('open', open);
+      if (iOpen)  iOpen.classList.toggle('hidden', open);
+      if (iClose) iClose.classList.toggle('hidden', !open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      document.body.classList.toggle('nav-locked', open);
+      if (nav && open) nav.setAttribute('data-scrolled', 'true');
+    }
+    btn.addEventListener('click', function () {
+      setOpen(!panel.classList.contains('open'));
+    });
+    if (back) back.addEventListener('click', function () { setOpen(false); });
+    panel.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setOpen(false);
+    });
+    window.addEventListener('resize', function () {
+      if (window.innerWidth >= 1024) setOpen(false);
+    });
+  })();
+</script>
+
+<!-- ============ FLASHES ============ -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-4 space-y-2">
+      {% for cat, msg in messages %}
+        <div class="flex items-center gap-3 px-4 py-3 rounded-lg border bg-ink-800 text-sm text-gray-200
+          {% if cat == 'success' %}border-green-500/25{% elif cat == 'error' %}border-red-500/25{% elif cat == 'warning' %}border-yellow-500/25{% else %}border-white/10{% endif %}">
+          <span class="w-1.5 h-1.5 rounded-full shrink-0
+            {% if cat == 'success' %}bg-green-400{% elif cat == 'error' %}bg-red-400{% elif cat == 'warning' %}bg-yellow-400{% else %}bg-ops-400{% endif %}"></span>
+          <span>{{ msg }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ============ PAGE ============ -->
+<main class="flex-1 w-full">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="mt-24 border-t border-white/[.06]">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-8">
+      <div class="col-span-2">
+        <div class="flex items-center gap-2.5 mb-4">
+          {{ logo(20) }}
+          <span class="font-semibold text-[15px] tracking-tight text-white">OpsLab <span class="text-gray-400 font-medium">Systems</span></span>
+        </div>
+        <p class="text-sm text-gray-500 max-w-xs leading-relaxed">
+          Websites, FiveM development, hosting, system setup and on-site IT — one team, one ticket system.
+        </p>
+      </div>
+      <div>
+        <h4 class="text-sm font-medium text-white mb-3">Services</h4>
+        <ul class="space-y-2 text-sm text-gray-500">
+          {% for sub, slug, svc in SUBDOMAINS_ORDERED %}
+          <li><a href="{{ sub_url(sub) }}" class="hover:text-gray-200 transition">{{ svc.short_name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-sm font-medium text-white mb-3">Company</h4>
+        <ul class="space-y-2 text-sm text-gray-500">
+          <li><a href="{{ url_for('main.index') }}#about" class="hover:text-gray-200 transition">About</a></li>
+          <li><a href="{{ url_for('main.index') }}#contact" class="hover:text-gray-200 transition">Contact</a></li>
+          <li><a href="{{ url_for('reviews.index') }}" class="hover:text-gray-200 transition">Reviews</a></li>
+          <li><a href="{{ url_for('roadmap.index') }}" class="hover:text-gray-200 transition">Roadmap</a></li>
+          <li><a href="/api/v1/health" class="hover:text-gray-200 transition">API status</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-sm font-medium text-white mb-3">Account</h4>
+        <ul class="space-y-2 text-sm text-gray-500">
+          {% if current_user.is_authenticated %}
+          <li><a href="{{ url_for('tickets.index') }}" class="hover:text-gray-200 transition">My tickets</a></li>
+          <li><a href="/licenses/" class="hover:text-gray-200 transition">License manager</a></li>
+          <li><a href="{{ url_for('tickets.new') }}" class="hover:text-gray-200 transition">Open a ticket</a></li>
+          <li><a href="{{ url_for('auth.logout') }}" class="hover:text-gray-200 transition">Sign out</a></li>
+          {% else %}
+          <li><a href="{{ url_for('auth.login') }}" class="hover:text-gray-200 transition">Sign in</a></li>
+          <li><a href="{{ url_for('auth.register') }}" class="hover:text-gray-200 transition">Create account</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+    <div class="mt-12 pt-6 border-t border-white/[.06] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
+      <span>© <span id="year"></span> OpsLab Systems</span>
+      <a href="/api/v1/health" class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-white/[.08] hover:text-gray-300 transition"><span class="live-dot"></span> All systems operational</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.5.2/flowbite.min.js"></script>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+{% block scripts %}{% endblock %}
+{% if not partner_agreement_accepted and not request.path.startswith('/partners') and not request.path.startswith('/auth') %}
+<div id="partnerPopup" style="display:none" class="fixed inset-0 z-[100] items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+  <div class="max-w-md w-full rounded-xl border border-white/10 bg-ink-800 p-6 shadow-2xl">
+    <div class="text-xs font-medium text-ops-400 mb-2">Partner Program</div>
+    <h2 class="text-xl font-semibold tracking-tight">Become an OpsLab partner</h2>
+    <p class="text-gray-400 mt-2 text-sm leading-relaxed">List your company or developer community on the platform and get your own page. Partners agree to a short, fair agreement covering independent-contractor status, refunds, conduct and more.</p>
+    <div class="mt-6 flex flex-wrap items-center gap-2">
+      <a href="{{ url_for('partners.landing') }}" class="ui-btn ui-btn-primary">Become a partner</a>
+      <a href="{{ url_for('partners.agreement') }}" class="ui-btn ui-btn-ghost">Read agreement</a>
+      <button type="button" onclick="dismissPartnerPopup()" class="ml-auto text-sm font-medium text-gray-500 hover:text-gray-300">Not now</button>
+    </div>
+  </div>
+</div>
+<script>
+  function dismissPartnerPopup(){
+    document.cookie = "ols_partner_seen=1; path=/; max-age=" + (60*60*24*30);
+    var p = document.getElementById('partnerPopup'); if (p) p.style.display='none';
+    document.body.style.overflow='';
+  }
+  (function(){
+    if (document.cookie.indexOf('ols_partner_seen=1') === -1){
+      var p = document.getElementById('partnerPopup');
+      if (p){ setTimeout(function(){ p.style.display='flex'; document.body.style.overflow='hidden'; }, 1200); }
+    }
+  })();
+</script>
+{% endif %}
+</body>
+</html>

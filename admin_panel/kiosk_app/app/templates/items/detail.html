@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }} — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('items.list_items') }}">← Items</a></p>
+
+<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+  <div>
+    <h1 style="margin:0;">{{ item.name }}</h1>
+    <div class="muted" style="font-size:12.5px; margin-top:4px;">
+      {{ item.sku or '' }} — code <code>{{ item.barcode_code }}</code>
+      {% if item.category %} — {{ item.category }}{% endif %}
+    </div>
+    <div class="muted" style="font-size:12.5px; margin-top:2px;">
+      Location: {{ item.location or 'not set' }} &nbsp;|&nbsp; Supplier: {{ item.supplier or 'not set' }}
+    </div>
+  </div>
+  <div class="row-actions">
+    <a href="{{ url_for('items.view_barcode', item_id=item.id) }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text);">Barcode</a>
+    <a href="{{ url_for('items.edit_item', item_id=item.id) }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text);">Edit</a>
+    <a href="{{ url_for('items.export_item_pdf', item_id=item.id) }}" class="btn">Print PDF report</a>
+  </div>
+</div>
+
+<div style="display:flex; gap:16px; flex-wrap:wrap; margin-top:16px;">
+  <div class="panel" style="flex:1; min-width:220px;">
+    <div class="muted" style="font-size:12.5px;">Currently in stock</div>
+    <div style="font-size:28px; font-weight:700;">
+      {{ item.quantity }} {{ item.unit or '' }}
+      {% if item.quantity < 5 %}<span style="color:var(--orange); font-size:14px; font-weight:400;">● low stock</span>{% endif %}
+    </div>
+  </div>
+  {% if item.description %}
+  <div class="panel" style="flex:2; min-width:220px;">
+    <div class="muted" style="font-size:12.5px;">Description</div>
+    <div>{{ item.description }}</div>
+  </div>
+  {% endif %}
+  <div class="panel" style="flex:1; min-width:240px;">
+    <div class="muted" style="font-size:12.5px;">Transfer stock</div>
+    <form method="post" action="{{ url_for('items.transfer_item', item_id=item.id) }}" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+      <input type="text" name="location" list="location-options" placeholder="Destination location" required style="flex:1; min-width:150px;">
+      <datalist id="location-options">
+        {% for l in location_suggestions %}<option value="{{ l }}">{% endfor %}
+      </datalist>
+      <button type="submit">Transfer</button>
+    </form>
+  </div>
+</div>
+
+<div style="display:flex; gap:16px; flex-wrap:wrap; margin-top:16px;">
+  <div class="panel" style="flex:1; min-width:220px;">
+    <h2 style="margin-top:0; font-size:16px;">Booked out by project</h2>
+    {% if projects_summary %}
+      <table style="width:100%; border-collapse:collapse;">
+        {% for project, qty in projects_summary %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:8px 0;">{{ project }}</td>
+            <td style="padding:8px 0; text-align:right;">{{ qty }} {{ item.unit or '' }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p class="muted" style="margin:0;">No issuances recorded yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel" style="flex:1; min-width:220px;">
+    <h2 style="margin-top:0; font-size:16px;">Booked out by user</h2>
+    {% if users_summary %}
+      <table style="width:100%; border-collapse:collapse;">
+        {% for employee, qty in users_summary %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:8px 0;">{{ employee }}</td>
+            <td style="padding:8px 0; text-align:right;">{{ qty }} {{ item.unit or '' }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p class="muted" style="margin:0;">No issuances recorded yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel" style="margin-top:16px;">
+  <h2 style="margin-top:0; font-size:16px;">Issuance history</h2>
+  {% if issuances %}
+    <div class="table-scroll">
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--panel-border); text-align:left;">
+          <th style="padding:8px 0;">Date</th>
+          <th style="padding:8px 0;">User</th>
+          <th style="padding:8px 0;">Project</th>
+          <th style="padding:8px 0; text-align:right;">Qty</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in issuances %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:8px 0;">{{ ev.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td style="padding:8px 0;">{{ ev.employee }}</td>
+            <td style="padding:8px 0;">{{ ev.project or '—' }}</td>
+            <td style="padding:8px 0; text-align:right;">{{ ev.quantity }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted" style="margin:0;">No issuances recorded yet.</p>
+  {% endif %}
+</div>
+
+<div class="panel" style="margin-top:16px;">
+  <h2 style="margin-top:0; font-size:16px;">Recent activity</h2>
+  {% if recent_activity %}
+    <div class="table-scroll">
+    <table style="width:100%; border-collapse:collapse;">
+      <tbody>
+        {% for ev in recent_activity %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:8px 0; white-space:nowrap;" class="muted">{{ ev.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td style="padding:8px 0;">{{ ev.actor or '—' }}</td>
+            <td style="padding:8px 0;">{{ ev.detail or ev.event_type }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted" style="margin:0;">No activity recorded yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends "layouts/admin.html" %}
+{% block title %}Settings · {{ app_name }}{% endblock %}
+{% block page_content %}
+
+<div class="mb-8">
+  <h1 class="font-display text-2xl font-semibold text-ink">Settings</h1>
+  <p class="mt-1 text-sm text-ink-muted">Your profile and notification preferences.</p>
+</div>
+
+<div class="max-w-lg space-y-6">
+
+  <div class="card p-6 sm:p-7">
+    <h2 class="font-display text-base font-semibold text-ink mb-4">Profile</h2>
+    <form method="POST" action="{{ url_for('admin.update_profile') }}" novalidate>
+      {{ profile_form.hidden_tag() }}
+
+      <div class="mb-4">
+        <label class="field-label" for="{{ profile_form.name.id }}">Name</label>
+        {{ profile_form.name(class_="field-input") }}
+        {% for error in profile_form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="mb-5">
+        <label class="field-label" for="{{ profile_form.timezone.id }}">Timezone</label>
+        {{ profile_form.timezone(class_="field-input") }}
+        <p class="mt-1.5 text-xs text-ink-muted">Working hours, time off, and your status are all calculated in this timezone.</p>
+      </div>
+
+      <button type="submit" class="btn-primary">Save profile</button>
+    </form>
+  </div>
+
+  <div class="card p-6 sm:p-7">
+    <h2 class="font-display text-base font-semibold text-ink mb-4">Email notifications</h2>
+    <form method="POST" action="{{ url_for('admin.update_notifications') }}" novalidate>
+      {{ notif_form.hidden_tag() }}
+
+      <label class="mb-3 flex items-start gap-2.5 text-sm text-ink-muted">
+        {{ notif_form.notify_on_new_booking(class_="mt-0.5 rounded border-border bg-surface-raised text-accent focus:ring-accent focus:ring-offset-base") }}
+        {{ notif_form.notify_on_new_booking.label.text }}
+      </label>
+      <label class="mb-5 flex items-start gap-2.5 text-sm text-ink-muted">
+        {{ notif_form.notify_on_cancellation(class_="mt-0.5 rounded border-border bg-surface-raised text-accent focus:ring-accent focus:ring-offset-base") }}
+        {{ notif_form.notify_on_cancellation.label.text }}
+      </label>
+
+      <button type="submit" class="btn-primary">Save preferences</button>
+    </form>
+  </div>
+  <div class="card p-6 sm:p-7">
+    <h2 class="font-display text-base font-semibold text-ink mb-1">ISP Support</h2>
+    <p class="mb-4 text-sm text-ink-muted">
+      Shown to customers on the <a href="{{ url_for('isp_support.request_form') }}" class="text-accent hover:underline">ISP support request form</a>
+      when they submit outside your working hours. Leave blank for no out-of-hours fee.
+    </p>
+    <form method="POST" action="{{ url_for('admin.update_isp_fee') }}" novalidate>
+      {{ isp_fee_form.hidden_tag() }}
+      <div class="mb-4">
+        <label class="field-label" for="{{ isp_fee_form.isp_out_of_hours_fee.id }}">{{ isp_fee_form.isp_out_of_hours_fee.label.text }}</label>
+        {{ isp_fee_form.isp_out_of_hours_fee(class_="field-input", placeholder="e.g. \u00a345") }}
+        {% for error in isp_fee_form.isp_out_of_hours_fee.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <button type="submit" class="btn-primary">Save fee</button>
+    </form>
+  </div>
+
+  <div class="card p-6 sm:p-7">
+    <h2 class="font-display text-base font-semibold text-ink mb-1">Share your status</h2>
+    <p class="mb-4 text-sm text-ink-muted">Give this link to people, or embed it on another site.</p>
+
+    <div class="mb-4">
+      <label class="field-label">Public status page</label>
+      <div class="flex gap-2">
+        <input type="text" readonly value="{{ status_url }}" class="field-input font-mono text-xs" onclick="this.select()">
+        <a href="{{ status_url }}" target="_blank" class="btn-secondary shrink-0">Open</a>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label class="field-label">Embed as an iframe</label>
+      <textarea readonly rows="3" class="field-input font-mono text-xs" onclick="this.select()">&lt;iframe
+  src="{{ status_url }}"
+  width="100%"
+  height="250"
+  style="border:0;"&gt;&lt;/iframe&gt;</textarea>
+    </div>
+
+    <div>
+      <label class="field-label">Embed as a JS widget</label>
+      <textarea readonly rows="2" class="field-input font-mono text-xs" onclick="this.select()">&lt;script src="{{ widget_url }}" data-scheduler="{{ current_user.id }}"&gt;&lt;/script&gt;</textarea>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

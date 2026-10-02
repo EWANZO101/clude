@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Log in — {{ panel_name }}{% endblock %}
+{% block extra_head %}
+<style>
+  .auth-bg-glow { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .auth-bg-glow::before, .auth-bg-glow::after {
+    content: ""; position: absolute; border-radius: 50%; filter: blur(80px);
+  }
+  .auth-bg-glow::before {
+    width: 480px; height: 480px; top: -160px; left: 50%; transform: translateX(-65%);
+    background: radial-gradient(circle, var(--accent) 0%, transparent 70%); opacity: 0.16;
+  }
+  .auth-bg-glow::after {
+    width: 360px; height: 360px; bottom: -140px; right: 50%; transform: translateX(65%);
+    background: radial-gradient(circle, var(--data) 0%, transparent 70%); opacity: 0.12;
+  }
+</style>
+{% endblock %}
+{% block auth_content %}
+<div class="auth-shell">
+  <div class="auth-bg-glow"></div>
+
+  <div style="width:100%; max-width:400px; position:relative;">
+    <div class="auth-brand">
+      <div class="brand-mark">OL</div>
+      <div class="brand-text">
+        <span class="brand-name">{{ panel_name or 'OpsLab' }}</span>
+        <span class="brand-sub">SERVER PANEL</span>
+      </div>
+    </div>
+
+    <div class="auth-card">
+      <h1>Welcome back</h1>
+      <p class="sub">Log in to manage your server.</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" id="login-form">
+        {{ form.hidden_tag() }}
+
+        <div class="field">
+          {{ form.username.label }}
+          {{ form.username(placeholder="admin", autofocus=true, autocomplete="username") }}
+          {% for error in form.username.errors %}<div class="form-errors">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="field">
+          {{ form.password.label }}
+          <div class="field-with-action">
+            {{ form.password(placeholder="••••••••", autocomplete="current-password", id="password-input") }}
+            <button type="button" class="field-action-btn" id="toggle-password" aria-label="Show password" tabindex="-1">
+              <svg id="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg id="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0112 20c-7 0-11-8-11-8a21.6 21.6 0 015.06-6.06M9.9 4.24A10.4 10.4 0 0112 4c7 0 11 8 11 8a21.6 21.6 0 01-2.61 3.87M14.12 14.12a3 3 0 11-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+            </button>
+          </div>
+          {% for error in form.password.errors %}<div class="form-errors">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="field field-inline" style="justify-content: space-between; margin-bottom: 22px;">
+          <label class="field-inline" style="gap:8px;">
+            {{ form.remember_me() }}
+            {{ form.remember_me.label }}
+          </label>
+          <a href="#" style="font-size:12.5px; color: var(--text-muted);" title="Contact your panel administrator to reset your password">Forgot password?</a>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit" id="login-submit">
+          <span id="login-submit-label">Log in</span>
+        </button>
+      </form>
+    </div>
+
+    <p style="text-align:center; margin-top: 18px; font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono);">
+      {{ panel_name or 'OpsLabSystems' }} · secured session
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var toggle = document.getElementById('toggle-password');
+    var input = document.getElementById('password-input');
+    var eyeOpen = document.getElementById('eye-open');
+    var eyeClosed = document.getElementById('eye-closed');
+    toggle.addEventListener('click', function () {
+      var showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      eyeOpen.style.display = showing ? '' : 'none';
+      eyeClosed.style.display = showing ? 'none' : '';
+      toggle.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    });
+
+    var form = document.getElementById('login-form');
+    var submitBtn = document.getElementById('login-submit');
+    var submitLabel = document.getElementById('login-submit-label');
+    form.addEventListener('submit', function () {
+      submitBtn.disabled = true;
+      submitLabel.textContent = 'Logging in…';
+    });
+  })();
+</script>
+{% endblock %}

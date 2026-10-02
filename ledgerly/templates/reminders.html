@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Payment reminders · Ledgerly{% endblock %}
+{% block content %}
+<p class="text-gold text-xs tracking-[0.2em] uppercase mb-1">Automation</p>
+<h1 class="font-display text-4xl tracking-tight mb-8">Payment reminders</h1>
+
+<div class="max-w-lg">
+<form method="post" class="card p-6 space-y-5">
+  <div>
+    <label class="block text-xs text-muted mb-1.5">Days before due date to send a reminder</label>
+    <input type="number" min="0" name="days_before_due" value="{{ setting.days_before_due }}" class="w-full input-field px-3 py-2 text-sm num">
+  </div>
+
+  <label class="flex items-center gap-2 text-sm text-muted">
+    <input type="checkbox" name="remind_on_due_date" {{ 'checked' if setting.remind_on_due_date }} class="rounded border-ink-line bg-ink-raised">
+    Send a reminder on the due date
+  </label>
+
+  <label class="flex items-center gap-2 text-sm text-muted">
+    <input type="checkbox" name="remind_when_overdue" {{ 'checked' if setting.remind_when_overdue }} class="rounded border-ink-line bg-ink-raised">
+    Notify when a payment becomes overdue
+  </label>
+
+  <div>
+    <label class="block text-xs text-muted mb-1.5">Repeat overdue reminders every (days)</label>
+    <input type="number" min="1" name="overdue_repeat_days" value="{{ setting.overdue_repeat_days }}" class="w-full input-field px-3 py-2 text-sm num">
+  </div>
+
+  <button class="btn-primary px-5 py-2.5 text-sm">Save reminder settings</button>
+</form>
+<p class="text-xs text-muted mt-4">These settings control when reminder notifications are queued. Wiring them to an email/SMS provider is a follow-up step.</p>
+</div>
+{% endblock %}

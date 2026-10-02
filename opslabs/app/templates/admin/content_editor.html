@@ -1,0 +1,328 @@
+{% extends "admin/_layout.html" %}
+{% block admin_title %}Homepage Editor{% endblock %}
+
+{% block admin_content %}
+
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Site Content</div>
+    <h1>Homepage Editor</h1>
+    <p class="text-sm text-gray-400 mt-2">
+      Edit any section of the public homepage. Changes save instantly — no deploy.
+    </p>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{{ url_for('main.index') }}" target="_blank" class="btn btn-ghost">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      View live site
+    </a>
+  </div>
+</div>
+
+<!-- Section tabs (horizontal) -->
+<div class="tabs">
+  {% for sec_key, sec_title in sections %}
+  <a href="{{ url_for('content.editor', section=sec_key) }}"
+     class="tab {% if section == sec_key %}active{% endif %}">
+    {{ sec_title }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Section description -->
+<div class="a-card mb-5">
+  <div class="a-card-bd">
+    <div class="flex items-start gap-3">
+      <div class="w-9 h-9 rounded-lg bg-ops-500/15 text-ops-400 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+      </div>
+      <div>
+        <div class="text-sm font-bold">{{ schema.title }}</div>
+        <p class="text-xs text-gray-400 mt-0.5">{{ schema.desc }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Form ═══════════════════════════════════════════════════════════ -->
+<form id="content-form" data-section="{{ section }}" autocomplete="off">
+
+  <!-- Scalar fields -->
+  {% if schema.fields %}
+  <div class="a-card mb-5">
+    <div class="a-card-hd">
+      <span>Fields</span>
+    </div>
+    <div class="a-card-bd">
+      {% for f in schema.fields %}
+      <div class="field-row">
+        <div>
+          <div class="field-label">{{ f.label }}</div>
+          {% if f.help %}<div class="field-help">{{ f.help }}</div>{% endif %}
+        </div>
+        <div class="field-input">
+          {% set v = data.get(f.key, '') %}
+          {% if f.kind == 'textarea' %}
+            <textarea name="{{ f.key }}" rows="{{ f.rows or 3 }}"
+                      class="form-textarea px-3 py-2.5 text-sm"
+                      placeholder="{{ f.placeholder or '' }}">{{ v }}</textarea>
+          {% elif f.kind == 'bool' %}
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="{{ f.key }}" value="1"
+                     {% if v %}checked{% endif %}
+                     class="w-4 h-4 rounded bg-ink-900 border-ink-600 text-ops-500 focus:ring-ops-500 focus:ring-1">
+              <span class="text-xs text-gray-400">Enabled</span>
+            </label>
+          {% else %}
+            <input type="text" name="{{ f.key }}" value="{{ v }}"
+                   placeholder="{{ f.placeholder or '' }}"
+                   class="form-input px-3 py-2.5 text-sm">
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- List of items (services) -->
+  {% if schema.list %}
+  <div class="a-card mb-5">
+    <div class="a-card-hd">
+      <span>Items</span>
+      <button type="button" onclick="addListItem()" class="btn btn-ghost btn-sm normal-case tracking-normal">
+        + Add item
+      </button>
+    </div>
+    <div class="a-card-bd p-0">
+      <div id="list-items" class="divide-y divide-ink-600/40">
+        {% for item in data.get('items', []) %}
+          {% include 'admin/_content_list_item.html' %}
+        {% endfor %}
+        {% if not data.get('items') %}
+        <div class="px-5 py-10 text-center text-sm text-gray-500" id="empty-msg">
+          No items. Click "Add item" to get started.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden template for cloning -->
+  <template id="item-template">
+    {% set item = {} %}
+    {% include 'admin/_content_list_item.html' %}
+  </template>
+  {% endif %}
+
+  <!-- Single sublist (faq, how-it-works) -->
+  {% if schema.sublist_key %}
+  <div class="a-card mb-5">
+    <div class="a-card-hd">
+      <span>{{ schema.sublist_title }}</span>
+      <button type="button" onclick="addSubItem('{{ schema.sublist_key }}')" class="btn btn-ghost btn-sm normal-case tracking-normal">
+        + Add {{ schema.sublist_title|lower|trim('s') }}
+      </button>
+    </div>
+    <div class="a-card-bd p-0">
+      <div id="sub-items-{{ schema.sublist_key }}" class="divide-y divide-ink-600/40">
+        {% for item in data.get(schema.sublist_key, []) %}
+          {% include 'admin/_content_sub_item.html' %}
+        {% endfor %}
+        {% if not data.get(schema.sublist_key) %}
+        <div class="px-5 py-10 text-center text-sm text-gray-500">
+          No items yet.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <template id="sub-template-{{ schema.sublist_key }}">
+    {% set item = {} %}
+    {% include 'admin/_content_sub_item.html' %}
+  </template>
+  {% endif %}
+
+  <!-- Multi-sublists (why-us = bullets + features) -->
+  {% if schema.multi_sublists %}
+  {% for sub in schema.multi_sublists %}
+  <div class="a-card mb-5">
+    <div class="a-card-hd">
+      <span>{{ sub.title }}</span>
+      <button type="button" onclick="addMultiSub('{{ sub.key }}', {{ 'true' if sub.scalar else 'false' }})" class="btn btn-ghost btn-sm normal-case tracking-normal">
+        + Add
+      </button>
+    </div>
+    <div class="a-card-bd p-0">
+      <div id="multi-{{ sub.key }}" data-fields='{{ sub.fields|tojson }}' data-scalar="{{ '1' if sub.scalar else '0' }}"
+           class="divide-y divide-ink-600/40">
+        {% if sub.scalar %}
+          {% for s in data.get(sub.key, []) %}
+            <div class="multi-row px-5 py-3 flex items-center gap-2">
+              <input type="text" value="{{ s }}" class="form-input px-3 py-2 text-sm flex-1">
+              <button type="button" onclick="this.parentElement.remove()" class="btn btn-danger btn-sm">×</button>
+            </div>
+          {% endfor %}
+        {% else %}
+          {% for item in data.get(sub.key, []) %}
+            <div class="multi-row px-5 py-4">
+              {% for f in sub.fields %}
+              <div class="mb-2 last:mb-0">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">{{ f.label }}</div>
+                {% if f.kind == 'textarea' %}
+                  <textarea data-key="{{ f.key }}" rows="{{ f.rows or 2 }}" class="form-textarea px-3 py-2 text-sm">{{ item.get(f.key, '') }}</textarea>
+                {% else %}
+                  <input data-key="{{ f.key }}" value="{{ item.get(f.key, '') }}" class="form-input px-3 py-2 text-sm">
+                {% endif %}
+              </div>
+              {% endfor %}
+              <button type="button" onclick="this.parentElement.remove()" class="btn btn-danger btn-sm mt-2">Remove</button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- Save bar -->
+  <div class="save-bar">
+    <div class="text-xs text-gray-500" id="save-status">
+      {% if data %}Saved.{% else %}Unsaved changes will be lost — click Save when ready.{% endif %}
+    </div>
+    <button type="submit" class="btn btn-primary">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      Save changes
+    </button>
+  </div>
+</form>
+
+<script>
+const SECTION = '{{ section }}';
+const SCHEMA = {{ schema | tojson }};
+
+function collectFields() {
+  const form = document.getElementById('content-form');
+  const out = {};
+  (SCHEMA.fields || []).forEach(f => {
+    const el = form.querySelector(`[name="${f.key}"]`);
+    if (!el) return;
+    if (f.kind === 'bool') out[f.key] = el.checked;
+    else out[f.key] = el.value;
+  });
+  return out;
+}
+
+function collectListItems(selector, itemFields) {
+  const rows = document.querySelectorAll(`${selector} > .list-item`);
+  return Array.from(rows).map(row => {
+    const item = {};
+    itemFields.forEach(f => {
+      const el = row.querySelector(`[data-key="${f.key}"]`);
+      if (!el) return;
+      if (f.kind === 'bool') item[f.key] = el.checked;
+      else if (f.kind === 'tags') item[f.key] = el.value.split(',').map(s => s.trim()).filter(Boolean);
+      else item[f.key] = el.value;
+    });
+    return item;
+  });
+}
+
+function collectMulti(key, scalar) {
+  const container = document.getElementById('multi-' + key);
+  const rows = container.querySelectorAll('.multi-row');
+  if (scalar) {
+    return Array.from(rows).map(r => r.querySelector('input').value).filter(Boolean);
+  }
+  const fields = JSON.parse(container.dataset.fields);
+  return Array.from(rows).map(row => {
+    const item = {};
+    fields.forEach(f => {
+      const el = row.querySelector(`[data-key="${f.key}"]`);
+      if (el) item[f.key] = el.value;
+    });
+    return item;
+  });
+}
+
+// ─── Add / clone item helpers ───────────────────────────────────────
+function addListItem() {
+  const tpl = document.getElementById('item-template');
+  if (!tpl) return;
+  const empty = document.getElementById('empty-msg');
+  if (empty) empty.remove();
+  const node = tpl.content.firstElementChild.cloneNode(true);
+  // Clear values
+  node.querySelectorAll('[data-key]').forEach(el => {
+    if (el.tagName === 'INPUT' && el.type === 'checkbox') el.checked = false;
+    else el.value = '';
+  });
+  document.getElementById('list-items').appendChild(node);
+}
+
+function addSubItem(key) {
+  const tpl = document.getElementById('sub-template-' + key);
+  if (!tpl) return;
+  const node = tpl.content.firstElementChild.cloneNode(true);
+  node.querySelectorAll('[data-key]').forEach(el => {
+    if (el.tagName === 'INPUT' && el.type === 'checkbox') el.checked = false;
+    else el.value = '';
+  });
+  document.getElementById('sub-items-' + key).appendChild(node);
+}
+
+function addMultiSub(key, scalar) {
+  const container = document.getElementById('multi-' + key);
+  const row = document.createElement('div');
+  row.className = 'multi-row px-5 py-3 ' + (scalar ? 'flex items-center gap-2' : 'py-4');
+  if (scalar) {
+    row.innerHTML = `<input type="text" class="form-input px-3 py-2 text-sm flex-1"><button type="button" onclick="this.parentElement.remove()" class="btn btn-danger btn-sm">×</button>`;
+  } else {
+    const fields = JSON.parse(container.dataset.fields);
+    row.innerHTML = fields.map(f => `
+      <div class="mb-2 last:mb-0">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">${f.label}</div>
+        ${f.kind === 'textarea'
+          ? `<textarea data-key="${f.key}" rows="${f.rows||2}" class="form-textarea px-3 py-2 text-sm"></textarea>`
+          : `<input data-key="${f.key}" class="form-input px-3 py-2 text-sm">`}
+      </div>`).join('') + `<button type="button" onclick="this.parentElement.remove()" class="btn btn-danger btn-sm mt-2">Remove</button>`;
+  }
+  container.appendChild(row);
+}
+
+window.addListItem = addListItem;
+window.addSubItem = addSubItem;
+window.addMultiSub = addMultiSub;
+
+// ─── Save handler ───────────────────────────────────────────────────
+document.getElementById('content-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const status = document.getElementById('save-status');
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  status.textContent = 'Saving…';
+
+  const payload = collectFields();
+  if (SCHEMA.list) payload.items = collectListItems('#list-items', SCHEMA.item_fields);
+  if (SCHEMA.sublist_key) payload[SCHEMA.sublist_key] = collectListItems('#sub-items-' + SCHEMA.sublist_key, SCHEMA.sublist_fields);
+  if (SCHEMA.multi_sublists) {
+    SCHEMA.multi_sublists.forEach(sub => {
+      payload[sub.key] = collectMulti(sub.key, !!sub.scalar);
+    });
+  }
+
+  try {
+    await adminFetch(`/admin/content/save/${SECTION}`, { body: payload });
+    status.textContent = '✓ Saved ' + new Date().toLocaleTimeString();
+    toast('Saved');
+  } catch (err) {
+    status.textContent = 'Save failed: ' + err.message;
+    toast('Save failed: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+{% endblock %}

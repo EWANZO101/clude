@@ -1,0 +1,49 @@
+{% extends "layout/base.html" %}
+{% block title %}Merchants{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between flex-wrap gap-2">
+    <h1 class="text-xl font-semibold">Merchants</h1>
+    {% if finance_installed %}
+      <form method="POST" action="{{ url_for('merchant.rematch') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="bg-surface-card border border-surface-border text-sm px-4 py-2 rounded-lg">Match my transactions</button></form>
+    {% endif %}
+  </div>
+
+  <form method="GET" class="flex gap-2">
+    <input name="q" value="{{ search }}" placeholder="Search merchants…" class="flex-1 bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm">
+    <button class="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 rounded-lg">Search</button>
+  </form>
+
+  {% if finance_installed and top %}
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Top merchants this month</h2>
+        <a href="{{ url_for('merchant.top') }}" class="text-xs text-accent hover:underline">See all →</a>
+      </div>
+      <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+        {% for row in top[:5] %}
+          <a href="{{ url_for('merchant.detail', merchant_id=row.merchant.id) }}" class="p-4 flex items-center justify-between text-sm hover:bg-surface">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-full bg-accent/20 text-accent flex items-center justify-center text-xs font-semibold">{{ row.merchant.logo_initials }}</span>
+              <span>{{ row.merchant.display_name }}</span>
+            </div>
+            <span class="text-slate-300">{{ row.total_minor | money }} · {{ row.transaction_count }} txns</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+    {% for m in merchants %}
+      <a href="{{ url_for('merchant.detail', merchant_id=m.id) }}" class="bg-surface-card border border-surface-border rounded-2xl p-4 hover:border-accent transition text-center">
+        <span class="w-10 h-10 mx-auto rounded-full bg-accent/20 text-accent flex items-center justify-center text-sm font-semibold mb-2">{{ m.logo_initials }}</span>
+        <p class="text-sm text-slate-100">{{ m.display_name }}</p>
+        <p class="text-xs text-slate-500">{{ m.category.name if m.category else '' }}</p>
+      </a>
+    {% else %}
+      <p class="text-sm text-slate-500 col-span-full">No merchants found.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

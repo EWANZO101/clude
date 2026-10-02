@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ job.name }} — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">Job</p>
+    <h1 class="page-title">{{ job.name }}</h1>
+    <p class="page-sub mono">{{ job.id }}</p>
+  </div>
+</div>
+
+<div class="card tight stat">
+  <div class="card-label">Progress</div>
+  <div class="card-value line" id="job-status">{{ job.status }} — <span id="job-percent">{{ job.progress }}</span>%</div>
+  <div class="progress-track"><div class="progress-fill" id="job-bar" style="width:{{ job.progress }}%"></div></div>
+</div>
+
+<div class="card flush">
+  <pre id="job-log" class="mono console-pane" style="height:480px;">{{ job.log_text }}</pre>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const jobId = {{ job.id | tojson }};
+  const logEl = document.getElementById('job-log');
+  const barEl = document.getElementById('job-bar');
+  const pctEl = document.getElementById('job-percent');
+  const statusEl = document.getElementById('job-status');
+
+  const socket = io('/jobs');
+  socket.on('connect', () => socket.emit('subscribe', { job_id: jobId }));
+
+  socket.on('job_update', (data) => {
+    if (data.id !== jobId) return;
+    barEl.style.width = data.progress + '%';
+    pctEl.textContent = data.progress;
+    statusEl.innerHTML = data.status + ' — <span id="job-percent">' + data.progress + '</span>%';
+    logEl.textContent = data.log_text || '';
+    logEl.scrollTop = logEl.scrollHeight;
+    if (data.status === 'failed' && data.error) {
+      logEl.textContent += "\n[error] " + data.error;
+    }
+  });
+
+  window.addEventListener('beforeunload', () => socket.emit('unsubscribe', { job_id: jobId }));
+</script>
+{% endblock %}

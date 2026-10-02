@@ -1,0 +1,69 @@
+{% extends "layouts/admin.html" %}
+{% block title %}Edit Time Off · {{ app_name }}{% endblock %}
+{% block page_content %}
+
+<div class="mb-8">
+  <a href="{{ url_for('admin.time_off') }}" class="text-sm text-ink-muted hover:text-ink">&larr; Time off</a>
+  <h1 class="mt-2 font-display text-2xl font-semibold text-ink">Edit time off</h1>
+</div>
+
+<div class="max-w-lg card p-6 sm:p-8">
+  <form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="mb-4 grid grid-cols-2 gap-3">
+      <div>
+        <label class="field-label" for="{{ form.start_date.id }}">Start date</label>
+        {{ form.start_date(class_="field-input") }}
+      </div>
+      <div>
+        <label class="field-label" for="{{ form.end_date.id }}">End date</label>
+        {{ form.end_date(class_="field-input") }}
+      </div>
+    </div>
+    {% for error in form.start_date.errors + form.end_date.errors %}
+      <p class="field-error -mt-2 mb-3">{{ error }}</p>
+    {% endfor %}
+
+    <label class="mb-4 flex items-center gap-2 text-sm text-ink-muted">
+      {{ form.all_day(class_="rounded border-border bg-surface-raised text-accent focus:ring-accent focus:ring-offset-base", id="all-day-toggle") }}
+      All day
+    </label>
+
+    <div id="partial-day-fields" class="mb-4 grid grid-cols-2 gap-3">
+      <div>
+        <label class="field-label" for="{{ form.start_time.id }}">Starts</label>
+        {{ form.start_time(class_="field-input") }}
+      </div>
+      <div>
+        <label class="field-label" for="{{ form.end_time.id }}">Ends</label>
+        {{ form.end_time(class_="field-input") }}
+      </div>
+    </div>
+    {% for error in form.end_time.errors %}
+      <p class="field-error -mt-2 mb-3">{{ error }}</p>
+    {% endfor %}
+
+    <div class="mb-6">
+      <label class="field-label" for="{{ form.reason.id }}">Reason (optional)</label>
+      {{ form.reason(class_="field-input", placeholder="e.g. Christmas Day") }}
+    </div>
+
+    <div class="flex gap-3">
+      <button type="submit" class="btn-primary">Save changes</button>
+      <a href="{{ url_for('admin.time_off') }}" class="btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  const toggle = document.getElementById("all-day-toggle");
+  const partialFields = document.getElementById("partial-day-fields");
+  function syncPartialFields() {
+    partialFields.classList.toggle("hidden", toggle.checked);
+  }
+  toggle.addEventListener("change", syncPartialFields);
+  syncPartialFields();
+</script>
+
+{% endblock %}

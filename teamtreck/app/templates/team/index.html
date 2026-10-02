@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Team - TeamTreck{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Team Management</h1>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 mb-6">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-800 text-left text-gray-500 dark:text-gray-400">
+                <th class="px-4 py-3">Name</th>
+                <th class="px-4 py-3">Email</th>
+                <th class="px-4 py-3">Role</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in members %}
+            <tr class="border-b border-gray-100 dark:border-gray-800/50">
+                <td class="px-4 py-3">{{ m.name }}</td>
+                <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ m.email }}</td>
+                <td class="px-4 py-3">
+                    <form method="POST" action="{{ url_for('team.change_role', user_id=m.id) }}" class="inline">
+                        <select name="role" onchange="this.form.submit()"
+                            class="text-xs rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1">
+                            <option value="employee" {{ 'selected' if m.role == 'employee' }}>Employee</option>
+                            <option value="manager" {{ 'selected' if m.role == 'manager' }}>Manager</option>
+                            <option value="admin" {{ 'selected' if m.role == 'admin' }}>Admin</option>
+                        </select>
+                    </form>
+                </td>
+                <td class="px-4 py-3">
+                    {% if m.is_online %}
+                    <span class="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-xs"><span class="w-2 h-2 bg-green-500 rounded-full"></span>Online</span>
+                    {% else %}
+                    <span class="text-gray-400 text-xs">Offline</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-right">
+                    {% if m.id != current_user.id %}
+                    <form method="POST" action="{{ url_for('team.remove', user_id=m.id) }}" onsubmit="return confirm('Remove this user?')" class="inline">
+                        <button class="text-red-500 hover:text-red-600 text-xs">Remove</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 max-w-lg mb-6">
+    <h2 class="font-semibold mb-3">Invite Link</h2>
+    {% if team.invite_code %}
+    <div class="flex items-center gap-2 mb-3">
+        <input type="text" readonly value="{{ request.host_url }}team/join/{{ team.invite_code }}"
+            class="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm font-mono">
+    </div>
+    <form method="POST" action="{{ url_for('team.revoke_invite_link') }}">
+        <button class="text-sm px-3 py-1.5 rounded-lg bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Revoke Link</button>
+    </form>
+    {% else %}
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">No active invite link. Generate one to let people self-join as employees.</p>
+    <form method="POST" action="{{ url_for('team.generate_invite_link') }}">
+        <button class="text-sm px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white">Generate Invite Link</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 max-w-lg">
+    <h2 class="font-semibold mb-4">Invite Team Member (manual)</h2>
+    <form method="POST" action="{{ url_for('team.invite') }}" class="space-y-3">
+        <input type="text" name="name" placeholder="Full name" required
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <input type="email" name="email" placeholder="Email" required
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <select name="role" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <option value="employee">Employee</option>
+            <option value="manager">Manager</option>
+            <option value="admin">Admin</option>
+        </select>
+        <input type="text" name="temp_password" placeholder="Temporary password (default: welcome123)"
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 rounded-lg transition">
+            Invite
+        </button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "portal/_base.html" %}
+{% set active_page = 'notifications' %}
+{% block portal_title %}Notifications{% endblock %}
+{% block portal_actions %}
+  {% if portal_unread %}
+  <form method="post" action="{{ url_for('portal.notifications_read_all') }}">
+    <button class="px-4 py-2 text-sm font-semibold text-gray-300 bg-white/5 border border-ink-600 rounded-lg hover:bg-white/10 transition">Mark all read</button>
+  </form>
+  {% endif %}
+{% endblock %}
+{% block portal_content %}
+{% if items %}
+<div class="pcard divide-y divide-ink-600/40">
+  {% for n in items %}
+  <a href="{{ n.url or '#' }}" class="flex items-start gap-3 p-4 hover:bg-white/[.02] transition {{ '' if n.is_read else 'bg-ops-500/[.04]' }}">
+    <span class="w-2 h-2 rounded-full mt-2 shrink-0 {{ 'bg-transparent' if n.is_read else 'bg-ops-400' }}"></span>
+    <div class="min-w-0 flex-1">
+      <div class="font-semibold text-sm {{ 'text-gray-400' if n.is_read else 'text-white' }}">{{ n.title }}</div>
+      {% if n.body %}<div class="text-sm text-gray-500 mt-0.5">{{ n.body }}</div>{% endif %}
+    </div>
+    <span class="text-xs text-gray-600 shrink-0">{{ n.created_at|dt }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="pcard p-12 text-center text-gray-400">You're all caught up.</div>
+{% endif %}
+{% endblock %}

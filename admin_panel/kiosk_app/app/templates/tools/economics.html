@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Tool Economics — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('tools.list_tools') }}">← Tools</a></p>
+<h1>Tool Economics</h1>
+
+{% if replacement_candidates %}
+<div class="flash flash-warning">
+  {{ replacement_candidates|length }} tool(s) flagged as replacement candidates (heuristic: 3+ maintenance
+  trips, or accumulated maintenance cost ≥ 50% of purchase price).
+</div>
+{% endif %}
+
+<div class="panel" style="padding:0;">
+  <table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid var(--panel-border); text-align:left;">
+        <th style="padding:12px;" class="muted">Tool</th>
+        <th style="padding:12px;" class="muted">Checkout hours</th>
+        <th style="padding:12px;" class="muted">Maintenance hours</th>
+        <th style="padding:12px;" class="muted">Maintenance cost</th>
+        <th style="padding:12px;" class="muted">Trips</th>
+        <th style="padding:12px;" class="muted"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tool, s in rows %}
+        <tr style="border-bottom:1px solid var(--panel-border);">
+          <td style="padding:12px;">{{ tool.name }}</td>
+          <td style="padding:12px;">{{ s.total_checkout_hours }}</td>
+          <td style="padding:12px;">{{ s.total_maintenance_hours }}</td>
+          <td style="padding:12px;">{{ s.total_maintenance_cost }}</td>
+          <td style="padding:12px;">{{ s.maintenance_count }}</td>
+          <td style="padding:12px;">
+            {% if s.replacement_candidate %}<span style="color:var(--red);">Replacement candidate</span>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

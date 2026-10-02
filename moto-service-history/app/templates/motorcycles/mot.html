@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import field, btn_primary, btn_secondary %}
+{% block title %}MOT history — {{ m.display_name }}{% endblock %}
+{% block content %}
+<p class="text-xs font-mono text-ink-faint mb-2 uppercase tracking-wide">{{ m.display_name }}</p>
+<h1 class="font-bold text-2xl mb-6">MOT history</h1>
+
+<div class="grid lg:grid-cols-2 gap-6 mb-8">
+  <div class="card p-6">
+    <h2 class="font-semibold mb-1">Retrieve from DVSA</h2>
+    <p class="text-xs text-ink-faint mb-4">Pulls official MOT test history for this registration and saves it to the timeline.</p>
+    <form method="post" class="space-y-4">
+      {{ lookup_form.hidden_tag() }}
+      <input type="hidden" name="action" value="lookup">
+      {{ field(lookup_form.registration) }}
+      {{ btn_primary('Look up MOT history') }}
+    </form>
+  </div>
+  <div class="card p-6">
+    <h2 class="font-semibold mb-1">Add manually</h2>
+    <p class="text-xs text-ink-faint mb-4">For older tests or if the DVSA record is incomplete.</p>
+    <form method="post" class="space-y-4">
+      {{ manual_form.hidden_tag() }}
+      <input type="hidden" name="action" value="manual">
+      <div class="grid sm:grid-cols-2 gap-4">
+        {{ field(manual_form.test_date) }}
+        {{ field(manual_form.expiry_date) }}
+        {{ field(manual_form.result) }}
+        {{ field(manual_form.mileage) }}
+        {{ field(manual_form.advisories, wide=True) }}
+        {{ field(manual_form.failures, wide=True) }}
+      </div>
+      {{ btn_primary('Add MOT record') }}
+    </form>
+  </div>
+</div>
+
+<h2 class="font-semibold mb-4">Recorded MOT tests</h2>
+{% if m.mot_records.count() %}
+<div class="space-y-3">
+  {% for r in m.mot_records %}
+  <div class="card p-5 flex items-start justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-mono px-2 py-0.5 rounded {{ 'bg-okay/15 text-okay' if r.result == 'PASSED' else 'bg-danger/15 text-danger' }}">{{ r.result or 'UNKNOWN' }}</span>
+        <span class="font-mono text-sm text-ink">{{ r.test_date.strftime('%d %b %Y') if r.test_date else '—' }}</span>
+        <span class="text-xs text-ink-faint uppercase">{{ r.raw_source.replace('_',' ') }}</span>
+      </div>
+      <p class="text-xs text-ink-faint mt-1 font-mono">Mileage: {{ r.mileage|commas if r.mileage else '—' }} {{ r.mileage_unit or '' }}</p>
+      {% if r.advisories and r.advisories not in ('[]', '') %}
+      <p class="text-xs text-ink-muted mt-2"><span class="text-ink-faint">Advisories:</span> {{ r.advisories }}</p>
+      {% endif %}
+      {% if r.failures and r.failures not in ('[]', '') %}
+      <p class="text-xs text-danger mt-1"><span class="text-ink-faint">Failures:</span> {{ r.failures }}</p>
+      {% endif %}
+    </div>
+    <form method="post" action="{{ url_for('moto.mot_delete', moto_id=m.id, record_id=r.id) }}" onsubmit="return confirm('Remove this MOT record?');">
+      <button class="text-xs text-danger hover:text-danger/80">Remove</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-sm text-ink-muted">No MOT records yet.</p>
+{% endif %}
+
+<div class="mt-6">{{ btn_secondary('Back to motorcycle', url_for('moto.view', moto_id=m.id)) }}</div>
+{% endblock %}

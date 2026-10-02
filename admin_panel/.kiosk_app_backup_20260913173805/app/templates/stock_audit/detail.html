@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ audit.display_label() }} — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('stock_audit.index') }}">← Stock Audit</a></p>
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+  <h1 style="margin:0;">
+    {{ audit.display_label() }}
+    {% if audit.status == 'open' %}<span style="color:var(--orange); font-size:15px; font-weight:600;">● Open</span>
+    {% else %}<span class="muted" style="font-size:15px;">● Closed</span>{% endif %}
+  </h1>
+  {% if audit.status == 'open' %}
+    <form method="post" action="{{ url_for('stock_audit.close', audit_id=audit.id) }}" onsubmit="return confirm('Close this audit?');">
+      <button type="submit" {{ 'disabled' if pending_count > 0 }} style="{{ 'opacity:.5; cursor:not-allowed;' if pending_count > 0 }}">Close Audit</button>
+    </form>
+  {% endif %}
+</div>
+<p class="muted" style="font-size:12.5px;">Started by {{ audit.started_by }} on {{ audit.started_at.strftime('%Y-%m-%d %H:%M') }}
+  {% if audit.status == 'closed' %} — closed by {{ audit.closed_by }} on {{ audit.closed_at.strftime('%Y-%m-%d %H:%M') }}{% endif %}
+</p>
+
+{% if audit.status == 'open' %}
+  {% if pending_count > 0 %}
+    <div class="panel" style="border-color:var(--red);">
+      <strong style="color:var(--red);">{{ pending_count }} unresolved discrepanc{{ 'y' if pending_count == 1 else 'ies' }}</strong>
+      — reconcile or dismiss each one below before this audit can be closed.
+    </div>
+  {% endif %}
+
+  <div class="panel" style="max-width:520px;">
+    <h2 style="margin-top:0; font-size:15px;">Record a count</h2>
+    <p class="muted" style="font-size:12.5px;">Or use <a href="{{ url_for('scan.index') }}">Scan Barcode</a> — item scans record a count automatically while this audit is open.</p>
+    <form method="post" action="{{ url_for('stock_audit.record_count', audit_id=audit.id) }}">
+      <label>Item</label>
+      <select name="item_id" style="width:100%; padding:10px 12px; border-radius:7px; border:1px solid var(--panel-border); background:var(--bg); color:var(--text);">
+        {% for item in items %}
+          <option value="{{ item.id }}">{{ item.name }}{% if item.id in counted_item_ids %} (already counted){% endif %}</option>
+        {% endfor %}
+      </select>
+      <label>Counted quantity</label>
+      <input type="text" name="counted_qty" required>
+      <button type="submit" style="margin-top:14px;">Record Count</button>
+    </form>
+  </div>
+{% endif %}
+
+<h2 style="font-size:16px; margin-top:24px;">Counted Items ({{ lines|length }})</h2>
+<div class="panel" style="padding:0;">
+  {% if lines %}
+    <div class="table-scroll">
+    <table style="width:100%; border-collapse:collapse;">
+      <tbody>
+        {% for line in lines %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:14px;">
+              <div style="font-weight:600;">{{ line.item.name if line.item else '(deleted item)' }}</div>
+              <div class="muted" style="font-size:12.5px;">
+                expected {{ line.expected_qty }}, counted {{ line.counted_qty }}
+                {% if line.discrepancy != 0 %}
+                  — <span style="color:{{ 'var(--red)' if line.discrepancy < 0 else 'var(--green)' }};">{{ '%+d'|format(line.discrepancy) }}</span>
+                {% else %}
+                  — <span style="color:var(--green);">match</span>
+                {% endif %}
+                by {{ line.counted_by }} at {{ line.counted_at.strftime('%H:%M') }}
+                {% if line.status != 'pending' %}
+                  — <span style="{{ 'color:var(--accent);' if line.status == 'reconciled' }}">{{ line.status }}</span>
+                {% endif %}
+              </div>
+            </td>
+            <td style="padding:14px;">
+              <div class="row-actions">
+              {% if audit.status == 'open' and line.status == 'pending' and line.discrepancy != 0 %}
+                <form method="post" action="{{ url_for('stock_audit.reconcile_line', audit_id=audit.id, line_id=line.id) }}">
+                  <button type="submit" class="btn" style="padding:6px 10px; font-size:12.5px;">Apply Correction</button>
+                </form>
+                <form method="post" action="{{ url_for('stock_audit.dismiss_line', audit_id=audit.id, line_id=line.id) }}">
+                  <button type="submit" style="background:transparent; border:1px solid var(--panel-border); padding:6px 10px; font-size:12.5px;">Dismiss</button>
+                </form>
+              {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted" style="padding:20px;">No items counted yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

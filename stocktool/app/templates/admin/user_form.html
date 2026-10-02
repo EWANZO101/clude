@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} User{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{{ url_for('admin.index') }}" style="color:#6b7280;font-size:13px;text-decoration:none;
+     display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;">
+    <i class="fas fa-arrow-left"></i> Users
+  </a>
+  <h1 class="page-title">
+    <i class="fas fa-{% if action=='Add' %}user-plus{% else %}user-pen{% endif %}" style="color:#fbbf24;"></i>
+    {{ action }} User
+  </h1>
+</div>
+
+<div class="card" style="padding:20px;max-width:480px;">
+  <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div style="margin-bottom:14px;">
+      <label class="form-label">Username
+        {% if not user %}<span style="color:#ef4444;">*</span>{% endif %}
+      </label>
+      {% if user %}
+      <input type="text" class="form-input" value="{{ user.username }}" disabled />
+      {% else %}
+      <input type="text" name="username" class="form-input" required
+             placeholder="Lowercase, no spaces"
+             autocapitalize="none" autocorrect="off" spellcheck="false" />
+      {% endif %}
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="form-label">Email <span style="color:#ef4444;">*</span></label>
+      <input type="email" name="email" class="form-input" required
+             value="{{ user.email if user else '' }}"
+             inputmode="email" autocapitalize="none" />
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="form-label">Role</label>
+      <select name="role" class="form-select">
+        <option value="{{ Role.STOCK_USER }}"
+                {% if user and user.role == Role.STOCK_USER %}selected{% endif %}>
+          Stock User
+        </option>
+        <option value="{{ Role.ADMIN }}"
+                {% if user and user.role == Role.ADMIN %}selected{% endif %}>
+          Administrator
+        </option>
+      </select>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="form-label">
+        {% if user %}New Password
+          <span style="color:#6b7280;font-size:12px;">(leave blank to keep current)</span>
+        {% else %}Password <span style="color:#ef4444;">*</span>{% endif %}
+      </label>
+      <input type="password" name="{% if user %}new_password{% else %}password{% endif %}"
+             class="form-input"
+             {% if not user %}required minlength="6"{% endif %}
+             placeholder="Min. 6 characters"
+             autocomplete="new-password" />
+    </div>
+
+    {% if user %}
+    <div style="margin-bottom:14px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" name="is_active"
+               {% if user.is_active %}checked{% endif %}
+               style="width:18px;height:18px;accent-color:#2563eb;flex-shrink:0;" />
+        <span style="font-size:14px;color:#d1d5db;">Account Active</span>
+      </label>
+    </div>
+    {% endif %}
+
+    <div style="margin-bottom:20px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" name="force_password_change"
+               {% if user and user.force_password_change %}checked{% endif %}
+               style="width:18px;height:18px;accent-color:#2563eb;flex-shrink:0;" />
+        <span style="font-size:14px;color:#d1d5db;">Require password change on next login</span>
+      </label>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> {{ action }} User
+      </button>
+      <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% block title %}{{ seller.business_name }} — Admin{% endblock %}
+{% block page_title %}{{ seller.business_name }}{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card p-5">
+    <dl class="grid grid-cols-2 gap-4 text-sm mb-4">
+      <div><dt class="text-text-muted">Owner</dt><dd class="text-text-primary">{{ seller.user.email }}</dd></div>
+      <div><dt class="text-text-muted">Support email</dt><dd class="text-text-primary">{{ seller.support_email or "—" }}</dd></div>
+      <div><dt class="text-text-muted">Website</dt><dd class="text-text-primary">{{ seller.website_url or "—" }}</dd></div>
+      <div><dt class="text-text-muted">Status</dt><dd class="text-text-primary">{{ seller.status|hwval }}</dd></div>
+    </dl>
+    <p class="text-text-secondary text-sm whitespace-pre-line">{{ seller.description }}</p>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Review</h2>
+    <form method="POST" class="space-y-3">
+      {% include "components/_csrf.html" %}
+      <textarea name="reason" rows="3" placeholder="Reason (for reject / information request)" class="input-field"></textarea>
+      <button type="submit" name="action" value="approve" class="btn-primary w-full">Approve</button>
+      <button type="submit" name="action" value="request_info" class="btn-secondary w-full">Request information</button>
+      <button type="submit" name="action" value="reject" class="btn-danger w-full">Reject</button>
+      {% if seller.status.value == "active" %}
+      <button type="submit" name="action" value="suspend" class="btn-danger w-full">Suspend</button>
+      {% endif %}
+    </form>
+  </div>
+</div>
+{% endblock %}

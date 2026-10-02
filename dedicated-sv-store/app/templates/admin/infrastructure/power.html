@@ -1,0 +1,26 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Power — Admin{% endblock %}
+{% block page_title %}Power assignments{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Equipment</th><th>Feed A</th><th>Feed B</th><th>PDU A</th><th>PDU B</th><th>Amperage</th></tr></thead>
+    <tbody>
+      {% for pa in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ pa.equipment_item.manufacturer }} {{ pa.equipment_item.model }}</td>
+        <td class="text-text-secondary">{{ pa.power_feed_a or "—" }}</td>
+        <td class="text-text-secondary">{{ pa.power_feed_b or "—" }}</td>
+        <td class="text-text-secondary">{{ pa.pdu_outlet_a or "—" }}</td>
+        <td class="text-text-secondary">{{ pa.pdu_outlet_b or "—" }}</td>
+        <td class="text-text-secondary">{{ pa.amperage or "—" }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-text-muted py-8">No power assignments yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.power") }}
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Notification preferences{% endblock %}
+{% block content %}
+<h1 class="page-title mb-6">Notification preferences</h1>
+<form method="POST" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-3 max-w-md">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% for field, label in [
+    ('notify_overdue_invoices', 'Overdue invoices'),
+    ('notify_upcoming_bills', 'Upcoming bills'),
+    ('notify_integration_failures', 'Integration failures'),
+    ('notify_audit_warnings', 'Self-audit warnings'),
+    ('notify_backup_failures', 'Backup failures'),
+    ('notify_sync_failures', 'Offline sync failures'),
+  ] %}
+  <label class="flex items-center gap-2 text-sm">
+    <input type="checkbox" name="{{ field }}" {{ 'checked' if pref[field] }}> {{ label }}
+  </label>
+  {% endfor %}
+  <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-2">Save preferences</button>
+</form>
+{% endblock %}

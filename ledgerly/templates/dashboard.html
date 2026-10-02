@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Ledgerly{% endblock %}
+{% block content %}
+
+<div class="flex items-end justify-between mb-9">
+  <div>
+    <p class="text-gold text-xs tracking-[0.22em] uppercase mb-2 font-medium">Overview</p>
+    <h1 class="font-display text-4xl tracking-tight">Payment dashboard</h1>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-11">
+  <div class="card p-6 border-l-2 border-l-gold/40">
+    <p class="text-[11px] text-muted uppercase tracking-[0.14em] mb-3">Across all contracts</p>
+    <p class="num text-3xl tracking-tight">£{{ '{:,.2f}'.format(total_value) }}</p>
+    <p class="text-xs text-muted mt-1.5">Total contract value</p>
+  </div>
+  <div class="card p-6 border-l-2 border-l-sage/40">
+    <p class="text-[11px] text-muted uppercase tracking-[0.14em] mb-3">Collected</p>
+    <p class="num text-3xl tracking-tight text-sage">£{{ '{:,.2f}'.format(total_paid) }}</p>
+    <p class="text-xs text-muted mt-1.5">Amount paid</p>
+  </div>
+  <div class="card p-6 border-l-2 {{ 'border-l-brick/50' if total_overdue > 0 else 'border-l-white/10' }}">
+    <p class="text-[11px] text-muted uppercase tracking-[0.14em] mb-3">Needs attention</p>
+    <p class="num text-3xl tracking-tight {{ 'text-brick' if total_overdue > 0 else '' }}">£{{ '{:,.2f}'.format(total_overdue) }}</p>
+    <p class="text-xs text-muted mt-1.5">Overdue amount</p>
+  </div>
+</div>
+
+<div class="flex items-center justify-between mb-5">
+  <h2 class="font-display text-xl tracking-tight">Contracts</h2>
+  <a href="{{ url_for('contract_new') }}" class="text-sm text-gold hover:text-gold-bright transition">+ New contract</a>
+</div>
+
+{% if not contracts %}
+<div class="border border-dashed border-white/10 rounded-2xl p-12 text-center text-muted">
+  No contracts yet. <a href="{{ url_for('contract_new') }}" class="text-gold hover:underline">Create your first contract</a> to build a payment schedule.
+</div>
+{% else %}
+<div class="space-y-3">
+  {% for c in contracts %}
+  <a href="{{ url_for('contract_view', contract_id=c.id) }}" class="block card card-interactive p-5">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <p class="font-medium">{{ c.title }}</p>
+        <p class="text-xs text-muted mt-0.5">{{ c.client.name }} &middot; {{ c.currency_code }}</p>
+      </div>
+      <div class="flex items-center gap-8 text-sm">
+        <div>
+          <p class="text-muted text-xs">Total</p>
+          <p class="num">{{ c.total_amount|money(c.currency_code) }}</p>
+        </div>
+        <div>
+          <p class="text-muted text-xs">Remaining</p>
+          <p class="num">{{ c.amount_remaining|money(c.currency_code) }}</p>
+        </div>
+        <div>
+          <p class="text-muted text-xs">Next due</p>
+          {% if c.next_payment %}
+          <p class="num">{{ c.next_payment.due_date.strftime('%-d %b') }}</p>
+          {% else %}
+          <p class="text-muted">—</p>
+          {% endif %}
+        </div>
+        <div>
+          {% if c.overdue_amount > 0 %}
+          <span class="stamp text-brick">Overdue</span>
+          {% elif c.status == 'signed' %}
+          <span class="stamp text-sage">Paid up</span>
+          {% elif c.status == 'sent' %}
+          <span class="stamp text-gold">Sent</span>
+          {% else %}
+          <span class="stamp text-muted">Draft</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

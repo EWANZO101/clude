@@ -1,0 +1,70 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% block title %}{{ server.title }} — Admin{% endblock %}
+{% block page_title %}{{ server.title }}{% endblock %}
+{% block header_actions %}
+<a href="{{ url_for('admin.server_edit', server_id=server.id) }}" class="btn-secondary">Edit</a>
+{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card p-5">
+    <dl class="grid grid-cols-2 gap-4 text-sm">
+      <div><dt class="text-text-muted">Seller</dt><dd class="text-text-primary">{{ server.seller.business_name if server.seller else "Platform" }}</dd></div>
+      <div><dt class="text-text-muted">CPU</dt><dd class="text-text-primary">{{ server.cpu_summary }}</dd></div>
+      <div><dt class="text-text-muted">RAM</dt><dd class="text-text-primary">{{ server.ram_summary }}</dd></div>
+      <div><dt class="text-text-muted">Storage</dt><dd class="text-text-primary">{{ server.storage_summary }}</dd></div>
+      <div><dt class="text-text-muted">Network</dt><dd class="text-text-primary">{{ server.network_summary }}</dd></div>
+      <div><dt class="text-text-muted">Monthly price</dt><dd class="text-text-primary">£{{ server.monthly_price }}</dd></div>
+      <div><dt class="text-text-muted">Location</dt><dd class="text-text-primary">{{ server.location.city ~ ", " ~ server.location.country if server.location and server.location.city else "—" }}</dd></div>
+      <div><dt class="text-text-muted">Inventory</dt><dd class="text-text-primary">{{ server.inventory_status|hwval }}</dd></div>
+    </dl>
+  </div>
+  <div class="card p-5 space-y-4">
+    <div>
+      <h2 class="font-semibold text-text-primary mb-2">Listing status</h2>
+      <form method="POST" class="flex gap-2">
+        {% include "components/_csrf.html" %}
+        <input type="hidden" name="action" value="set_status">
+        <select name="status" class="input-field">
+          <option value="draft" {{ "selected" if server.status.value == "draft" }}>Draft</option>
+          <option value="published" {{ "selected" if server.status.value == "published" }}>Published</option>
+          <option value="disabled" {{ "selected" if server.status.value == "disabled" }}>Disabled</option>
+        </select>
+        <button type="submit" class="btn-secondary">Save</button>
+      </form>
+    </div>
+
+    <div>
+      <h2 class="font-semibold text-text-primary mb-2">Stock status</h2>
+      <form method="POST" class="flex gap-2">
+        {% include "components/_csrf.html" %}
+        <input type="hidden" name="action" value="set_inventory_status">
+        <select name="inventory_status" class="input-field">
+          {% for status in inventory_statuses %}
+          <option value="{{ status.value }}" {{ "selected" if status == server.inventory_status }}>{{ status|hwval }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn-secondary">Save</button>
+      </form>
+    </div>
+
+    <div>
+      <form method="POST">
+        {% include "components/_csrf.html" %}
+        <input type="hidden" name="action" value="toggle_active">
+        <button type="submit" class="{{ 'btn-danger' if server.is_active else 'btn-primary' }} w-full">
+          {{ "Deactivate listing" if server.is_active else "Activate listing" }}
+        </button>
+      </form>
+    </div>
+
+    <div class="border-t border-border pt-4">
+      <form method="POST" action="{{ url_for('admin.server_delete', server_id=server.id) }}"
+            onsubmit="return confirm('Permanently delete this server? This cannot be undone.');">
+        {% include "components/_csrf.html" %}
+        <button type="submit" class="btn-danger w-full">Delete server</button>
+      </form>
+      <p class="text-xs text-text-muted mt-2">Servers with order history can't be deleted — deactivate them instead.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

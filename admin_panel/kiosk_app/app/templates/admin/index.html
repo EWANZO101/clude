@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — {{ tenant_name }}{% endblock %}
+{% block content %}
+<h1>Admin Panel</h1>
+
+<div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; margin:18px 0;">
+  <div class="stat-card"><div class="value">{{ user_count }}</div><div class="label">Local Users</div></div>
+  <div class="stat-card"><div class="value">{{ role_count }}</div><div class="label">Roles</div></div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px;">
+  <a href="{{ url_for('admin.list_users') }}" class="panel" style="text-decoration:none; color:var(--text);">
+    <strong>Users</strong>
+    <p class="muted" style="font-size:13px;">Create accounts, reset badges/passwords, deactivate.</p>
+  </a>
+  <a href="{{ url_for('admin.list_roles') }}" class="panel" style="text-decoration:none; color:var(--text);">
+    <strong>Roles &amp; Permissions</strong>
+    <p class="muted" style="font-size:13px;">Custom roles, login kill-switch, per-role sidebar visibility.</p>
+  </a>
+  <a href="{{ url_for('admin.audit_log') }}" class="panel" style="text-decoration:none; color:var(--text);">
+    <strong>Audit Log</strong>
+    <p class="muted" style="font-size:13px;">Who changed what on this kiosk, and when.</p>
+  </a>
+  <a href="{{ url_for('admin.sidebar_builder') }}" class="panel" style="text-decoration:none; color:var(--text);">
+    <strong>Sidebar Order</strong>
+    <p class="muted" style="font-size:13px;">Drag to rearrange the nav — no code, no template edits.</p>
+  </a>
+  <a href="{{ url_for('inventory.type_manager') }}" class="panel" style="text-decoration:none; color:var(--text);">
+    <strong>Manage Inventory</strong>
+    <p class="muted" style="font-size:13px;">Custom item/tool types, custom fields, and every item.</p>
+  </a>
+  <a href="{{ url_for('admin.flagged_activity') }}" class="panel" style="text-decoration:none; color:var(--text); position:relative;">
+    <strong>Flagged Activity</strong>
+    {% if unresolved_flag_count %}
+      <span style="position:absolute; top:14px; right:14px; background:var(--orange); color:#1a1200; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px;">{{ unresolved_flag_count }}</span>
+    {% endif %}
+    <p class="muted" style="font-size:13px;">"Wasn't me" reports from the login-time activity check.</p>
+  </a>
+  <a href="{{ url_for('admin.privacy_admin') }}" class="panel" style="text-decoration:none; color:var(--text);">
+    <strong>Privacy &amp; Data Retention</strong>
+    <p class="muted" style="font-size:13px;">POPIA retention window, manual purge, and data subject erasure requests.</p>
+  </a>
+</div>
+
+<div class="panel" style="margin-top:16px;">
+  <h2 style="margin-top:0; font-size:15px;">Recent admin activity</h2>
+  {% if recent_audit %}
+    {% for e in recent_audit %}
+      <div style="padding:6px 0; border-bottom:1px solid var(--panel-border); font-size:13px;">
+        <strong>{{ e.actor }}</strong> — {{ e.action }}{% if e.target %} ({{ e.target }}){% endif %}
+        <span class="muted">{{ e.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted">Nothing yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

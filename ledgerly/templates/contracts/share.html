@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ contract.title }} · Payment schedule</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink: { DEFAULT: '#0E1210', surface: '#161B18', raised: '#1E2420', line: '#2B322C' },
+      gold: { DEFAULT: '#B08D3E', soft: '#8F7434', bright: '#D4B364' },
+      parchment: '#F3EFE4', muted: '#95907F', sage: '#5C8367', brick: '#B9584C' },
+    fontFamily: { display: ['Fraunces', 'serif'], sans: ['Inter', 'sans-serif'], mono: ['"JetBrains Mono"', 'monospace'] }
+  } } }
+</script>
+<style>
+  body {
+    background-color: #0A0D0C;
+    background-image:
+      radial-gradient(ellipse 900px 500px at 12% -8%, rgba(176,141,62,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(92,131,103,0.05), transparent 55%);
+    background-attachment: fixed;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/></svg>");
+  }
+  #app-root { position: relative; z-index: 1; }
+  ::selection { background: #B08D3E; color: #0E1210; }
+
+  .num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  .card {
+    background: linear-gradient(180deg, rgba(32,38,34,0.62), rgba(19,23,20,0.85));
+    border: 1px solid rgba(243,239,228,0.065);
+    border-radius: 16px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.035) inset, 0 16px 32px -20px rgba(0,0,0,0.65);
+  }
+  .card-raised {
+    background: linear-gradient(180deg, rgba(40,47,41,0.85), rgba(24,29,26,0.92));
+    border-color: rgba(176,141,62,0.16);
+  }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+    background: linear-gradient(180deg, #D9BC72, #B08D3E 65%, #9c7c34);
+    color: #171308; font-weight: 600; border-radius: 10px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset, 0 1px 2px rgba(0,0,0,0.2), 0 10px 20px -10px rgba(176,141,62,0.55);
+    transition: filter .15s ease, transform .12s ease, box-shadow .15s ease;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 14px 26px -10px rgba(176,141,62,0.65); }
+  .btn-primary:active { transform: translateY(0); filter: brightness(0.98); }
+  .btn-primary:disabled { opacity: .4; filter: none; transform: none; cursor: not-allowed; }
+
+  .btn-secondary {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+    background: rgba(243,239,228,0.025);
+    border: 1px solid rgba(243,239,228,0.12);
+    color: #F3EFE4; border-radius: 10px;
+    transition: border-color .15s ease, background .15s ease, color .15s ease;
+    white-space: nowrap;
+  }
+  .btn-secondary:hover { border-color: rgba(176,141,62,0.55); background: rgba(176,141,62,0.07); color: #D4B364; }
+
+  .input-field {
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(243,239,228,0.1);
+    border-radius: 10px;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .input-field:focus { outline: none; border-color: #B08D3E; box-shadow: 0 0 0 3px rgba(176,141,62,0.14); background: rgba(0,0,0,0.3); }
+  .input-field::placeholder { color: #6b6559; }
+
+  .stamp {
+    display: inline-flex; align-items: center; gap: .4rem;
+    border-radius: 999px; padding: .28rem .7rem;
+    font-size: .66rem; letter-spacing: .09em; text-transform: uppercase; font-weight: 600;
+    font-family: 'JetBrains Mono', monospace; line-height: 1;
+    background: color-mix(in oklab, currentColor 13%, transparent);
+    border: 1px solid color-mix(in oklab, currentColor 30%, transparent);
+  }
+  .stamp::before { content: ''; width: 5px; height: 5px; border-radius: 999px; background: currentColor; flex-shrink: 0; }
+
+  #lang-switcher { font-family: 'Inter', sans-serif; }
+  #lang-panel { max-height: 22rem; }
+  #lang-list { max-height: 15rem; overflow-y: auto; }
+  #lang-btn { min-width: 128px; }
+  #lang-spinner {
+    width: 12px; height: 12px; border-radius: 999px;
+    border: 2px solid rgba(243,239,228,0.25); border-top-color: #D4B364;
+    animation: lang-spin .7s linear infinite;
+  }
+  @keyframes lang-spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body class="min-h-screen text-parchment font-sans antialiased">
+{% set cur = contract.currency_code %}
+
+<div id="lang-switcher" class="fixed top-4 right-4 z-50" data-no-translate>
+  <button id="lang-btn" type="button" class="btn-secondary px-3 py-1.5 text-xs" title="Change page language">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20Z"/></svg>
+    <span id="lang-spinner" class="hidden"></span>
+    <span id="lang-current" data-label="English">English</span>
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="flex-shrink-0 ml-auto"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+  <div id="lang-panel" class="hidden absolute right-0 mt-2 w-64 card p-2">
+    <input id="lang-search" type="text" placeholder="Search language…" class="w-full input-field px-2.5 py-1.5 text-xs mb-2">
+    <div id="lang-list" class="space-y-0.5"></div>
+  </div>
+</div>
+
+<main id="page-content" class="relative z-10 max-w-3xl mx-auto px-6 py-14">
+  {% set company = contract.company %}
+  {% if company.brand_logo_filename %}
+  <div class="bg-white rounded-lg inline-block p-3 mb-10">
+    <img src="{{ url_for('uploaded_file', filename=company.brand_logo_filename) }}" alt="{{ company.brand_display_name or company.name }}" class="h-9 object-contain">
+  </div>
+  {% else %}
+  <div class="font-display text-xl mb-10" style="color:{{ company.brand_accent_color or '#B08D3E' }}">{{ company.brand_display_name or company.name }}</div>
+  {% endif %}
+
+  <p class="text-gold text-xs tracking-[0.2em] uppercase mb-1">Payment schedule for</p>
+  <h1 class="font-display text-4xl tracking-tight mb-2">{{ contract.title }}</h1>
+  <p class="text-muted text-sm mb-8">Prepared for {{ contract.client.name }}</p>
+
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+    <div class="card p-4">
+      <p class="text-xs text-muted mb-1">Total</p>
+      <p class="num">{{ contract.total_amount|money(cur) }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs text-muted mb-1">Paid</p>
+      <p class="num text-sage">{{ contract.amount_paid|money(cur) }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs text-muted mb-1">Remaining</p>
+      <p class="num">{{ contract.amount_remaining|money(cur) }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs text-muted mb-1">Currency</p>
+      <p class="num">{{ cur }}</p>
+    </div>
+  </div>
+
+  {% if contract.schedule %}
+  <div class="card overflow-hidden mb-4">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs text-muted uppercase tracking-wide border-b border-ink-line">
+          <th class="px-4 py-3">#</th>
+          <th class="px-4 py-3">Date</th>
+          <th class="px-4 py-3">Description</th>
+          <th class="px-4 py-3 text-right">Amount</th>
+          <th class="px-4 py-3">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for p in contract.schedule.payments %}
+        <tr class="border-b border-ink-line last:border-0">
+          <td class="px-4 py-3 text-muted num">{{ p.sequence }}</td>
+          <td class="px-4 py-3 num">{{ p.due_date.strftime('%-d %b %Y') }}</td>
+          <td class="px-4 py-3 text-muted">{{ p.label or 'Instalment' }}</td>
+          <td class="px-4 py-3 text-right num">{{ p.amount|money(cur) }}</td>
+          <td class="px-4 py-3"><span class="stamp {{ 'text-sage' if p.status=='paid' else ('text-brick' if p.status=='overdue' else 'text-gold') }}">{{ p.status }}</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if contract.allows_schedule_changes and contract.client_can_build_schedule %}
+  <a href="{{ url_for('public_schedule_builder', token=token) }}" class="text-xs text-gold hover:underline mb-8 inline-block">Request a change to this schedule →</a>
+  {% endif %}
+  {% elif contract.client_can_build_schedule %}
+  <div class="border border-dashed border-white/10 rounded-2xl p-8 text-center mb-8">
+    <p class="text-muted mb-3">No payment schedule has been set up yet — you can build your own.</p>
+    <a href="{{ url_for('public_schedule_builder', token=token) }}" class="inline-block text-sm btn-primary px-4 py-2">Set up payment schedule</a>
+  </div>
+  {% else %}
+  <div class="border border-dashed border-white/10 rounded-2xl p-8 text-center text-muted mb-8">A payment schedule hasn't been published for this contract yet.</div>
+  {% endif %}
+
+  <div class="mb-8">
+    <a href="{{ url_for('contract_share_pdf', token=contract.share_token) }}" class="inline-block text-sm btn-secondary px-4 py-2">Download PDF</a>
+  </div>
+
+  {% if contract.agreement_text %}
+  <div class="border-t border-ink-line pt-10 mb-10">
+    <p class="text-gold text-xs tracking-[0.2em] uppercase mb-4">Agreement</p>
+    <div class="prose prose-invert max-w-none prose-headings:font-display prose-a:text-gold prose-blockquote:border-gold prose-blockquote:text-muted">
+      {{ contract.agreement_text|agreement_html|safe }}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="border-t border-ink-line pt-10">
+    <p class="text-gold text-xs tracking-[0.2em] uppercase mb-4">Signature</p>
+    {% if contract.is_signed %}
+    <div class="bg-ink-surface border border-sage/40 rounded-lg p-6">
+      <p class="font-display text-2xl italic mb-2">{{ contract.signature_text }}</p>
+      <p class="text-xs text-muted">Signed by {{ contract.signed_by_name }} on {{ contract.signed_at.strftime('%-d %B %Y') }}</p>
+      <span class="stamp text-sage mt-3 inline-flex">Signed</span>
+    </div>
+    {% else %}
+    <form method="post" action="{{ url_for('contract_sign', token=token) }}" class="card p-6 space-y-4">
+      <div>
+        <label class="block text-xs text-muted mb-1.5">Your full name</label>
+        <input type="text" name="full_name" required class="w-full input-field px-3 py-2 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs text-muted mb-1.5">Type your name to sign</label>
+        <input type="text" name="signature_text" required placeholder="Your signature" class="w-full input-field px-3 py-2 text-lg font-display italic">
+      </div>
+      <label class="flex items-start gap-2 text-sm text-muted">
+        <input type="checkbox" name="agree" required class="mt-0.5 rounded border-ink-line bg-ink-raised">
+        I have read and agree to the terms above{% if not contract.agreement_text %} and the payment schedule shown{% endif %}.
+      </label>
+      <button class="btn-primary px-5 py-2.5 text-sm">Sign agreement</button>
+    </form>
+    {% endif %}
+  </div>
+</main>
+<script src="{{ url_for('static', filename='js/lang-switcher.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    initLangSwitcher('page-content', 'ledgerly_share_lang_{{ token }}');
+  });
+</script>
+</body>
+</html>

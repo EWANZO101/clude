@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Change requests — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <h1>Change requests</h1>
+    <div class="page-sub muted">Update or change requests clients have submitted through the Client Portal, for whichever instance they're assigned to.</div>
+  </div>
+</div>
+
+<div class="panel" style="padding:8px 22px 20px;">
+  {% if request_counts.all %}
+    <div class="page-tabbed filter-tabs" data-default-tab="open">
+      <div class="page-tabs" role="tablist">
+        <button type="button" class="page-tab-btn" data-tab="all">All<span class="tab-count" id="cr-count-all">{{ request_counts.all }}</span></button>
+        <button type="button" class="page-tab-btn" data-tab="open">Open<span class="tab-count" id="cr-count-open">{{ request_counts.open }}</span></button>
+        <button type="button" class="page-tab-btn" data-tab="in_progress">In progress<span class="tab-count" id="cr-count-in_progress">{{ request_counts.in_progress }}</span></button>
+        <button type="button" class="page-tab-btn" data-tab="completed">Completed<span class="tab-count" id="cr-count-completed">{{ request_counts.completed }}</span></button>
+        <button type="button" class="page-tab-btn" data-tab="declined">Declined<span class="tab-count" id="cr-count-declined">{{ request_counts.declined }}</span></button>
+      </div>
+
+      {% for key in ['all', 'open', 'in_progress', 'completed', 'declined'] %}
+        <div class="page-tab-panel" data-tab-panel="{{ key }}" {{ 'hidden' if key != 'open' }}>
+          {% if request_groups[key] %}
+            <div class="table-scroll">
+            <table>
+              <thead><tr><th>Title</th><th>Company / Instance</th><th>Client</th><th>Status</th><th>Submitted</th><th></th></tr></thead>
+              <tbody>
+                {% for r in request_groups[key] %}
+                  <tr>
+                    <td style="max-width:220px; white-space:normal; font-weight:600;">{{ r.title }}</td>
+                    <td class="muted">{{ r.instance.company.name }} — {{ r.instance.display_name() }}</td>
+                    <td class="muted">{{ r.client_user.email }}</td>
+                    <td>
+                      {% if r.status == 'completed' %}<span class="pill pill-green">Completed</span>
+                      {% elif r.status == 'declined' %}<span class="pill pill-red">Declined</span>
+                      {% elif r.status == 'in_progress' %}<span class="pill pill-blue">In progress</span>
+                      {% else %}<span class="pill pill-amber">Open</span>{% endif %}
+                    </td>
+                    <td>{{ r.created_at | friendly_dt }}</td>
+                    <td>
+                      <button type="button" class="btn btn-secondary btn-sm" data-open-modal="cr-{{ key }}-{{ r.public_id }}">Respond</button>
+                      <dialog id="cr-{{ key }}-{{ r.public_id }}" class="modal">
+                        <div class="modal-body">
+                          <div class="modal-head">
+                            <h3>{{ r.title }}</h3>
+                            <button type="button" class="modal-close-x" data-close-modal aria-label="Close">&times;</button>
+                          </div>
+                          <p class="muted" style="font-size:12.5px;">
+                            {{ r.instance.company.name }} — {{ r.instance.display_name() }} · requested by {{ r.client_user.email }} · {{ r.created_at | friendly_dtstr }}
+                          </p>
+                          <p style="white-space:pre-wrap;">{{ r.description }}</p>
+                          <form method="post" action="{{ url_for('platform.respond_change_request', request_id=r.public_id) }}">
+                            <label>Status</label>
+                            <select name="status">
+                              {% for s in ['open', 'in_progress', 'completed', 'declined'] %}
+                                <option value="{{ s }}" {% if s == r.status %}selected{% endif %}>{{ s.replace('_',' ')|capitalize }}</option>
+                              {% endfor %}
+                            </select>
+                            <label>Response (optional — visible to the client)</label>
+                            <textarea name="admin_response" rows="3">{{ r.admin_response or '' }}</textarea>
+                            <div class="modal-actions">
+                              <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Cancel</button>
+                              <button type="submit" class="btn btn-sm">Save</button>
+                            </div>
+                          </form>
+                        </div>
+                      </dialog>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            </div>
+          {% else %}
+            <div class="empty">Nothing in this category.</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">No change requests submitted yet.</div>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var STATUS_URL = {{ url_for('platform.change_requests_status')|tojson }};
+  opslabLongPoll(STATUS_URL, function (counts) {
+    ['all', 'open', 'in_progress', 'completed', 'declined'].forEach(function (key) {
+      var el = document.getElementById('cr-count-' + key);
+      if (el) el.textContent = counts[key];
+    });
+  });
+});
+</script>
+{% endblock %}
