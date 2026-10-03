@@ -45,10 +45,12 @@ local function clipOn()
     if not c then return lib.notify({ type = 'error', description = 'Climb the pole first, then clip on' }) end
     if not worn() then return lib.notify({ type = 'error', description = 'Put your harness on first' }) end
     if not checkedAt then lib.notify({ type = 'warning', description = 'Tip: do a pre-use check of the harness before you rely on it' }) end
+    TriggerEvent('opslabs:harness', 'strap')
     if progress('Passing the pole strap round the pole and clipping on', CH.ClipSeconds or 2.5) then
         clipped = { pole = c.pole.id, x = c.pole.x, y = c.pole.y }
         publish()
-        PlaySoundFrontend(-1, 'CLICK_BACK', 'WEB_NAVIGATION_SOUNDS_PHONE', true)
+        TriggerEvent('opslabs:harness', 'clip')
+        if GetResourceState('opslabs-animations') ~= 'started' then PlaySoundFrontend(-1, 'CLICK_BACK', 'WEB_NAVIGATION_SOUNDS_PHONE', true) end
         lib.notify({ type = 'success', description = 'Clipped on — you can lean back and work hands-free' })
     end
 end
@@ -58,6 +60,7 @@ local function unclip()
     if progress('Unclipping the pole strap', 1.5) then
         clipped = nil
         publish()
+        TriggerEvent('opslabs:harness', 'unclip')
         lib.notify({ type = 'inform', description = PoleClimb and 'Unclipped — three points of contact on the way down' or 'Unclipped' })
     end
 end
@@ -84,12 +87,14 @@ function HarnessMenu()
                 if progress(w and 'Taking the harness off' or 'Putting the harness on and adjusting the straps', CH.WearSeconds or 3.0) then
                     if HarnessSet then HarnessSet(not w) end
                     publish()
+                    TriggerEvent('opslabs:harness', w and 'off' or 'on')
                     lib.notify({ type = w and 'inform' or 'success', description = w and 'Harness off' or ('Harness on · clip on once you are up the pole: ' .. HarnessKeyLabel()) })
                 end
             end }
     end
     options[#options + 1] = { title = 'Pre-use check', description = 'Webbing, stitching, buckles, karabiner gate and the lanyard', icon = 'clipboard-check', disabled = not w,
         onSelect = function()
+            TriggerEvent('opslabs:harness', 'check')
             if progress('Checking webbing, stitching, buckles and karabiner', 4.0) then
                 checkedAt = GetGameTimer()
                 lib.notify({ type = 'success', description = 'Harness checked · no cuts, fraying or damaged hardware' })

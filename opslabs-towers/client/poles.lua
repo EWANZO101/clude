@@ -50,14 +50,24 @@ local ANIM = 'laddersbase'
 local WORK_DICT, WORK_CLIP = 'amb@prop_human_movie_bulb@base', 'base'
 ClimbAnims = { ladder = false, work = false, clip = nil, started = 0, cycleOk = true }
 
-function ClimbAnims.load()
+-- opslabs-animations (when running) takes over the poses and adds the climbing / harness sounds
+local ANIMS = 'opslabs-animations'
+local function ext(fn, ...)
+    local ok, r = pcall(exports[ANIMS][fn], exports[ANIMS], ...)
+    return ok and r == true
+end
+
+function ClimbAnims.load(kind, h)
     ClimbAnims.ladder = loadAnim(ANIM)
     ClimbAnims.work = loadAnim(WORK_DICT)
     ClimbAnims.clip, ClimbAnims.cycleOk = nil, true
+    ClimbAnims.kind = kind or 'ladder'
+    ClimbAnims.ext = GetResourceState(ANIMS) == 'started' and ext('Begin', ClimbAnims.kind, h or 0.0)
     return ClimbAnims.ladder
 end
 
 function ClimbAnims.set(ped, state)
+    if ClimbAnims.ext and ext('Pose', ClimbAnims.kind, state) then ClimbAnims.clip = nil return end
     if not ClimbAnims.ladder then return end
     local clip = (state == 'up' and 'climb_up') or (state == 'down' and 'climb_down') or 'base_left_hand_up'
     if clip ~= 'base_left_hand_up' and not ClimbAnims.cycleOk then clip = 'base_left_hand_up' end
@@ -81,6 +91,7 @@ end
 --- climbing cycle driven by position, not time: limbs move exactly as far as you climb.
 --- cycle = metres per full hand-over-hand cycle (two rungs / two steps)
 function ClimbAnims.drive(ped, pos, cycle)
+    if ClimbAnims.ext and ext('Drive', ClimbAnims.kind, pos, cycle) then ClimbAnims.clip = nil return end
     if not ClimbAnims.ladder then return end
     if not ClimbAnims.cycleOk then return ClimbAnims.set(ped, 'up') end
     if ClimbAnims.clip ~= 'climb_up' or not IsEntityPlayingAnim(ped, ANIM, 'climb_up', 3) then
@@ -102,6 +113,7 @@ function ClimbAnims.step(pos, spacing)
 end
 
 function ClimbAnims.unload(ped)
+    if ClimbAnims.ext then ext('End', ClimbAnims.kind) ClimbAnims.ext = false end
     if ClimbAnims.work then StopAnimTask(ped, WORK_DICT, WORK_CLIP, 2.0) RemoveAnimDict(WORK_DICT) end
     if ClimbAnims.ladder then RemoveAnimDict(ANIM) end
     ClimbAnims.clip = nil
@@ -214,7 +226,7 @@ local function climb(pole, startH, startAngle)
     if HarnessOn and not HarnessOn() then lib.notify({ type = 'warning', description = 'No harness on — put on your combat harness & pole straps (Tool kit) before climbing' })
     elseif HarnessKeyLabel then lib.notify({ type = 'inform', description = ('Clip your harness on to the pole once you are up: %s'):format(HarnessKeyLabel()) }) end
 
-    local haveAnim = ClimbAnims.load()
+    local haveAnim = ClimbAnims.load('pole', h)
     FreezeEntityPosition(ped, true)
     SetEntityCollision(ped, false, false)
 

@@ -1,0 +1,30 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>opslabs-animations</title></head>
+<body style="background:transparent">
+<script>
+// 3D-ish playback: Lua sends volume (distance falloff) and pan (left / right of the camera)
+const ctx = new (window.AudioContext || window.webkitAudioContext)();
+const cache = {};
+async function load(file) {
+  if (!cache[file]) cache[file] = fetch('sfx/' + file).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b));
+  return cache[file];
+}
+window.addEventListener('message', async (e) => {
+  const d = e.data;
+  if (!d || d.type !== 'play') return;
+  try {
+    if (ctx.state === 'suspended') await ctx.resume();
+    const buffer = await load(d.file);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.playbackRate.value = d.rate || 1;
+    const gain = ctx.createGain();
+    gain.gain.value = Math.max(0, Math.min(1, d.volume));
+    const pan = ctx.createStereoPanner();
+    pan.pan.value = Math.max(-1, Math.min(1, d.pan || 0));
+    src.connect(gain).connect(pan).connect(ctx.destination);
+    src.start();
+  } catch (err) { /* missing file or audio blocked: stay silent */ }
+});
+</script>
+</body></html>

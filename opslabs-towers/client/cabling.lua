@@ -730,6 +730,7 @@ local function layRun(kind, color, box, opts)
         ghost = {}
     end
     local dropped = false
+    if boxed then TriggerEvent('opslabs:carry', 'cable', true) end      -- opslabs-animations: cable in hand
     local sf = carry and PlaceHud.buttons({ { 'Fix point', 24 }, { 'Fix the end here', 191 }, { 'Drop it', { 47, 177 } }, { 'Straight line', 21 } })
         or PlaceHud.buttons(not boxed
         and { { 'Fix point', 24 }, { 'Finish', 191 }, { 'Undo', { 25, 177 } }, { 'Straight line', 21 }, { 'Cancel', 200 } }
@@ -902,6 +903,7 @@ local function layRun(kind, color, box, opts)
         if IsDisabledControlJustPressed(0, 200) then break end
     end
     PlaceHud.release(sf)
+    if boxed then TriggerEvent('opslabs:carry', 'cable', false) end
     clearGhost()
     clearSlack()
     for _, list in pairs(preview) do for _, e in ipairs(list) do if DoesEntityExist(e) then DeleteEntity(e) end end end

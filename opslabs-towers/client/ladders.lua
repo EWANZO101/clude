@@ -148,6 +148,7 @@ local function carryLadder(t, existing)
     local result
     local cosL, sinL = math.cos(math.rad(LEAN)), math.sin(math.rad(LEAN))
     local sf = PlaceHud.buttons({ { existing and 'Put it down' or 'Place', { 24, 191 } }, { 'Cancel', { 25, 177 } }, { 'Extend / retract', { 15, 14 } }, { 'Fine', 21 }, { 'Turn', { 44, 38 } } })
+    TriggerEvent('opslabs:carry', 'ladder', true)             -- opslabs-animations: arms out carrying it
     while true do
         Wait(0)
         for _, ctl in ipairs({ 14, 15, 16, 17, 24, 25, 37, 44, 38, 140, 141, 142, 172, 173, 177, 191, 199, 200, 257, 261, 262, 263 }) do DisableControlAction(0, ctl, true) end
@@ -244,6 +245,7 @@ local function carryLadder(t, existing)
         if IsDisabledControlJustPressed(0, 25) or IsDisabledControlJustPressed(0, 177) then break end
     end
     PlaceHud.release(sf)
+    TriggerEvent('opslabs:carry', 'ladder', false)
     for _, e in ipairs({ ghost.base, ghost.fly }) do if DoesEntityExist(e) then DeleteEntity(e) end end
     if real and DoesEntityExist(real.base) then SetEntityVisible(real.base, true, false) SetEntityVisible(real.fly, true, false) end
     return result
@@ -392,7 +394,7 @@ end
 
 local function climb(l, startS)
     local ped = PlayerPedId()
-    local haveAnim = ClimbAnims.load()
+    local haveAnim = ClimbAnims.load('ladder', startS or 0.0)
     climbingLadder = l.id
     if Coach then Coach('climb_ladder') end
     FreezeEntityPosition(ped, true)
