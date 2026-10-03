@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CMapTypes>
+  <archetypes>
+    <Item type="CBaseArchetypeDef">
+      <lodDist value="80" />
+      <flags value="0" />
+      <specialAttribute value="0" />
+      <bbMin x="-0.0985" y="-0.0985" z="0.0" />
+      <bbMax x="0.0985" y="0.0985" z="0.0389" />
+      <bsCentre x="0.0" y="0.0" z="0.01945" />
+      <bsRadius value="0.14065135" />
+      <hdTextureDist value="100" />
+      <name>opslabs_unifi_ap</name>
+      <textureDictionary>opslabs_unifi_ap</textureDictionary>
+      <physicsDictionary>opslabs_unifi_ap</physicsDictionary>
+      <assetType>ASSET_TYPE_DRAWABLE</assetType>
+      <assetName>opslabs_unifi_ap</assetName>
+    </Item>
+    <Item type="CBaseArchetypeDef">
+      <lodDist value="80" />
+      <flags value="0" />
+      <specialAttribute value="0" />
+      <bbMin x="-0.0985" y="-0.0985" z="-0.038900003" />
+      <bbMax x="0.0985" y="0.0985" z="6.993822e-09" />
+      <bsCentre x="0.0" y="0.0" z="-0.019449998" />
+      <bsRadius value="0.14065135" />
+      <hdTextureDist value="100" />
+      <name>opslabs_unifi_ap_ceiling</name>
+      <textureDictionary>opslabs_unifi_ap_ceiling</textureDictionary>
+      <physicsDictionary>opslabs_unifi_ap_ceiling</physicsDictionary>
+      <assetType>ASSET_TYPE_DRAWABLE</assetType>
+      <assetName>opslabs_unifi_ap_ceiling</assetName>
+    </Item>
+  </archetypes>
+  <name>opslabs_wifi_props</name>
+</CMapTypes>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fence sign</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1024px; height: 512px; overflow: hidden; background: #f4f4f2; font-family: Arial, Helvetica, sans-serif; color: #111; }
+  .band { height: 168px; display: flex; align-items: center; justify-content: center; padding: 0 40px; color: #fff; }
+  .name { font-size: 96px; font-weight: 900; letter-spacing: 1px; white-space: nowrap; }
+  .msg { height: 210px; display: flex; align-items: center; justify-content: center; padding: 0 40px; text-align: center; }
+  .msg div { font-size: 68px; font-weight: 900; line-height: 1.05; text-transform: uppercase; }
+  .phone { height: 104px; display: flex; align-items: center; justify-content: center; font-size: 50px; font-weight: 800; border-top: 6px solid; margin: 0 40px; white-space: nowrap; }
+  .edge { position: absolute; inset: 0; border: 14px solid; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="band" id="band"><div class="name" id="name"></div></div>
+<div class="msg"><div id="msg"></div></div>
+<div class="phone" id="phone"></div>
+<div class="edge" id="edge"></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const color = /^#[0-9a-f]{6}$/i.test(q.get('color') || '') ? q.get('color') : '#0a84ff';
+  document.getElementById('band').style.background = color;
+  document.getElementById('phone').style.borderColor = color;
+  document.getElementById('edge').style.borderColor = color;
+  document.getElementById('name').textContent = q.get('name') || 'OPS Network';
+  document.getElementById('msg').textContent = q.get('message') || 'Private property · No unauthorised access';
+  document.getElementById('phone').textContent = q.get('phone') || '';
+  if (!q.get('phone')) document.getElementById('phone').style.display = 'none';
+  for (const [id, max] of [['name', 944], ['phone', 944]]) {
+    const el = document.getElementById(id);
+    let size = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > max && size > 18) { size -= 2; el.style.fontSize = size + 'px'; }
+  }
+  const m = document.getElementById('msg');
+  let size = 68;
+  while ((m.scrollHeight > 200 || m.scrollWidth > 944) && size > 20) { size -= 2; m.style.fontSize = size + 'px'; }
+</script>
+</body>
+</html>

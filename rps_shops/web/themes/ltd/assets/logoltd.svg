@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 110" width="220" height="110">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f23a2e"/>
+      <stop offset="1" stop-color="#b8160e"/>
+    </linearGradient>
+    <clipPath id="c">
+      <rect x="4" y="4" width="212" height="102" rx="14"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#c)">
+    <rect x="4" y="4" width="212" height="102" fill="url(#g)"/>
+    <rect x="4" y="74" width="212" height="24" fill="#ffc20e"/>
+    <rect x="4" y="98" width="212" height="8" fill="#7a0c06"/>
+  </g>
+  <text x="110" y="64" text-anchor="middle"
+        font-family="Impact, 'Arial Black', sans-serif" font-size="60" font-style="italic"
+        fill="#ffffff" stroke="#7a0c06" stroke-width="3" paint-order="stroke" letter-spacing="2">LTD</text>
+  <text x="110" y="92" text-anchor="middle"
+        font-family="Impact, 'Arial Black', sans-serif" font-size="17" letter-spacing="7"
+        fill="#1a1204">GASOLINE</text>
+  <rect x="4" y="4" width="212" height="102" rx="14" fill="none" stroke="#ffffff" stroke-width="5"/>
+</svg>

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;800;900&family=VT323&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <title>LTD Gasoline</title>
+</head>
+
+<body>
+    <main id="app" class="hidden">
+        <section class="store-shell">
+            <div class="stripe-top"></div>
+
+            <header class="topbar">
+                <div class="brand-wrap">
+                    <img class="brand-logo" src="assets/logoltd.svg" alt="LTD Gasoline">
+
+                    <div class="brand-copy">
+                        <strong id="shop-name">LTD GASOLINE</strong>
+                        <span id="tagline">FUEL • FOOD • DRINKS</span>
+                    </div>
+
+                    <div class="open-sign">
+                        <span class="neon-dot"></span>
+                        OPEN
+                    </div>
+                </div>
+
+                <div class="top-actions">
+                    <div class="search-wrap">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input id="search" type="text" placeholder="Search the aisles..." autocomplete="off">
+                    </div>
+
+                    <div class="clock">
+                        <i class="fa-regular fa-clock"></i>
+                        <span id="clock">00:00</span>
+                    </div>
+
+                    <button id="close-button" class="close-button" type="button" aria-label="Close">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="body-layout">
+                <aside class="sidebar">
+                    <div class="section-label">AISLES</div>
+
+                    <div id="categories" class="categories"></div>
+
+                    <div id="fuel-board" class="fuel-board">
+                        <div class="fuel-board-head">
+                            <i class="fa-solid fa-gas-pump"></i>
+                            <span>LTD</span>
+                        </div>
+                        <div id="fuel-rows" class="fuel-rows"></div>
+                        <small>Pay for fuel at the pump. Hot deals marked in yellow.</small>
+                    </div>
+                </aside>
+
+                <section class="catalog">
+                    <div class="catalog-head">
+                        <div>
+                            <span class="eyebrow">AISLE</span>
+                            <h1 id="category-title">All Products</h1>
+                        </div>
+                        <div id="result-count" class="result-count">0 products</div>
+                    </div>
+
+                    <div id="products" class="product-grid"></div>
+
+                    <div id="empty-state" class="empty-state hidden">
+                        <div class="empty-icon"><i class="fa-solid fa-box-open"></i></div>
+                        <strong>Shelf is empty</strong>
+                        <span>Try another aisle or search term.</span>
+                    </div>
+                </section>
+
+                <aside id="cart-panel" class="cart-panel">
+                    <div class="basket-head">
+                        <div>
+                            <span class="eyebrow">YOUR BASKET</span>
+                            <h2><i class="fa-solid fa-basket-shopping"></i> <span id="cart-count">0</span> items</h2>
+                        </div>
+                        <button id="clear-cart" class="text-button" type="button">
+                            <i class="fa-solid fa-trash-can"></i> Clear
+                        </button>
+                    </div>
+
+                    <div class="receipt">
+                        <div class="receipt-top">
+                            <b>*** LTD GASOLINE ***</b>
+                            <span id="receipt-store">STORE</span>
+                            <span id="receipt-time">--</span>
+                        </div>
+
+                        <div id="cart-items" class="cart-items"></div>
+
+                        <div id="cart-empty" class="cart-empty">
+                            <span>- NO ITEMS SCANNED -</span>
+                            <small>Grab something off the shelf.</small>
+                        </div>
+
+                        <div class="receipt-totals">
+                            <div class="summary-line">
+                                <span>ITEMS</span>
+                                <strong id="summary-items">0</strong>
+                            </div>
+                            <div class="summary-line">
+                                <span>SAVED</span>
+                                <strong id="summary-saved">$0</strong>
+                            </div>
+                            <div class="summary-line total">
+                                <span>TOTAL</span>
+                                <strong id="summary-total">$0</strong>
+                            </div>
+                            <div class="barcode"></div>
+                            <div class="thanks">THANK YOU - DRIVE SAFE</div>
+                        </div>
+                    </div>
+
+                    <div class="checkout">
+                        <button id="purchase-button" class="purchase-button" type="button" disabled>
+                            <i class="fa-solid fa-cash-register"></i>
+                            <span>
+                                <b>CHECKOUT</b>
+                                <small id="payment-label">PAY WITH CASH</small>
+                            </span>
+                        </button>
+                        <div id="purchase-message" class="purchase-message"></div>
+                    </div>
+                </aside>
+            </div>
+
+            <footer>
+                <span id="footer-text">LTD GASOLINE</span>
+                <span><kbd>ESC</kbd> TO LEAVE</span>
+            </footer>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

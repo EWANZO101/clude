@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Share+Tech+Mono&family=VT323&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <title>Digital Den</title>
+</head>
+
+<body>
+    <main id="app" class="hidden">
+        <section class="store-shell">
+            <div class="glow-line"></div>
+
+            <header class="topbar">
+                <div class="brand-wrap">
+                    <img class="brand-logo" src="assets/digitalden.png" alt="Digital Den">
+
+                    <div class="brand-copy">
+                        <span id="tagline">LOS SANTOS ELECTRONICS</span>
+                        <strong id="shop-name">DIGITAL DEN</strong>
+                    </div>
+                </div>
+
+                <div class="top-actions">
+                    <div class="search-wrap">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input id="search" type="text" placeholder="Search electronics..." autocomplete="off">
+                    </div>
+
+                    <div class="clock">
+                        <i class="fa-regular fa-clock"></i>
+                        <span id="clock">00:00</span>
+                    </div>
+
+                    <button id="close-button" class="close-button" type="button" aria-label="Close">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="body-layout">
+                <aside class="sidebar">
+                    <div class="section-label">CATEGORIES</div>
+
+                    <div id="categories" class="categories"></div>
+
+                    <div class="sidebar-info">
+                        <span class="status-dot"></span>
+                        <div>
+                            <strong>Store online</strong>
+                            <small>Stock updates live</small>
+                        </div>
+                    </div>
+                </aside>
+
+                <section class="catalog">
+                    <div class="catalog-head">
+                        <div>
+                            <span class="eyebrow">DIGITAL DEN CATALOG</span>
+                            <h1 id="category-title">All Products</h1>
+                        </div>
+                        <div id="result-count" class="result-count">0 products</div>
+                    </div>
+
+                    <div id="products" class="product-grid"></div>
+
+                    <div id="empty-state" class="empty-state hidden">
+                        <div class="empty-icon"><i class="fa-solid fa-microchip"></i></div>
+                        <strong>No products found</strong>
+                        <span>Try another category or search.</span>
+                    </div>
+                </section>
+
+                <aside id="cart-panel" class="cart-panel">
+                    <div class="cart-head">
+                        <div>
+                            <span class="eyebrow">YOUR ORDER</span>
+                            <h2><i class="fa-solid fa-bag-shopping"></i> Basket</h2>
+                        </div>
+                        <button id="clear-cart" class="text-button" type="button">
+                            <i class="fa-solid fa-trash-can"></i> Clear
+                        </button>
+                    </div>
+
+                    <div class="receipt">
+                        <div class="receipt-top">
+                            <b>*** DIGITAL DEN ***</b>
+                            <span id="receipt-store">STORE</span>
+                            <span id="receipt-time">--</span>
+                        </div>
+
+                        <div id="cart-items" class="cart-items"></div>
+
+                        <div id="cart-empty" class="cart-empty">
+                            <span>- NO ITEMS SCANNED -</span>
+                            <small>Add products from the catalog.</small>
+                        </div>
+
+                        <div class="receipt-totals">
+                            <div class="summary-line">
+                                <span>ITEMS</span>
+                                <strong id="summary-items">0</strong>
+                            </div>
+                            <div class="summary-line saved">
+                                <span>YOU SAVE</span>
+                                <strong id="summary-saved">$0</strong>
+                            </div>
+                            <div class="summary-line total">
+                                <span>TOTAL</span>
+                                <strong id="summary-total">$0</strong>
+                            </div>
+                            <div class="barcode"></div>
+                            <div class="thanks">THANK YOU FOR SHOPPING DIGITAL</div>
+                        </div>
+                    </div>
+
+                    <div class="checkout">
+                        <button id="purchase-button" class="purchase-button" type="button" disabled>
+                            <i class="fa-solid fa-credit-card"></i>
+                            <span>
+                                <b>COMPLETE PURCHASE</b>
+                                <small id="payment-label">PAY WITH CASH</small>
+                            </span>
+                        </button>
+
+                        <div id="purchase-message" class="purchase-message"></div>
+                    </div>
+                </aside>
+            </div>
+
+            <footer>
+                <span id="footer-text">DIGITAL DEN</span>
+                <span><kbd>ESC</kbd> TO CLOSE</span>
+            </footer>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

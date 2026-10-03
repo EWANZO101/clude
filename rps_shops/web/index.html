@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rps_shops</title>
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        iframe.theme-frame {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            background: transparent;
+            display: none;
+        }
+
+        iframe.theme-frame.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Each store brand keeps its own UI in web/themes/<theme>/.
+         loader.js creates one frame per theme and routes NUI messages to the right one. -->
+    <script src="loader.js"></script>
+</body>
+</html>

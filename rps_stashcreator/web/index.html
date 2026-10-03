@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPS | Stash Creator</title>
+  <meta name="description" content="FiveM RPS Stash Creator - Create and manage persistent stashes for your server." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Main App Wrapper -->
+  <div class="app-wrapper" id="appWrapper">
+    <!-- ======================== MAIN UI ======================== -->
+    <div class="main-ui" id="mainUI">
+      <!-- Header -->
+      <div class="ui-header">
+        <div class="header-left">
+          <div class="header-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="header-title">Stash Creator</h1>
+            <p class="header-sub">RPS Management Panel</p>
+          </div>
+        </div>
+        <button class="close-btn" id="closeBtn" title="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tab-active" onclick="switchTab('active')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          Active Stashes
+          <span class="tab-badge" id="activeCount">0</span>
+        </button>
+        <button class="tab-btn" id="tab-create" onclick="switchTab('create')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Create Stash
+        </button>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="tab-content">
+
+        <!-- ======== ACTIVE STASHES TAB ======== -->
+        <div class="tab-pane active" id="pane-active">
+          <div class="search-bar-wrap">
+            <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="search-bar" id="searchBar" placeholder="Search stashes..." oninput="filterStashes()" />
+          </div>
+
+          <div class="stash-list" id="stashList">
+            <!-- Stash items injected here -->
+          </div>
+
+          <div class="empty-state" id="emptyState" style="display:none">
+            <div class="empty-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+            </div>
+            <p class="empty-title">No Stashes Found</p>
+            <p class="empty-sub">Create your first stash using the <strong>Create Stash</strong> tab.</p>
+          </div>
+        </div>
+
+        <!-- ======== CREATE STASH TAB ======== -->
+        <div class="tab-pane" id="pane-create">
+          <div class="editor-form" id="createForm">
+            <div class="form-section-label">Basic Info</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Stash Name</label>
+                <input type="text" class="form-input" id="create-name" placeholder="e.g. Police Evidence Locker" />
+              </div>
+            </div>
+            <div class="form-row two-col">
+              <div class="form-group">
+                <label class="form-label">Slots</label>
+                <input type="number" class="form-input" id="create-slots" placeholder="50" min="1" max="500" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Weight Capacity (kg)</label>
+                <input type="number" class="form-input" id="create-weight" placeholder="100" min="1" />
+              </div>
+            </div>
+
+            <div class="form-section-label">Job Access</div>
+            <div class="job-access-builder" id="create-jobList">
+              <div class="job-entry-header">
+                <span>Job</span><span>Min Grade</span><span></span>
+              </div>
+              <!-- job rows injected -->
+            </div>
+            <p class="list-empty-hint" id="create-jobEmpty">No job restrictions — accessible to any job.</p>
+            <button class="add-row-btn" onclick="addJobRow('create')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Job
+            </button>
+
+            <div class="form-section-label">Character Access</div>
+            <div class="char-access-builder" id="create-charList">
+              <!-- character rows -->
+            </div>
+            <p class="list-empty-hint" id="create-charEmpty">No character restrictions — accessible to everyone.</p>
+            <button class="add-row-btn" onclick="addCharRow('create')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Character
+            </button>
+
+            <div class="form-section-label">
+              Access Points
+              <span class="section-hint">Aim the in-game laser, press <kbd>Enter</kbd> to place</span>
+            </div>
+            <div class="access-points-list" id="create-apList">
+              <!-- access point rows -->
+            </div>
+            <p class="list-empty-hint" id="create-apEmpty">No access points yet — add one below.</p>
+            <button class="add-row-btn" onclick="addAccessPoint('create')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Access Point
+            </button>
+
+            <div class="form-actions">
+              <button class="btn-secondary" onclick="resetForm('create')">Reset</button>
+              <button class="btn-primary" onclick="createStash()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Create Stash
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ======================== EDIT PANEL (Slide In) ======================== -->
+    <div class="edit-panel" id="editPanel">
+     <div class="edit-panel-inner">
+      <div class="ui-header">
+        <div class="header-left">
+          <button class="back-btn" onclick="closeEditPanel()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div>
+            <h1 class="header-title" id="editPanelTitle">Edit Stash</h1>
+            <p class="header-sub" id="editPanelSub">Modifying stash settings</p>
+          </div>
+        </div>
+        <div class="edit-id-badge" id="editIdBadge">#001</div>
+      </div>
+
+      <div class="tab-content" style="margin-top:0">
+        <div class="editor-form" id="editForm">
+          <div class="form-section-label">Basic Info</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Stash Name</label>
+              <input type="text" class="form-input" id="edit-name" placeholder="Stash Name" />
+            </div>
+          </div>
+          <div class="form-row two-col">
+            <div class="form-group">
+              <label class="form-label">Slots</label>
+              <input type="number" class="form-input" id="edit-slots" placeholder="50" min="1" max="500" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Weight Capacity (kg)</label>
+              <input type="number" class="form-input" id="edit-weight" placeholder="100" min="1" />
+            </div>
+          </div>
+
+          <div class="form-section-label">Job Access</div>
+          <div class="job-access-builder" id="edit-jobList">
+            <div class="job-entry-header">
+              <span>Job</span><span>Min Grade</span><span></span>
+            </div>
+          </div>
+          <p class="list-empty-hint" id="edit-jobEmpty">No job restrictions — accessible to any job.</p>
+          <button class="add-row-btn" onclick="addJobRow('edit')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Job
+          </button>
+
+          <div class="form-section-label">Character Access</div>
+          <div class="char-access-builder" id="edit-charList"></div>
+          <p class="list-empty-hint" id="edit-charEmpty">No character restrictions — accessible to everyone.</p>
+          <button class="add-row-btn" onclick="addCharRow('edit')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Character
+          </button>
+
+          <div class="form-section-label">
+            Access Points
+            <span class="section-hint">Aim the in-game laser, press <kbd>Enter</kbd> to place</span>
+          </div>
+          <div class="access-points-list" id="edit-apList"></div>
+          <p class="list-empty-hint" id="edit-apEmpty">No access points yet — add one below.</p>
+          <button class="add-row-btn" onclick="addAccessPoint('edit')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Access Point
+          </button>
+
+          <div class="form-actions">
+            <button class="btn-secondary" onclick="closeEditPanel()">Cancel</button>
+            <button class="btn-primary" onclick="saveEdit()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+     </div>
+    </div>
+
+    <!-- ======================== ACCESS POINT CAPTURE OVERLAY ======================== -->
+    <div class="ap-capture-overlay" id="apCaptureOverlay">
+      <div class="ap-capture-card">
+        <div class="ap-capture-pulse">
+          <div class="ap-pulse-ring"></div>
+          <div class="ap-pulse-ring delay-1"></div>
+          <div class="ap-pulse-ring delay-2"></div>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+        </div>
+        <h2 class="ap-capture-title">Waiting for Position</h2>
+        <p class="ap-capture-desc">Aim the in-game laser at the desired spot and press <kbd>Enter</kbd> to capture the access point coordinates.</p>
+        <div class="ap-coords-preview" id="apCoordsPreview">
+          <span class="coord-badge">X: <strong id="apX">—</strong></span>
+          <span class="coord-badge">Y: <strong id="apY">—</strong></span>
+          <span class="coord-badge">Z: <strong id="apZ">—</strong></span>
+        </div>
+        <button class="btn-secondary" style="margin-top:18px" onclick="cancelApCapture()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ======================== DELETE CONFIRM MODAL ======================== -->
+    <div class="modal-overlay" id="deleteModal">
+      <div class="modal-card">
+        <div class="modal-icon danger">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </div>
+        <h2 class="modal-title">Delete Stash?</h2>
+        <p class="modal-desc">Are you sure you want to delete <strong id="deleteStashName"></strong>? This action cannot be undone.</p>
+        <div class="modal-actions">
+          <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+          <button class="btn-danger" onclick="confirmDelete()">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== TOAST NOTIFICATION ======================== -->
+    <div class="toast-container" id="toastContainer"></div>
+
+  </div><!-- end app-wrapper -->
+
+  <script src="app.js"></script>
+</body>
+</html>

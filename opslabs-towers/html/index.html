@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ONT status</title>
+<style>
+  :root {
+    --panel: rgba(18, 18, 22, 0.92);
+    --line: rgba(255, 255, 255, 0.08);
+    --text: #f2f2f7;
+    --muted: #9a9aa3;
+    --green: #30d158;
+    --red: #ff453a;
+    --amber: #ff9f0a;
+    --off: #3a3a40;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: transparent; overflow: hidden; font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif; color: var(--text); }
+
+  #ont {
+    position: fixed; right: 28px; top: 50%; width: 340px;
+    transform: translate(40px, -50%); opacity: 0; pointer-events: none;
+    transition: transform .28s cubic-bezier(.2, .8, .2, 1), opacity .22s ease;
+  }
+  #ont.show { transform: translate(0, -50%); opacity: 1; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; box-shadow: 0 18px 50px rgba(0, 0, 0, .45); }
+  .head { display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px; }
+  .head .icon { width: 30px; height: 30px; border-radius: 8px; background: #2c2c32; display: grid; place-items: center; font-size: 15px; }
+  .head h1 { font-size: 15px; font-weight: 650; letter-spacing: .1px; }
+  .head p { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+
+  /* the faceplate: a white ONT with its LEDs */
+  .face { margin: 2px 14px 12px; background: linear-gradient(#f4f4f2, #e3e3e0); border-radius: 12px; padding: 14px 12px 10px; box-shadow: inset 0 -2px 0 rgba(0,0,0,.08); }
+  .leds { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .led { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .led i { width: 11px; height: 11px; border-radius: 50%; background: var(--off); box-shadow: inset 0 1px 2px rgba(0,0,0,.5); }
+  .led span { font-size: 9.5px; font-weight: 700; letter-spacing: .6px; color: #55555c; }
+  .led.on i { background: var(--green); box-shadow: 0 0 8px 2px rgba(48, 209, 88, .65); }
+  .led.red i { background: var(--red); box-shadow: 0 0 8px 2px rgba(255, 69, 58, .6); }
+  .led.blink i { background: var(--green); animation: blink 1s steps(1) infinite; }
+  .led.traffic i { background: var(--green); animation: traffic .35s steps(1) infinite; }
+  .led.redblink i { background: var(--red); animation: blink .8s steps(1) infinite; }
+  @keyframes blink { 50% { background: var(--off); box-shadow: none; } }
+  @keyframes traffic { 0%, 60% { box-shadow: 0 0 8px 2px rgba(48, 209, 88, .65); } 61%, 100% { background: #1f8a3c; box-shadow: none; } }
+  .brand { margin-top: 10px; display: flex; justify-content: space-between; font-size: 9px; color: #8a8a90; letter-spacing: .4px; }
+
+  .status { margin: 0 14px 12px; padding: 10px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, .05); }
+  .status .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .status.good .dot { background: var(--green); } .status.warn .dot { background: var(--amber); } .status.bad .dot { background: var(--red); }
+
+  .rows { padding: 2px 16px 14px; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); font-size: 12.5px; }
+  .row:first-child { border-top: 0; }
+  .row b { font-weight: 500; color: var(--muted); }
+  .row em { font-style: normal; font-weight: 600; text-align: right; max-width: 72%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; }
+  .chip::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--c, #888); }
+  .meter { display: inline-flex; gap: 2px; margin-left: 8px; vertical-align: middle; }
+  .meter s { width: 4px; height: 10px; border-radius: 1px; background: var(--off); }
+  .meter s.on { background: var(--green); }
+  .hint { padding: 0 16px 12px; font-size: 10.5px; color: var(--muted); }
+
+  /* pole work coach */
+  #coach { position: fixed; left: 28px; top: 30%; width: 330px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(0,0,0,.45); padding: 14px 16px 14px; transform: translateX(-30px); opacity: 0; transition: transform .3s ease, opacity .3s ease; --c: #30d158; }
+  #coach.show { transform: none; opacity: 1; }
+  #coach .c-top { display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  #coach .c-top i { font-style: normal; color: var(--c); }
+  #coach .c-bar { height: 4px; border-radius: 3px; background: rgba(255,255,255,.08); margin: 9px 0 12px; overflow: hidden; }
+  #coach .c-bar span { display: block; height: 100%; background: var(--c); border-radius: 3px; transition: width .5s ease; }
+  #coach .c-done { display: none; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--green); margin-bottom: 8px; }
+  #coach .c-done.on { display: flex; animation: cpop .5s ease; }
+  #coach .c-done b { width: 18px; height: 18px; border-radius: 50%; background: var(--green); color: #0b0b0f; display: grid; place-items: center; font-size: 11px; }
+  #coach h4 { font-size: 15.5px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 8px; }
+  #coach ul { list-style: none; display: grid; gap: 6px; }
+  #coach li { position: relative; padding-left: 16px; font-size: 12.5px; line-height: 1.4; color: #d6d6dc; }
+  #coach li::before { content: ""; position: absolute; left: 3px; top: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--c); }
+  #coach kbd, #coachOffer kbd { font: 700 10.5px/1 -apple-system, "Segoe UI", sans-serif; padding: 2px 6px; border-radius: 5px; background: rgba(255,255,255,.14); color: #fff; }
+  #coach .c-foot { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); }
+  #coach.finished h4 { color: var(--green); }
+  #coachOffer { position: fixed; left: 50%; top: 9%; transform: translate(-50%, -12px); opacity: 0; transition: all .3s ease; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 12px 18px; font-size: 13.5px; box-shadow: 0 18px 50px rgba(0,0,0,.45); display: flex; gap: 12px; align-items: center; }
+  #coachOffer.show { transform: translate(-50%, 0); opacity: 1; }
+  #coachOffer .dot { width: 30px; height: 30px; border-radius: 9px; background: rgba(48,209,88,.18); color: var(--green); display: grid; place-items: center; font-weight: 800; }
+  #coachOffer small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+  @keyframes cpop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.04); opacity: 1; } 100% { transform: none; } }
+</style>
+</head>
+<body>
+<div id="ont">
+  <div class="card">
+    <div class="head">
+      <div class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="2.2" stroke-linecap="round"><path d="M2 8.5a15 15 0 0 1 20 0"/><path d="M5.5 12.2a10 10 0 0 1 13 0"/><path d="M9 15.8a5 5 0 0 1 6 0"/><circle cx="12" cy="19.5" r="1.2" fill="#30d158" stroke="none"/></svg></div>
+      <div><h1 id="title">Optical Network Terminal</h1><p id="sub">—</p></div>
+    </div>
+    <div class="face">
+      <div class="leds">
+        <div class="led" id="l-power"><i></i><span>POWER</span></div>
+        <div class="led" id="l-pon"><i></i><span>PON</span></div>
+        <div class="led" id="l-los"><i></i><span>LOS</span></div>
+        <div class="led" id="l-lan"><i></i><span>LAN</span></div>
+        <div class="led" id="l-internet"><i></i><span>INTERNET</span></div>
+      </div>
+      <div class="brand"><span>GPON ONT</span><span id="serial">—</span></div>
+    </div>
+    <div class="status" id="status"><span class="dot"></span><span id="statusText">—</span></div>
+    <div class="rows" id="rows"></div>
+    <div class="hint">Walk away to close</div>
+  </div>
+</div>
+<div id="coach"><div class="c-top"><span id="c-track">Guide</span><i id="c-count"></i></div><div class="c-bar"><span id="c-bar"></span></div>
+  <div class="c-done" id="c-done"><b>✓</b><span id="c-done-t"></span></div>
+  <h4 id="c-title"></h4><ul id="c-how"></ul><div class="c-foot"><kbd id="c-key">F7</kbd> steps, skip or stop</div></div>
+<div id="coachOffer"><span class="dot">?</span><div><b>Want a step-by-step guide for this?</b><small>Press <kbd id="o-key">F7</kbd> — it tells you what to do next after every step</small></div></div>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function led(id, state) {
+    const el = $('l-' + id);
+    el.className = 'led' + (state && state !== 'off' ? ' ' + state : '');
+  }
+
+  function uptime(s) {
+    if (!s) return '—';
+    const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+    return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m ${s % 60}s`;
+  }
+
+  function render(o) {
+    led('power', 'on');
+    led('pon', o.pon);
+    led('los', o.los ? 'red' : 'off');
+    led('lan', o.lan);
+    led('internet', o.internet === 'red' ? 'redblink' : o.internet);
+    $('serial').textContent = o.serial || '—';
+    $('sub').textContent = o.customer ? o.customer : (o.label || 'Wall-mounted ONT');
+
+    let cls = 'bad', text = 'No fibre signal (LOS) — check the splices back to the cabinet';
+    if (!o.los) {
+      if (o.pon === 'blink') { cls = 'warn'; text = 'Ranging — the ONT is registering with the exchange…'; }
+      else if (o.service === 'none') { cls = 'warn'; text = 'Fibre is live — no internet service on this line yet'; }
+      else if (o.service === 'suspended') { cls = 'bad'; text = 'Service suspended by the provider'; }
+      else if (o.internet === 'blink') { cls = 'warn'; text = 'Authenticating with ' + (o.provider || 'the provider') + '…'; }
+      else if (o.lan === 'off') { cls = 'warn'; text = 'Connected — nothing plugged into the LAN port'; }
+      else { cls = 'good'; text = 'Connected — internet is up'; }
+    }
+    $('status').className = 'status ' + cls;
+    $('statusText').textContent = text;
+
+    const rows = [];
+    if (o.provider) rows.push(['Provider', `<span class="chip" style="--c:${esc(o.providerColor || '#888')}">${esc(o.provider)}</span>`]);
+    if (o.plan) rows.push(['Plan', `${esc(o.plan)} · ${o.down}/${o.up} Mbps`]);
+    if (o.internet === 'on' && o.down) {
+      const sync = (n) => Math.round(n * (0.94 + (o.serial ? (o.serial.charCodeAt(6) % 5) / 100 : 0)));
+      rows.push(['Sync', `${sync(o.down)} ↓ / ${sync(o.up)} ↑ Mbps`]);
+    }
+    if (o.rx != null) {
+      const bars = Math.max(1, Math.min(5, Math.round((o.rx + 30) / 2.5)));   // -27 dBm weak … -18 dBm strong
+      rows.push(['Optical Rx', `${o.rx.toFixed(1)} dBm<span class="meter">${[1,2,3,4,5].map((i) => `<s class="${i <= bars ? 'on' : ''}"></s>`).join('')}</span>`]);
+      rows.push(['Fibre path', `${o.distance} m · ${o.joints} joint${o.joints === 1 ? '' : 's'}`]);
+    } else rows.push(['Optical Rx', '— (no light)']);
+    rows.push(['LAN 1', o.lanName ? esc(o.lanName) : 'Not connected']);
+    if (o.username) rows.push(['PPP user', esc(o.username)]);
+    if (o.internet === 'on') rows.push(['Uptime', uptime(o.uptime)]);
+    $('rows').innerHTML = rows.map(([k, v]) => `<div class="row"><b>${k}</b><em>${v}</em></div>`).join('');
+  }
+
+  window.addEventListener('message', (e) => {
+    const m = e.data || {};
+    if (m.action === 'ont') { render(m.ont); $('ont').classList.add('show'); }
+    if (m.action === 'hide') $('ont').classList.remove('show');
+  });
+  window.addEventListener('message', (e) => {
+    const m = e.data || {};
+    if (m.action === 'coach') coach(m);
+    if (m.action === 'coachOffer') { $('o-key').textContent = m.key || 'F7'; $('coachOffer').classList.add('show'); clearTimeout(window._ot); window._ot = setTimeout(() => $('coachOffer').classList.remove('show'), 14000); }
+  });
+  const keys = (t) => esc(t).replace(/\[([^\]]+)\]/g, '<kbd>$1</kbd>');
+  function coach(m) {
+    const el = $('coach');
+    if (!m.show) { el.classList.remove('show'); return; }
+    $('coachOffer').classList.remove('show');
+    el.style.setProperty('--c', m.color || '#30d158');
+    el.classList.toggle('finished', !!m.finished);
+    $('c-track').textContent = m.track;
+    $('c-count').textContent = m.finished ? 'Complete' : `Step ${m.step} of ${m.total}`;
+    $('c-bar').style.width = `${Math.round(((m.finished ? m.total : m.step - 1) / m.total) * 100)}%`;
+    $('c-title').textContent = m.finished ? m.title : (m.step + '. ' + m.title);
+    $('c-how').innerHTML = (m.how || []).map((h) => `<li>${keys(h)}</li>`).join('');
+    $('c-key').textContent = m.key || 'F7';
+    const d = $('c-done');
+    if (m.flash) { $('c-done-t').textContent = 'Done: ' + m.flash; d.classList.remove('on'); void d.offsetWidth; d.classList.add('on'); clearTimeout(window._ft); window._ft = setTimeout(() => d.classList.remove('on'), 6000); }
+    el.classList.add('show');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OPS Guide</title>
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div id="guide" class="hidden" role="dialog" aria-label="OPS guide">
+  <div class="device">
+    <header class="bar">
+      <button class="icon" id="back-home" title="All chapters" aria-label="All chapters">
+        <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+      <div class="title"><b id="title">OPS Guide</b><small id="subtitle">Everything network &amp; mobile</small></div>
+      <button class="icon" id="close" title="Close (Esc)" aria-label="Close">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </header>
+    <div class="progress"><i id="bar"></i></div>
+    <main id="view"></main>
+    <footer class="nav" id="nav">
+      <button class="btn ghost" id="prev">Back</button>
+      <span id="count"></span>
+      <button class="btn primary" id="next">Next</button>
+    </footer>
+  </div>
+</div>
+<script src="guide.js"></script>
+</body>
+</html>
