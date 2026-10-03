@@ -1757,6 +1757,68 @@ local function layTrunking()
 end
 
 local EquipmentMenu, equipLabelFor
+
+local function isBuilding(model)
+    for _, e in ipairs(CC.Equipment) do if e.building and e.model == model then return true end end
+    return false
+end
+
+--- fine-tune where something sits: arrows slide it (along its own front / side), PgUp / PgDn height, Q / E turn,
+--- Shift for fine steps. A see-through copy shows the result; Enter saves, Backspace puts it back.
+function NudgeFixture(f)
+    local h = joaat(f.model)
+    if not IsModelInCdimage(h) then return end
+    lib.requestModel(h, 5000)
+    local ghost = CreateObjectNoOffset(h, f.x, f.y, f.z, false, false, false)
+    SetEntityAlpha(ghost, 170, false)
+    SetEntityCollision(ghost, false, false)
+    FreezeEntityPosition(ghost, true)
+    local hidden = spawned['f' .. f.id] or {}
+    for _, e in ipairs(hidden) do if DoesEntityExist(e) then SetEntityVisible(e, false, false) end end
+    local x, y, z, hd = f.x, f.y, f.z, f.heading or 0.0
+    local sf = PlaceHud.buttons({ { 'Save', 191 }, { 'Cancel', 177 }, { 'Slide', { 172, 173, 174, 175 } }, { 'Height', { 10, 11 } }, { 'Turn', { 44, 38 } }, { 'Fine', 21 } })
+    local saved = false
+    while true do
+        Wait(0)
+        for _, c in ipairs({ 10, 11, 38, 44, 140, 141, 142, 172, 173, 174, 175, 177, 191, 199, 200 }) do DisableControlAction(0, c, true) end
+        local fine = IsControlPressed(0, 21)
+        local step, turn = fine and 0.005 or 0.04, fine and 0.1 or 1.0
+        local r = math.rad(hd)
+        local fx, fy = -math.sin(r), math.cos(r)             -- its +Y (back) direction; front faces -Y
+        local rx, ry = math.cos(r), math.sin(r)
+        if IsDisabledControlPressed(0, 172) then x, y = x - fx * step, y - fy * step end
+        if IsDisabledControlPressed(0, 173) then x, y = x + fx * step, y + fy * step end
+        if IsDisabledControlPressed(0, 174) then x, y = x - rx * step, y - ry * step end
+        if IsDisabledControlPressed(0, 175) then x, y = x + rx * step, y + ry * step end
+        if IsDisabledControlPressed(0, 10) then z = z + step * 0.5 end
+        if IsDisabledControlPressed(0, 11) then z = z - step * 0.5 end
+        if IsDisabledControlPressed(0, 44) then hd = (hd + turn) % 360 end
+        if IsDisabledControlPressed(0, 38) then hd = (hd - turn) % 360 end
+        SetEntityCoordsNoOffset(ghost, x, y, z, false, false, false)
+        SetEntityHeading(ghost, hd)
+        PlaceHud.draw(sf, 'Adjusting ' .. equipLabelFor(f.model), ('Moved %.2f m   ·   height %+.2f m   ·   heading %.1f°%s'):format(
+            math.sqrt((x - f.x) ^ 2 + (y - f.y) ^ 2), z - f.z, hd, fine and '   ·   fine' or ''))
+        if IsDisabledControlJustPressed(0, 191) then saved = true break end
+        if IsDisabledControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 200) then break end
+    end
+    PlaceHud.release(sf)
+    DeleteEntity(ghost)
+    for _, e in ipairs(hidden) do if DoesEntityExist(e) then SetEntityVisible(e, true, false) end end
+    if saved then
+        local res = lib.callback.await('opslabs-towers:fixture:save', false, { id = f.id, x = x, y = y, z = z, heading = hd })
+        if res and res.ok then lib.notify({ type = 'success', description = 'Saved — it stays there after restarts' }) Wait(250)
+        else lib.notify({ type = 'error', description = (res and res.error) or 'Failed' }) end
+    end
+end
+
+--- outside the front of a building (fronts face -Y), or just beside smaller kit
+local function besideFixture(f)
+    local mn = GetModelDimensions(joaat(f.model))
+    local back = isBuilding(f.model) and (mn.y - 2.0) or -1.0
+    local r = math.rad(f.heading or 0.0)
+    return f.x - math.sin(r) * back, f.y + math.cos(r) * back, f.z + 0.5, (f.heading or 0.0)
+end
+
 local function fixtureMenu(f)
     f = data.fixtures[f.id] or f
     local label = equipLabelFor(f.model)
@@ -1801,14 +1863,38 @@ local function fixtureMenu(f)
         options[#options + 1] = { title = 'Internet service', description = 'Provider, plan, suspend / resume', icon = 'wifi', iconColor = '#30d158', arrow = true,
             onSelect = function() IspMenu(f, function() fixtureMenu(f) end) end }
     end
-    options[#options + 1] = { title = 'Move (aim & place)', icon = 'up-down-left-right', iconColor = '#0a84ff', onSelect = function()
+    local building = isBuilding(f.model)
+    if building then
+        options[#options + 1] = { title = 'Saved', description = ('Kept in the database — it comes back after restarts · %.1f, %.1f, %.1f · heading %.0f°'):format(f.x, f.y, f.z, f.heading or 0),
+            icon = 'database', iconColor = '#30d158', readOnly = true }
+    end
+    options[#options + 1] = { title = 'Move (aim & place)', description = building and 'Pick it up and put it down somewhere else (aim up to 90 m away)' or nil, icon = 'up-down-left-right', iconColor = '#0a84ff', onSelect = function()
         local spot = PlacementMode('fixture', f.model, 1.0, f.heading, 'Moving ' .. label)
         if spot then lib.callback.await('opslabs-towers:fixture:save', false, { id = f.id, x = spot.x, y = spot.y, z = spot.z, heading = spot.heading }) Wait(250) end
         fixtureMenu(f)
     end }
-    options[#options + 1] = { title = 'Teleport here', icon = 'location-arrow', onSelect = function() SetEntityCoords(PlayerPedId(), f.x, f.y - 1.0, f.z + 0.5, false, false, false, false) fixtureMenu(f) end }
-    options[#options + 1] = { title = 'Remove', icon = 'trash', iconColor = '#ff5a5f', onSelect = function()
-        if lib.alertDialog({ header = 'Remove ' .. label .. '?', centered = true, cancel = true }) == 'confirm' then
+    options[#options + 1] = { title = 'Fine-tune position', description = 'Slide, raise / lower and turn it a little at a time · Shift for fine', icon = 'arrows-up-down-left-right', iconColor = '#0a84ff', onSelect = function()
+        NudgeFixture(f)
+        fixtureMenu(data.fixtures[f.id] or f)
+    end }
+    if building then
+        options[#options + 1] = { title = 'Set exact position', description = 'Type in the heading and height', icon = 'compass-drafting', onSelect = function()
+            local v = lib.inputDialog(label, {
+                { type = 'number', label = 'Heading (°)', default = math.floor((f.heading or 0) * 10 + 0.5) / 10, min = 0, max = 360, step = 0.1, precision = 1 },
+                { type = 'number', label = 'Height (z)', default = math.floor(f.z * 100 + 0.5) / 100, step = 0.01, precision = 2 },
+            })
+            if v then lib.callback.await('opslabs-towers:fixture:save', false, { id = f.id, x = f.x, y = f.y, z = tonumber(v[2]) or f.z, heading = (tonumber(v[1]) or f.heading or 0) % 360 }) Wait(250) end
+            fixtureMenu(data.fixtures[f.id] or f)
+        end }
+    end
+    options[#options + 1] = { title = building and 'Teleport to the front door' or 'Teleport here', icon = 'location-arrow', onSelect = function()
+        local tx, ty, tz, th = besideFixture(f)
+        SetEntityCoords(PlayerPedId(), tx, ty, tz, false, false, false, false)
+        if building then SetEntityHeading(PlayerPedId(), th) end
+        fixtureMenu(f)
+    end }
+    options[#options + 1] = { title = 'Remove', description = building and 'Deletes it from the database — doors and PINs go with it' or nil, icon = 'trash', iconColor = '#ff5a5f', onSelect = function()
+        if lib.alertDialog({ header = 'Remove ' .. label .. '?', content = building and 'It is deleted for good (it won’t come back after a restart).' or nil, centered = true, cancel = true }) == 'confirm' then
             lib.callback.await('opslabs-towers:fixture:delete', false, f.id) Wait(250)
             if not MenuBack('cable_fixture') then EquipmentMenu() end
             return

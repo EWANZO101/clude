@@ -38,6 +38,10 @@ real collision, furniture, lights that come on inside, and doors.
 - **Engineering depot** — 22 × 14 m: office, corridor, meeting room, kit room, lockers & WC, warehouse (racking, cable drums,
   workbench), roller-shutter bay, front & side doors.
 - **Telephone exchange** — 16 × 10 m: entrance lobby, equipment hall, power room.
+- **Saved for good** — every building you put down is stored in the database (`opslabs_towers_fixtures`) and comes back after a
+  restart. **Buildings & sites** lists every placed building (any distance): open one to **Move** it (aim & place), **Fine-tune** it
+  (arrows slide, PgUp / PgDn height, Q / E turn, Shift fine), **Set exact position** (heading / height), **Teleport to the front door**
+  or **Remove** it (deleted for good, with its doors and PINs).
 - **Doors** — every door has a keypad: **[E]** open / close, **[H]** keypad (lock, set or change the PIN, same PIN on every door).
   A locked door needs the PIN to open. 5 wrong PINs lock the keypad for 30 s. PINs are stored hashed on the server only.
   Engineers: open the building (Tools → Nearby equipment) → **Doors & PINs** to set one PIN everywhere or clear them all.

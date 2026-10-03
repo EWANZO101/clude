@@ -239,3 +239,10 @@ CreateThread(function()
 end)
 
 AddEventHandler('playerDropped', function() Fails[source] = nil end)
+
+-- a building / gate taken away takes its doors, locks and PINs with it
+AddEventHandler('opslabs-towers:fixtureRemoved', function(fid)
+    if not State[fid] then return end
+    State[fid] = nil
+    MySQL.query('DELETE FROM opslabs_towers_doors WHERE fixture_id = ?', { fid })
+end)

@@ -625,19 +625,20 @@ SectionMenu = function(id)
             onSelect = function() A.equipmentCat(sites, 'Security & fencing') end })
         add({ title = 'Exchange power & cooling', description = 'Rectifiers, batteries, standby generator, DC power plant, HVAC', icon = 'plug', iconColor = '#ff9f0a', arrow = true,
             onSelect = function() A.equipmentCat(sites, 'Exchange power & cooling') end })
-        local near = {}
+        -- every placed building, wherever it is (they're saved and come back after restarts)
+        local placed = {}
         for _, f in pairs(CablingFixtures and CablingFixtures() or {}) do
             for _, e in ipairs(Config.Cabling.Equipment or {}) do
-                if e.building and e.model == f.model then
-                    local d = #(pos - vector3(f.x, f.y, f.z))
-                    if d < 150.0 then near[#near + 1] = { f = f, e = e, d = d } end
-                end
+                if e.building and e.model == f.model then placed[#placed + 1] = { f = f, e = e, d = #(pos - vector3(f.x, f.y, f.z)) } end
             end
         end
-        table.sort(near, function(a, b) return a.d < b.d end)
-        for _, n in ipairs(near) do
-            add({ title = ('%s #%d'):format((n.e.label:gsub(' %(walk%-in%)', '')), n.f.id), description = ('Nearby · %d m away · move, teleport or remove'):format(math.floor(n.d)),
-                icon = 'location-dot', arrow = true, onSelect = function() A.fixture(n.f) end })
+        table.sort(placed, function(a, b) return a.d < b.d end)
+        if #placed > 0 then add({ title = ('Placed buildings (%d)'):format(#placed), description = 'Saved in the database · open one to move, fine-tune, teleport or remove it', icon = 'database', readOnly = true }) end
+        for _, n in ipairs(placed) do
+            local street = GetStreetNameFromHashKey(GetStreetNameAtCoord(n.f.x, n.f.y, n.f.z))
+            add({ title = ('%s #%d'):format((n.e.label:gsub(' %(walk%-in%)', '')), n.f.id),
+                description = ('%s away%s · placed by %s'):format(n.d < 1000 and (math.floor(n.d) .. ' m') or ('%.1f km'):format(n.d / 1000), street ~= '' and (' · ' .. street) or '', n.f.created_by or '?'),
+                icon = buildingIcon(n.e.model), iconColor = '#5e5ce6', arrow = true, onSelect = function() A.fixture(n.f) end })
         end
     elseif id == 'roadworks' then
         return OpenRoadworksMenu and OpenRoadworksMenu()
