@@ -596,7 +596,8 @@ SectionMenu = function(id)
     if id == 'openline' then
         add({ title = 'Telecom equipment', description = 'Poles · exchange kit · cabinets & chambers · pole kit · customer premises', icon = 'boxes-stacked', iconColor = net.color, arrow = true, onSelect = function() A.equipment(net) end })
         add({ title = 'Place a cable box or drum', description = 'CAT6, black / yellow fibre, spine feed or ULW drop', icon = 'box-open', iconColor = BLUE, onSelect = function() A.placeBox(back) end })
-        add({ title = 'Pull cable from the nearest box', description = 'CAT6 or fibre · fix along walls and poles, finish on the kit', icon = 'ethernet', iconColor = BLUE, onSelect = function() A.pull(back) end })
+        add({ title = 'Pull cable from the nearest box', description = 'CAT6 or fibre · fix along walls and poles, finish on the kit · G puts it down', icon = 'ethernet', iconColor = BLUE, onSelect = function() A.pull(back) end })
+        add({ title = 'Cable you put down', description = 'Loose ends lying nearby · waypoint to one, press E there to pick it up and carry on', icon = 'hand', iconColor = BLUE, arrow = true, onSelect = function() if LooseEndsMenu then LooseEndsMenu() end end })
         add({ title = 'Trunking, capping & ducts', description = 'Trunking, steel / plastic capping, sub-duct, blown fibre tubing', icon = 'grip-lines', iconColor = BLUE, onSelect = function() A.trunking(back) end })
         add({ title = 'Run phone cable (copper)', description = 'Drop wire, internal cable or 50-pair · clamps to poles · punch down on DPs, sockets, cabinets, the MDF', icon = 'phone', iconColor = '#bf5af2', onSelect = function() A.copper(back) end })
         add({ title = 'Copper phone line equipment', description = 'DP, splice box, aerial joint, master socket, extension socket, junction box, VDSL faceplate', icon = 'phone-volume', iconColor = '#bf5af2', arrow = true,
@@ -606,6 +607,7 @@ SectionMenu = function(id)
         add({ title = 'StreamFibre equipment', description = 'Alt-net CBT, provider tags, shared (PIA) brackets', icon = 'boxes-stacked', iconColor = net.color, arrow = true, onSelect = function() A.equipment(net) end })
         add({ title = 'Place a fibre drum', description = 'Black / yellow fibre, spine feed or ULW drop', icon = 'box-open', iconColor = net.color, onSelect = function() A.placeBox(back) end })
         add({ title = 'Pull fibre from the nearest drum', description = 'Shares the poles with OPS Openline', icon = 'ethernet', iconColor = net.color, onSelect = function() A.pull(back) end })
+        add({ title = 'Cable you put down', description = 'Loose ends lying nearby · waypoint to one, press E there to pick it up', icon = 'hand', iconColor = net.color, arrow = true, onSelect = function() if LooseEndsMenu then LooseEndsMenu() end end })
     elseif id == 'sapl' then
         add({ title = 'Power equipment', description = 'Power poles · transformers, cut-outs, PMAR, pothead · safety & earthing', icon = 'boxes-stacked', iconColor = net.color, arrow = true, onSelect = function() A.equipment(net) end })
         add({ title = 'Run power cable', description = 'HV conductor, LV bundled cable or a service drop · clamps to power poles', icon = 'bolt', iconColor = net.color, onSelect = function() A.power(back) end })

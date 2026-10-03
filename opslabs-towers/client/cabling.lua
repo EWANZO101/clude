@@ -733,7 +733,7 @@ local function layRun(kind, color, box, opts)
     local sf = carry and PlaceHud.buttons({ { 'Fix point', 24 }, { 'Fix the end here', 191 }, { 'Drop it', { 47, 177 } }, { 'Straight line', 21 } })
         or PlaceHud.buttons(not boxed
         and { { 'Fix point', 24 }, { 'Finish', 191 }, { 'Undo', { 25, 177 } }, { 'Straight line', 21 }, { 'Cancel', 200 } }
-        or { { 'Fix point', 24 }, { 'Finish & connect', 191 }, { 'Undo', { 25, 177 } }, { 'Straight line', 21 }, { 'Cancel', 200 } })
+        or { { 'Fix point', 24 }, { 'Finish & connect', 191 }, { 'Put it down & walk away', 47 }, { 'Undo', { 25, 177 } }, { 'Straight line', 21 }, { 'Cancel', 200 } })
     local title = kind == 'cable' and 'Pulling CAT6' or kind == 'fibre' and ('Pulling ' .. ((CC.FibreLabels or {})[color] or ('fibre · ' .. color)):lower())
         or kind == 'power' and ('Running ' .. ((CC.PowerLabels or {})[color] or 'power cable'):lower())
         or kind == 'copper' and ('Running ' .. ((CC.CopperLabels or {})[color] or 'phone cable'):lower()) or ('Fitting ' .. ((CC.TrunkLabels or {})[color] or ('trunking · ' .. color)):lower())
@@ -871,6 +871,11 @@ local function layRun(kind, color, box, opts)
             result, dropped = pts, true
             break
         end
+        -- pulling from a box: put the cable down where you stand (it stays on the box) and walk away hands-free
+        if boxed and not carry and IsDisabledControlJustPressed(0, 47) then
+            if #pts >= 2 then result, dropped = pts, true break end
+            lib.notify({ type = 'inform', description = 'Fix the cable to at least one point first — or Esc to leave it all on the box' })
+        end
         if IsDisabledControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 25) then
             local minPts = boxed and 1 or 0
             if #pts > minPts then
@@ -910,7 +915,8 @@ function CarryLooseEnd(r, which)
     if not l then return end
     local anchor = which == 'end' and r.points[#r.points] or r.points[1]
     PlaySoundFrontend(-1, 'PICK_UP', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
-    local pts, endTower, endFixture, dropped = layRun(r.kind, r.color, nil, { start = anchor, maxLen = l.len or 0 })
+    local box = which == 'end' and r.box_id and data.boxes[r.box_id]
+    local pts, endTower, endFixture, dropped = layRun(r.kind, r.color, nil, { start = anchor, maxLen = (l.len or 0) + (box and box.remaining or 0) })
     if not pts then return end
     local add = {}
     for i = 2, #pts do add[#add + 1] = pts[i] end
@@ -934,6 +940,30 @@ function CarryLooseEnd(r, which)
             end
         end
     end
+end
+
+--- cable ends lying loose nearby (put down or cut): set a waypoint and walk back to pick one up
+function LooseEndsMenu()
+    local pos, list = GetEntityCoords(PlayerPedId()), {}
+    for _, r in pairs(data.runs) do
+        for which, tip in pairs(r._looseTip or {}) do
+            local d = #(pos - tip)
+            if d < 300.0 then list[#list + 1] = { r = r, which = which, tip = tip, d = d } end
+        end
+    end
+    table.sort(list, function(a, b) return a.d < b.d end)
+    local options = {}
+    for i = 1, math.min(#list, 25) do
+        local e = list[i]
+        options[#options + 1] = { title = ('%s #%d · %s end'):format(runLabel(e.r), e.r.id, e.which), description = ('%d m away%s · waypoint, then walk up and press E'):format(math.floor(e.d),
+            e.r.box_id and e.which == 'end' and ' · still on its box' or ''), icon = 'location-dot', onSelect = function()
+            SetNewWaypoint(e.tip.x, e.tip.y)
+            lib.notify({ description = 'Waypoint set — walk to the cable end and press E to pick it up' })
+        end }
+    end
+    if #options == 0 then options[1] = { title = 'No loose cable ends nearby', readOnly = true } end
+    lib.registerContext({ id = 'cable_loose', title = 'Cable you put down', options = options })
+    lib.showContext('cable_loose')
 end
 
 -- walk up to a loose end: [E] picks it up
@@ -1663,11 +1693,23 @@ local function pullCable()
     if box.remaining < 1 then lib.notify({ type = 'error', description = 'This box is empty' }) return menuBack() end
     local fibre = (box.kind or 'cat6') ~= 'cat6'
     local kind, color = fibre and 'fibre' or 'cable', (box.kind == 'drop' and 'ulw') or (fibre and box.kind:match('^fibre_(%a+)$')) or 'black'
-    local pts, endTower, endFixture = layRun(kind, color, box)
+    local pts, endTower, endFixture, dropped = layRun(kind, color, box)
     if not pts then return menuBack() end
-    local res = lib.callback.await('opslabs-towers:cable:saveRun', false, { kind = kind, color = color, points = pts, box_id = box.id, end_tower = endTower, end_fixture = endFixture })
+    local drop
+    if dropped then                                            -- slack from the last fixing down to the floor and over to your feet
+        local l, feet = pts[#pts], GetEntityCoords(PlayerPedId())
+        local g = groundUnder(feet.x, feet.y, feet.z)
+        drop = { at = { x = feet.x, y = feet.y, z = g },
+            len = math.max(0.5, (l.z - groundUnder(l.x, l.y, l.z)) + #(vector2(l.x, l.y) - vector2(feet.x, feet.y)) + 0.5) }
+        endTower, endFixture = nil, nil
+    end
+    local res = lib.callback.await('opslabs-towers:cable:saveRun', false, { kind = kind, color = color, points = pts, box_id = box.id, end_tower = endTower, end_fixture = endFixture, drop = drop })
     if not res or res.error then lib.notify({ type = 'error', description = (res and res.error) or 'Failed' }) return menuBack() end
     Wait(250)
+    if dropped then
+        lib.notify({ type = 'success', description = 'Cable put down — it stays on the box. Walk back to the end and press E to carry on pulling.' })
+        return menuBack()
+    end
     if endTower or endFixture then
         local devName = towerName(endTower) or fixtureLabel(endFixture) or 'the device'
         local c = fibre

@@ -328,7 +328,7 @@ lib.callback.register('opslabs-towers:cable:saveRun', function(src, d)
         for _, c in ipairs(CC.CopperColors or {}) do if c == d.color then color = c end end
         if length > (CC.MaxCopperLength or 800) + 0.5 then return { error = 'phone cable run too long' } end
     end
-    local boxId = nil
+    local boxId, dropLoose = nil, nil
     if kind == 'cable' or kind == 'fibre' then
         if kind == 'cable' and length > CC.MaxRunLength + 0.5 then return { error = ('runs can be at most %dm'):format(CC.MaxRunLength) } end
         local box = Cabling.boxes[tonumber(d.box_id) or -1]
@@ -339,6 +339,16 @@ lib.callback.register('opslabs-towers:cable:saveRun', function(src, d)
             color = boxKind == 'drop' and 'ulw' or boxKind:match('^fibre_(%a+)$')
             if not color then return { error = 'that is a CAT6 box' } end
         end
+        -- put down part-way: the end lies loose on the ground (slack from the last fixing to where it was left)
+        if type(d.drop) == 'table' then
+            local len = math.max(0.3, math.min(60.0, num(d.drop.len) or 0.3))
+            local at = type(d.drop.at) == 'table' and num(d.drop.at.x) and num(d.drop.at.y) and num(d.drop.at.z)
+                and { x = num(d.drop.at.x), y = num(d.drop.at.y), z = num(d.drop.at.z) } or nil
+            local last = points[#points]
+            if at and math.sqrt((at.x - last.x) ^ 2 + (at.y - last.y) ^ 2) > len + 1.5 then at = nil end
+            dropLoose = { ['end'] = { len = len, at = at } }
+            length = length + len
+        end
         if box.remaining < length then return { error = ('only %.0fm left in this box'):format(box.remaining) } end
         box.remaining = math.max(0, box.remaining - length)
         MySQL.update.await('UPDATE opslabs_towers_cable_boxes SET remaining = ? WHERE id = ?', { box.remaining, box.id })
@@ -346,10 +356,11 @@ lib.callback.register('opslabs-towers:cable:saveRun', function(src, d)
     end
     local endTower = Towers[tonumber(d.end_tower) or -1] and tonumber(d.end_tower) or nil
     local endFixture = (kind ~= 'trunk' and not endTower and Cabling.fixtures[tonumber(d.end_fixture) or -1]) and tonumber(d.end_fixture) or nil
-    local id = MySQL.insert.await('INSERT INTO opslabs_towers_cables (kind, color, points, length, box_id, end_tower, end_fixture, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        { kind, color, json.encode(points), length, boxId, endTower, endFixture, GetPlayerName(src) })
+    if dropLoose then endTower, endFixture = nil, nil end
+    local id = MySQL.insert.await('INSERT INTO opslabs_towers_cables (kind, color, points, length, box_id, end_tower, end_fixture, loose, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        { kind, color, json.encode(points), length, boxId, endTower, endFixture, looseJson(dropLoose), GetPlayerName(src) })
     Cabling.runs[id] = { id = id, kind = kind, color = color, points = points, length = length, box_id = boxId, end_tower = endTower, end_fixture = endFixture,
-        start_term = false, end_term = false, created_by = GetPlayerName(src) }
+        start_term = false, end_term = false, loose = dropLoose, created_by = GetPlayerName(src) }
     print(('[opslabs-towers] %s laid %s run #%d (%.1fm)'):format(GetPlayerName(src), kind, id, length))
     changed()
     return { ok = true, run = Cabling.runs[id] }
@@ -452,7 +463,14 @@ lib.callback.register('opslabs-towers:cable:loose', function(src, id, which, add
         route, extra = clean, l
     end
     local slack = r.loose[which].len or 0
-    if extra > slack + 0.15 then return { error = ('Not enough cable — only %.1f m is loose'):format(slack) } end
+    local box = which == 'end' and r.box_id and Cabling.boxes[r.box_id] or nil   -- still on its box: more pays out
+    local fromBox = 0.0
+    if extra > slack + 0.15 then
+        if not box or extra > slack + box.remaining then
+            return { error = box and ('Not enough cable — only %.0f m left on the box'):format(slack + box.remaining) or ('Not enough cable — only %.1f m is loose'):format(slack) }
+        end
+        fromBox = extra - slack
+    end
     local newPts = {}
     if which == 'end' then
         for _, p in ipairs(r.points) do newPts[#newPts + 1] = p end
@@ -464,7 +482,14 @@ lib.callback.register('opslabs-towers:cable:loose', function(src, id, which, add
     if action == 'drop' then
         local x, y, z = type(at) == 'table' and num(at.x), type(at) == 'table' and num(at.y), type(at) == 'table' and num(at.z)
         local tip = which == 'end' and newPts[#newPts] or newPts[1]
-        local remaining = math.max(0.2, slack - extra)
+        local remaining = math.max(0.2, slack - extra - fromBox)
+        if x and y and z and box then                                -- walked further than the slack: pull it off the box
+            local want = math.sqrt((x - tip.x) ^ 2 + (y - tip.y) ^ 2) + math.max(0.0, tip.z - z) + 0.5
+            if want > remaining then
+                local more = math.min(want - remaining, box.remaining - fromBox)
+                fromBox, remaining = fromBox + more, remaining + more
+            end
+        end
         local place = (x and y and z and math.sqrt((x - tip.x) ^ 2 + (y - tip.y) ^ 2) <= remaining + 1.5) and { x = x, y = y, z = z } or nil
         r.loose[which] = { len = remaining, at = place }
     else
@@ -472,7 +497,12 @@ lib.callback.register('opslabs-towers:cable:loose', function(src, id, which, add
     end
     if not next(r.loose) then r.loose = nil end
     r.points = newPts
-    MySQL.update.await('UPDATE opslabs_towers_cables SET points = ?, loose = ? WHERE id = ?', { json.encode(newPts), looseJson(r.loose), r.id })
+    if box and fromBox > 0 then
+        box.remaining = math.max(0.0, box.remaining - fromBox)
+        r.length = (r.length or 0) + fromBox
+        MySQL.update.await('UPDATE opslabs_towers_cable_boxes SET remaining = ? WHERE id = ?', { box.remaining, box.id })
+    end
+    MySQL.update.await('UPDATE opslabs_towers_cables SET points = ?, length = ?, loose = ? WHERE id = ?', { json.encode(newPts), r.length, looseJson(r.loose), r.id })
     changed()
     return { ok = true, run = r }
 end)
