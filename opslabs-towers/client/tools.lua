@@ -231,14 +231,14 @@ local function ontDiagnose(f)
     local title, steps, ok
     if failed then
         title = 'POWER off — the ONT has failed'
-        steps = { 'Check the ONT power supply is plugged in and switched on', 'If it still won't power up the ONT itself is dead', 'Swap the ONT (repair the fault with the repair key at the ONT) and re-provision it' }
+        steps = { 'Check the ONT power supply is plugged in and switched on', 'If it still won’t power up the ONT itself is dead', 'Swap the ONT (repair the fault with the repair key at the ONT) and re-provision it' }
     elseif o.los then
         if not fibre then
             title = 'LOS — no fibre connected to this ONT'
             steps = { 'Run fibre (yellow patch / drop) from the CSP or splice tray to the ONT', 'Splice it into the ONT', 'Test again — PON should flash, then go solid' }
         elseif not spliced then
-            title = 'LOS — the fibre at the ONT isn't spliced'
-            steps = { ('Fibre #%d reaches the ONT but the end isn't finished'):format(fibre.id), 'Strip, clean, cleave and splice it into the ONT (Nearby cables → that fibre → Splice the end)', 'Test again' }
+            title = 'LOS — the fibre at the ONT isn’t spliced'
+            steps = { ('Fibre #%d reaches the ONT but the end isn’t finished'):format(fibre.id), 'Strip, clean, cleave and splice it into the ONT (Nearby cables → that fibre → Splice the end)', 'Test again' }
         elseif o.lowLight then
             title = 'LOS — light is too weak (below −28 dBm)'
             steps = { 'Too much loss on the path: too many splitters / joints or a bad splice', 'Clean the connectors at the ONT and CSP (one-click cleaner)', 'Find the bad joint with the OTDR and re-splice it' }
@@ -248,19 +248,19 @@ local function ontDiagnose(f)
         end
     elseif o.pon == 'blink' then
         title = 'PON flashing — registering with the OLT'
-        steps = { 'Light is arriving and the ONT is ranging with the OLT', 'Wait about 20 seconds — PON goes solid when it's registered' }
+        steps = { 'Light is arriving and the ONT is ranging with the OLT', 'Wait about 20 seconds — PON goes solid when it’s registered' }
     elseif o.service == 'none' or o.internet == 'off' and o.service ~= 'active' then
         title = 'No service on this line'
         steps = { 'The fibre is good (PON solid) but no broadband is provisioned', 'Open the ONT (Tools → Nearby equipment) → Internet service → pick a provider & plan' }
     elseif o.service == 'suspended' or o.internet == 'red' then
         title = 'INTERNET red — service suspended by the provider'
-        steps = { 'The line is fine; the provider has suspended the account', 'Resume it from the ONT's Internet service menu (or the provider's admin)' }
+        steps = { 'The line is fine; the provider has suspended the account', 'Resume it from the ONT’s Internet service menu (or the provider’s admin)' }
     elseif o.internet == 'blink' then
         title = 'INTERNET flashing — PPP login in progress'
         steps = { 'Wait a few seconds for the login to finish' }
     elseif o.lan == 'off' then
         title = 'LAN off — no router plugged into the ONT'
-        steps = { 'Internet is up at the ONT but nothing is connected to its LAN port', 'Pull CAT6 from the ONT to the customer's router and terminate both ends (RJ45)', 'The LAN light comes on — it flickers once traffic flows' }
+        steps = { 'Internet is up at the ONT but nothing is connected to its LAN port', 'Pull CAT6 from the ONT to the customer’s router and terminate both ends (RJ45)', 'The LAN light comes on — it flickers once traffic flows' }
         ok = 'Internet is live at the ONT'
     else
         title = 'All good — the line is healthy'
