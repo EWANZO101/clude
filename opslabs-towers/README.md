@@ -50,6 +50,9 @@ real collision, furniture, lights that come on inside, and doors.
     it keeps placing until Backspace. Q / E turn, PgUp / PgDn depth.
   - **Getting in:** **E** at the hatch opens / closes it (**H** for its PIN keypad — lock it like any door), **F** at the open hatch
     climbs down the step irons; **F** at the foot of the step irons climbs back out. Lit inside, real collision.
+  - **Chambers along the line:** none, back to back (chambers only), or one after every 1 / 2 / 3 / 5 tunnel sections.
+  - **Sealed walls:** any opening with nothing joined to it shows a concrete wall automatically; join another piece on and that wall
+    goes — so a line can always be extended later. Opening the hatch shows the shaft going down (the road itself can't have a hole cut in it).
   - Everything is saved and listed in the same menu (move, fine-tune, teleport, remove).
 - **Doors** — every door has a keypad: **[E]** open / close, **[H]** keypad (lock, set or change the PIN, same PIN on every door).
   A locked door needs the PIN to open. 5 wrong PINs lock the keypad for 30 s. PINs are stored hashed on the server only.

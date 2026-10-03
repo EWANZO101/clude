@@ -137,6 +137,55 @@ c.rrect(208, 122, 236, 134, 5, (16, 16, 16)); c.circle(232, 128, 9, (16, 16, 16)
 c.rrect(204, 118, 240, 138, 8, (90, 92, 94), 0.3)
 c.noise(6); save(c, 'opslabs_ug_chequer')
 
+# fake-depth insert for the open hatch (the game's road can't be holed): looking straight down a 3 m shaft,
+# walls converging to a dim damp floor, step irons down the -Y side (bottom of the image), warm lamp glow on +X
+c = Canvas(256, 256, (0, 0, 0))
+EYE, A = 1.5, 1.5 / 4.5                                                                 # eye height above the top, floor scale
+for row in range(256):
+    for col in range(256):
+        u, v = (col + 0.5) / 128 - 1, 1 - (row + 0.5) / 128
+        m = max(abs(u), abs(v))
+        if m <= A:
+            t = 1.0; base = (62, 63, 60)
+            if math.hypot(u - 0.08, v + 0.05) < 0.12:
+                base = (44, 47, 47)                                                      # puddle
+        else:
+            d = EYE / m - EYE                                                            # depth 0 .. 3 m on the wall
+            t = d / 3.0
+            base = (150, 149, 143)
+            if abs(v) > abs(u):                                                          # +-Y walls a touch darker
+                base = (138, 137, 131)
+            if int(d / 0.6) % 2 == 0 and (d % 0.6) < 0.015:
+                base = (120, 119, 114)                                                   # shuttering line
+        k = 1.0 - 0.72 * t
+        k *= 1.0 - 0.35 * max(0.0, m - 0.75) / 0.25                                      # vignette at the rim
+        warm = max(0.0, u) * 0.35 * (1 - abs(t - 0.6))                                   # chamber lamp glow on the +X side
+        p = c.px[row * 256 + col]
+        p[0] = min(255, int(base[0] * k + 60 * warm)); p[1] = min(255, int(base[1] * k + 44 * warm)); p[2] = min(255, int(base[2] * k + 20 * warm))
+
+
+def _pt(u, v):
+    return int((u + 1) * 128), int((1 - v) * 128)
+
+
+for d in [0.45, 0.60, 0.90, 1.20, 1.50, 1.80, 2.10, 2.40, 2.70]:  # step irons (depth below top)
+    sc_ = EYE / (EYE + d)
+    g = int(200 * (1 - 0.7 * d / 3.0))
+    x0, y0 = _pt(-0.375 * sc_, -0.70 * sc_); x1, _ = _pt(0.375 * sc_, -0.70 * sc_)
+    th = max(1, int(4 * sc_))
+    c.rect(x0, y0 - th // 2, x1 + 1, y0 + th // 2 + 1, (g, g, g + 4))                   # rung
+    c.rect(x0, y0 + th // 2 + 1, x1 + 1, y0 + th // 2 + 2, (20, 20, 20), 0.5)           # its shadow
+    for su in (-0.375, 0.375):
+        a_, b_ = _pt(su * sc_, -sc_), _pt(su * sc_, -0.70 * sc_)
+        c.rect(a_[0] - th // 2, b_[1], a_[0] + th // 2 + 1, a_[1], (int(g * 0.8),) * 3)   # legs back to the wall
+for i in range(200):                                                                     # stringers down the -Y wall
+    m_ = 1 - i / 200 * (1 - A)
+    for su in (-0.42, 0.42):
+        x, y = _pt(su * m_, -m_)
+        g = int(170 * (0.3 + 0.7 * m_))
+        c.rect(x - 1, y - 1, x + 1, y + 1, (g, g, g))
+c.noise(4); save(c, 'opslabs_ug_shaftfake')
+
 MATS = {}
 
 
@@ -278,7 +327,7 @@ CON, FLR, GALV, CBK, CYL, CGR, BLK, LAMP, GLOW, SIGN, SUMP, JOINT, DUCT, RED = r
 CHAMBER_MATS = lambda: [mat('opslabs_ug_wall'), mat('opslabs_ug_floor'), mat('opslabs_ug_galv'), mat('opslabs_ug_cable_black'),
                         mat('opslabs_ug_cable_yellow'), mat('opslabs_ug_cable_grey'), mat('opslabs_ug_black'), mat('opslabs_ug_lampbody'),
                         mat('opslabs_ug_glow_warm', 'emissive.sps'), mat('opslabs_ug_sign'), mat('opslabs_ug_sump'), mat('opslabs_ug_joint'),
-                        mat('opslabs_ug_wall'), mat('opslabs_ug_wall')]                     # DUCT / RED slots unused here
+                        mat('opslabs_ug_wall'), mat('opslabs_ug_shaftfake')]               # 12 unused here, 13 = SHAFT insert
 
 # ================================================================ 1. chamber
 bm = bmesh.new(); uv = bm.loops.layers.uv.new('UVMap 0'); cb = bmesh.new()
@@ -325,6 +374,8 @@ for b in ((HX0, HY0, HX1, HY0 + 0.006), (HX0, HY1 - 0.006, HX1, HY1), (HX0, HY0,
     box(bm, uv, b[0], b[1], -0.12, b[2], b[3], RT, mi=GALV)
 for b in ((HX0, HY0, HX1, HY0 + 0.022), (HX0, HY1 - 0.022, HX1, HY1), (HX0, HY0, HX0 + 0.022, HY1), (HX1 - 0.022, HY0, HX1, HY1)):
     box(bm, uv, b[0], b[1], -0.012, b[2], b[3], -0.002, mi=GALV)
+# fake-depth insert filling the clear opening (inside the frame lip) at z +0.010: single-sided, facing up, no collision
+quad(bm, uv, [(HX0 + 0.006, HY0 + 0.006, 0.010), (HX1 - 0.006, HY0 + 0.006, 0.010), (HX1 - 0.006, HY1 - 0.006, 0.010), (HX0 + 0.006, HY1 - 0.006, 0.010)], mi=13)
 # step irons on the -Y wall at x = -1.0: two galvanised flat stringers (the right one stands proud in front of the
 # tunnel opening's edge) and U-rungs 0.12 out from the wall face, z -2.70 .. -0.60 every 0.30 plus a top rung at -0.45
 IX, IY = -1.0, -OI

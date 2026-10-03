@@ -145,9 +145,14 @@ local function tunnelLine()
         { type = 'checkbox', label = 'Chamber at the start (unless you start on an open end)', checked = true },
         { type = 'checkbox', label = 'Chamber at the end', checked = true },
         { type = 'checkbox', label = 'Otherwise close the far end with an end wall', checked = true },
+        { type = 'select', label = 'Chambers along the line', default = '0', options = {
+            { value = '0', label = 'None — tunnel all the way' }, { value = 'b2b', label = 'Chambers only, back to back (no tunnel)' },
+            { value = '1', label = 'A chamber after every tunnel section' }, { value = '2', label = 'A chamber every 2 sections (8 m)' },
+            { value = '3', label = 'A chamber every 3 sections (12 m)' }, { value = '5', label = 'A chamber every 5 sections (20 m)' } } },
     })
     if not v then return end
     local wantStart, wantEnd, wantWall = v[1], v[2], v[3]
+    local every = v[4] == 'b2b' and 'b2b' or tonumber(v[4]) or 0
     local start
     hud({ { 'Set start / build', { 24, 191 } }, { 'Back', { 25, 177 } }, { 'Cancel', 200 } })
     while true do
@@ -168,17 +173,31 @@ local function tunnelLine()
                 if start.dx then dx, dy = start.dx, start.dy end      -- carries straight on from the open end
                 local heading = headingOf(dx, dy)
                 local z = start.z
-                local begin = 0.0
-                if not start.dx and wantStart then list[#list + 1] = { model = CHAMBER, x = start.x, y = start.y, z = z, heading = heading } begin = CH end
-                local avail = L - begin - (wantEnd and 2 * CH or 0)
-                local n = math.max(1, math.min(50, math.floor(avail / SEG)))
-                for i = 0, n - 1 do
-                    local t = begin + SEG / 2 + i * SEG
-                    list[#list + 1] = { model = TUNNEL, x = start.x + dx * t, y = start.y + dy * t, z = z, heading = heading }
+                -- walk along the line laying pieces end to end (a start chamber is centred on the click)
+                local pos = (not start.dx and wantStart) and -CH or 0.0
+                local n, chambers, last = 0, 0, nil
+                local function put(model)
+                    local len = model == CHAMBER and 2 * CH or SEG
+                    local t = pos + len / 2
+                    list[#list + 1] = { model = model, x = start.x + dx * t, y = start.y + dy * t, z = z, heading = heading }
+                    pos, last = pos + len, model
+                    if model == TUNNEL then n = n + 1 else chambers = chambers + 1 end
                 end
-                local far = begin + n * SEG
-                if wantEnd then list[#list + 1] = { model = CHAMBER, x = start.x + dx * (far + CH), y = start.y + dy * (far + CH), z = z, heading = heading }
-                elseif wantWall then list[#list + 1] = { model = ENDWALL, x = start.x + dx * far, y = start.y + dy * far, z = z, heading = heading } end
+                if not start.dx and wantStart then put(CHAMBER) end
+                local stop = L - (wantEnd and 2 * CH or 0)
+                local sinceChamber = 0
+                while #list < 55 do
+                    local nextLen = every == 'b2b' and 2 * CH or SEG
+                    if pos + nextLen > stop and #list > 0 then break end
+                    if every == 'b2b' then put(CHAMBER)
+                    else
+                        put(TUNNEL)
+                        sinceChamber = sinceChamber + 1
+                        if every > 0 and sinceChamber >= every and pos + 2 * CH + SEG <= stop then put(CHAMBER) sinceChamber = 0 end
+                    end
+                end
+                if wantEnd and last ~= CHAMBER then put(CHAMBER)
+                elseif not wantEnd and wantWall then list[#list + 1] = { model = ENDWALL, x = start.x + dx * pos, y = start.y + dy * pos, z = z, heading = heading } end
                 -- the ground must stay above the tunnel roof all the way along
                 local low = 0.0
                 for _, sp in ipairs(list) do
@@ -186,7 +205,7 @@ local function tunnelLine()
                     if g then low = math.min(low, g - z) end
                 end
                 warn = low < -0.45
-                note = ('%d tunnel section%s · %.0f m%s%s'):format(n, n == 1 and '' or 's', n * SEG, #list > n and (' · ' .. (#list - n) .. ' end piece(s)') or '',
+                note = ('%d tunnel section%s · %d chamber%s · %.0f m long%s'):format(n, n == 1 and '' or 's', chambers, chambers == 1 and '' or 's', pos - ((not start.dx and wantStart) and -CH or 0.0),
                     warn and ('   ·   the ground drops %.1f m — the tunnel would show above ground'):format(-low) or '')
             else
                 note = 'Aim further along the route'
@@ -245,6 +264,46 @@ function UndergroundMenu()
     lib.registerContext({ id = 'towers_underground', title = 'Underground chambers & tunnels', options = options })
     lib.showContext('towers_underground')
 end
+
+---------------------------------------------------------------------------
+-- open ends seal themselves: every chamber / tunnel opening with nothing joined to it gets a concrete wall
+-- (a local prop, not saved) — join another piece on and that wall goes, so lines can always be extended
+---------------------------------------------------------------------------
+local seals = {}
+CreateThread(function()
+    while true do
+        Wait(1000)
+        local pos = GetEntityCoords(PlayerPedId())
+        local want = {}
+        for _, p in ipairs(connections()) do
+            if math.abs(p.x - pos.x) < 150.0 and math.abs(p.y - pos.y) < 150.0 then
+                local key = ('%.1f|%.1f|%.1f'):format(p.x, p.y, p.z)
+                want[key] = true
+                if not seals[key] or not DoesEntityExist(seals[key]) then
+                    local h = joaat(ENDWALL)
+                    if IsModelInCdimage(h) then
+                        lib.requestModel(h, 5000)
+                        local e = CreateObjectNoOffset(h, p.x, p.y, p.z, false, false, false)
+                        SetEntityHeading(e, headingOf(p.dx, p.dy))
+                        FreezeEntityPosition(e, true)
+                        seals[key] = e
+                    end
+                end
+            end
+        end
+        for key, e in pairs(seals) do
+            if not want[key] then
+                if DoesEntityExist(e) then DeleteEntity(e) end
+                seals[key] = nil
+            end
+        end
+    end
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for _, e in pairs(seals) do if DoesEntityExist(e) then DeleteEntity(e) end end
+end)
 
 ---------------------------------------------------------------------------
 -- getting in and out
