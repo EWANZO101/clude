@@ -18,9 +18,11 @@ NearLadder = false
 
 
 -- unit vector up the ladder for a heading (top leans away from the climbing side)
-local function axisFor(heading)
-    local h, l = math.rad(heading), math.rad(LEAN)
-    return vector3(-math.sin(h) * math.sin(l), math.cos(h) * math.sin(l), math.cos(l))
+--- lean = degrees from vertical (default the 1-in-4 angle), roll = sideways tilt in degrees
+local function axisFor(heading, lean, roll)
+    local h, l, r = math.rad(heading), math.rad(lean or LEAN), math.rad(roll or 0.0)
+    local sr, cr = math.sin(r), math.cos(r)
+    return vector3(sr * math.cos(h) - cr * math.sin(l) * math.sin(h), sr * math.sin(h) + cr * math.sin(l) * math.cos(h), cr * math.cos(l))
 end
 
 local function loadModel(name)
@@ -32,15 +34,15 @@ end
 
 --- s = a spawned ladder { t, base, fly, parts }. Extension ladders: the fly slides up the axis by ext.
 --- Telescopic ladders (t.tele): n sections spread evenly from the foot to the top — nested when closed.
-local function pose(s, x, y, z, heading, ext)
-    local a = axisFor(heading)
+local function pose(s, x, y, z, heading, ext, lean, roll)
+    local a = axisFor(heading, lean, roll)
     local tele = s.t and s.t.tele
     for i, e in ipairs(s.parts) do
         local off = 0.0
         if tele then off = (i - 1) * math.max(0.0, (s.t.top + ext) - tele.len) / math.max(1, #s.parts - 1)
         elseif e == s.fly then off = ext end
         SetEntityCoordsNoOffset(e, x + a.x * off, y + a.y * off, z + a.z * off, false, false, false)
-        SetEntityRotation(e, -LEAN, 0.0, heading, 2, false)
+        SetEntityRotation(e, -(lean or LEAN), roll or 0.0, heading, 2, false)
     end
 end
 
@@ -78,14 +80,14 @@ end
 local function refresh()
     for id in pairs(spawned) do if not ladders[id] then despawn(id) end end
     for id, l in pairs(ladders) do
-        local sig = ('%.2f|%.2f|%.2f|%.1f|%.2f'):format(l.x, l.y, l.z, l.heading, l.ext)
+        local sig = ('%.2f|%.2f|%.2f|%.1f|%.2f|%.1f|%.1f'):format(l.x, l.y, l.z, l.heading, l.ext, l.lean or LEAN, l.roll or 0)
         local s = spawned[id]
         if s and s.sig ~= sig then
-            pose(s, l.x, l.y, l.z, l.heading, l.ext)
+            pose(s, l.x, l.y, l.z, l.heading, l.ext, l.lean, l.roll)
             s.sig = sig
         elseif not s then
             s = spawnPair(typeOf(l.type), l.x, l.y, l.z, l.heading, l.ext)
-            if s then s.sig = sig spawned[id] = s end
+            if s then pose(s, l.x, l.y, l.z, l.heading, l.ext, l.lean, l.roll) s.sig = sig spawned[id] = s end
         end
     end
 end
@@ -161,13 +163,14 @@ local function carryLadder(t, existing)
     local real = existing and spawned[existing.id]
     if real then for _, e in ipairs(real.parts) do SetEntityVisible(e, false, false) end end
     local ext, turn = existing and existing.ext or 0.0, 0.0
+    local leanDeg, roll, pan = existing and existing.lean or LEAN, existing and existing.roll or 0.0, 0.0
     local result
-    local cosL, sinL = math.cos(math.rad(LEAN)), math.sin(math.rad(LEAN))
-    local sf = PlaceHud.buttons({ { existing and 'Put it down' or 'Place', { 24, 191 } }, { 'Cancel', { 25, 177 } }, { 'Extend / retract', { 15, 14 } }, { 'Fine', 21 }, { 'Turn', { 44, 38 } } })
+    local sf = PlaceHud.buttons({ { existing and 'Put it down' or 'Place', { 24, 191 } }, { 'Cancel', { 25, 177 } }, { 'Extend / retract', { 15, 14 } },
+        { 'Pull back / push in', { 11, 10 } }, { 'Pan', { 174, 175 } }, { 'Tilt (hold)', 21 }, { 'Turn', { 44, 38 } } })
     TriggerEvent('opslabs:carry', 'ladder', true)             -- opslabs-animations: arms out carrying it
     while true do
         Wait(0)
-        for _, ctl in ipairs({ 14, 15, 16, 17, 24, 25, 37, 44, 38, 140, 141, 142, 172, 173, 177, 191, 199, 200, 257, 261, 262, 263 }) do DisableControlAction(0, ctl, true) end
+        for _, ctl in ipairs({ 10, 11, 14, 15, 16, 17, 24, 25, 37, 44, 38, 140, 141, 142, 172, 173, 174, 175, 177, 191, 199, 200, 257, 261, 262, 263 }) do DisableControlAction(0, ctl, true) end
         DisablePlayerFiring(PlayerId(), true)
         local fine = IsControlPressed(0, 21)
         local step = fine and 0.02 or 0.14
@@ -178,6 +181,16 @@ local function carryLadder(t, existing)
         if IsDisabledControlPressed(0, 44) then turn = turn + 1.5 end
         if IsDisabledControlPressed(0, 38) then turn = turn - 1.5 end
         ext = math.max(0.0, math.min(t.maxExt, ext))
+        -- PgDn pulls the foot back (shallower), PgUp pushes it in (steeper) · ←/→ pan · Shift + ←/→ tilt sideways
+        if IsDisabledControlPressed(0, 11) then leanDeg = math.min(35.0, leanDeg + 0.4) end
+        if IsDisabledControlPressed(0, 10) then leanDeg = math.max(4.0, leanDeg - 0.4) end
+        if fine then
+            if IsDisabledControlPressed(0, 174) then roll = math.max(-15.0, roll - 0.3) end
+            if IsDisabledControlPressed(0, 175) then roll = math.min(15.0, roll + 0.3) end
+        else
+            if IsDisabledControlPressed(0, 174) then pan = math.min(45.0, pan + 0.8) end
+            if IsDisabledControlPressed(0, 175) then pan = math.max(-45.0, pan - 0.8) end
+        end
 
         local pos = GetEntityCoords(ped)
         local lean = leanTarget(ped)
@@ -187,17 +200,20 @@ local function carryLadder(t, existing)
             -- against a pole: top stays below the ring head, never past the top
             local f = lean.f
             local dir = lean.dir
-            heading = math.deg(math.atan(-dir.x, dir.y)) % 360
+            heading = (math.deg(math.atan(-dir.x, dir.y)) + pan) % 360
+            local a0 = axisFor(heading, leanDeg, roll)
             local g = groundBelow(f.x - dir.x * 1.5, f.y - dir.y * 1.5, pos.z, ghost.base) or (pos.z - 1.0)
-            local maxL = (f.z + lean.H - 0.35 - g) / cosL
+            local maxL = (f.z + lean.H - 0.35 - g) / a0.z
             if L > maxL then ext = math.max(0.0, maxL - t.top) L = t.top + ext end
             local tooLong = t.top > maxL + 0.05
-            local r = PoleRadius(f, L * cosL + (g - f.z))
-            local fx, fy = f.x - dir.x * (L * sinL + r + 0.04), f.y - dir.y * (L * sinL + r + 0.04)
+            local r = PoleRadius(f, L * a0.z + (g - f.z))
+            -- the top rests against the pole: foot = contact point − the ladder's own reach (lean, pan, tilt)
+            local cx, cy = f.x - dir.x * (r + 0.04), f.y - dir.y * (r + 0.04)
+            local fx, fy = cx - a0.x * L, cy - a0.y * L
             foot = vector3(fx, fy, groundBelow(fx, fy, pos.z, ghost.base) or g)
             -- rest it on the pole itself: feel for the pole's surface just below the top (map poles vary in
             -- thickness and the fly section sits behind the base) and slide the ladder in until it touches
-            local a = axisFor(heading)
+            local a = a0
             local touch
             for k = 0, 4 do
                 local along = L - 0.15 - k * 0.2
@@ -217,13 +233,13 @@ local function carryLadder(t, existing)
             end
             rest = not tooLong
             note = tooLong and ('This ladder is too long for a %d m pole — use the shorter one'):format(math.floor(lean.H))
-                or ('Leaning on the pole · top at %.1f m of %d m%s'):format(L * cosL + (foot.z - f.z), math.floor(lean.H), ext >= maxL - t.top - 0.01 and ' · as high as it goes' or '')
+                or ('Leaning on the pole · top at %.1f m of %d m%s'):format(L * a0.z + (foot.z - f.z), math.floor(lean.H), ext >= maxL - t.top - 0.01 and ' · as high as it goes' or '')
         elseif lean and lean.kind == 'wall' then
             local dir = lean.dir
-            heading = math.deg(math.atan(-dir.x, dir.y)) % 360
-            local fx, fy = lean.at.x - dir.x * (L * sinL + 0.06), lean.at.y - dir.y * (L * sinL + 0.06)
+            heading = (math.deg(math.atan(-dir.x, dir.y)) + pan) % 360
+            local a = axisFor(heading, leanDeg, roll)
+            local fx, fy = lean.at.x - dir.x * 0.06 - a.x * L, lean.at.y - dir.y * 0.06 - a.y * L
             foot = vector3(fx, fy, groundBelow(fx, fy, pos.z, ghost.base) or (pos.z - 1.0))
-            local a = axisFor(heading)
             local top = foot + a * L
             -- what does the ladder actually touch near its top? scan down from the top for the first wall face
             -- (a gutter or eave sticks out further than the wall, so the ladder rests on that)
@@ -251,30 +267,32 @@ local function carryLadder(t, existing)
                     note = (hit == 1 and normal.z > 0.6) and ('Over the roof edge by %.1f m · step off onto the roof at the top'):format(over)
                         or ('Top is %.1f m above the edge'):format(over)
                 else
-                    note = ('Leaning on the wall · top at %.1f m'):format(L * cosL)
+                    note = ('Leaning on the wall · top at %.1f m'):format(L * a.z)
                 end
             else
                 rest = false
                 note = 'The top is above the wall — retract it a bit'
             end
         else
-            heading = (GetEntityHeading(ped) + turn) % 360
+            heading = (GetEntityHeading(ped) + turn + pan) % 360
             local h = math.rad(heading)
             local fx, fy = pos.x - math.sin(h) * 0.9, pos.y + math.cos(h) * 0.9
             foot = vector3(fx, fy, groundBelow(fx, fy, pos.z, ghost.base) or (pos.z - 1.0))
             note = 'Walk up to a wall or pole to lean it'
         end
-        pose(ghost, foot.x, foot.y, foot.z, heading, ext)
+        pose(ghost, foot.x, foot.y, foot.z, heading, ext, leanDeg, roll)
         outline(ghost.parts, rest)
-        local top = foot + axisFor(heading) * L
+        local top = foot + axisFor(heading, leanDeg, roll) * L
+        local angleNote = ('lean %.0f°%s%s%s'):format(leanDeg, roll ~= 0 and ('   ·   tilt %+.0f°'):format(roll) or '', pan ~= 0 and ('   ·   pan %+.0f°'):format(pan) or '',
+            leanDeg < 9 and '   ·   too steep — pull it back' or leanDeg > 22 and '   ·   too shallow — it could slide' or '')
         DrawMarker(25, foot.x, foot.y, foot.z + 0.02, 0, 0, 0, 0, 0, 0, 0.8, 0.8, 0.8, rest and 48 or 255, rest and 209 or 159, rest and 88 or 10, 150, false, false, 2, false, nil, nil, false)
         DrawMarker(28, top.x, top.y, top.z, 0, 0, 0, 0, 0, 0, 0.07, 0.07, 0.07, rest and 48 or 255, rest and 209 or 159, rest and 88 or 10, 230, false, false, 2, false, nil, nil, false)
-        PlaceHud.draw(sf, (existing and 'Moving ' or 'Carrying ') .. t.label:lower(), ('%s   ·   extended %.2f / %.1f m'):format(note, ext, t.maxExt), { 255, 159, 10 }, not rest)
+        PlaceHud.draw(sf, (existing and 'Moving ' or 'Carrying ') .. t.label:lower(), ('%s   ·   extended %.2f / %.1f m   ·   %s'):format(note, ext, t.maxExt, angleNote), { 255, 159, 10 }, not rest)
         if IsDisabledControlJustPressed(0, 24) or IsDisabledControlJustPressed(0, 191) then
             if not rest and lib.alertDialog({ header = 'Nothing to lean on', content = 'Stand it up anyway? It won’t be safe to climb.', centered = true, cancel = true }) ~= 'confirm' then
                 -- keep carrying
             else
-                result = { x = foot.x, y = foot.y, z = foot.z, heading = heading, ext = ext, type = t.id }
+                result = { x = foot.x, y = foot.y, z = foot.z, heading = heading, ext = ext, type = t.id, lean = leanDeg, roll = roll }
                 break
             end
         end
@@ -340,8 +358,8 @@ local function extendMode(l)
             PlaySoundFrontend(-1, 'CLICK_BACK', 'WEB_NAVIGATION_SOUNDS_PHONE', true)
         end
         if not ladders[l.id] or not DoesEntityExist(s.fly) then break end
-        pose(s, l.x, l.y, l.z, l.heading, ext)
-        PlaceHud.draw(sf, 'Extending ladder', ('Extended %.1f / %.1f m   ·   reaches %.1f m'):format(ext, lt.maxExt, axisFor(l.heading).z * (lt.top + ext)), { 255, 159, 10 })
+        pose(s, l.x, l.y, l.z, l.heading, ext, l.lean, l.roll)
+        PlaceHud.draw(sf, 'Extending ladder', ('Extended %.1f / %.1f m   ·   reaches %.1f m'):format(ext, lt.maxExt, axisFor(l.heading, l.lean, l.roll).z * (lt.top + ext)), { 255, 159, 10 })
         if IsDisabledControlJustPressed(0, 191) then done = true break end
         if IsDisabledControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 25) or IsDisabledControlJustPressed(0, 200) then break end
     end
@@ -350,7 +368,7 @@ local function extendMode(l)
         local r = lib.callback.await('opslabs-towers:ladder:extend', false, l.id, ext)
         if r and r.error then lib.notify({ type = 'error', description = r.error }) end
     end
-    if ladders[l.id] and spawned[l.id] then pose(s, l.x, l.y, l.z, l.heading, ladders[l.id].ext) end
+    if ladders[l.id] and spawned[l.id] then pose(s, l.x, l.y, l.z, l.heading, ladders[l.id].ext, l.lean, l.roll) end
 end
 
 ---------------------------------------------------------------------------
@@ -387,7 +405,7 @@ end
 --- the pole a ladder is leaning on (its top within 60 cm of the pole), if any
 local function poleAtTop(l)
     local t = typeOf(l.type)
-    local top = vector3(l.x, l.y, l.z) + axisFor(l.heading) * (t.top + l.ext)
+    local top = vector3(l.x, l.y, l.z) + axisFor(l.heading, l.lean, l.roll) * (t.top + l.ext)
     for _, p in ipairs(AllPoles()) do
         if #(vector2(top.x, top.y) - vector2(p.x, p.y)) < 0.6 and top.z > p.z and top.z < p.z + p.H + 0.5 then return p end
     end
@@ -401,7 +419,7 @@ function LaddersOnPole(pole)
         if p and math.abs(p.x - pole.x) < 0.01 and math.abs(p.y - pole.y) < 0.01 then
             local t = typeOf(l.type)
             local s = math.max(0.0, t.top + l.ext - 1.9)
-            local feet = vector3(l.x, l.y, l.z) + axisFor(l.heading) * s
+            local feet = vector3(l.x, l.y, l.z) + axisFor(l.heading, l.lean, l.roll) * s
             out[#out + 1] = { l = l, s = s, h = feet.z - pole.z, angle = math.atan(feet.y - pole.y, feet.x - pole.x) }
         end
     end
@@ -411,7 +429,7 @@ end
 --- somewhere to stand just past the top of a ladder (a roof, flat or pitched), or nil
 function RoofAtTop(l)
     local t = typeOf(l.type)
-    local a = axisFor(l.heading)
+    local a = axisFor(l.heading, l.lean, l.roll)
     local top = vector3(l.x, l.y, l.z) + a * (t.top + l.ext)
     local d = vector3(a.x, a.y, 0.0)
     d = #d > 0.01 and d / #d or vector3(0.0, 1.0, 0.0)
@@ -427,7 +445,7 @@ end
 local function ladderTopNear(pos)
     for _, l in pairs(ladders) do
         local t = typeOf(l.type)
-        local top = vector3(l.x, l.y, l.z) + axisFor(l.heading) * (t.top + l.ext)
+        local top = vector3(l.x, l.y, l.z) + axisFor(l.heading, l.lean, l.roll) * (t.top + l.ext)
         if #(pos - top) < 1.8 and pos.z > top.z - 1.6 then return l, math.max(0.0, t.top + l.ext - 1.9) end
     end
 end
@@ -488,11 +506,11 @@ local function climb(l, startS)
             -- fit equipment from the ladder: on the pole it leans on, or on the wall in front
             if IsDisabledControlJustPressed(0, 47) then
                 menuOpen = true
-                local feetNow = vector3(cur.x, cur.y, cur.z) + axisFor(cur.heading) * s
+                local feetNow = vector3(cur.x, cur.y, cur.z) + axisFor(cur.heading, cur.lean, cur.roll) * s
                 if onPole and PoleEquipMenu then
                     PoleEquipMenu(onPole, math.atan(feetNow.y - onPole.y, feetNow.x - onPole.x), feetNow.z - onPole.z, function() menuOpen = false end)
                 else
-                    local ax = axisFor(cur.heading)
+                    local ax = axisFor(cur.heading, cur.lean, cur.roll)
                     LadderWallEquipment(function() menuOpen = false end, vector3(ax.x, ax.y, 0.0) / math.max(0.01, math.sqrt(ax.x * ax.x + ax.y * ax.y)))
                 end
             end
@@ -508,7 +526,7 @@ local function climb(l, startS)
             end
         end
         if state == 'hold' and still > 0.7 and s > 1.5 then state = 'work' end
-        local a = axisFor(cur.heading)
+        local a = axisFor(cur.heading, cur.lean, cur.roll)
         local sv = (state == 'up' or state == 'down') and ClimbAnims.step(s, RUNG) or s    -- rung by rung
         local feet = vector3(cur.x, cur.y, cur.z) + a * sv + back * 0.30
         SetEntityCoordsNoOffset(ped, feet.x, feet.y, feet.z + 1.0, false, false, false)
@@ -523,7 +541,7 @@ local function climb(l, startS)
     if transfer then
         -- straight onto the pole at the same height, on the ladder's side
         local cur = ladders[l.id] or l
-        local feet = vector3(cur.x, cur.y, cur.z) + axisFor(cur.heading) * s
+        local feet = vector3(cur.x, cur.y, cur.z) + axisFor(cur.heading, cur.lean, cur.roll) * s
         climbingLadder = nil
         ClimbAnims.unload(ped)
         return ClimbPole(transfer, feet.z - transfer.z, math.atan(feet.y - transfer.y, feet.x - transfer.x))

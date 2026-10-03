@@ -50,6 +50,7 @@ lib.callback.register('opslabs-towers:ladder:place', function(src, d)
     nextId = nextId + 1
     local lt = ladderType(d.type)
     Ladders[id] = { id = id, type = lt.id, x = x, y = y, z = z, heading = h % 360, ext = math.max(0.0, math.min(lt.maxExt, num(d.ext) or 0.0)),
+        lean = math.max(4.0, math.min(35.0, num(d.lean) or 15.0)), roll = math.max(-15.0, math.min(15.0, num(d.roll) or 0.0)),
         owner = src, name = GetPlayerName(src) }
     broadcast()
     return { ok = true, id = id }
@@ -75,6 +76,8 @@ lib.callback.register('opslabs-towers:ladder:move', function(src, id, d)
     if not near(src, x, y, z, 8.0) then return { error = 'too far away' } end
     l.x, l.y, l.z, l.heading = x, y, z, h % 360
     l.ext = math.max(0.0, math.min(ladderType(l.type).maxExt, num(d.ext) or l.ext))
+    l.lean = math.max(4.0, math.min(35.0, num(d.lean) or l.lean or 15.0))
+    l.roll = math.max(-15.0, math.min(15.0, num(d.roll) or l.roll or 0.0))
     broadcast()
     return { ok = true }
 end)
