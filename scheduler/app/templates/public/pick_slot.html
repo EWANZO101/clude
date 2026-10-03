@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ booking_type.name }} · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto max-w-2xl px-4 py-12 sm:py-16">
+  <a href="{{ url_for('public.booking_types') }}" class="text-sm text-ink-muted hover:text-ink">&larr; All meeting types</a>
+
+  <div class="mt-4 mb-8">
+    <h1 class="font-display text-2xl font-semibold text-ink">{{ booking_type.name }}</h1>
+    <p class="mt-1 text-sm text-ink-muted">{{ booking_type.duration }} minutes with {{ owner.name }}{% if booking_type.description %} · {{ booking_type.description }}{% endif %}</p>
+  </div>
+
+  {% include "partials/flash.html" %}
+
+  <div class="card p-5 sm:p-6">
+    <div class="mb-5 flex items-center justify-between">
+      <a href="{{ url_for('public.pick_slot', type_id=booking_type.id, date=prev_date.isoformat()) }}"
+         class="btn-ghost !px-2 {{ 'pointer-events-none opacity-30' if target_date <= today }}" aria-label="Previous day">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </a>
+      <div class="text-center">
+        <p class="font-display text-base font-semibold text-ink">{{ target_date.strftime('%A') }}</p>
+        <p class="text-sm text-ink-muted">{{ target_date.strftime('%d %B %Y') }}</p>
+      </div>
+      <a href="{{ url_for('public.pick_slot', type_id=booking_type.id, date=next_date.isoformat()) }}"
+         class="btn-ghost !px-2 {{ 'pointer-events-none opacity-30' if target_date >= max_date }}" aria-label="Next day">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+
+    <form method="GET" action="{{ url_for('public.pick_slot', type_id=booking_type.id) }}" class="mb-6">
+      <input type="date" name="date" value="{{ target_date.isoformat() }}" min="{{ today.isoformat() }}" max="{{ max_date.isoformat() }}"
+             class="field-input" onchange="this.form.submit()">
+    </form>
+
+    {% if slots %}
+      <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        {% for slot in slots %}
+        <a href="{{ url_for('public.booking_details', type_id=booking_type.id, dt=slot.isoformat()) }}"
+           class="rounded-lg border border-border bg-surface-raised px-3 py-2.5 text-center text-sm font-medium text-ink hover:border-accent hover:text-accent transition-colors">
+          {{ slot.strftime('%H:%M') }}
+        </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="py-8 text-center text-sm text-ink-muted">
+        {% if ooh_slots %}No regular-hours times available on this day — see out-of-hours options below.
+        {% else %}No times available on this day — try another date.{% endif %}
+      </p>
+    {% endif %}
+
+    {% if ooh_slots %}
+      <div class="mt-6 border-t border-border pt-5">
+        <div class="mb-3 flex items-start gap-2.5">
+          <span class="status-dot bg-status-away mt-1 shrink-0"></span>
+          <p class="text-sm text-ink-muted">
+            Outside normal hours{% if ooh_fee %} — a <span class="font-medium text-ink">{{ ooh_fee }}</span> fee applies{% endif %}.
+          </p>
+        </div>
+        <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {% for slot in ooh_slots %}
+          <a href="{{ url_for('public.booking_details', type_id=booking_type.id, dt=slot.isoformat()) }}"
+             class="rounded-lg border border-status-away/30 bg-status-away/10 px-3 py-2.5 text-center text-sm font-medium text-ink hover:border-status-away/50 transition-colors">
+            {{ slot.strftime('%H:%M') }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

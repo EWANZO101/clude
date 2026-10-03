@@ -1,0 +1,12 @@
+[Unit]
+Description=Monzo auto-sync loop (every 30s)
+After=network.target payment.service
+
+[Service]
+WorkingDirectory=/root/payments/
+ExecStart=/bin/bash /root/payments/monzo_auto_sync.sh
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target

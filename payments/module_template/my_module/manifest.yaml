@@ -1,0 +1,18 @@
+id: my_module
+name: My Module
+version: "1.0.0"
+author: Your Name
+description: One-line description of what this module does.
+core_compatibility: "0.x"
+dependencies: []
+permissions:
+  - my_module.view
+  - my_module.edit
+navigation:
+  - label: My Module
+    icon: puzzle
+    url: /my-module/
+    position: 60
+dashboard_widgets:
+  - key: my_module_summary
+    label: My Module Summary

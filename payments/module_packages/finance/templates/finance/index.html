@@ -1,0 +1,85 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Finance{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  {{ ui.page_header("Finance", "Your overview across every account.") }}
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    {{ ui.stat_tile("Total balance", total_balance | money) }}
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-4 hover:border-slate-700 transition-colors">
+      <p class="text-xs text-slate-500 mb-1.5">Safe to spend</p>
+      <p class="text-lg font-semibold tabular-nums {{ 'text-red-400' if safe_balance.safe_discretionary_minor < 0 else 'text-white' }}">{{ safe_balance.safe_discretionary_minor | money }}</p>
+    </div>
+    {{ ui.stat_tile("Projected month-end", forecast.projected_end_of_month_balance_minor | money) }}
+    <a href="{{ url_for('finance.import_statement') }}" class="bg-surface-card border border-surface-border rounded-2xl p-4 hover:border-accent hover:bg-surface-hover transition-colors flex items-center gap-2 group">
+      <span class="text-accent">{{ ui.icon('plus', 'w-4 h-4') }}</span>
+      <p class="text-sm font-medium text-slate-200 group-hover:text-white">Import a bank statement</p>
+      <span class="ml-auto text-slate-600 group-hover:text-accent transition-colors">{{ ui.icon('chevron-right', 'w-4 h-4') }}</span>
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-white">Budgets</h2>
+        <a href="{{ url_for('finance.budgets') }}" class="text-xs text-accent hover:text-accent-hover flex items-center gap-1">Manage {{ ui.icon('chevron-right', 'w-3 h-3') }}</a>
+      </div>
+      <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+        {% for b, status in budget_rows %}
+          <div class="p-4">
+            <div class="flex items-center justify-between text-sm mb-2">
+              <span class="text-slate-300">{{ b.category.name }}</span>
+              <span class="tabular-nums {{ 'text-red-400' if status.over_budget else 'text-slate-400' }}">{{ status.spent_minor | money }} / {{ b.amount_minor | money }}</span>
+            </div>
+            <div class="h-1.5 bg-surface rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all {{ 'bg-red-500' if status.over_budget else ('bg-amber-500' if status.over_warning else 'bg-accent') }}" style="width: {{ [status.pct_used, 100] | min }}%"></div>
+            </div>
+          </div>
+        {% else %}
+          <a href="{{ url_for('finance.budgets') }}" class="block p-4 text-sm text-accent hover:text-accent-hover">Set up your first budget →</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-white">Upcoming bills</h2>
+        <a href="{{ url_for('finance.bills') }}" class="text-xs text-accent hover:text-accent-hover flex items-center gap-1">Manage {{ ui.icon('chevron-right', 'w-3 h-3') }}</a>
+      </div>
+      <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+        {% for bill in upcoming_bills %}
+          <div class="p-4 flex items-center justify-between text-sm hover:bg-surface-hover/40 transition-colors">
+            <div>
+              <p class="text-slate-100">{{ bill.name }}</p>
+              <p class="text-xs text-slate-500">due {{ bill.next_due_date }}</p>
+            </div>
+            <span class="text-slate-200 tabular-nums font-medium">{{ bill.amount_minor | money }}</span>
+          </div>
+        {% else %}
+          <p class="p-4 text-sm text-slate-500">Nothing due in the next 14 days.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="space-y-3">
+    <h2 class="text-lg font-semibold text-white">Recent transactions</h2>
+    <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+      {% for t in recent %}
+        <div class="p-4 flex items-center justify-between text-sm hover:bg-surface-hover/40 transition-colors">
+          <div>
+            <p class="text-slate-100">{{ t.clean_description or t.raw_description }}</p>
+            <p class="text-xs text-slate-500">{{ t.date }}</p>
+          </div>
+          <span class="tabular-nums font-medium {{ 'text-emerald-400' if t.amount_minor >= 0 else 'text-slate-200' }}">{{ t.amount_minor | money(t.currency) }}</span>
+        </div>
+      {% else %}
+        {% call ui.empty_state("No transactions yet", "Import a statement or connect a bank to get started.", "inbox") %}
+          {{ ui.button("Import statement", href=url_for('finance.import_statement'), variant="primary", icon_name="plus") }}
+        {% endcall %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

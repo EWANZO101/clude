@@ -1,0 +1,194 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Orders — Admin{% endblock %}
+{% block admin_content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;
+            margin-bottom:1.25rem;flex-wrap:wrap;gap:1rem;">
+  <h1 class="font-display" style="font-size:1.6rem;">All Orders</h1>
+  <a href="/admin/orders/new" class="btn btn-primary">+ New Order</a>
+</div>
+
+<!-- Search bar -->
+<form method="GET" action="/admin/orders" style="margin-bottom:1.25rem;">
+  <div style="display:flex;gap:0.6rem;align-items:center;">
+    <div style="position:relative;flex:1;">
+      <span style="position:absolute;left:0.85rem;top:50%;transform:translateY(-50%);
+                   color:var(--text-muted);font-size:1rem;pointer-events:none;">🔍</span>
+      <input type="text" name="q" value="{{ q or '' }}"
+             class="input" autocomplete="off"
+             placeholder="Search by Order ID, name, email, Discord or Instagram…"
+             style="padding-left:2.4rem;"
+             oninput="liveSearch(this.value)">
+    </div>
+    {% if q %}
+    <a href="/admin/orders" class="btn btn-ghost btn-sm" style="white-space:nowrap;">✕ Clear</a>
+    {% endif %}
+  </div>
+  {% if q %}
+  <p style="font-size:0.82rem;color:var(--text-muted);margin-top:0.5rem;font-style:italic;">
+    {{ orders|length }} result{{ 's' if orders|length != 1 else '' }} for
+    "<strong style="color:var(--text-secondary);">{{ q }}</strong>"
+  </p>
+  {% endif %}
+</form>
+
+<div class="card" style="padding:0;">
+  <div style="overflow-x:auto;">
+    <table class="data-table" id="ordersTable">
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Customer</th>
+          <th>Type</th>
+          <th>Price</th>
+          <th>Status</th>
+          <th>Payment</th>
+          <th class="hide-mobile">ETA</th>
+          <th class="hide-mobile">Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="ordersBody">
+        {% for order in orders %}
+        <tr class="order-row"
+            data-search="{{ [
+              order.order_id,
+              order.customer_name,
+              order.customer_email or '',
+              order.customer_discord or '',
+              order.customer_instagram or ''
+            ] | join(' ') | lower }}">
+          <td>
+            <a href="/admin/orders/{{ order.order_id }}"
+               class="font-mono" style="font-size:0.83rem;color:var(--accent);text-decoration:none;">
+              {{ order.order_id }}
+            </a>
+          </td>
+          <td>
+            <div style="font-weight:600;font-size:0.92rem;">{{ order.customer_name }}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.2rem;">
+              {% if order.customer_discord %}
+              <span style="font-size:0.75rem;color:var(--text-muted);">💬 {{ order.customer_discord }}</span>
+              {% endif %}
+              {% if order.customer_instagram %}
+              <span style="font-size:0.75rem;color:var(--text-muted);">📸 {{ order.customer_instagram }}</span>
+              {% endif %}
+              {% if order.customer_email %}
+              <span style="font-size:0.75rem;color:var(--text-muted);">✉️ {{ order.customer_email }}</span>
+              {% endif %}
+            </div>
+          </td>
+          <td style="max-width:160px;">
+            {% if order.commission_type %}
+              {% for t in order.commission_type.split(', ')[:2] %}
+              <span style="display:inline-block;background:var(--bg-elevated);border:1px solid var(--border);
+                           border-radius:5px;padding:0.1rem 0.45rem;font-size:0.75rem;margin:0.1rem 0.1rem 0 0;
+                           white-space:nowrap;">{{ t }}</span>
+              {% endfor %}
+              {% if order.commission_type.split(', ')|length > 2 %}
+              <span style="font-size:0.75rem;color:var(--text-muted);">
+                +{{ order.commission_type.split(', ')|length - 2 }} more
+              </span>
+              {% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td style="color:var(--gold);font-weight:700;white-space:nowrap;">
+            ${{ "%.2f"|format(order.price) }}
+          </td>
+          <td>
+            {% set sc = order.status.lower().replace(' ','') %}
+            <span class="badge badge-{{ 'awaiting' if sc=='awaitingconfirmation' else sc }}">
+              {{ order.status }}
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-{{ 'paid' if order.payment_status=='Paid' else 'unpaid' if order.payment_status=='Unpaid' else 'payp' }}">
+              {{ order.payment_status }}
+            </span>
+          </td>
+          <td class="hide-mobile" style="font-size:0.83rem;color:var(--text-secondary);">
+            {{ order.eta or '—' }}
+          </td>
+          <td class="hide-mobile" style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">
+            {{ order.created_at.strftime('%b %d, %Y') }}
+          </td>
+          <td style="white-space:nowrap;">
+            <a href="/admin/orders/{{ order.order_id }}" class="btn btn-ghost btn-sm">View</a>
+            <a href="/order/{{ order.unique_link }}" target="_blank"
+               class="btn btn-ghost btn-sm" style="margin-left:3px;" title="Customer view">🔗</a>
+            <form method="POST" action="/admin/orders/{{ order.order_id }}/delete"
+                  style="display:inline;margin-left:3px;"
+                  onsubmit="return confirm('Delete order {{ order.order_id }}? This cannot be undone.')">
+              <button type="submit" class="btn btn-danger btn-sm" title="Delete">🗑</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr id="emptyRow">
+          <td colspan="9" style="text-align:center;color:var(--text-muted);padding:3rem;font-style:italic;">
+            {% if q %}No orders match "{{ q }}".{% else %}No orders yet. Create one!{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Row count -->
+  {% if orders %}
+  <div style="padding:0.75rem 1rem;border-top:1px solid var(--border);
+              font-size:0.82rem;color:var(--text-muted);display:flex;
+              align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;">
+    <span id="rowCount">Showing <strong style="color:var(--text-secondary);">{{ orders|length }}</strong> order{{ 's' if orders|length != 1 else '' }}</span>
+    <span style="font-style:italic;">Live search filters as you type</span>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+// Live client-side search (instant, no page reload)
+function liveSearch(val) {
+  const q     = val.toLowerCase().trim();
+  const rows  = document.querySelectorAll('.order-row');
+  let visible = 0;
+
+  rows.forEach(row => {
+    const data = row.dataset.search || '';
+    const show = !q || data.includes(q);
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  const countEl = document.getElementById('rowCount');
+  if (countEl) {
+    countEl.innerHTML = `Showing <strong style="color:var(--text-secondary);">${visible}</strong> order${visible !== 1 ? 's' : ''}`;
+  }
+
+  // Show empty message if nothing visible
+  let emptyRow = document.getElementById('liveEmptyRow');
+  if (visible === 0 && q) {
+    if (!emptyRow) {
+      emptyRow = document.createElement('tr');
+      emptyRow.id = 'liveEmptyRow';
+      emptyRow.innerHTML = `<td colspan="9" style="text-align:center;color:var(--text-muted);padding:2rem;font-style:italic;">No orders match "${val}".</td>`;
+      document.getElementById('ordersBody').appendChild(emptyRow);
+    } else {
+      emptyRow.querySelector('td').textContent = `No orders match "${val}".`;
+      emptyRow.style.display = '';
+    }
+  } else if (emptyRow) {
+    emptyRow.style.display = 'none';
+  }
+}
+
+// Auto-focus search if query param present
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.querySelector('input[name="q"]');
+  if (input && input.value) {
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+});
+</script>
+
+{% endblock %}

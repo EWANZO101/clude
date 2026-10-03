@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Services — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">systemd</p>
+    <h1 class="page-title">Services</h1>
+    <p class="page-sub">Units running on this host</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('systemctl.create') }}">+ New service</a>
+</div>
+
+{% if error %}
+  <div class="flash flash-error">{{ error }}</div>
+{% endif %}
+
+{% if services %}
+<div class="card flush">
+  <div class="card-header" style="padding:16px 18px 0; flex-wrap:wrap; gap:10px;">
+    <div class="card-label" style="margin:0;" id="services-count">
+      {{ services | length }} service{{ 's' if services | length != 1 }}
+    </div>
+    <div style="margin-left:auto;">
+      <input type="text" id="services-search" placeholder="Search unit, status, or description…" autocomplete="off"
+             style="min-width:240px; background:var(--bg-void); border:1px solid var(--border-strong); border-radius:var(--radius); padding:7px 11px; color:var(--text-primary); font-size:13px;">
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table" id="services-table" style="margin-top:8px;">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Status</th>
+          <th>Enabled</th>
+          <th>Description</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in services %}
+        <tr data-search="{{ (s.unit ~ ' ' ~ s.active ~ ' ' ~ s.sub ~ ' ' ~ s.enabled ~ ' ' ~ s.description) | lower }}">
+          <td class="mono primary">
+            <a href="{{ url_for('systemctl.logs_page', name=s.unit) }}">{{ s.unit }}</a>
+          </td>
+          <td>
+            <span class="status-dot {{ 'ok live' if s.running else '' }}"></span>
+            {{ s.active }}/{{ s.sub }}
+          </td>
+          <td>{{ s.enabled }}</td>
+          <td style="font-size:13px;">{{ s.description }}</td>
+          <td>
+            <div class="table-actions">
+              {% macro ctl(action, label, cls='btn btn-secondary btn-sm', icon='') -%}
+              <form method="POST" action="{{ url_for('systemctl.control', name=s.unit, action=action) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="{{ cls }}">{{ icon|safe }}{{ label }}</button>
+              </form>
+              {%- endmacro %}
+              {% if s.running %}
+                {{ ctl('restart', 'Restart') }}
+                {{ ctl('stop', 'Stop', 'btn btn-ghost btn-sm') }}
+              {% else %}
+                {{ ctl('start', 'Start') }}
+              {% endif %}
+              <details class="row-menu">
+                <summary class="btn btn-ghost btn-sm" title="More actions" aria-label="More actions for {{ s.unit }}">⋯</summary>
+                <div class="row-menu-panel">
+                  <div class="hint">{{ s.unit }}</div>
+                  {% if s.running %}{{ ctl('start', 'Start', '') }}{% else %}{{ ctl('restart', 'Restart', '') }}{{ ctl('stop', 'Stop', '') }}{% endif %}
+                  <hr>
+                  {{ ctl('enable', 'Enable at boot', '') }}
+                  {{ ctl('disable', 'Disable at boot', '') }}
+                  <hr>
+                  <form method="POST" action="{{ url_for('systemctl.repair', name=s.unit) }}" onsubmit="return confirm('Repair {{ s.unit }}? This checks the unit file, regenerates it if it was created by this panel, and restarts the service.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit">Repair…</button>
+                  </form>
+                </div>
+              </details>
+          </td>
+        </tr>
+        {% endfor %}
+        <tr id="services-no-matches" style="display:none;"><td colspan="5"><div class="empty-state"><strong>No services match your search.</strong>Try a different unit name, status, or description.</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% elif not error %}
+  <div class="card"><div class="empty-state">No services found.</div></div>
+{% endif %}
+
+<script>
+  const servicesSearch = document.getElementById('services-search');
+  if (servicesSearch) {
+    const table = document.getElementById('services-table');
+    const rows = Array.from(table.querySelectorAll('tbody tr[data-search]'));
+    const noMatches = document.getElementById('services-no-matches');
+    const countLabel = document.getElementById('services-count');
+    const baseLabel = countLabel.textContent.trim();
+
+    servicesSearch.addEventListener('input', () => {
+      const q = servicesSearch.value.trim().toLowerCase();
+      let visible = 0;
+      rows.forEach(row => {
+        const match = !q || row.dataset.search.includes(q);
+        row.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+      noMatches.style.display = (q && visible === 0) ? '' : 'none';
+      countLabel.textContent = q ? `${baseLabel} (${visible} matching)` : baseLabel;
+    });
+  }
+</script>
+{% endblock %}

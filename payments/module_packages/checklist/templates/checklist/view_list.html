@@ -1,0 +1,80 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ checklist.name }}{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <div class="flex items-center justify-between flex-wrap gap-2">
+    <div class="flex items-center gap-2">
+      <a href="{{ url_for('checklist.index') }}" class="text-slate-500 text-sm">←</a>
+      <h1 class="text-xl font-semibold">{{ checklist.name }}</h1>
+    </div>
+    <div class="flex gap-2 text-xs">
+      <form method="POST" action="{{ url_for('checklist.duplicate_list', list_id=checklist.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="px-3 py-1.5 rounded-lg bg-surface-card border border-surface-border">Duplicate</button></form>
+      <form method="POST" action="{{ url_for('checklist.archive_list', list_id=checklist.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="px-3 py-1.5 rounded-lg bg-surface-card border border-surface-border">{{ 'Unarchive' if checklist.archived else 'Archive' }}</button></form>
+      <a href="{{ url_for('checklist.export_csv', list_id=checklist.id) }}" class="px-3 py-1.5 rounded-lg bg-surface-card border border-surface-border">Export CSV</a>
+      <form method="POST" action="{{ url_for('checklist.delete_list', list_id=checklist.id) }}" onsubmit="return confirm('Delete this checklist?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="px-3 py-1.5 rounded-lg bg-red-950 border border-red-800 text-red-300">Delete</button></form>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap gap-2 items-center text-sm">
+    <form method="GET" class="flex gap-2">
+      <input name="q" value="{{ search }}" placeholder="Search tasks…" class="bg-surface border border-surface-border rounded-lg px-3 py-1.5 text-sm">
+      <select name="sort" onchange="this.form.submit()" class="bg-surface border border-surface-border rounded-lg px-3 py-1.5 text-sm">
+        <option value="position" {{ 'selected' if sort == 'position' }}>Manual order</option>
+        <option value="priority" {{ 'selected' if sort == 'priority' }}>Priority</option>
+        <option value="due_date" {{ 'selected' if sort == 'due_date' }}>Due date</option>
+      </select>
+    </form>
+  </div>
+
+  <form method="POST" action="{{ url_for('checklist.new_task', list_id=checklist.id) }}" class="flex gap-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input name="title" placeholder="Add a task…" class="flex-1 bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm">
+    <select name="priority" class="bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm">
+      <option value="low">Low</option>
+      <option value="medium" selected>Medium</option>
+      <option value="high">High</option>
+    </select>
+    <button class="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 rounded-lg">Add</button>
+  </form>
+
+  <div class="space-y-2">
+    {% for t in tasks %}
+      <div class="bg-surface-card border border-surface-border rounded-xl p-3">
+        <div class="flex items-center gap-3">
+          <form method="POST" action="{{ url_for('checklist.toggle_task', task_id=t.id) }}" data-offline-toggle><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="w-5 h-5 rounded border {{ 'bg-accent border-accent' if t.completed else 'border-surface-border' }}"></button>
+          </form>
+          <div class="flex-1">
+            <p class="text-sm {{ 'line-through text-slate-500' if t.completed else 'text-slate-100' }}">{{ t.title }}</p>
+            <div class="flex gap-2 mt-1 text-xs text-slate-500">
+              {% if t.category %}<span>{{ t.category }}</span>{% endif %}
+              <span class="{{ 'text-red-400' if t.priority == 'high' else '' }}">{{ t.priority }}</span>
+              {% if t.due_date %}<span>due {{ t.due_date }}</span>{% endif %}
+              {% if t.estimated_minutes %}<span>~{{ t.estimated_minutes }}m</span>{% endif %}
+            </div>
+          </div>
+          <form method="POST" action="{{ url_for('checklist.new_subtask', task_id=t.id) }}" class="hidden sm:flex gap-1"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input name="title" placeholder="+ subtask" class="w-28 bg-surface border border-surface-border rounded px-2 py-1 text-xs">
+          </form>
+          <form method="POST" action="{{ url_for('checklist.delete_task', task_id=t.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="text-xs text-red-400">✕</button>
+          </form>
+        </div>
+        {% if t.subtasks %}
+          <div class="ml-8 mt-2 space-y-1">
+            {% for st in t.subtasks %}
+              <div class="flex items-center gap-2">
+                <form method="POST" action="{{ url_for('checklist.toggle_task', task_id=st.id) }}" data-offline-toggle><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="w-4 h-4 rounded border {{ 'bg-accent border-accent' if st.completed else 'border-surface-border' }}"></button>
+                </form>
+                <p class="text-xs {{ 'line-through text-slate-500' if st.completed else 'text-slate-300' }}">{{ st.title }}</p>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <p class="text-sm text-slate-500">No tasks yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

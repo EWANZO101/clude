@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}{{ item_type.name }} — {{ tenant_name }}{% endblock %}
+{% block content %}
+<style>
+  .inv-select { width:100%; padding:10px 12px; border-radius:7px; border:1px solid var(--panel-border); background:var(--bg); color:var(--text); font-size:14px; font-family:inherit; }
+  .inv-checkline { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13.5px; color:var(--muted); }
+  .inv-checkline input { width:auto; }
+  .bulk-bar { display:none; align-items:center; gap:10px; flex-wrap:wrap; background:var(--panel); border:1px solid var(--accent); border-radius:8px; padding:10px 14px; margin-bottom:12px; }
+  .bulk-bar.is-visible { display:flex; }
+</style>
+
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+  <h1 style="margin:0;">{{ item_type.name }}</h1>
+  <div style="display:flex; gap:8px;">
+    <a href="{{ url_for('inventory.type_manager') }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text);">← All Types</a>
+  </div>
+</div>
+{% if item_type.description %}<p class="muted">{{ item_type.description }}</p>{% endif %}
+
+<details class="category-group" open>
+  <summary>+ Add {{ item_type.name }}</summary>
+  <div class="category-body" style="padding:16px;">
+    <form method="post" action="{{ url_for('inventory.add_item', type_key=item_type.key) }}">
+      <label>Name</label>
+      <input type="text" name="name" required autofocus>
+      <label>SKU (optional — auto-generated if blank)</label>
+      <input type="text" name="sku">
+      <label>Serial number (optional — auto-generated if blank)</label>
+      <input type="text" name="serial_number">
+      <label>Quantity</label>
+      <input type="text" name="quantity_value" placeholder="e.g. 44">
+      <label>Unit</label>
+      <select name="quantity_unit" class="inv-select">
+        <option value="">— none —</option>
+        {% for kind, spec in measurement_kinds.items() %}
+          {% for unit_key, u in spec.units.items() %}
+            <option value="{{ unit_key }}">{{ spec.label }}: {{ u.label }} ({{ unit_key }})</option>
+          {% endfor %}
+        {% endfor %}
+      </select>
+      {% for f in fields %}
+        <label>{{ f.label }}{% if f.required %} *{% endif %}</label>
+        {% if f.field_type == 'boolean' %}
+          <div class="inv-checkline" style="margin-top:4px;"><input type="checkbox" name="field_{{ f.key }}"></div>
+        {% elif f.field_type == 'select' %}
+          <select name="field_{{ f.key }}" class="inv-select">
+            <option value="">—</option>
+            {% for opt in f.options %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}
+          </select>
+        {% else %}
+          <input type="text" name="field_{{ f.key }}">
+        {% endif %}
+      {% endfor %}
+      <button type="submit" style="margin-top:16px;">Add</button>
+    </form>
+  </div>
+</details>
+
+<form method="post" action="{{ url_for('inventory.bulk_action') }}" id="bulk-form">
+  <input type="hidden" name="type_key" value="{{ item_type.key }}">
+  <div class="bulk-bar" id="bulk-bar">
+    <span id="bulk-count" class="muted"></span>
+    <select name="action" class="inv-select" style="width:auto;" onchange="document.querySelectorAll('.bulk-extra').forEach(e=>e.style.display='none'); if(this.value) document.getElementById('bulk-extra-'+this.value).style.display='inline-flex';">
+      <option value="">Bulk action…</option>
+      <option value="delete">Delete</option>
+      <option value="set_status">Set status</option>
+      <option value="set_unit">Change unit</option>
+      <option value="set_type">Change type</option>
+    </select>
+    <span id="bulk-extra-set_status" class="bulk-extra" style="display:none;">
+      <input type="text" name="status" placeholder="active / inactive / scrapped…" style="width:auto;">
+    </span>
+    <span id="bulk-extra-set_unit" class="bulk-extra" style="display:none;">
+      <select name="quantity_unit" class="inv-select" style="width:auto;">
+        {% for kind, spec in measurement_kinds.items() %}
+          {% for unit_key, u in spec.units.items() %}<option value="{{ unit_key }}">{{ u.label }} ({{ unit_key }})</option>{% endfor %}
+        {% endfor %}
+      </select>
+    </span>
+    <span id="bulk-extra-set_type" class="bulk-extra" style="display:none;">
+      <select name="new_type_key" class="inv-select" style="width:auto;">
+        {% for at in all_types %}<option value="{{ at.key }}">{{ at.name }}</option>{% endfor %}
+      </select>
+    </span>
+    <span id="bulk-extra-delete" class="bulk-extra" style="display:none;"></span>
+    <button type="submit" onclick="return confirm('Apply this bulk action to the selected items?');">Apply</button>
+  </div>
+
+  {% if items %}
+  <div class="category-group">
+    <div class="category-body">
+    <div class="table-scroll">
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--panel-border);">
+          <th style="padding:10px; text-align:left; width:30px;"><input type="checkbox" id="check-all"></th>
+          <th style="padding:10px; text-align:left;">Name</th>
+          <th style="padding:10px; text-align:left;">SKU / Serial</th>
+          <th style="padding:10px; text-align:left;">Quantity</th>
+          <th style="padding:10px; text-align:left;">Status</th>
+          <th style="padding:10px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:10px;"><input type="checkbox" name="item_ids" value="{{ item.id }}" class="item-check"></td>
+            <td style="padding:10px; font-weight:600;">{{ item.name }}</td>
+            <td style="padding:10px;" class="muted">
+              {% if item.sku %}<div><code>{{ item.sku }}</code></div>{% endif %}
+              {% if item.serial_number %}<div style="font-size:12px;">SN {{ item.serial_number }}</div>{% endif %}
+            </td>
+            <td style="padding:10px;">
+              {% if item.quantity_value is not none %}{{ item.quantity_value }} {{ item.quantity_unit or '' }}{% else %}—{% endif %}
+            </td>
+            <td style="padding:10px;">
+              <span class="muted">{{ item.status }}</span>
+              {% if item.checked_out_by_name %}<div class="muted" style="font-size:12px;">with {{ item.checked_out_by_name }}</div>{% endif %}
+            </td>
+            <td style="padding:10px;">
+              <a href="{{ url_for('inventory.manage_item', item_id=item.id) }}" class="btn" style="padding:6px 10px; font-size:12.5px;">Manage</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    </div>
+  </div>
+  {% else %}
+    <div class="panel"><p class="muted" style="margin:0;">No {{ item_type.name.lower() }} yet.</p></div>
+  {% endif %}
+</form>
+
+<script>
+(function(){
+  var checkAll = document.getElementById('check-all');
+  var boxes = document.querySelectorAll('.item-check');
+  var bar = document.getElementById('bulk-bar');
+  var count = document.getElementById('bulk-count');
+  function refresh(){
+    var n = document.querySelectorAll('.item-check:checked').length;
+    bar.classList.toggle('is-visible', n > 0);
+    count.textContent = n + ' selected';
+  }
+  if (checkAll) checkAll.addEventListener('change', function(){
+    boxes.forEach(function(b){ b.checked = checkAll.checked; });
+    refresh();
+  });
+  boxes.forEach(function(b){ b.addEventListener('change', refresh); });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "TeamTreck URL Tracker",
+  "version": "1.0.0",
+  "description": "Reports time spent on websites to your TeamTreck time tracker. Only tracks while a TeamTreck timer is running; never tracks private/incognito windows.",
+  "permissions": ["tabs", "storage", "idle", "alarms"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
+  "action": {
+    "default_title": "TeamTreck URL Tracker"
+  },
+  "icons": {
+    "48": "icons/icon48.png"
+  }
+}

@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Reports - TeamTreck{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Reports</h1>
+
+<div class="flex flex-wrap gap-2 mb-6">
+    {% for key, label in report_types.items() %}
+    <a href="{{ url_for('reports.index', type=key, start=range_start, end=range_end, user_id=filter_user_id, project_id=filter_project_id, task_id=filter_task_id) }}"
+       class="px-3 py-1.5 text-sm rounded-lg {{ 'bg-brand-600 text-white' if report_type == key else 'bg-gray-100 dark:bg-gray-800' }}">
+        {{ label }}
+    </a>
+    {% endfor %}
+</div>
+
+<form method="GET" class="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800 mb-6 flex flex-wrap items-end gap-3">
+    <input type="hidden" name="type" value="{{ report_type }}">
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">From</label>
+        <input type="date" name="start" value="{{ range_start }}" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+    </div>
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">To</label>
+        <input type="date" name="end" value="{{ range_end }}" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+    </div>
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Employee</label>
+        <select name="user_id" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+            <option value="">All</option>
+            {% for m in members %}
+            <option value="{{ m.id }}" {{ 'selected' if filter_user_id == m.id|string }}>{{ m.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Project</label>
+        <select name="project_id" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+            <option value="">All</option>
+            {% for p in projects %}
+            <option value="{{ p.id }}" {{ 'selected' if filter_project_id == p.id|string }}>{{ p.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Task</label>
+        <select name="task_id" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+            <option value="">All</option>
+            {% for t in tasks %}
+            <option value="{{ t.id }}" {{ 'selected' if filter_task_id == t.id|string }}>{{ t.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="px-4 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium">Apply</button>
+
+    <div class="ml-auto flex gap-2">
+        <a href="{{ url_for('reports.export_csv', type=report_type, start=range_start, end=range_end, user_id=filter_user_id, project_id=filter_project_id, task_id=filter_task_id) }}"
+           class="px-3 py-1.5 text-sm rounded-lg bg-gray-700 hover:bg-gray-800 text-white">Export CSV</a>
+        <a href="{{ url_for('reports.export_pdf', type=report_type, start=range_start, end=range_end, user_id=filter_user_id, project_id=filter_project_id, task_id=filter_task_id) }}"
+           class="px-3 py-1.5 text-sm rounded-lg bg-gray-700 hover:bg-gray-800 text-white">Export PDF</a>
+    </div>
+</form>
+
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-800 text-left text-gray-500 dark:text-gray-400">
+                {% for h in headers %}
+                <th class="px-4 py-3">{{ h }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr class="border-b border-gray-100 dark:border-gray-800/50">
+                {% for cell in row %}
+                <td class="px-4 py-2{% if loop.index0 == 0 %}{% else %} text-gray-500 dark:text-gray-400{% endif %}{% if 'Time' in headers[loop.index0] or 'Duration' in headers[loop.index0] %} font-mono{% endif %}">{{ cell }}</td>
+                {% endfor %}
+            </tr>
+            {% else %}
+            <tr><td colspan="{{ headers|length }}" class="px-4 py-6 text-center text-gray-400">No data in this range.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

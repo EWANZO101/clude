@@ -1,0 +1,79 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field %}
+{% block title %}{{ "Add server" if is_new else "Edit " ~ server.title }} — Admin{% endblock %}
+{% block page_title %}{{ "Add server" if is_new else server.title }}{% endblock %}
+{% block content %}
+<form method="POST" novalidate class="space-y-6 max-w-4xl">
+  {{ form.hidden_tag() }}
+
+  <div class="card p-6">
+    <h2 class="font-semibold text-text-primary mb-4">Listing details</h2>
+    <div class="grid sm:grid-cols-2 gap-x-4">
+      {{ field(form.title) }}
+      {{ field(form.seller_id) }}
+      {{ field(form.category_id) }}
+      {{ field(form.status) }}
+      <div class="sm:col-span-2">{{ field(form.description, rows=4) }}</div>
+      {{ field(form.manufacturer) }}
+      {{ field(form.model) }}
+      {{ field(form.sku) }}
+      {{ field(form.serial_number) }}
+      {{ field(form.asset_number) }}
+    </div>
+  </div>
+
+  <div class="card p-6">
+    <h2 class="font-semibold text-text-primary mb-4">Specifications</h2>
+    <div class="grid sm:grid-cols-2 gap-x-4">
+      {{ field(form.cpu_summary) }}
+      {{ field(form.cpu_count) }}
+      {{ field(form.cpu_cores) }}
+      {{ field(form.cpu_threads) }}
+      {{ field(form.ram_summary) }}
+      {{ field(form.ram_capacity_gb) }}
+      {{ field(form.ram_slots) }}
+      {{ field(form.storage_summary) }}
+      {{ field(form.storage_type) }}
+      {{ field(form.storage_capacity_gb) }}
+      {{ field(form.drive_count) }}
+      {{ field(form.gpu_summary) }}
+      {{ field(form.gpu_count) }}
+      {{ field(form.network_summary) }}
+      {{ field(form.network_ports) }}
+      {{ field(form.bandwidth_mbps) }}
+      {{ field(form.ip_addresses_included) }}
+      {{ field(form.raid_summary) }}
+      {{ field(form.psu_count) }}
+      {{ field(form.psu_wattage) }}
+      {{ field(form.chassis_summary) }}
+      {{ field(form.rack_units) }}
+      {{ field(form.operating_system) }}
+    </div>
+  </div>
+
+  <div class="card p-6">
+    <h2 class="font-semibold text-text-primary mb-4">Pricing</h2>
+    <div class="grid sm:grid-cols-3 gap-x-4">
+      {{ field(form.monthly_price) }}
+      {{ field(form.one_time_price) }}
+      {{ field(form.setup_fee) }}
+    </div>
+  </div>
+
+  <div class="card p-6">
+    <h2 class="font-semibold text-text-primary mb-4">Location</h2>
+    <div class="grid sm:grid-cols-2 gap-x-4">
+      {{ field(form.country, placeholder="GB") }}
+      {{ field(form.region) }}
+      {{ field(form.city) }}
+      {{ field(form.datacenter_name) }}
+      {{ field(form.datacenter_code) }}
+    </div>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <button type="submit" class="btn-primary">{{ "Create server" if is_new else "Save changes" }}</button>
+    <a href="{{ url_for('admin.servers') }}" class="btn-ghost">Cancel</a>
+  </div>
+</form>
+{% endblock %}

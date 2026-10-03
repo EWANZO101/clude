@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Sign in · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="min-h-screen lg:grid lg:grid-cols-2">
+
+  <!-- Desktop/tablet-landscape only: branding panel -->
+  <div class="relative hidden overflow-hidden bg-surface lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
+    <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent-muted/40 via-transparent to-transparent"></div>
+
+    <div class="relative flex items-center gap-2 font-display text-lg font-semibold text-ink">
+      <span class="status-dot bg-accent"></span>
+      {{ app_name }}
+    </div>
+
+    <div class="relative max-w-md">
+      <h1 class="font-display text-3xl font-semibold leading-tight text-ink xl:text-4xl">
+        Your schedule, on your own server.
+      </h1>
+      <p class="mt-4 text-sm leading-relaxed text-ink-muted">
+        Set your hours, share one link, and let people book time that actually
+        works for you — no third party holding your calendar data.
+      </p>
+
+      <a href="{{ url_for('public.booking_types') }}" class="card mt-8 block max-w-xs p-5 hover:border-accent/50 transition-colors group">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-ink">Looking to book time?</span>
+          <span class="status-pill border-status-available/30 bg-status-available/10 text-status-available !py-1 !px-2.5 text-xs">
+            <span class="status-dot h-2 w-2 bg-status-available animate-pulse-soft"></span>
+            Available
+          </span>
+        </div>
+        <p class="mt-2 text-xs text-ink-muted">This sign-in page is for the owner. Customers book here &rarr;</p>
+      </a>
+    </div>
+
+    <p class="relative text-xs text-ink-faint">Self-hosted · Open source · Your data stays with you</p>
+  </div>
+
+  <!-- Form: centered on every size, the only thing shown on mobile/tablet-portrait -->
+  <div class="flex min-h-screen flex-col items-center justify-center px-4 py-12 lg:min-h-0 lg:px-8">
+    <div class="w-full max-w-sm">
+
+      <div class="mb-8 flex flex-col items-center text-center lg:hidden">
+        <span class="status-pill border-accent/30 bg-accent-muted text-accent mb-4">
+          <span class="status-dot bg-accent animate-pulse-soft"></span>
+          {{ app_name }}
+        </span>
+      </div>
+
+      <div class="mb-6 text-center lg:text-left">
+        <h1 class="font-display text-2xl font-semibold text-ink">Sign in</h1>
+        <p class="mt-1.5 text-sm text-ink-muted">Owner sign-in — manage your schedule and bookings.</p>
+      </div>
+
+      <a href="{{ url_for('public.booking_types') }}" class="mb-6 flex items-center justify-between gap-3 rounded-lg border border-accent/30 bg-accent-muted/60 px-4 py-3 text-sm hover:border-accent/50 transition-colors lg:hidden">
+        <span class="text-ink">Just want to book an appointment?</span>
+        <span class="shrink-0 font-medium text-accent">Book now &rarr;</span>
+      </a>
+
+      {% include "partials/flash.html" %}
+
+      <div class="card p-6 sm:p-7">
+        <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+          {{ form.hidden_tag() }}
+
+          <div class="mb-4">
+            <label class="field-label" for="{{ form.email.id }}">Email</label>
+            {{ form.email(class_="field-input", placeholder="you@example.com", autocomplete="email", autofocus=true) }}
+            {% for error in form.email.errors %}
+              <p class="field-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+
+          <div class="mb-4">
+            <label class="field-label" for="{{ form.password.id }}">Password</label>
+            {{ form.password(class_="field-input", placeholder="••••••••", autocomplete="current-password") }}
+            {% for error in form.password.errors %}
+              <p class="field-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+
+          <label class="mb-6 flex items-center gap-2 text-sm text-ink-muted">
+            {{ form.remember_me(class_="rounded border-border bg-surface-raised text-accent focus:ring-accent focus:ring-offset-base") }}
+            Keep me signed in
+          </label>
+
+          <button type="submit" class="btn-primary w-full">Sign in</button>
+        </form>
+      </div>
+
+      <p class="mt-6 text-center text-xs text-ink-faint lg:text-left">
+        Not the owner?
+        <a href="{{ url_for('public.booking_types') }}" class="text-accent hover:underline">Book an appointment</a>
+        instead.
+      </p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

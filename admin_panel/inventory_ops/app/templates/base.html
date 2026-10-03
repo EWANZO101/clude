@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ tenant_name }}{% endblock %}</title>
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('inventory-ops-theme');
+        if (saved === 'light' || saved === 'dark') document.documentElement.setAttribute('data-theme', saved);
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    :root{
+      --bg:#0c1120; --sidebar:#10162a; --panel:#161d33; --panel-border:#232b45;
+      --text:#e6e9f2; --muted:#8b93a8; --accent:#6d5ef0; --blue:#3b82f6;
+      --green:#22c55e; --orange:#f59e0b; --red:#ef4444;
+      --panel-2:#141a30;
+      --shadow-sm:0 1px 2px rgba(0,0,0,.2);
+      --shadow-md:0 4px 14px rgba(0,0,0,.24);
+      --radius:10px; --radius-sm:7px;
+      --ease:cubic-bezier(.2,.7,.3,1);
+    }
+    :root[data-theme="light"]{
+      --bg:#f4f5f8; --sidebar:#ffffff; --panel:#ffffff; --panel-border:#dde1ea;
+      --text:#1a1f2e; --muted:#6b7284; --accent:#6d5ef0; --blue:#2563eb;
+      --green:#16a34a; --orange:#d97706; --red:#dc2626;
+      --panel-2:#eef0f5;
+      --shadow-sm:0 1px 2px rgba(20,24,40,.06);
+      --shadow-md:0 4px 14px rgba(20,24,40,.08);
+    }
+    html[data-theme="light"]{scrollbar-color:#c7cce0 var(--bg);}
+    :root[data-theme="light"] ::selection{background:rgba(109,94,240,.18); color:#1a1f2e;}
+    *{box-sizing:border-box;}
+    html{scrollbar-color:#2c3454 var(--bg);}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; font-size:14px;
+      -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    }
+    ::selection{background:rgba(109,94,240,.3); color:#fff;}
+    a{color:var(--accent); text-decoration:none;}
+    a:hover{text-decoration:underline;}
+    h1{font-size:20px; font-weight:600; letter-spacing:-.01em;}
+    h1, h2, h3{color:var(--text);}
+    .layout{display:flex; min-height:100vh;}
+    .sidebar{
+      width:220px; background:var(--sidebar); border-right:1px solid var(--panel-border);
+      display:flex; flex-direction:column; padding:16px 0; flex-shrink:0;
+    }
+    .brand{
+      padding:0 16px 16px; font-weight:700; border-bottom:1px solid var(--panel-border);
+      margin-bottom:12px; display:flex; align-items:center; gap:10px; letter-spacing:-.01em;
+    }
+    .brand::before{
+      content:""; width:24px; height:24px; border-radius:6px; flex-shrink:0; background:var(--accent);
+    }
+    .nav-group{margin-bottom:4px;}
+    .nav-group summary{
+      padding:8px 16px; font-size:11px; color:var(--muted); text-transform:uppercase;
+      letter-spacing:.05em; cursor:pointer; list-style:none; user-select:none;
+    }
+    .nav-group summary::-webkit-details-marker{display:none;}
+    .nav-group summary::before{content:"▸"; display:inline-block; width:14px; transition:transform .15s var(--ease);}
+    .nav-group[open] summary::before{transform:rotate(90deg);}
+    .nav-item{
+      display:block; padding:8px 16px 8px 30px; color:var(--text); font-size:13.5px;
+      position:relative; border-radius:0 6px 6px 0; margin-right:8px;
+    }
+    .nav-item::before{
+      content:""; position:absolute; left:0; top:4px; bottom:4px; width:2px;
+      background:var(--accent); transform:scaleY(0);
+    }
+    .nav-item:hover{background:rgba(255,255,255,.04); text-decoration:none;}
+    .nav-item.active{background:rgba(109,94,240,.12); color:var(--accent); font-weight:600;}
+    .nav-item.active::before{transform:scaleY(1);}
+    .sidebar-footer{margin-top:auto; padding:12px 16px; border-top:1px solid var(--panel-border); font-size:12.5px; color:var(--muted);}
+    .main{flex:1; padding:24px; overflow-y:auto;}
+    .panel{
+      background:var(--panel); border:1px solid var(--panel-border); border-radius:var(--radius);
+      padding:20px; margin-bottom:16px;
+    }
+    .stat-card{
+      background:var(--panel); border:1px solid var(--panel-border); border-radius:var(--radius);
+      padding:16px; text-align:center;
+    }
+    .stat-card .value{font-size:24px; font-weight:700; letter-spacing:-.01em;}
+    .stat-card .label{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:4px;}
+    .muted{color:var(--muted);}
+    label{display:block; margin:14px 0 6px; color:var(--muted); font-size:13px;}
+    input[type=text], input[type=password]{
+      width:100%; padding:10px 12px; border-radius:var(--radius-sm); border:1px solid var(--panel-border);
+      background:var(--bg); color:var(--text); font-size:14px;
+    }
+    input:focus{outline:2px solid rgba(109,94,240,.3); border-color:var(--accent);}
+    button, .btn{
+      display:inline-block; background:var(--accent); color:#fff; border:none;
+      padding:10px 16px; border-radius:var(--radius-sm); font-size:14px; cursor:pointer; font-weight:600;
+    }
+    button:hover, .btn:hover{background-color:#7c6ef5;}
+    button:active, .btn:active{transform:translateY(1px);}
+    .flash{padding:10px 14px; border-radius:var(--radius-sm); margin-bottom:12px; font-size:13.5px;}
+    .flash-success{background:rgba(34,197,94,.1); border:1px solid var(--green); color:var(--green);}
+    .flash-danger{background:rgba(239,68,68,.1); border:1px solid var(--red); color:var(--red);}
+    .flash-warning{background:rgba(245,158,11,.1); border:1px solid var(--orange); color:var(--orange);}
+    code{font-family:ui-monospace,monospace; background:var(--bg); padding:2px 6px; border-radius:4px; border:1px solid var(--panel-border);}
+    table{font-variant-numeric:tabular-nums;}
+    tbody tr:hover{background:rgba(255,255,255,.025);}
+    thead th{
+      text-align:left; padding:10px 14px; font-size:11px; color:var(--muted);
+      text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--panel-border);
+    }
+    .row-actions{display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; align-items:center;}
+    .row-actions form{display:inline-flex;}
+    .table-scroll{overflow-x:auto;}
+    .category-group{
+      margin-top:10px; background:var(--panel); border:1px solid var(--panel-border);
+      border-radius:var(--radius); overflow:hidden;
+    }
+    .category-group summary{cursor:pointer; padding:12px 16px; font-weight:600; list-style:none;}
+    .category-group summary::-webkit-details-marker{display:none;}
+    .category-group summary:hover{background:rgba(255,255,255,.03);}
+    .category-group[open] summary{border-bottom:1px solid var(--panel-border);}
+    #theme-toggle{
+      width:100%; margin-top:10px; background:transparent; border:1px solid var(--panel-border);
+      color:var(--text); font-weight:400; font-size:12.5px; padding:8px 10px;
+      display:flex; align-items:center; justify-content:center; gap:6px;
+    }
+    #theme-toggle:hover{background-color:rgba(255,255,255,.04);}
+    .menu-toggle{
+      display:none; position:sticky; top:0; z-index:30;
+      width:38px; height:38px; align-items:center; justify-content:center;
+      background:var(--panel); border:1px solid var(--panel-border); border-radius:var(--radius-sm);
+      color:var(--text); margin:12px; font-size:18px; line-height:1;
+    }
+    .sidebar-overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:35;}
+    @media (max-width:720px){
+      .menu-toggle{display:flex;}
+      .sidebar{
+        position:fixed; top:0; bottom:0; left:0; z-index:40; box-shadow:var(--shadow-md);
+        transform:translateX(-100%); transition:transform .2s var(--ease);
+      }
+      .sidebar.is-open{transform:translateX(0);}
+      .sidebar-overlay.is-open{display:block;}
+      .main{padding:16px;}
+    }
+  </style>
+</head>
+<body>
+{% block body %}
+<button type="button" class="menu-toggle" id="menu-toggle" aria-label="Open menu">☰</button>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="layout">
+  <div class="sidebar" id="sidebar">
+    <div class="brand">{{ tenant_name }}</div>
+    <a class="nav-item{{ ' active' if request.endpoint == 'dashboard.index' }}" href="{{ url_for('dashboard.index') }}" style="padding-left:16px; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Overview</a>
+    <details class="nav-group" open>
+      <summary>Inventory</summary>
+      {% for t in sidebar_item_types %}
+        <a class="nav-item{{ ' active' if request.endpoint == 'inventory.list_type_items' and request.view_args.type_key == t.key }}"
+           href="{{ url_for('inventory.list_type_items', type_key=t.key) }}">{{ t.name }}</a>
+      {% endfor %}
+      {% if is_admin %}
+        <a class="nav-item{{ ' active' if request.endpoint == 'inventory.type_manager' }}" href="{{ url_for('inventory.type_manager') }}">Manage Types</a>
+      {% endif %}
+    </details>
+    {% if is_admin %}
+    <details class="nav-group">
+      <summary>Admin</summary>
+      <a class="nav-item{{ ' active' if request.endpoint == 'settings.index' }}" href="{{ url_for('settings.index') }}">Settings</a>
+    </details>
+    {% endif %}
+    <div class="sidebar-footer">
+      {% if app_settings.auth_enabled %}
+        {% if current_user.is_authenticated %}
+          {{ current_user.username }} ({{ current_user.role }})<br>
+          <a href="{{ url_for('auth.logout') }}">Log out</a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}">Log in</a>
+        {% endif %}
+      {% else %}
+        Shared access — login is off
+      {% endif %}
+      <button type="button" id="theme-toggle">
+        <span id="theme-toggle-icon">🌙</span> <span id="theme-toggle-label">Dark mode</span>
+      </button>
+    </div>
+  </div>
+  <div class="main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}
+<script>
+(function () {
+  var btn = document.getElementById('theme-toggle');
+  var icon = document.getElementById('theme-toggle-icon');
+  var label = document.getElementById('theme-toggle-label');
+  function currentTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  }
+  function paint() {
+    var t = currentTheme();
+    if (icon) icon.textContent = t === 'light' ? '☀️' : '🌙';
+    if (label) label.textContent = t === 'light' ? 'Light mode' : 'Dark mode';
+  }
+  if (btn) {
+    btn.addEventListener('click', function () {
+      var next = currentTheme() === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('inventory-ops-theme', next); } catch (e) {}
+      paint();
+    });
+  }
+  paint();
+
+  var menuToggle = document.getElementById('menu-toggle');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+  function closeMenu() {
+    if (sidebar) sidebar.classList.remove('is-open');
+    if (overlay) overlay.classList.remove('is-open');
+  }
+  if (menuToggle && sidebar && overlay) {
+    menuToggle.addEventListener('click', function () {
+      sidebar.classList.toggle('is-open');
+      overlay.classList.toggle('is-open');
+    });
+    overlay.addEventListener('click', closeMenu);
+    Array.prototype.forEach.call(sidebar.querySelectorAll('a.nav-item'), function (a) {
+      a.addEventListener('click', closeMenu);
+    });
+  }
+})();
+</script>
+</body>
+</html>

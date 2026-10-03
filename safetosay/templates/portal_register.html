@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Report Portal — Register — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div style="max-width:440px;margin:2.5rem auto">
+  <div style="text-align:center;margin-bottom:1.75rem">
+    <div style="font-size:2rem;margin-bottom:.5rem">🔐</div>
+    <h1 style="font-size:1.4rem;font-weight:700">Report Portal</h1>
+    <p style="color:var(--muted);font-size:.875rem;margin-top:.35rem">Create an account to track the status of your reports.</p>
+  </div>
+  <div style="padding:.75rem 1rem;background:rgba(88,166,255,.07);border:1px solid rgba(88,166,255,.2);border-radius:8px;margin-bottom:1.25rem;font-size:.85rem;color:#cce0ff">
+    ℹ Your report portal account is completely separate from your main forum account. Only a username and password are needed.
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <form method="POST">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" name="username" class="form-input" required minlength="3" placeholder="Choose a username">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-input" required minlength="6" placeholder="Minimum 6 characters">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <input type="password" name="confirm" class="form-input" required placeholder="Repeat password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:.6rem">Create Report Account</button>
+      </form>
+    </div>
+  </div>
+  <p style="text-align:center;margin-top:1rem;font-size:.875rem;color:var(--muted)">
+    Already have an account? <a href="{{ url_for('portal_login') }}" style="color:var(--accent)">Log in</a>
+  </p>
+  <p style="text-align:center;margin-top:.5rem;font-size:.875rem;color:var(--muted)">
+    <a href="{{ url_for('index') }}" style="color:var(--muted)">← Back to main site</a>
+  </p>
+</div>
+{% endblock %}

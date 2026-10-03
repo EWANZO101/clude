@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Marketplace listing — {{ product.name }} — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-1">Marketplace listing</h1>
+  <p class="text-sm text-gray-500 mb-6">{{ product.name }} · {{ product.product_id }}</p>
+
+  <form method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="flex items-center gap-2 text-sm text-gray-300">
+      <input type="checkbox" name="marketplace_listed" {{ 'checked' if product.marketplace_listed }}
+        class="rounded border-surface-border bg-surface-card">
+      List this product on the public marketplace
+    </label>
+
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Purchase link</label>
+      <input type="text" name="purchase_url" value="{{ product.purchase_url or '' }}" placeholder="https://your-tebex-store.com/package/..."
+        class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+      <p class="text-xs text-gray-500 mt-1">Where customers go to actually buy it - your Tebex store page, since checkout happens outside this platform.</p>
+    </div>
+
+    <button type="submit" class="bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition">
+      Save
+    </button>
+  </form>
+
+  {% if product.marketplace_listed %}
+    <a href="{{ url_for('marketplace.product_page', product_id=product.product_id) }}" class="inline-block mt-4 text-sm text-brand hover:text-brand-hover">
+      View public listing →
+    </a>
+  {% endif %}
+</div>
+{% endblock %}

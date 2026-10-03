@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Installers — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">Provisioning</p>
+    <h1 class="page-title">Installers</h1>
+    <p class="page-sub">One-click app installs</p>
+  </div>
+</div>
+
+<div class="grid">
+  {% for installer in installers %}
+  <div class="card">
+    <div class="card-label">{{ installer.name }}</div>
+    <p class="page-sub" style="margin: 8px 0 14px;">{{ installer.description }}</p>
+    <div class="btn-row">
+      <form method="POST" action="{{ url_for('installers.run', key=installer.key) }}" onsubmit="return confirm('Install {{ installer.name }}? This can take several minutes.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-primary" type="submit">Install</button>
+      </form>
+      <form method="POST" action="{{ url_for('installers.repair', key=installer.key) }}" onsubmit="return confirm('Repair {{ installer.name }}?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-secondary" type="submit">Repair</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card flush tight" style="margin-top:20px;">
+  <div class="card-label" style="padding:16px 18px 0;">Recent jobs</div>
+  <div class="table-wrap">
+    <table class="data-table" style="margin-top:8px;">
+      <thead>
+        <tr>
+          <th>Job</th>
+          <th>Status</th>
+          <th>Started</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in jobs %}
+        <tr>
+          <td class="primary"><a href="{{ url_for('installers.job_page', job_id=job.id) }}">{{ job.name }}</a></td>
+          <td>
+            <span class="status-dot {{ 'ok' if job.status == 'success' else ('danger' if job.status == 'failed' else ('warn' if job.status in ('pending','running') else '')) }}"></span>
+            {{ job.status }} ({{ job.progress }}%)
+          </td>
+          <td class="mono">{{ job.created_at.strftime('%Y-%m-%d %H:%M') if job.created_at else '' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3"><div class="empty-state">No jobs yet.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

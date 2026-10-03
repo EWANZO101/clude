@@ -1,0 +1,147 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Discount Codes — Admin{% endblock %}
+{% block admin_content %}
+
+<div style="margin-bottom:1.25rem;">
+  <h1 class="font-display" style="font-size:1.6rem;margin-bottom:0.2rem;">Discount Codes</h1>
+  <p style="color:var(--text-muted);font-size:0.85rem;font-style:italic;">
+    Customers enter these on the commission form to get a discount.
+  </p>
+</div>
+
+<!-- ── Add new code ── -->
+<div class="card" style="margin-bottom:1.5rem;padding:0;">
+  <div style="padding:0.85rem 1rem;border-bottom:1px solid var(--border);">
+    <div class="font-display" style="font-size:0.78rem;color:var(--accent);letter-spacing:.06em;">+ CREATE CODE</div>
+  </div>
+  <form method="POST" action="/admin/discounts/add" style="padding:1rem;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;margin-bottom:0.85rem;">
+      <div>
+        <label class="form-label">Code *</label>
+        <input type="text" name="code" class="input" required
+               placeholder="e.g. SUMMER20"
+               style="text-transform:uppercase;"
+               oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div>
+        <label class="form-label">Type</label>
+        <select name="type" class="input" id="discType" onchange="updatePreview()">
+          <option value="percent">Percentage off</option>
+          <option value="fixed">Fixed $ off</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Value *</label>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <span id="valPrefix" style="color:var(--text-muted);">%</span>
+          <input type="number" name="value" class="input" required
+                 min="0" step="0.01" placeholder="20"
+                 oninput="updatePreview()" id="discVal">
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Max Uses <span style="color:var(--text-muted);font-weight:400;">(0 = ∞)</span></label>
+        <input type="number" name="max_uses" class="input" min="0" value="0" placeholder="0">
+      </div>
+      <div>
+        <label class="form-label">Expires <span style="color:var(--text-muted);font-weight:400;">(MM/DD/YYYY)</span></label>
+        <input type="text" name="expires" class="input" placeholder="Leave blank = never">
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <button type="submit" class="btn btn-primary btn-sm">+ Create Code</button>
+      <span id="discPreview" style="font-size:0.88rem;color:var(--text-muted);font-style:italic;"></span>
+    </div>
+  </form>
+</div>
+
+<!-- ── Code list ── -->
+{% if codes %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:var(--bg-elevated);">
+          <th style="padding:0.65rem 1rem;text-align:left;font-family:'Cinzel',serif;font-size:0.7rem;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;">Code</th>
+          <th style="padding:0.65rem 0.75rem;text-align:left;font-family:'Cinzel',serif;font-size:0.7rem;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;">Discount</th>
+          <th style="padding:0.65rem 0.75rem;text-align:center;font-family:'Cinzel',serif;font-size:0.7rem;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;">Uses</th>
+          <th style="padding:0.65rem 0.75rem;text-align:left;font-family:'Cinzel',serif;font-size:0.7rem;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;">Expires</th>
+          <th style="padding:0.65rem 0.75rem;text-align:center;font-family:'Cinzel',serif;font-size:0.7rem;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;">Status</th>
+          <th style="padding:0.65rem 0.75rem;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dc in codes %}
+        <tr style="border-top:1px solid var(--border);{{ 'opacity:0.45;' if not dc.active }}">
+          <td style="padding:0.7rem 1rem;">
+            <code style="font-family:'JetBrains Mono',monospace;font-size:0.92rem;
+                         color:var(--accent);background:var(--accent-glow);
+                         padding:0.2rem 0.55rem;border-radius:5px;letter-spacing:.04em;">
+              {{ dc.code }}
+            </code>
+          </td>
+          <td style="padding:0.7rem 0.75rem;color:var(--gold);font-weight:600;font-size:0.95rem;">
+            {% if dc.type == 'percent' %}{{ dc.value|int }}% off
+            {% else %}${{ "%.2f"|format(dc.value) }} off{% endif %}
+          </td>
+          <td style="padding:0.7rem 0.75rem;text-align:center;font-size:0.9rem;color:var(--text-secondary);">
+            {{ dc.uses }}{% if dc.max_uses > 0 %} / {{ dc.max_uses }}{% endif %}
+          </td>
+          <td style="padding:0.7rem 0.75rem;font-size:0.88rem;color:var(--text-muted);">
+            {{ dc.expires if dc.expires else '—' }}
+          </td>
+          <td style="padding:0.7rem 0.75rem;text-align:center;">
+            <span style="display:inline-block;padding:0.15rem 0.65rem;border-radius:999px;
+                         font-family:'Cinzel',serif;font-size:0.68rem;font-weight:700;
+                         background:{{ 'rgba(34,197,94,.12)' if dc.active else 'rgba(239,68,68,.1)' }};
+                         border:1px solid {{ 'rgba(34,197,94,.3)' if dc.active else 'rgba(239,68,68,.25)' }};
+                         color:{{ '#86efac' if dc.active else '#fca5a5' }};">
+              {{ 'Active' if dc.active else 'Disabled' }}
+            </span>
+          </td>
+          <td style="padding:0.7rem 0.75rem;">
+            <div style="display:flex;gap:0.4rem;justify-content:flex-end;">
+              <form method="POST" action="/admin/discounts/{{ dc.id }}/toggle">
+                <button type="submit" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.65rem;font-size:0.75rem;">
+                  {{ '🚫 Disable' if dc.active else '✓ Enable' }}
+                </button>
+              </form>
+              <form method="POST" action="/admin/discounts/{{ dc.id }}/delete"
+                    onsubmit="return confirm('Delete {{ dc.code }}?')">
+                <button type="submit" class="btn btn-ghost btn-sm"
+                        style="padding:0.3rem 0.65rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">
+                  🗑
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:2.5rem;color:var(--text-muted);font-style:italic;">
+  No discount codes yet. Create one above.
+</div>
+{% endif %}
+
+<script>
+function updatePreview() {
+  const type = document.getElementById('discType').value;
+  const val  = parseFloat(document.getElementById('discVal').value) || 0;
+  const pre  = document.getElementById('valPrefix');
+  const prev = document.getElementById('discPreview');
+  pre.textContent = type === 'percent' ? '%' : '$';
+  if (val > 0) {
+    prev.textContent = type === 'percent'
+      ? `Customers get ${val}% off their total`
+      : `Customers get $${val.toFixed(2)} off their total`;
+  } else {
+    prev.textContent = '';
+  }
+}
+updatePreview();
+</script>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket.subject }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-lg font-semibold text-gray-100">{{ ticket.subject }}</h1>
+    <span class="text-xs px-2 py-1 rounded bg-panel border border-border text-gray-400">
+      {{ ticket.status.replace("_", " ") }}
+    </span>
+  </div>
+
+  <div class="space-y-4 mb-6">
+    {% for message in ticket.messages %}
+    <div class="rounded-lg p-4 {{ 'bg-blue-900/20 border border-blue-800 ml-8' if message.is_staff_reply else 'bg-panel border border-border mr-8' }}">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold {{ 'text-blue-300' if message.is_staff_reply else 'text-gray-300' }}">
+          {{ "Support team" if message.is_staff_reply else "You" }}
+        </span>
+        <span class="text-xs text-gray-600">{{ message.created_at }}</span>
+      </div>
+      <p class="text-sm text-gray-300 whitespace-pre-wrap">{{ message.body }}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if ticket.status not in ("resolved", "closed") %}
+  <form method="POST" novalidate class="bg-panel border border-border rounded-lg p-4 space-y-3">
+    {{ form.hidden_tag() }}
+    {% include "_form_errors.html" %}
+    {{ form.body(rows=4, class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+    {{ form.submit(class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-500") }}
+  </form>
+  {% else %}
+  <p class="text-sm text-gray-500">This ticket is closed.</p>
+  {% endif %}
+</div>
+{% endblock %}

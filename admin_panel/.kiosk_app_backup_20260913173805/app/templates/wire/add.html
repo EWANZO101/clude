@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Add Spool — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('wire.list_spools') }}">← Welding Wire</a></p>
+<div class="panel" style="max-width:480px;">
+  <h1>Add Single Spool</h1>
+  <p class="muted" style="font-size:13px;">Receiving several identical spools at once? Use <a href="{{ url_for('wire.bulk_add') }}">Bulk Add</a> instead.</p>
+  <form method="post">
+    <label>Wire type (e.g. ER70S-6)</label>
+    <input type="text" name="wire_type" required autofocus>
+    <label>Diameter (e.g. .035")</label>
+    <input type="text" name="diameter">
+    <label>Weight (lbs)</label>
+    <input type="text" name="weight_lbs">
+    <label>Unit cost</label>
+    <input type="text" name="unit_cost">
+    <label>Barcode (optional — leave blank to auto-generate)</label>
+    <input type="text" name="barcode_code">
+    <button type="submit" style="margin-top:18px;">Save</button>
+  </form>
+</div>
+{% endblock %}

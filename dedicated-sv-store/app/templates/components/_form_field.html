@@ -1,0 +1,18 @@
+{% macro field(f) %}
+<div class="mb-4">
+  {{ f.label(class="field-label") }}
+  {{ f(class="input-field", **kwargs) }}
+  {% if f.errors %}
+    {% for error in f.errors %}
+    <p class="field-error">{{ error }}</p>
+    {% endfor %}
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro checkbox(f) %}
+<div class="mb-4 flex items-center gap-2">
+  {{ f(class="rounded border-border bg-surface-800 text-brand-600 focus:ring-brand-500") }}
+  {{ f.label(class="text-sm text-text-secondary") }}
+</div>
+{% endmacro %}

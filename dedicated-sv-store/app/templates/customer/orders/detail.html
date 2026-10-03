@@ -1,0 +1,59 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_order_badges.html" import status_badge with context %}
+{% from "components/_progress_stepper.html" import progress_stepper with context %}
+{% block title %}{{ order.order_number }} — {{ app_name }}{% endblock %}
+{% block page_title %}{{ order.order_number }}{% endblock %}
+{% block header_actions %}
+{% if order.seller_id %}
+<a href="{{ url_for('customer.order_chat', order_id=order.id) }}" class="btn-secondary">Message seller</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+{% set progress = order.progress_info %}
+<div class="card p-5 mb-6">
+  {{ progress_stepper(progress.steps, progress.current_index, progress.percent, stopped=progress.stopped, stopped_label=progress.stopped_label) }}
+</div>
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-6">
+    <div class="card">
+      <table class="table-base">
+        <thead><tr><th>Item</th><th>Qty</th><th>Monthly</th></tr></thead>
+        <tbody>
+          {% for item in order.items %}
+          <tr>
+            <td class="font-medium text-text-primary">{{ item.title_snapshot }}</td>
+            <td>{{ item.quantity }}</td>
+            <td class="text-text-secondary">£{{ item.line_total }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card p-5">
+      <h2 class="font-semibold text-text-primary mb-4">Timeline</h2>
+      <div class="space-y-3">
+        {% for entry in order.status_history %}
+        <div class="flex gap-3 text-sm">
+          <span class="text-text-muted whitespace-nowrap">{{ entry.created_at.strftime("%d %b %Y %H:%M") }}</span>
+          <span class="text-text-secondary">{{ entry.note or (entry.new_status|hwval ~ " status set") }}</span>
+        </div>
+        {% else %}
+        <p class="text-text-muted text-sm">No status updates yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-5">
+    <dl class="space-y-3 text-sm">
+      <div class="flex justify-between"><dt class="text-text-muted">Status</dt><dd>{{ status_badge(order.status) }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Payment</dt><dd class="text-text-primary">{{ order.payment_status|hwval }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Fulfilment</dt><dd class="text-text-primary">{{ order.fulfilment_status|hwval }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Subtotal</dt><dd class="text-text-primary">£{{ order.subtotal }}</dd></div>
+      {% if order.setup_total %}<div class="flex justify-between"><dt class="text-text-muted">Setup</dt><dd class="text-text-primary">£{{ order.setup_total }}</dd></div>{% endif %}
+      <div class="flex justify-between border-t border-border pt-3"><dt class="text-text-primary font-medium">Total</dt><dd class="text-text-primary font-semibold">£{{ order.total }}</dd></div>
+    </dl>
+  </div>
+</div>
+{% endblock %}

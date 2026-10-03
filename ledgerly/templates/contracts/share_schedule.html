@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set up payment schedule · {{ contract.title }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink: { DEFAULT: '#0E1210', surface: '#161B18', raised: '#1E2420', line: '#2B322C' },
+      gold: { DEFAULT: '#B08D3E', soft: '#8F7434', bright: '#D4B364' },
+      parchment: '#F3EFE4', muted: '#95907F', sage: '#5C8367', brick: '#B9584C' },
+    fontFamily: { display: ['Fraunces', 'serif'], sans: ['Inter', 'sans-serif'], mono: ['"JetBrains Mono"', 'monospace'] }
+  } } }
+</script>
+<style>
+  body {
+    background-color: #0A0D0C;
+    background-image:
+      radial-gradient(ellipse 900px 500px at 12% -8%, rgba(176,141,62,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(92,131,103,0.05), transparent 55%);
+    background-attachment: fixed;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/></svg>");
+  }
+  #app-root { position: relative; z-index: 1; }
+  ::selection { background: #B08D3E; color: #0E1210; }
+
+  .num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  .card {
+    background: linear-gradient(180deg, rgba(32,38,34,0.62), rgba(19,23,20,0.85));
+    border: 1px solid rgba(243,239,228,0.065);
+    border-radius: 16px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.035) inset, 0 16px 32px -20px rgba(0,0,0,0.65);
+  }
+  .card-raised {
+    background: linear-gradient(180deg, rgba(40,47,41,0.85), rgba(24,29,26,0.92));
+    border-color: rgba(176,141,62,0.16);
+  }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+    background: linear-gradient(180deg, #D9BC72, #B08D3E 65%, #9c7c34);
+    color: #171308; font-weight: 600; border-radius: 10px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset, 0 1px 2px rgba(0,0,0,0.2), 0 10px 20px -10px rgba(176,141,62,0.55);
+    transition: filter .15s ease, transform .12s ease, box-shadow .15s ease;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 14px 26px -10px rgba(176,141,62,0.65); }
+  .btn-primary:active { transform: translateY(0); filter: brightness(0.98); }
+  .btn-primary:disabled { opacity: .4; filter: none; transform: none; cursor: not-allowed; }
+
+  .btn-secondary {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+    background: rgba(243,239,228,0.025);
+    border: 1px solid rgba(243,239,228,0.12);
+    color: #F3EFE4; border-radius: 10px;
+    transition: border-color .15s ease, background .15s ease, color .15s ease;
+    white-space: nowrap;
+  }
+  .btn-secondary:hover { border-color: rgba(176,141,62,0.55); background: rgba(176,141,62,0.07); color: #D4B364; }
+
+  .input-field {
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(243,239,228,0.1);
+    border-radius: 10px;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .input-field:focus { outline: none; border-color: #B08D3E; box-shadow: 0 0 0 3px rgba(176,141,62,0.14); background: rgba(0,0,0,0.3); }
+  .input-field::placeholder { color: #6b6559; }
+
+  .stamp {
+    display: inline-flex; align-items: center; gap: .4rem;
+    border-radius: 999px; padding: .28rem .7rem;
+    font-size: .66rem; letter-spacing: .09em; text-transform: uppercase; font-weight: 600;
+    font-family: 'JetBrains Mono', monospace; line-height: 1;
+    background: color-mix(in oklab, currentColor 13%, transparent);
+    border: 1px solid color-mix(in oklab, currentColor 30%, transparent);
+  }
+  .stamp::before { content: ''; width: 5px; height: 5px; border-radius: 999px; background: currentColor; flex-shrink: 0; }
+</style>
+</head>
+<body class="min-h-screen text-parchment font-sans antialiased">
+{% set cur = contract.currency_code %}
+<main class="relative z-10 max-w-4xl mx-auto px-6 py-14">
+  {% set company = contract.company %}
+  {% if company.brand_logo_filename %}
+  <div class="bg-white rounded-lg inline-block p-3 mb-8">
+    <img src="{{ url_for('uploaded_file', filename=company.brand_logo_filename) }}" alt="{{ company.brand_display_name or company.name }}" class="h-8 object-contain">
+  </div>
+  {% else %}
+  <div class="font-display text-xl mb-8" style="color:{{ company.brand_accent_color or '#B08D3E' }}">{{ company.brand_display_name or company.name }}</div>
+  {% endif %}
+
+  <p class="text-gold text-xs tracking-[0.2em] uppercase mb-1">{{ 'Propose a change to' if contract.schedule else 'Set up' }}</p>
+  <h1 class="font-display text-4xl tracking-tight mb-1">Payment schedule</h1>
+  <p class="text-muted text-sm mb-8">{{ contract.title }} &middot; {{ contract.total_amount|money(cur) }} total{{ ' (outstanding balance allowed)' if contract.allow_outstanding_balance else '' }}</p>
+
+  {% if contract.schedule %}
+  <div class="text-xs text-gold bg-gold/10 border border-gold/30 rounded-md px-4 py-2.5 mb-4">
+    A schedule already exists for this contract. Submitting below sends a change request to {{ contract.company.name }} for approval — it won't take effect immediately.
+  </div>
+  {% endif %}
+
+  {% if contract.max_payment_months %}
+  <div class="text-xs text-muted bg-ink-surface border border-white/10 rounded-xl px-4 py-2.5 mb-8">
+    ⏱ The full balance must be paid off within <span class="text-gold">{{ contract.max_payment_months }} months</span> of the first payment date.
+  </div>
+  {% endif %}
+
+  <form id="schedule-form" method="post"
+        data-preview-url="{{ url_for('public_schedule_preview', token=token) }}"
+        data-currency-symbol="{{ contract.total_amount|money(cur)|first }}"
+        data-contract-total="{{ contract.total_amount }}"
+        data-allow-outstanding="{{ 'true' if contract.allow_outstanding_balance else 'false' }}"
+        data-max-payment-months="{{ contract.max_payment_months or '' }}"
+        class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+
+    <div class="lg:col-span-2 card p-6 space-y-5 h-fit">
+      <div>
+        <label class="block text-xs text-muted mb-1.5">Your name</label>
+        <input type="text" name="requester_name" required class="w-full input-field px-3 py-2 text-sm">
+      </div>
+
+      <hr class="border-ink-line">
+
+      <div>
+        <label class="block text-xs text-muted mb-1.5">Payment frequency</label>
+        <select name="frequency" class="w-full input-field px-3 py-2 text-sm">
+          <option value="one_time">One-time</option>
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Every 2 weeks</option>
+          <option value="monthly" selected>Monthly</option>
+          <option value="bimonthly">Every 2 months</option>
+          <option value="quarterly">Quarterly</option>
+          <option value="custom">Custom dates</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs text-muted mb-1.5">Payment start date</label>
+        <input type="date" name="start_date" required value="{{ date.today().isoformat() }}" class="w-full input-field px-3 py-2 text-sm num">
+      </div>
+
+      <div id="monthly-fields">
+        <label class="block text-xs text-muted mb-1.5">Day of month</label>
+        <input type="number" name="day_of_month" min="1" max="31" placeholder="e.g. 5" class="w-full input-field px-3 py-2 text-sm num">
+      </div>
+
+      <div id="num-instalments-field">
+        <label class="block text-xs text-muted mb-1.5">Number of instalments</label>
+        <input type="number" name="num_instalments" min="1" value="6" class="w-full input-field px-3 py-2 text-sm num">
+      </div>
+
+      <div id="custom-date-fields" class="hidden">
+        <label class="block text-xs text-muted mb-1.5">Custom dates (comma separated, YYYY-MM-DD)</label>
+        <textarea name="custom_dates" rows="2" class="w-full input-field px-3 py-2 text-sm num"></textarea>
+      </div>
+
+      <label class="flex items-center gap-2 text-sm text-muted">
+        <input type="checkbox" name="auto_end" checked class="rounded border-ink-line bg-ink-raised">
+        Automatically end after the final instalment
+      </label>
+
+      <hr class="border-ink-line">
+
+      <div>
+        <label class="block text-xs text-muted mb-1.5">Payment amount</label>
+        <select name="amount_mode" class="w-full input-field px-3 py-2 text-sm">
+          <option value="fixed" selected>Fixed amount (split evenly)</option>
+          <option value="percentage">Percentage of contract total</option>
+          <option value="custom">Custom amount per instalment</option>
+        </select>
+      </div>
+
+      <div id="fixed-amount-field">
+        <label class="block text-xs text-muted mb-1.5">Fixed amount per instalment (optional)</label>
+        <input type="number" step="0.01" name="fixed_amount" placeholder="Auto-split" class="w-full input-field px-3 py-2 text-sm num">
+      </div>
+
+      <div id="percentage-field" class="hidden">
+        <label class="block text-xs text-muted mb-1.5">Percentage per instalment</label>
+        <input type="number" step="0.1" name="percentage" placeholder="e.g. 16.67" class="w-full input-field px-3 py-2 text-sm num">
+      </div>
+
+      <div id="custom-amounts-field" class="hidden">
+        <label class="block text-xs text-muted mb-1.5">Custom amounts (comma separated)</label>
+        <textarea name="custom_amounts" rows="2" class="w-full input-field px-3 py-2 text-sm num"></textarea>
+      </div>
+
+      <button type="button" id="preview-btn" class="w-full border border-gold text-gold font-semibold rounded-md py-2 text-sm hover:bg-gold hover:text-ink transition">Generate preview</button>
+
+      <input type="hidden" name="rows_json">
+      <input type="hidden" name="meta_json">
+    </div>
+
+    <div class="lg:col-span-3">
+      <div id="preview-section" class="hidden card p-6">
+        <p class="font-display text-lg mb-4">Schedule preview</p>
+
+        <div class="grid grid-cols-4 gap-4 mb-5 text-sm">
+          <div><p class="text-xs text-muted">Total scheduled</p><p id="sum-scheduled" class="num">—</p></div>
+          <div><p class="text-xs text-muted">Remaining balance</p><p id="sum-remaining" class="num">—</p></div>
+          <div><p class="text-xs text-muted">First payment</p><p id="sum-first" class="num">—</p></div>
+          <div><p class="text-xs text-muted">Final payment</p><p id="sum-final" class="num">—</p></div>
+        </div>
+
+        <div id="balance-warning" class="hidden text-xs text-brick bg-brick/10 border border-brick/40 rounded-md px-3 py-2 mb-4"></div>
+      <div id="months-warning" class="hidden text-xs text-brick bg-brick/10 border border-brick/40 rounded-md px-3 py-2 mb-4"></div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs text-muted uppercase tracking-wide">
+                <th class="pb-2 pr-3">#</th>
+                <th class="pb-2 pr-3">Date</th>
+                <th class="pb-2 pr-3">Description</th>
+                <th class="pb-2 pr-3 text-right">Amount</th>
+                <th class="pb-2">Status</th>
+              </tr>
+            </thead>
+            <tbody id="preview-body"></tbody>
+          </table>
+        </div>
+
+        <p class="text-xs text-muted mt-4">Edit any date, label, or amount above before confirming — totals update automatically.</p>
+
+        <button id="confirm-btn" type="submit" class="mt-5 btn-primary px-5 py-2.5 text-sm">
+          {{ 'Submit change request' if contract.schedule else 'Confirm schedule' }}
+        </button>
+      </div>
+
+      {% if not contract.schedule %}
+      <div class="text-sm text-muted mt-4">Fill in the options on the left, then click <span class="text-gold">Generate preview</span> to see and edit exact instalments before confirming.</div>
+      {% endif %}
+    </div>
+  </form>
+
+  <a href="{{ url_for('contract_share', token=token) }}" class="text-xs text-muted hover:text-gold mt-8 inline-block">← Back to contract</a>
+</main>
+<script src="{{ url_for('static', filename='js/schedule-builder.js') }}"></script>
+</body>
+</html>

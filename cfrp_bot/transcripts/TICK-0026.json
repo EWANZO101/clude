@@ -1,0 +1,19 @@
+{
+  "ticket_id": "TICK-0026",
+  "ticket_type": "support",
+  "opened_by": "e",
+  "opened_at": "2026-04-04 15:03:53",
+  "closed_by": "e",
+  "closed_at": "2026-04-04 15:04 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-04T15:03:53.618000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1460361220329574521> <@344560012997165057>",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+from app.models.hardware import (
+    Cpu,
+    RamModule,
+    StorageDevice,
+    Gpu,
+    NetworkCard,
+    RaidController,
+    PowerSupply,
+    ServerChassis,
+    NetworkSwitch,
+    Router,
+    Firewall,
+    Transceiver,
+)
+from app.hardware.forms import (
+    CpuForm,
+    RamModuleForm,
+    StorageDeviceForm,
+    GpuForm,
+    NetworkCardForm,
+    RaidControllerForm,
+    PowerSupplyForm,
+    ServerChassisForm,
+    NetworkSwitchForm,
+    RouterForm,
+    FirewallForm,
+    TransceiverForm,
+)
+
+HARDWARE_REGISTRY = {
+    "cpus": {
+        "model": Cpu,
+        "form": CpuForm,
+        "label": "CPUs",
+        "columns": [("model_name", "Model"), ("cores", "Cores"), ("threads", "Threads"), ("tdp_watts", "TDP (W)")],
+    },
+    "ram": {
+        "model": RamModule,
+        "form": RamModuleForm,
+        "label": "RAM",
+        "columns": [("model_name", "Model"), ("ddr_generation", "DDR"), ("capacity_gb", "Capacity (GB)"), ("speed_mhz", "Speed (MHz)")],
+    },
+    "storage": {
+        "model": StorageDevice,
+        "form": StorageDeviceForm,
+        "label": "Storage",
+        "columns": [("model_name", "Model"), ("storage_type", "Type"), ("capacity_gb", "Capacity (GB)"), ("interface", "Interface")],
+    },
+    "gpus": {
+        "model": Gpu,
+        "form": GpuForm,
+        "label": "GPUs",
+        "columns": [("model_name", "Model"), ("vram_gb", "VRAM (GB)"), ("power_watts", "Power (W)")],
+    },
+    "network-cards": {
+        "model": NetworkCard,
+        "form": NetworkCardForm,
+        "label": "Network Cards",
+        "columns": [("model_name", "Model"), ("port_count", "Ports"), ("port_speed_gbps", "Speed (Gbps)")],
+    },
+    "raid-controllers": {
+        "model": RaidController,
+        "form": RaidControllerForm,
+        "label": "RAID Controllers",
+        "columns": [("model_name", "Model"), ("port_count", "Ports"), ("cache_mb", "Cache (MB)")],
+    },
+    "power-supplies": {
+        "model": PowerSupply,
+        "form": PowerSupplyForm,
+        "label": "Power Supplies",
+        "columns": [("model_name", "Model"), ("wattage", "Wattage"), ("redundant", "Redundant")],
+    },
+    "chassis": {
+        "model": ServerChassis,
+        "form": ServerChassisForm,
+        "label": "Server Chassis",
+        "columns": [("model_name", "Model"), ("form_factor", "Form factor"), ("rack_units", "Rack units"), ("drive_bays", "Drive bays")],
+    },
+    "switches": {
+        "model": NetworkSwitch,
+        "form": NetworkSwitchForm,
+        "label": "Network Switches",
+        "columns": [("model_name", "Model"), ("port_count", "Ports"), ("port_speed_gbps", "Speed (Gbps)")],
+    },
+    "routers": {
+        "model": Router,
+        "form": RouterForm,
+        "label": "Routers",
+        "columns": [("model_name", "Model"), ("port_count", "Ports"), ("port_speed_gbps", "Speed (Gbps)")],
+    },
+    "firewalls": {
+        "model": Firewall,
+        "form": FirewallForm,
+        "label": "Firewalls",
+        "columns": [("model_name", "Model"), ("throughput_gbps", "Throughput (Gbps)")],
+    },
+    "transceivers": {
+        "model": Transceiver,
+        "form": TransceiverForm,
+        "label": "Transceivers",
+        "columns": [("model_name", "Model"), ("transceiver_type", "Type"), ("port_speed_gbps", "Speed (Gbps)")],
+    },
+}

@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{# ── Shared nav items macro ─────────────────────────────────────────────────── #}
+{% macro nav_items() %}
+  <div class="sidebar-section">Overview</div>
+  <a href="/admin"
+     class="sidebar-link {{ 'active' if request.path == '/admin' }}">
+    <span class="sidebar-icon">📊</span> Dashboard
+  </a>
+
+  <div class="sidebar-section">Orders</div>
+  <a href="/admin/orders"
+     class="sidebar-link {{ 'active' if request.path.startswith('/admin/orders') and 'new' not in request.path }}">
+    <span class="sidebar-icon">📦</span> All Orders
+  </a>
+  <a href="/admin/orders/new"
+     class="sidebar-link {{ 'active' if request.path == '/admin/orders/new' }}">
+    <span class="sidebar-icon">➕</span> New Order
+  </a>
+  <a href="/admin/requests"
+     class="sidebar-link {{ 'active' if request.path.startswith('/admin/requests') }}">
+    <span class="sidebar-icon">🎨</span> Requests
+  </a>
+
+  <div class="sidebar-section">Finance</div>
+  <a href="/admin/invoices"
+     class="sidebar-link {{ 'active' if request.path.startswith('/admin/invoices') }}">
+    <span class="sidebar-icon">🧾</span> Invoices
+  </a>
+  <a href="/admin/payments"
+     class="sidebar-link {{ 'active' if request.path.startswith('/admin/payments') }}">
+    <span class="sidebar-icon">💸</span> Payments
+  </a>
+
+  <div class="sidebar-section">Support</div>
+  <a href="/admin/tickets"
+     class="sidebar-link {{ 'active' if request.path.startswith('/admin/tickets') }}">
+    <span class="sidebar-icon">🎫</span> Tickets
+  </a>
+
+  <div class="sidebar-section">Content</div>
+  <a href="/admin/discounts"
+     class="sidebar-link {{ 'active' if request.path.startswith('/admin/discounts') }}">
+    <span class="sidebar-icon">🏷</span> Discount Codes
+  </a>
+  <a href="/admin/gallery"
+     class="sidebar-link {{ 'active' if request.path.startswith('/admin/gallery') }}">
+    <span class="sidebar-icon">🖼</span> Gallery
+  </a>
+  <a href="/admin/commission-types"
+     class="sidebar-link {{ 'active' if request.path.startswith('/admin/commission-types') }}">
+    <span class="sidebar-icon">🎨</span> Commission Types
+  </a>
+  <a href="/admin/form"
+     class="sidebar-link {{ 'active' if request.path.startswith('/admin/form') }}">
+    <span class="sidebar-icon">📝</span> Form Editor
+  </a>
+
+  <div class="sidebar-section">Integrations</div>
+  <a href="/admin/trello"
+     class="sidebar-link {{ 'active' if request.path.startswith('/admin/trello') }}">
+    <span class="sidebar-icon">🗂</span> Trello
+  </a>
+  <a href="/admin/settings"
+     class="sidebar-link {{ 'active' if request.path.startswith('/admin/settings') }}">
+    <span class="sidebar-icon">⚙</span> Settings
+  </a>
+
+  <div class="sidebar-section">Account</div>
+  <a href="/" class="sidebar-link">
+    <span class="sidebar-icon">🌐</span> View Site
+  </a>
+  <a href="/admin/logout" class="sidebar-link" style="color:#fca5a5;">
+    <span class="sidebar-icon">🚪</span> Sign Out
+  </a>
+{% endmacro %}
+
+{# ── Desktop sidebar ─────────────────────────────────────────────────────────── #}
+{% block body %}
+<nav class="nav-bar">
+  <div style="display:flex;align-items:center;gap:0.85rem;">
+    <!-- Hamburger (mobile only) -->
+    <button class="hamburger-btn" onclick="openDrawer()" aria-label="Open menu">
+      ☰
+    </button>
+    <a class="nav-logo" href="/admin">⚙ OpsLabs <span>Admin</span></a>
+  </div>
+
+  <div style="display:flex;gap:0.6rem;align-items:center;">
+    <!-- Commission toggle in nav for quick access -->
+    {% set s = get_settings() if get_settings is defined else none %}
+    <span style="font-size:0.8rem;color:var(--text-muted);font-family:'Cinzel',serif;
+                 display:none;" class="hide-mobile-inline">OpsLabs</span>
+    <a href="/" class="btn btn-ghost btn-sm hide-mobile">🌐 Site</a>
+    <a href="/admin/logout" class="btn btn-ghost btn-sm">Sign Out</a>
+  </div>
+</nav>
+
+<div class="admin-layout">
+  <!-- Desktop sidebar -->
+  <aside class="sidebar">
+    <!-- Mini user block -->
+    <div style="padding:1rem 1.1rem 0.75rem;border-bottom:1px solid var(--border);margin-bottom:0.5rem;">
+      <div style="display:flex;align-items:center;gap:0.65rem;">
+        <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-glow);
+                    border:1px solid var(--accent);display:flex;align-items:center;
+                    justify-content:center;font-size:1rem;flex-shrink:0;">🎨</div>
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:0.82rem;font-weight:700;color:var(--text-primary);">OpsLabs</div>
+          <div style="font-size:0.72rem;color:var(--success);">● Administrator</div>
+        </div>
+      </div>
+    </div>
+    {{ nav_items() }}
+  </aside>
+
+  <!-- Main content -->
+  <div class="admin-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{ cat if cat in ['success','error','warning','info'] else 'info' }}">
+          {{ msg }}
+        </div>
+      {% endfor %}
+    {% endwith %}
+    {% block admin_content %}{% endblock %}
+  </div>
+</div>
+
+<!-- ── Shared confirm modal (replaces native browser confirm() popups) ── -->
+<div id="confirmModalOverlay"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
+            z-index:900;backdrop-filter:blur(3px);"></div>
+<div id="confirmModal"
+     style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+            width:min(400px,90vw);background:var(--bg-surface);border:1px solid var(--border-accent);
+            border-radius:14px;z-index:901;padding:1.35rem;">
+  <div id="confirmModalTitle" class="font-display"
+       style="font-size:1.05rem;color:var(--text-primary);margin-bottom:0.6rem;"></div>
+  <div id="confirmModalMessage"
+       style="font-size:0.9rem;color:var(--text-secondary);line-height:1.5;margin-bottom:1.25rem;
+              white-space:pre-line;"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;">
+    <button type="button" id="confirmModalNo" class="btn btn-ghost" style="justify-content:center;padding:0.65rem;"></button>
+    <button type="button" id="confirmModalYes" class="btn btn-primary" style="justify-content:center;padding:0.65rem;"></button>
+  </div>
+</div>
+<script>
+// Promise-based, mobile-friendly replacement for native confirm() popups.
+// showConfirm(title, message, {yes, no}) -> Promise<boolean>
+function showConfirm(title, message, opts) {
+  opts = opts || {};
+  const overlay = document.getElementById('confirmModalOverlay');
+  const modal   = document.getElementById('confirmModal');
+  document.getElementById('confirmModalTitle').textContent = title;
+  document.getElementById('confirmModalMessage').textContent = message;
+  const yesBtn = document.getElementById('confirmModalYes');
+  const noBtn  = document.getElementById('confirmModalNo');
+  yesBtn.textContent = opts.yes || 'Yes';
+  noBtn.textContent   = opts.no  || 'Cancel';
+  overlay.style.display = 'block';
+  modal.style.display   = 'block';
+  return new Promise(resolve => {
+    function cleanup(result) {
+      overlay.style.display = 'none';
+      modal.style.display   = 'none';
+      yesBtn.onclick = null;
+      noBtn.onclick  = null;
+      overlay.onclick = null;
+      resolve(result);
+    }
+    yesBtn.onclick  = () => cleanup(true);
+    noBtn.onclick   = () => cleanup(false);
+    overlay.onclick = () => cleanup(false);
+  });
+}
+</script>
+{% endblock %}
+
+{# ── Mobile drawer nav ────────────────────────────────────────────────────────── #}
+{% block drawer_nav %}
+  <!-- Mini user block in drawer -->
+  <div style="padding:0.85rem 1.1rem;border-bottom:1px solid var(--border);margin-bottom:0.5rem;">
+    <div style="display:flex;align-items:center;gap:0.65rem;">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--accent-glow);
+                  border:1px solid var(--accent);display:flex;align-items:center;
+                  justify-content:center;font-size:0.9rem;flex-shrink:0;">🎨</div>
+      <div>
+        <div style="font-family:'Cinzel',serif;font-size:0.82rem;font-weight:700;color:var(--text-primary);">OpsLabs</div>
+        <div style="font-size:0.72rem;color:var(--success);">● Administrator</div>
+      </div>
+    </div>
+  </div>
+  {{ nav_items() }}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Shared by every "open/close commissions" toggle (dashboard + settings).
+// Safety net: opening commissions always asks first, and separately asks
+// whether to DM the Trello ping list — so a test toggle can't blast pings.
+// Uses the in-page showConfirm() modal instead of native confirm()/alert()
+// popups, which render inconsistently (and can be jarring) on mobile browsers.
+async function handleCommissionsToggle(cb) {
+  const form = cb.form;
+  const notifyField = form.querySelector('input[name="notify_ping_list"]');
+  if (cb.checked) {
+    const openOk = await showConfirm(
+      'Open commissions?',
+      'Customers will be able to submit requests right away.',
+      { yes: 'Open commissions', no: 'Cancel' }
+    );
+    if (!openOk) { cb.checked = false; return; }
+
+    const shouldPing = await showConfirm(
+      'Notify the ping list?',
+      'Send a Discord DM to everyone on the Trello ping list?\n\n' +
+      'Choose "Just testing" if this is a test open — no one will be pinged.',
+      { yes: 'Yes, DM them', no: 'Just testing' }
+    );
+    if (notifyField) notifyField.value = shouldPing ? '1' : '0';
+  } else {
+    if (notifyField) notifyField.value = '0';
+  }
+  form.submit();
+}
+</script>
+{% endblock %}

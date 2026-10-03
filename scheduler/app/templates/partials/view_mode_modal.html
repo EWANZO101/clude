@@ -1,0 +1,51 @@
+<div id="view-mode-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+  <div class="card w-full max-w-md p-6 sm:p-8">
+    <div class="flex items-center gap-2.5 mb-1">
+      <span class="status-dot bg-accent"></span>
+      <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted">Display</p>
+    </div>
+    <h2 class="font-display text-xl font-semibold text-ink mb-1.5">How do you want this to look?</h2>
+    <p class="text-sm text-ink-muted mb-6">
+      Choose a layout for this browser. You can change it any time from the
+      "Display" button in the menu.
+    </p>
+
+    <div class="grid grid-cols-1 gap-2.5">
+      <button type="button" data-view-choice="auto" class="view-mode-option group flex items-center gap-3.5 rounded-lg border border-border bg-surface-raised px-4 py-3.5 text-left hover:border-accent transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-ink-muted group-hover:text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-9-9c2.5 0 4.7 1 6.3 2.7M21 3v6h-6"/></svg>
+        <span class="min-w-0 flex-1">
+          <span class="block text-sm font-medium text-ink">Auto <span class="font-normal text-ink-faint">(recommended)</span></span>
+          <span class="block text-xs text-ink-muted">Adapts to whatever screen you're using</span>
+        </span>
+      </button>
+
+      <button type="button" data-view-choice="desktop" class="view-mode-option group flex items-center gap-3.5 rounded-lg border border-border bg-surface-raised px-4 py-3.5 text-left hover:border-accent transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-ink-muted group-hover:text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="1.5"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <span class="min-w-0 flex-1">
+          <span class="block text-sm font-medium text-ink">Desktop</span>
+          <span class="block text-xs text-ink-muted">Sidebar always visible, wide layout</span>
+        </span>
+      </button>
+
+      <button type="button" data-view-choice="tablet" class="view-mode-option group flex items-center gap-3.5 rounded-lg border border-border bg-surface-raised px-4 py-3.5 text-left hover:border-accent transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-ink-muted group-hover:text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="10" y1="19" x2="14" y2="19"/></svg>
+        <span class="min-w-0 flex-1">
+          <span class="block text-sm font-medium text-ink">Tablet</span>
+          <span class="block text-xs text-ink-muted">Centered column, bigger touch targets</span>
+        </span>
+      </button>
+
+      <button type="button" data-view-choice="mobile" class="view-mode-option group flex items-center gap-3.5 rounded-lg border border-border bg-surface-raised px-4 py-3.5 text-left hover:border-accent transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-ink-muted group-hover:text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <span class="min-w-0 flex-1">
+          <span class="block text-sm font-medium text-ink">Mobile</span>
+          <span class="block text-xs text-ink-muted">Compact single column, menu tucked away</span>
+        </span>
+      </button>
+    </div>
+
+    <button type="button" id="view-mode-dismiss" class="mt-5 w-full text-center text-xs text-ink-faint hover:text-ink-muted">
+      Skip — decide later
+    </button>
+  </div>
+</div>

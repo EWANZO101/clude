@@ -1,0 +1,59 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Savings{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  {{ ui.page_header("Savings", "Goals you're putting money aside for.") }}
+
+  <form method="POST" action="{{ url_for('finance.new_savings_goal') }}" class="bg-surface-card border border-surface-border rounded-2xl p-3 flex flex-wrap gap-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input name="name" placeholder="Goal name" required class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    <input name="target" placeholder="Target amount" class="w-28 bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    <input type="date" name="target_date" class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    <input name="monthly_contribution" placeholder="Monthly contribution" class="w-36 bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    {{ ui.button("Add goal", type="submit", variant="primary", icon_name="plus") }}
+  </form>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    {% for g in goals %}
+      <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-2.5 hover:border-slate-700 transition-colors">
+        <div class="flex items-center justify-between">
+          <p class="font-medium text-slate-100 flex items-center gap-1.5">{{ ui.icon('piggy-bank', 'w-4 h-4 text-accent') }} {{ g.name }}</p>
+          <form method="POST" action="{{ url_for('finance.delete_savings_goal', goal_id=g.id) }}" onsubmit="return confirm('Remove this savings goal?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="text-xs text-red-400 hover:text-red-300">Remove</button>
+          </form>
+        </div>
+        <div class="h-1.5 bg-surface rounded-full overflow-hidden">
+          <div class="h-full bg-accent rounded-full transition-all" style="width: {{ g.progress_pct }}%"></div>
+        </div>
+        <p class="text-xs text-slate-500 tabular-nums">{{ g.current_minor | money }} of {{ g.target_minor | money }} ({{ g.progress_pct }}%)</p>
+        <form method="POST" action="{{ url_for('finance.add_savings_funds', goal_id=g.id) }}" class="flex gap-2">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input name="amount" placeholder="Add funds" class="flex-1 bg-surface border border-surface-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+          <button class="text-xs bg-accent hover:bg-accent-hover text-white px-3 py-1 rounded-lg transition-colors">Add</button>
+        </form>
+      </div>
+    {% else %}
+      <div class="sm:col-span-2">
+        {% call ui.empty_state("No savings goals yet", "Add one above to start tracking progress.", "piggy-bank") %}{% endcall %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <div>
+    <h2 class="text-lg font-semibold text-white flex items-center gap-1.5">{{ ui.icon('sparkles', 'w-4 h-4 text-accent') }} Suggestions</h2>
+    <p class="text-xs text-slate-500 mt-0.5 mb-2">Suggestions, not guaranteed financial advice.</p>
+    <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+      {% for s in suggestions %}
+        <div class="p-4 text-sm">
+          <p class="text-slate-100">{{ s.title }}</p>
+          <p class="text-xs text-slate-500 mt-1">{{ s.detail }}</p>
+        </div>
+      {% else %}
+        <p class="p-4 text-sm text-slate-500">Nothing notable right now.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

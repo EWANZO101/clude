@@ -1,0 +1,17 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for category, message in messages %}
+        {% set styles = {
+          'error': 'border-status-busy/30 bg-status-busy/10 text-status-busy',
+          'success': 'border-status-available/30 bg-status-available/10 text-status-available',
+          'info': 'border-border bg-surface-raised text-ink-muted',
+        } %}
+        <div class="flex items-start gap-2.5 rounded-lg border px-4 py-3 text-sm {{ styles.get(category, styles['info']) }}">
+          <span class="mt-0.5 status-dot bg-current shrink-0"></span>
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}

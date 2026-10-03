@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Report Portal — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:0 auto">
+
+  <!-- Hero -->
+  <div style="text-align:center;padding:2rem 1rem 1.75rem">
+    <div style="width:60px;height:60px;border-radius:14px;background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.25);display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto .75rem">🔐</div>
+    <h1 style="font-size:1.4rem;font-weight:700;margin:0 0 .35rem">Report Portal</h1>
+    <p style="color:var(--muted);font-size:.875rem;max-width:460px;margin:0 auto;line-height:1.65">
+      A private, secure space to submit reports, track their progress, and communicate directly with our admin team.
+    </p>
+  </div>
+
+  <!-- Logged-in banner -->
+  {% if portal_logged_in %}
+  <div style="padding:.82rem 1.1rem;background:rgba(63,185,80,.07);border:1px solid rgba(63,185,80,.22);border-radius:10px;margin-bottom:1.35rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.65rem">
+    <div>
+      <span style="font-size:.9rem;color:var(--success);font-weight:600">✓ Logged in as {{ portal_username }}</span>
+      <p style="font-size:.79rem;color:var(--muted);margin:.12rem 0 0">View your reports and reply to admin messages below.</p>
+    </div>
+    <a href="{{ url_for('portal_logout') }}" class="btn btn-ghost btn-sm">Logout</a>
+  </div>
+  {% endif %}
+
+  <!-- Action cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:.9rem;margin-bottom:1.75rem">
+
+    <a href="{{ url_for('portal_lookup') }}" style="text-decoration:none">
+      <div class="card" style="height:100%;padding:1.15rem;transition:border-color .18s" onmouseover="this.style.borderColor='rgba(88,166,255,.45)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:1.4rem;margin-bottom:.55rem">🔍</div>
+        <h3 style="font-size:.92rem;font-weight:600;color:var(--text);margin:0 0 .3rem">Look Up a Report</h3>
+        <p style="font-size:.81rem;color:var(--muted);line-height:1.58;margin:0">Enter a Report ID like <span style="font-family:'IBM Plex Mono',monospace;font-size:.78rem;color:var(--accent)">RP-24AB56EE</span> to check status.</p>
+        <div style="margin-top:.75rem;font-size:.8rem;color:var(--accent);font-weight:500">Check status →</div>
+      </div>
+    </a>
+
+    {% if portal_logged_in %}
+    <a href="{{ url_for('portal_my_reports') }}" style="text-decoration:none">
+      <div class="card" style="height:100%;padding:1.15rem;border-color:rgba(88,166,255,.25);transition:border-color .18s" onmouseover="this.style.borderColor='rgba(88,166,255,.5)'" onmouseout="this.style.borderColor='rgba(88,166,255,.25)'">
+        <div style="font-size:1.4rem;margin-bottom:.55rem">📋</div>
+        <h3 style="font-size:.92rem;font-weight:600;color:var(--text);margin:0 0 .3rem">My Reports</h3>
+        <p style="font-size:.81rem;color:var(--muted);line-height:1.58;margin:0">View all reports on your account and open private ticket threads.</p>
+        <div style="margin-top:.75rem;font-size:.8rem;color:var(--accent);font-weight:500">View reports →</div>
+      </div>
+    </a>
+    {% else %}
+    <a href="{{ url_for('portal_login') }}" style="text-decoration:none">
+      <div class="card" style="height:100%;padding:1.15rem;transition:border-color .18s" onmouseover="this.style.borderColor='rgba(88,166,255,.45)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:1.4rem;margin-bottom:.55rem">🔑</div>
+        <h3 style="font-size:.92rem;font-weight:600;color:var(--text);margin:0 0 .3rem">Log In</h3>
+        <p style="font-size:.81rem;color:var(--muted);line-height:1.58;margin:0">Have a portal account? Log in to view your reports and reply to admin messages.</p>
+        <div style="margin-top:.75rem;font-size:.8rem;color:var(--accent);font-weight:500">Log in →</div>
+      </div>
+    </a>
+    <a href="{{ url_for('portal_register') }}" style="text-decoration:none">
+      <div class="card" style="height:100%;padding:1.15rem;transition:border-color .18s" onmouseover="this.style.borderColor='rgba(63,185,80,.45)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:1.4rem;margin-bottom:.55rem">✚</div>
+        <h3 style="font-size:.92rem;font-weight:600;color:var(--text);margin:0 0 .3rem">Create Account</h3>
+        <p style="font-size:.81rem;color:var(--muted);line-height:1.58;margin:0">Free portal account — username and password only. Track all your reports in one place.</p>
+        <div style="margin-top:.75rem;font-size:.8rem;color:var(--success);font-weight:500">Create account →</div>
+      </div>
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Inline lookup -->
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="card-body">
+      <h2 style="font-size:.92rem;font-weight:600;margin-bottom:.75rem">Quick Lookup</h2>
+      <form id="portal-lookup-form" onsubmit="doPortalLookup(event)" style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <input type="text" id="portal-rp-id"
+               class="form-input"
+               placeholder="Enter Report ID — e.g. RP-24AB56EE"
+               style="flex:1;min-width:190px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.04em"
+               autocomplete="off" spellcheck="false" maxlength="20">
+        <button type="submit" class="btn btn-primary">Check</button>
+      </form>
+      <div id="portal-lookup-result" style="display:none;margin-top:.85rem"></div>
+    </div>
+  </div>
+
+  <!-- Recent reports if logged in -->
+  {% if portal_logged_in and reports %}
+  <h2 style="font-size:.92rem;font-weight:600;margin-bottom:.75rem">Recent Reports</h2>
+  <div style="display:flex;flex-direction:column;gap:.65rem">
+    {% for report in reports %}
+    {% set unread = report.messages | selectattr('sender','equalto','admin') | selectattr('is_read','equalto',False) | list %}
+    <a href="{{ url_for('portal_report_view', report_id=report.report_id) }}" style="text-decoration:none">
+      <div class="card" style="padding:.82rem 1.05rem;border-left:3px solid {% if unread %}var(--success){% elif report.status=='resolved' %}var(--success){% elif report.status=='seen' %}var(--accent){% else %}var(--warn){% endif %}">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+          <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+            <span class="post-id" style="font-size:.75rem">{{ report.report_id }}</span>
+            <span class="status-{{ report.status }}" style="font-size:.72rem">{{ report.status.title() }}</span>
+            {% if unread %}<span style="background:var(--success);color:#0d1117;font-size:.68rem;font-weight:700;padding:.1rem .4rem;border-radius:8px">{{ unread|length }} NEW</span>{% endif %}
+          </div>
+          <span style="font-size:.75rem;color:var(--muted)">{{ report.created_at.strftime('%d %b %Y') }}</span>
+        </div>
+        <p style="font-size:.82rem;color:var(--muted);margin:.28rem 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ report.description[:100] }}</p>
+      </div>
+    </a>
+    {% endfor %}
+    <a href="{{ url_for('portal_my_reports') }}" style="font-size:.82rem;color:var(--accent);display:block;margin-top:.25rem">View all reports →</a>
+  </div>
+  {% endif %}
+
+  <div style="margin-top:1.5rem;text-align:center">
+    <a href="{{ url_for('index') }}" style="font-size:.82rem;color:var(--muted)">← Back to main site</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function doPortalLookup(e) {
+  e.preventDefault();
+  const input  = document.getElementById('portal-rp-id');
+  const result = document.getElementById('portal-lookup-result');
+  const id     = input.value.trim().toUpperCase();
+  if (!id) return;
+
+  result.style.display = 'block';
+  result.innerHTML = '<div style="font-size:.84rem;color:var(--muted)">Searching…</div>';
+
+  try {
+    const res  = await fetch('/report-portal/lookup-json', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({report_id: id})
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      result.innerHTML = `<div style="padding:.65rem .85rem;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.22);border-radius:7px;font-size:.83rem;color:var(--danger)">✕ ${data.error}</div>`;
+      return;
+    }
+
+    const colours = {pending:'var(--warn)',seen:'var(--accent)',resolved:'var(--success)',dismissed:'var(--muted)'};
+    const c       = colours[data.status] || 'var(--border)';
+    const unread  = (data.messages||[]).filter(m => m.sender==='admin' && !m.is_read).length;
+    const explain = {
+      pending: '⏳ In the queue — admin team reviews within <strong>24 hours</strong>.',
+      seen:    '👀 An admin has seen your report. Check the ticket for messages.',
+      resolved:'✓ Marked as resolved.',
+      dismissed:'Reviewed and closed.'
+    };
+
+    result.innerHTML = `
+      <div style="border:1px solid var(--border);border-left:3px solid ${c};border-radius:9px;overflow:hidden">
+        <div style="padding:.8rem 1rem;background:var(--surface)">
+          <div style="display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin-bottom:.3rem">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:.78rem;color:var(--muted)">${data.report_id}</span>
+            <span style="font-size:.73rem;color:${c}">${data.status.charAt(0).toUpperCase()+data.status.slice(1)}</span>
+            ${data.admin_seen ? '<span style="font-size:.73rem;color:var(--success)">✓ Seen</span>' : '<span style="font-size:.73rem;color:var(--muted)">⏳ Pending</span>'}
+            ${unread ? `<span style="background:var(--success);color:#0d1117;font-size:.68rem;font-weight:700;padding:.08rem .38rem;border-radius:8px">${unread} NEW</span>` : ''}
+          </div>
+          <p style="font-size:.79rem;color:var(--muted);margin:0">Re: <span style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">${data.post_ref_id}</span> — ${data.created_at}</p>
+        </div>
+        <div style="padding:.6rem 1rem;font-size:.82rem;color:var(--muted);border-top:1px solid ${c}33;background:${c}0d">${explain[data.status]||''}</div>
+        <div style="padding:.7rem 1rem;border-top:1px solid var(--border);display:flex;gap:.45rem;flex-wrap:wrap">
+          <a href="/report-portal/report/${data.report_id}${data.claim_token?'?token='+data.claim_token:''}" class="btn btn-primary btn-sm">💬 Open Ticket</a>
+        </div>
+      </div>`;
+  } catch(err) {
+    result.innerHTML = '<div style="font-size:.83rem;color:var(--danger)">✕ Error — please try again.</div>';
+  }
+}
+</script>
+{% endblock %}

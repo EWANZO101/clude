@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Scan Barcode{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><i class="fas fa-barcode" style="color:#60a5fa;"></i> Scan Barcode</h1>
+  <p class="page-subtitle">Scan an item or tool barcode, or type the code below.</p>
+</div>
+<div class="card" style="padding:28px;max-width:420px;margin:0 auto;">
+  <form method="POST" action="{{ url_for('barcode.scan') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <label for="code" style="display:block;font-size:13px;font-weight:600;color:#9ca3af;margin-bottom:8px;">
+      Barcode value
+    </label>
+    <input type="text" id="code" name="code" autofocus autocomplete="off"
+           placeholder="Scan or type a code…"
+           style="width:100%;padding:12px 14px;border-radius:8px;border:1px solid #374151;
+                  background:#1f2937;color:#f3f4f6;font-family:monospace;letter-spacing:1px;
+                  font-size:15px;"/>
+    <button type="submit" class="btn btn-primary" style="width:100%;margin-top:16px;">
+      <i class="fas fa-magnifying-glass"></i> Look up
+    </button>
+  </form>
+</div>
+{% endblock %}

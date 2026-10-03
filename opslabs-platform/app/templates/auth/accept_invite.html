@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Accept invite — OpsLabs Platform{% endblock %}
+{% block content %}
+<div class="card" style="max-width:420px;margin:2rem auto;">
+  <h1>Join {{ invite.company.name }}</h1>
+  <p style="color:#9aa3af;font-size:0.9rem;">
+    You've been invited as <strong>{{ invite.role }}</strong>. Set a password to finish creating your account.
+  </p>
+  <form method="POST">
+    <label>Email</label>
+    <input type="email" value="{{ invite.email }}" disabled>
+    <label>Password</label>
+    <input type="password" name="password" required minlength="8">
+    <button type="submit">Join {{ invite.company.name }}</button>
+  </form>
+</div>
+{% endblock %}

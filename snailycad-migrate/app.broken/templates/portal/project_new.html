@@ -1,0 +1,32 @@
+{% extends "portal/_base.html" %}
+{% set active_page = 'projects' %}
+{% block portal_title %}New project{% endblock %}
+{% block portal_content %}
+<div class="pcard p-6 sm:p-8 max-w-2xl">
+  <form method="post" class="space-y-5">
+    <div>
+      <label class="block text-sm font-semibold mb-1.5">Project title <span class="text-red-400">*</span></label>
+      <input name="title" required class="form-input w-full" placeholder="e.g. New booking website">
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1.5">Which area?</label>
+      <select name="company_id" class="form-select w-full">
+        <option value="">— General —</option>
+        {% for c in companies %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1.5">Short summary</label>
+      <input name="summary" class="form-input w-full" placeholder="One line about the goal">
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1.5">Requirements / details</label>
+      <textarea name="requirements" rows="6" class="form-textarea w-full" placeholder="Anything that helps scope the work…"></textarea>
+    </div>
+    <div class="flex gap-3">
+      <button class="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-lg shadow-glow-sm hover:shadow-glow transition">Submit project</button>
+      <a href="{{ url_for('portal.projects') }}" class="px-5 py-2.5 text-sm font-semibold text-gray-300 bg-white/5 border border-ink-600 rounded-lg hover:bg-white/10 transition">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

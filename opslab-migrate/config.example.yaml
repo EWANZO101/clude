@@ -1,0 +1,66 @@
+# OpsLab Migrate — example configuration
+# Copy to config.yaml and edit. Auth is password OR ssh_key per host.
+
+source:
+  host: 203.0.113.10
+  username: root          # or a user with passwordless sudo
+  # Auth: EITHER ssh_key OR password. Use "ask" to be prompted at runtime
+  # instead of storing the password in this file.
+  password: ask
+  # ssh_key: ~/.ssh/id_ed25519
+  port: 22
+
+destination:
+  host: 203.0.113.20
+  username: root
+  password: ask
+  # ssh_key: ~/.ssh/id_ed25519
+  port: 22
+
+backup:
+  compression: zstd        # zstd | gzip | xz
+  keep_days: 30            # prune source-side archives older than this
+  include_venv: false      # venvs are rebuilt on the destination
+  staging_dir: /var/tmp/opslab-migrate
+
+restore:
+  overwrite: false         # refuse to clobber existing dirs unless true
+  install_dependencies: true
+  restart_services: true
+
+verify:
+  enabled: true
+  http_timeout: 15
+
+transfer:
+  bandwidth_limit_kbps: 0  # 0 = unlimited
+  retries: 3
+  checksum: true
+
+heal:
+  enabled: true
+  max_attempts: 3
+
+parallel_workers: 2
+
+# Migrate only these projects (names or absolute paths). Omit to migrate all.
+# projects:
+#   - nginx-manager
+#   - /opt/stocktool
+
+# Where to look for applications (defaults shown)
+scan_roots:
+  - /opt
+  - /srv
+  - /var/www
+  - /home
+  - /root
+
+exclude_paths:
+  - /proc
+  - /dev
+  - /sys
+  - /tmp
+  - /run
+  - /boot
+  - /snap

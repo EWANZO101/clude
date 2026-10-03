@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OpsLab Systems · Our services</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode: 'class', theme: { extend: {
+    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+    colors: { ink: { 950:'#09090b', 900:'#0c0c0e', 800:'#131316', 600:'#27272a' }, ops: { 500:'#3b82f6', 700:'#1d4ed8' } },
+  } } }
+</script>
+<style>
+  html, body { background:#09090b; color:#ededef; }
+  .card { background:#131316; border:1px solid #27272a; border-radius:16px; transition:.2s; }
+  .card:hover { border-color: rgba(59,130,246,.5); transform: translateY(-2px); }
+</style>
+</head>
+<body class="font-sans antialiased min-h-screen flex items-center justify-center px-4 py-16">
+<div class="w-full max-w-3xl text-center">
+  <div class="flex items-center justify-center gap-2.5 mb-6">
+    <svg viewBox="0 0 64 64" width="30" height="30">
+      <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="#3b82f6" stroke-width="4"/>
+      <polygon points="32,4 56,18 32,32" fill="#3b82f6"/>
+      <polygon points="32,32 56,18 56,46 32,60" fill="#ffffff" opacity=".95"/>
+    </svg>
+    <span class="font-semibold text-lg"><span class="text-ops-500">OpsLab</span> Systems</span>
+  </div>
+  <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight">Which service are you looking for?</h1>
+  <p class="text-gray-400 mt-2 mb-10 text-sm">Each division has its own dedicated site.</p>
+  <div class="grid sm:grid-cols-2 gap-4 text-left">
+    {% for sub, slug, svc in sites %}
+    <a href="https://{{ sub }}.{{ PUBLIC_DOMAIN }}/" class="card p-5 flex items-center gap-3">
+      <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:{{ svc.accent }}1f; border:1px solid {{ svc.accent }}4d; color:{{ svc.accent }}">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ svc.icon }}"/></svg>
+      </span>
+      <span>
+        <span class="block text-sm font-bold text-white">{{ svc.short_name }}</span>
+        <span class="block text-xs text-gray-500">{{ sub }}.{{ PUBLIC_DOMAIN }}</span>
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+  <div class="mt-8">
+    <a href="{{ hub_url('/') }}" class="text-xs text-gray-500 hover:text-gray-300 transition">&larr; Back to OpsLab Systems home</a>
+  </div>
+</div>
+</body>
+</html>

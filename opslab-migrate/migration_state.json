@@ -1,0 +1,1482 @@
+{
+  "started": "2026-07-04T17:52:03Z",
+  "updated": "2026-07-04T18:04:24Z",
+  "projects": {
+    "nginx-manager": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T17:57:03Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T17:57:26Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T17:57:57Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T17:57:58Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T17:57:58Z"
+        }
+      ],
+      "info": {
+        "name": "nginx-manager",
+        "path": "/opt/nginx-manager",
+        "framework": "flask",
+        "python_version": "3.12.3",
+        "venv_path": "/opt/nginx-manager/venv",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "/opt/nginx-manager/requirements.txt",
+        "wsgi_server": "",
+        "process_manager": "systemd",
+        "systemd_units": [
+          "/etc/systemd/system/nginx-manager.service"
+        ],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [],
+        "listen_ports": [],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/nginx-manager.tar.zst",
+      "sha256": "42e3898b0060ffef371991c457c43f6c2bcb6bafddb7403e3f31de3d8aadcff8",
+      "size": 4827595,
+      "dest_archive": "/var/tmp/opslab-migrate/nginx-manager.tar.zst",
+      "transfer_seconds": 23.068559646606445,
+      "snapshot": "",
+      "passed": true,
+      "checks": [
+        {
+          "name": "service nginx-manager.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "96015 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "11001 MB available"
+        }
+      ]
+    },
+    "nova-app": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T17:57:06Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T17:57:30Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T17:58:00Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T17:58:12Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T17:58:12Z"
+        }
+      ],
+      "info": {
+        "name": "nova-app",
+        "path": "/opt/nova-app",
+        "framework": "flask",
+        "python_version": "3.12.3",
+        "venv_path": "/opt/nova-app/venv",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "/opt/nova-app/requirements.txt",
+        "wsgi_server": "gunicorn",
+        "process_manager": "systemd",
+        "systemd_units": [
+          "/etc/systemd/system/nova-app.service"
+        ],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [],
+        "listen_ports": [
+          5001
+        ],
+        "owner": "nova-app",
+        "group": "nova-app"
+      },
+      "archive": "/var/tmp/opslab-migrate/nova-app.tar.zst",
+      "sha256": "86c1257701823c216aad6bae3dcfec858b4691ca526c3a83b127ed2f51960099",
+      "size": 27757413,
+      "dest_archive": "/var/tmp/opslab-migrate/nova-app.tar.zst",
+      "transfer_seconds": 24.49828577041626,
+      "snapshot": "",
+      "passed": false,
+      "checks": [
+        {
+          "name": "service nova-app.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "port 5001 listening",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "HTTP response",
+          "passed": false,
+          "detail": "no port answered"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "96013 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "11053 MB available"
+        }
+      ]
+    },
+    "opslab-books": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T17:58:13Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T17:58:28Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T17:58:50Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T17:58:51Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T17:58:51Z"
+        }
+      ],
+      "info": {
+        "name": "opslab-books",
+        "path": "/opt/opslab-books",
+        "framework": "flask",
+        "python_version": "3.12.3",
+        "venv_path": "/opt/opslab-books/venv",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "/opt/opslab-books/requirements.txt",
+        "wsgi_server": "gunicorn",
+        "process_manager": "systemd",
+        "systemd_units": [
+          "/etc/systemd/system/opslab-books.service"
+        ],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [
+          {
+            "engine": "sqlite",
+            "uri": "sqlite:////opt/opslab-books/data/opslab.db",
+            "name": "opslab.db",
+            "host": "localhost",
+            "port": 0,
+            "user": "",
+            "password": "",
+            "sqlite_path": "/opt/opslab-books/data/opslab.db"
+          }
+        ],
+        "listen_ports": [
+          5050
+        ],
+        "owner": "www-data",
+        "group": "www-data"
+      },
+      "archive": "/var/tmp/opslab-migrate/opslab-books.tar.zst",
+      "sha256": "891eb38d80f7bf67ecd60921c19b4c57dac0b76c445d6b6eceb0353aca1ec498",
+      "size": 55921981,
+      "dest_archive": "/var/tmp/opslab-migrate/opslab-books.tar.zst",
+      "transfer_seconds": 15.509271144866943,
+      "snapshot": "",
+      "passed": true,
+      "checks": [
+        {
+          "name": "service opslab-books.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "port 5050 listening",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "HTTP :5050 responds",
+          "passed": true,
+          "detail": "status 200"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "database sqlite:opslab.db",
+          "passed": true,
+          "detail": "/opt/opslab-books/data/opslab.db"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95815 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10864 MB available"
+        }
+      ]
+    },
+    "cloudpanel": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T17:58:21Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T17:58:31Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T17:59:06Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T17:59:06Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T17:59:06Z"
+        }
+      ],
+      "info": {
+        "name": "cloudpanel",
+        "path": "/root/.gunicorn/cloudpanel",
+        "framework": "flask",
+        "python_version": "3.12.3",
+        "venv_path": "",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "/root/.gunicorn/cloudpanel/requirements.txt",
+        "wsgi_server": "",
+        "process_manager": "docker",
+        "systemd_units": [],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "/root/.gunicorn/cloudpanel/docker-compose.yml",
+        "databases": [
+          {
+            "engine": "sqlite",
+            "uri": "sqlite:///:memory:",
+            "name": ":memory:",
+            "host": "localhost",
+            "port": 0,
+            "user": "",
+            "password": "",
+            "sqlite_path": "/root/.gunicorn/cloudpanel/:memory:"
+          }
+        ],
+        "listen_ports": [],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/cloudpanel.tar.zst",
+      "sha256": "d561d0081b1f49ccdad38e972299f482976d1a98da788eb24f0e2000d0b28983",
+      "size": 159501,
+      "dest_archive": "/var/tmp/opslab-migrate/cloudpanel.tar.zst",
+      "transfer_seconds": 10.28343152999878,
+      "snapshot": "",
+      "passed": false,
+      "checks": [
+        {
+          "name": "database sqlite::memory:",
+          "passed": false,
+          "detail": "missing: /root/.gunicorn/cloudpanel/:memory:"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95570 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10940 MB available"
+        }
+      ]
+    },
+    "cbot": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T17:59:01Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T17:59:13Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T17:59:25Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T17:59:37Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T17:59:37Z"
+        }
+      ],
+      "info": {
+        "name": "cbot",
+        "path": "/root/cbot",
+        "framework": "unknown",
+        "python_version": "3.12.3",
+        "venv_path": "/root/cbot/venv",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "",
+        "wsgi_server": "",
+        "process_manager": "systemd",
+        "systemd_units": [
+          "/etc/systemd/system/cbot-contact.service",
+          "/etc/systemd/system/cbot.service"
+        ],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [],
+        "listen_ports": [],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/cbot.tar.zst",
+      "sha256": "0456abb18fae7b83f4b160f5e43514d11df7bb1d3f0ad750b640d7d1b04de980",
+      "size": 8811483,
+      "dest_archive": "/var/tmp/opslab-migrate/cbot.tar.zst",
+      "transfer_seconds": 11.747087478637695,
+      "snapshot": "",
+      "passed": false,
+      "checks": [
+        {
+          "name": "service cbot-contact.service active",
+          "passed": false,
+          "detail": "activating"
+        },
+        {
+          "name": "service cbot.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95444 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10901 MB available"
+        }
+      ]
+    },
+    "cfrp_bot": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T17:59:18Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T17:59:31Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T17:59:48Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T17:59:57Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T17:59:57Z"
+        }
+      ],
+      "info": {
+        "name": "cfrp_bot",
+        "path": "/root/cfrp_bot",
+        "framework": "unknown",
+        "python_version": "3.12.3",
+        "venv_path": "/root/cfrp_bot/venv",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "/root/cfrp_bot/requirements.txt",
+        "wsgi_server": "",
+        "process_manager": "systemd",
+        "systemd_units": [
+          "/etc/systemd/system/ai-support.service",
+          "/etc/systemd/system/ollama.service"
+        ],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [],
+        "listen_ports": [],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/cfrp_bot.tar.zst",
+      "sha256": "8b93c8169672d9d235f83b8d9b0661af03dfd369d0a1d1cbce7743f453f1b314",
+      "size": 16594505,
+      "dest_archive": "/var/tmp/opslab-migrate/cfrp_bot.tar.zst",
+      "transfer_seconds": 12.459969282150269,
+      "snapshot": "",
+      "passed": false,
+      "checks": [
+        {
+          "name": "service ai-support.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "service ollama.service active",
+          "passed": false,
+          "detail": "failed"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95458 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10893 MB available"
+        }
+      ]
+    },
+    "cioda-commissions": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T17:59:48Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T17:59:58Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T18:00:14Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T18:00:29Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T18:00:29Z"
+        }
+      ],
+      "info": {
+        "name": "cioda-commissions",
+        "path": "/root/cioda_commissions/cioda-commissions",
+        "framework": "flask",
+        "python_version": "3.12.3",
+        "venv_path": "",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "/root/cioda_commissions/cioda-commissions/requirements.txt",
+        "wsgi_server": "",
+        "process_manager": "systemd",
+        "systemd_units": [
+          "/etc/systemd/system/cioda-discord-bot.service",
+          "/etc/systemd/system/cioda_commissions.service"
+        ],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [
+          {
+            "engine": "sqlite",
+            "uri": "sqlite:////root/cioda_commissions/cioda-commissions/instance/commissions.db",
+            "name": "commissions.db",
+            "host": "localhost",
+            "port": 0,
+            "user": "",
+            "password": "",
+            "sqlite_path": "/root/cioda_commissions/cioda-commissions/instance/commissions.db"
+          }
+        ],
+        "listen_ports": [
+          5002
+        ],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/cioda-commissions.tar.zst",
+      "sha256": "81407614ee06a1169b3d0ef7d192a7cdb848046e91e86ced63e6c9b6d380a7cd",
+      "size": 156753,
+      "dest_archive": "/var/tmp/opslab-migrate/cioda-commissions.tar.zst",
+      "transfer_seconds": 10.152335166931152,
+      "snapshot": "",
+      "passed": false,
+      "checks": [
+        {
+          "name": "service cioda-discord-bot.service active",
+          "passed": false,
+          "detail": "activating"
+        },
+        {
+          "name": "service cioda_commissions.service active",
+          "passed": false,
+          "detail": "failed"
+        },
+        {
+          "name": "port 5002 listening",
+          "passed": false,
+          "detail": "not listening"
+        },
+        {
+          "name": "HTTP response",
+          "passed": false,
+          "detail": "no port answered"
+        },
+        {
+          "name": "database sqlite:commissions.db",
+          "passed": true,
+          "detail": "/root/cioda_commissions/cioda-commissions/instance/commissions.db"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95378 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10878 MB available"
+        }
+      ]
+    },
+    "license": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T18:00:11Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T18:00:23Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T18:00:37Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T18:00:37Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T18:00:37Z"
+        }
+      ],
+      "info": {
+        "name": "license",
+        "path": "/root/license",
+        "framework": "unknown",
+        "python_version": "3.12.3",
+        "venv_path": "/root/license/venv",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "",
+        "wsgi_server": "",
+        "process_manager": "",
+        "systemd_units": [],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [
+          {
+            "engine": "sqlite",
+            "uri": "sqlite:////root/license/instance/license_manager.db",
+            "name": "license_manager.db",
+            "host": "localhost",
+            "port": 0,
+            "user": "",
+            "password": "",
+            "sqlite_path": "/root/license/instance/license_manager.db"
+          }
+        ],
+        "listen_ports": [],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/license.tar.zst",
+      "sha256": "93b58dd7979ff751c71abcde64ef9f4805fb7e335c01f0f9353f5018b5c628a3",
+      "size": 12355494,
+      "dest_archive": "/var/tmp/opslab-migrate/license.tar.zst",
+      "transfer_seconds": 12.254535913467407,
+      "snapshot": "",
+      "passed": true,
+      "checks": [
+        {
+          "name": "database sqlite:license_manager.db",
+          "passed": true,
+          "detail": "/root/license/instance/license_manager.db"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95348 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10875 MB available"
+        }
+      ]
+    },
+    "motoguard": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T18:00:43Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T18:00:55Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T18:01:13Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T18:01:14Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T18:01:14Z"
+        }
+      ],
+      "info": {
+        "name": "motoguard",
+        "path": "/root/motoguard/motoguard",
+        "framework": "flask",
+        "python_version": "3.12.3",
+        "venv_path": "/root/motoguard/motoguard/.venv",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "/root/motoguard/motoguard/requirements.txt",
+        "wsgi_server": "gunicorn",
+        "process_manager": "systemd",
+        "systemd_units": [
+          "/etc/systemd/system/motoguard.service"
+        ],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [
+          {
+            "engine": "sqlite",
+            "uri": "sqlite:////root/motoguard/motoguard/instance/motoguard.db",
+            "name": "motoguard.db",
+            "host": "localhost",
+            "port": 0,
+            "user": "",
+            "password": "",
+            "sqlite_path": "/root/motoguard/motoguard/instance/motoguard.db"
+          }
+        ],
+        "listen_ports": [
+          5070
+        ],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/motoguard.tar.zst",
+      "sha256": "8627a710f5d74c77b2646dfbe507594370ee31ce7a55c02cc43b394614cd8746",
+      "size": 14717609,
+      "dest_archive": "/var/tmp/opslab-migrate/motoguard.tar.zst",
+      "transfer_seconds": 12.025070428848267,
+      "snapshot": "",
+      "passed": true,
+      "checks": [
+        {
+          "name": "service motoguard.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "port 5070 listening",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "HTTP :5070 responds",
+          "passed": true,
+          "detail": "status 200"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "database sqlite:motoguard.db",
+          "passed": true,
+          "detail": "/root/motoguard/motoguard/instance/motoguard.db"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95256 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10702 MB available"
+        }
+      ]
+    },
+    "ops": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T18:00:49Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T18:01:01Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T18:01:18Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T18:01:23Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T18:01:23Z"
+        }
+      ],
+      "info": {
+        "name": "ops",
+        "path": "/root/ops",
+        "framework": "unknown",
+        "python_version": "3.12.3",
+        "venv_path": "/root/ops/venv",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "/root/ops/requirements.txt",
+        "wsgi_server": "",
+        "process_manager": "systemd",
+        "systemd_units": [
+          "/etc/systemd/system/ops-bot.service",
+          "/etc/systemd/system/opslabs-app.service",
+          "/etc/systemd/system/opslabs-bot.service"
+        ],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [],
+        "listen_ports": [],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/ops.tar.zst",
+      "sha256": "875c41f7c87dc27fa4561e627a93248b6ca341a064cb024f1dda96f0c97326e1",
+      "size": 9315446,
+      "dest_archive": "/var/tmp/opslab-migrate/ops.tar.zst",
+      "transfer_seconds": 11.875108242034912,
+      "snapshot": "",
+      "passed": false,
+      "checks": [
+        {
+          "name": "service ops-bot.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "service opslabs-app.service active",
+          "passed": false,
+          "detail": "activating"
+        },
+        {
+          "name": "service opslabs-bot.service active",
+          "passed": false,
+          "detail": "activating"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "95238 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10724 MB available"
+        }
+      ]
+    },
+    "opslabs": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T18:01:36Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T18:01:51Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T18:02:23Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T18:02:30Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T18:02:30Z"
+        }
+      ],
+      "info": {
+        "name": "opslabs",
+        "path": "/root/opslabs",
+        "framework": "flask",
+        "python_version": "3.12.3",
+        "venv_path": "/root/opslabs/venv",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "/root/opslabs/requirements.txt",
+        "wsgi_server": "",
+        "process_manager": "systemd",
+        "systemd_units": [
+          "/etc/systemd/system/opslabs-app.service",
+          "/etc/systemd/system/opslabs-bot.service"
+        ],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [
+          {
+            "engine": "sqlite",
+            "uri": "sqlite:////root/opslabs/instance/opslabs.db",
+            "name": "opslabs.db",
+            "host": "localhost",
+            "port": 0,
+            "user": "",
+            "password": "",
+            "sqlite_path": "/root/opslabs/instance/opslabs.db"
+          }
+        ],
+        "listen_ports": [],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/opslabs.tar.zst",
+      "sha256": "d6e44ae34635cee9aefb44effeb0f05acccc045bca57f4919c2ff7c9f40cda0c",
+      "size": 57669351,
+      "dest_archive": "/var/tmp/opslab-migrate/opslabs.tar.zst",
+      "transfer_seconds": 15.568702936172485,
+      "snapshot": "",
+      "passed": false,
+      "checks": [
+        {
+          "name": "service opslabs-app.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "service opslabs-bot.service active",
+          "passed": false,
+          "detail": "activating"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "database sqlite:opslabs.db",
+          "passed": true,
+          "detail": "/root/opslabs/instance/opslabs.db"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "94999 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10550 MB available"
+        }
+      ]
+    },
+    "portal-install": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T18:01:30Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T18:01:41Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T18:01:59Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T18:01:59Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T18:01:59Z"
+        }
+      ],
+      "info": {
+        "name": "portal-install",
+        "path": "/root/portal-install",
+        "framework": "flask",
+        "python_version": "3.12.3",
+        "venv_path": "",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "/root/portal-install/requirements.txt",
+        "wsgi_server": "",
+        "process_manager": "",
+        "systemd_units": [],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [],
+        "listen_ports": [],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/portal-install.tar.zst",
+      "sha256": "4444dc99aa76fb52dec3012c1783a9110a7b53583c7caafe6523acf12cf3f5ce",
+      "size": 123050,
+      "dest_archive": "/var/tmp/opslab-migrate/portal-install.tar.zst",
+      "transfer_seconds": 10.185566663742065,
+      "snapshot": "",
+      "passed": true,
+      "checks": [
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "94863 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10692 MB available"
+        }
+      ]
+    },
+    "rq-bot": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T18:02:10Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T18:02:22Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T18:02:38Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T18:02:38Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T18:02:38Z"
+        }
+      ],
+      "info": {
+        "name": "rq-bot",
+        "path": "/root/rq-bot",
+        "framework": "unknown",
+        "python_version": "3.12.3",
+        "venv_path": "/root/rq-bot/venv",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "/root/rq-bot/requirements.txt",
+        "wsgi_server": "",
+        "process_manager": "systemd",
+        "systemd_units": [
+          "/etc/systemd/system/rq-bot.service"
+        ],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [],
+        "listen_ports": [],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/rq-bot.tar.zst",
+      "sha256": "a3371120f7d05a42512ad44d56382f2277b84a7dfe5fca62b11ddfd0e82095f0",
+      "size": 9468548,
+      "dest_archive": "/var/tmp/opslab-migrate/rq-bot.tar.zst",
+      "transfer_seconds": 11.685110807418823,
+      "snapshot": "",
+      "passed": true,
+      "checks": [
+        {
+          "name": "service rq-bot.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "94815 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10572 MB available"
+        }
+      ]
+    },
+    "safetosay": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T18:02:44Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T18:02:56Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T18:03:15Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T18:03:16Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T18:03:16Z"
+        }
+      ],
+      "info": {
+        "name": "safetosay",
+        "path": "/root/safetosay",
+        "framework": "flask",
+        "python_version": "3.12.3",
+        "venv_path": "/root/safetosay/venv",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "/root/safetosay/requirements.txt",
+        "wsgi_server": "gunicorn",
+        "process_manager": "systemd",
+        "systemd_units": [
+          "/etc/systemd/system/safetosay.service"
+        ],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [
+          {
+            "engine": "sqlite",
+            "uri": "sqlite:////root/safetosay/instance/forum.db",
+            "name": "forum.db",
+            "host": "localhost",
+            "port": 0,
+            "user": "",
+            "password": "",
+            "sqlite_path": "/root/safetosay/instance/forum.db"
+          }
+        ],
+        "listen_ports": [
+          5003
+        ],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/safetosay.tar.zst",
+      "sha256": "09b3b42af6cb49954f19026986f823dac0673697d8726d3f460de7c48ff6b08e",
+      "size": 16886708,
+      "dest_archive": "/var/tmp/opslab-migrate/safetosay.tar.zst",
+      "transfer_seconds": 12.422238111495972,
+      "snapshot": "",
+      "passed": true,
+      "checks": [
+        {
+          "name": "service safetosay.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "port 5003 listening",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "HTTP :5003 responds",
+          "passed": true,
+          "detail": "status 200"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "database sqlite:forum.db",
+          "passed": true,
+          "detail": "/root/safetosay/instance/forum.db"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "94713 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10470 MB available"
+        }
+      ]
+    },
+    "spn": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T18:02:47Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T18:02:57Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T18:03:07Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T18:03:09Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T18:03:09Z"
+        }
+      ],
+      "info": {
+        "name": "spn",
+        "path": "/root/spn",
+        "framework": "unknown",
+        "python_version": "3.12.3",
+        "venv_path": "",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "",
+        "wsgi_server": "",
+        "process_manager": "systemd",
+        "systemd_units": [
+          "/etc/systemd/system/spn.service"
+        ],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [],
+        "listen_ports": [],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/spn.tar.zst",
+      "sha256": "a636838e4e2d32e25b82c042e1e77240662652a68087d1f0fb29400e14328553",
+      "size": 3307,
+      "dest_archive": "/var/tmp/opslab-migrate/spn.tar.zst",
+      "transfer_seconds": 10.011015176773071,
+      "snapshot": "",
+      "passed": false,
+      "checks": [
+        {
+          "name": "service spn.service active",
+          "passed": false,
+          "detail": "activating"
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "94761 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10498 MB available"
+        }
+      ]
+    },
+    "whitelist-app": {
+      "phase": "done",
+      "history": [
+        {
+          "phase": "discovered",
+          "at": "2026-07-04T17:56:53Z"
+        },
+        {
+          "phase": "backed_up",
+          "at": "2026-07-04T18:03:31Z"
+        },
+        {
+          "phase": "transferred",
+          "at": "2026-07-04T18:03:46Z"
+        },
+        {
+          "phase": "restored",
+          "at": "2026-07-04T18:04:23Z"
+        },
+        {
+          "phase": "verified",
+          "at": "2026-07-04T18:04:24Z"
+        },
+        {
+          "phase": "done",
+          "at": "2026-07-04T18:04:24Z"
+        }
+      ],
+      "info": {
+        "name": "whitelist-app",
+        "path": "/root/whitelist-app",
+        "framework": "flask",
+        "python_version": "3.12.3",
+        "venv_path": "/root/whitelist-app/venv",
+        "uses_poetry": false,
+        "uses_pipenv": false,
+        "requirements_file": "/root/whitelist-app/requirements.txt",
+        "wsgi_server": "gunicorn",
+        "process_manager": "systemd",
+        "systemd_units": [
+          "/etc/systemd/system/whitelist-app.service",
+          "/etc/systemd/system/whitelist-bot.service"
+        ],
+        "supervisor_configs": [],
+        "nginx_configs": [],
+        "apache_configs": [],
+        "docker_compose": "",
+        "databases": [
+          {
+            "engine": "sqlite",
+            "uri": "sqlite:////root/whitelist-app/instance/whitelist.db",
+            "name": "whitelist.db",
+            "host": "localhost",
+            "port": 0,
+            "user": "",
+            "password": "",
+            "sqlite_path": "/root/whitelist-app/instance/whitelist.db"
+          },
+          {
+            "engine": "postgresql",
+            "uri": "postgresql://user:password@localhost:5432/whitelist_db",
+            "name": "whitelist_db",
+            "host": "localhost",
+            "port": 5432,
+            "user": "user",
+            "password": "password",
+            "sqlite_path": ""
+          }
+        ],
+        "listen_ports": [],
+        "owner": "root",
+        "group": "root"
+      },
+      "archive": "/var/tmp/opslab-migrate/whitelist-app.tar.zst",
+      "sha256": "503fcd2f46111ab9907ed098901138ebca766be090d975292b3353dfb6eefaa3",
+      "size": 41139986,
+      "dest_archive": "/var/tmp/opslab-migrate/whitelist-app.tar.zst",
+      "transfer_seconds": 14.870625019073486,
+      "snapshot": "",
+      "passed": false,
+      "checks": [
+        {
+          "name": "service whitelist-app.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "service whitelist-bot.service active",
+          "passed": true,
+          "detail": "active"
+        },
+        {
+          "name": "python import flask",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "database sqlite:whitelist.db",
+          "passed": true,
+          "detail": "/root/whitelist-app/instance/whitelist.db"
+        },
+        {
+          "name": "database postgresql:whitelist_db",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "disk space > 1GB free",
+          "passed": true,
+          "detail": "94511 MB free"
+        },
+        {
+          "name": "memory > 256MB available",
+          "passed": true,
+          "detail": "10347 MB available"
+        }
+      ]
+    }
+  },
+  "meta": {}
+}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Branding · Ledgerly{% endblock %}
+{% block content %}
+<p class="text-gold text-xs tracking-[0.22em] uppercase mb-2 font-medium">Documents</p>
+<h1 class="font-display text-4xl tracking-tight mb-8">Branding</h1>
+<p class="text-sm text-muted -mt-6 mb-8 max-w-xl">Every downloaded PDF and public share page uses this — your name, colors, and logo instead of generic Ledgerly branding.</p>
+
+<form method="post" enctype="multipart/form-data" class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+  <div class="space-y-6">
+
+    <div class="card p-6">
+      <p class="font-display text-lg mb-4">Name on documents</p>
+      <label class="block text-xs text-muted mb-1.5">Display name</label>
+      <input type="text" name="brand_display_name" value="{{ company.brand_display_name or '' }}" placeholder="{{ company.name }}" class="w-full input-field px-3 py-2 text-sm">
+      <p class="text-xs text-muted mt-1.5">Leave blank to use your company name, "{{ company.name }}".</p>
+    </div>
+
+    <div class="card p-6">
+      <p class="font-display text-lg mb-4">Colors</p>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-muted mb-1.5">Background</label>
+          <div class="flex items-center gap-2">
+            <input type="color" id="bg-picker" value="{{ company.brand_bg_color or '#0B1F3A' }}" class="h-10 w-12 rounded-lg border border-white/10 bg-transparent cursor-pointer">
+            <input type="text" name="brand_bg_color" id="bg-text" value="{{ company.brand_bg_color or '#0B1F3A' }}" class="w-full input-field px-3 py-2 text-sm num" maxlength="7">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-muted mb-1.5">Accent</label>
+          <div class="flex items-center gap-2">
+            <input type="color" id="accent-picker" value="{{ company.brand_accent_color or '#B08D3E' }}" class="h-10 w-12 rounded-lg border border-white/10 bg-transparent cursor-pointer">
+            <input type="text" name="brand_accent_color" id="accent-text" value="{{ company.brand_accent_color or '#B08D3E' }}" class="w-full input-field px-3 py-2 text-sm num" maxlength="7">
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-muted mt-3">Text and table colors on the PDF adjust automatically for readability against whatever background you pick.</p>
+    </div>
+
+    <div class="card p-6">
+      <p class="font-display text-lg mb-4">Logo <span class="text-xs text-muted font-normal">(optional, PNG or JPG)</span></p>
+      {% if company.brand_logo_filename %}
+      <div class="flex items-center gap-4 mb-4">
+        <div class="bg-white rounded-lg p-3">
+          <img src="{{ url_for('uploaded_file', filename=company.brand_logo_filename) }}" alt="Current logo" class="h-10 object-contain">
+        </div>
+        <label class="flex items-center gap-2 text-xs text-muted">
+          <input type="checkbox" name="remove_logo" class="rounded border-white/20 bg-ink-raised">
+          Remove logo
+        </label>
+      </div>
+      {% endif %}
+      <input type="file" name="logo" accept=".png,.jpg,.jpeg" class="w-full text-sm text-muted file:mr-3 file:btn-secondary file:px-3 file:py-1.5 file:text-xs file:cursor-pointer">
+      <p class="text-xs text-muted mt-2">When set, the logo replaces the text name at the top of PDFs. Up to 5MB.</p>
+    </div>
+
+    <button class="btn-primary px-5 py-2.5 text-sm">Save branding</button>
+  </div>
+
+  <div class="lg:sticky lg:top-6">
+    <p class="text-gold text-xs tracking-[0.2em] uppercase mb-3">Preview</p>
+    <div id="pdf-preview" class="rounded-2xl p-8 transition-colors" style="background:{{ company.brand_bg_color or '#0B1F3A' }}">
+      <div id="preview-logo-row" class="{{ 'hidden' if not company.brand_logo_filename }} mb-4">
+        {% if company.brand_logo_filename %}
+        <img src="{{ url_for('uploaded_file', filename=company.brand_logo_filename) }}" alt="Logo" class="h-8 object-contain">
+        {% endif %}
+      </div>
+      <p id="preview-name" class="font-display font-bold text-lg mb-4 {{ 'hidden' if company.brand_logo_filename }}" style="color:{{ company.brand_accent_color or '#B08D3E' }}">{{ company.brand_display_name or company.name }}</p>
+      <p id="preview-eyebrow" class="text-xs font-bold tracking-widest uppercase mb-2" style="color:{{ company.brand_accent_color or '#B08D3E' }}">Payment Schedule</p>
+      <p id="preview-title" class="font-display text-2xl mb-1" style="color:#F3F3F3">Website Development</p>
+      <p class="text-sm mb-5" style="color:#C7CCD3">Client: Beacon Foods Ltd</p>
+      <div class="text-sm space-y-2" style="color:#F3F3F3">
+        <div class="flex justify-between border-b pb-2" style="border-color:rgba(255,255,255,0.15)"><span style="color:#9AA2AC">Total contract value</span><span>£2,400.00</span></div>
+        <div class="flex justify-between border-b pb-2" style="border-color:rgba(255,255,255,0.15)"><span style="color:#9AA2AC">Status</span><span>SENT</span></div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+  const bgPicker = document.getElementById('bg-picker');
+  const bgText = document.getElementById('bg-text');
+  const accentPicker = document.getElementById('accent-picker');
+  const accentText = document.getElementById('accent-text');
+  const preview = document.getElementById('pdf-preview');
+  const previewName = document.getElementById('preview-name');
+  const previewEyebrow = document.getElementById('preview-eyebrow');
+
+  function syncColor(picker, text, apply) {
+    picker.addEventListener('input', () => { text.value = picker.value; apply(picker.value); });
+    text.addEventListener('input', () => {
+      if (/^#[0-9A-Fa-f]{6}$/.test(text.value)) { picker.value = text.value; apply(text.value); }
+    });
+  }
+  syncColor(bgPicker, bgText, (v) => { preview.style.background = v; });
+  syncColor(accentPicker, accentText, (v) => { previewName.style.color = v; previewEyebrow.style.color = v; });
+</script>
+{% endblock %}

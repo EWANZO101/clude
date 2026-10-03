@@ -1,0 +1,26 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Financial calendar{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  {% call ui.page_header(anchor.strftime('%B %Y')) %}
+    {{ ui.button("← Prev", href=url_for('finance.calendar', month=prev_month), size="sm") }}
+    {{ ui.button("Next →", href=url_for('finance.calendar', month=next_month), size="sm") }}
+  {% endcall %}
+  <p class="text-xs text-slate-500 -mt-3">Agenda view — day/week/year grid views are on the roadmap.</p>
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    {% for e in events %}
+      <div class="p-4 flex items-center justify-between text-sm hover:bg-surface-hover/40 transition-colors">
+        <div>
+          <p class="text-slate-100">{{ e.label }}</p>
+          <p class="text-xs text-slate-500">{{ e.date }} · {{ e.kind }}</p>
+        </div>
+        <span class="font-medium tabular-nums {{ 'text-emerald-400' if e.amount_minor >= 0 else 'text-slate-200' }}">{{ e.amount_minor | money }}</span>
+      </div>
+    {% else %}
+      {% call ui.empty_state("Nothing scheduled this month", icon_name="calendar") %}{% endcall %}
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

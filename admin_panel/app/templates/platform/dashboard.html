@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Platform overview — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles"><h1>Platform overview</h1></div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-tile">
+    <div class="stat-num" id="pstat-companies">{{ stats.total_companies }}</div>
+    <div class="stat-label">Companies</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-num" id="pstat-kiosks">{{ stats.total_kiosks }}</div>
+    <div class="stat-label">Total kiosks</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-num" id="pstat-online" style="color:var(--green);">{{ stats.online }}</div>
+    <div class="stat-label">Online</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-num" id="pstat-offline" style="color:var(--muted);">{{ stats.offline }}</div>
+    <div class="stat-label">Offline</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-num" id="pstat-updating" style="color:var(--amber);">{{ stats.updating }}</div>
+    <div class="stat-label">Updating</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-num" id="pstat-successful-24h" style="color:var(--green);">{{ stats.successful_24h }}</div>
+    <div class="stat-label">Successful (24h)</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-num" id="pstat-failed-24h" style="color:{{ 'var(--red)' if stats.failed_24h else 'var(--text)' }};">{{ stats.failed_24h }}</div>
+    <div class="stat-label">Failed (24h)</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-num" id="pstat-packages">{{ stats.total_packages }}</div>
+    <div class="stat-label">Releases</div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var STATUS_URL = {{ url_for('platform.dashboard_status')|tojson }};
+  var setNum = function (id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+
+  opslabLongPoll(STATUS_URL, function (s) {
+    setNum('pstat-companies', s.total_companies);
+    setNum('pstat-kiosks', s.total_kiosks);
+    setNum('pstat-online', s.online);
+    setNum('pstat-offline', s.offline);
+    setNum('pstat-updating', s.updating);
+    setNum('pstat-successful-24h', s.successful_24h);
+    setNum('pstat-packages', s.total_packages);
+    var failedEl = document.getElementById('pstat-failed-24h');
+    if (failedEl) {
+      failedEl.textContent = s.failed_24h;
+      failedEl.style.color = s.failed_24h ? 'var(--red)' : 'var(--text)';
+    }
+  });
+});
+</script>
+
+<div class="panel">
+  <div class="panel-head"><h2>Recent update outcomes</h2></div>
+  {% if outcome_counts.all %}
+    {% import "_update_history.html" as history %}
+    {% macro _deployment_rows(rows) %}
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Company</th><th>Instance</th><th>Version</th><th>Status</th><th>Completed</th></tr></thead>
+        <tbody>
+          {% for d in rows %}
+            <tr>
+              <td>{{ d.instance.company.name }}</td>
+              <td>{{ d.instance.display_name() }}</td>
+              <td class="mono">v{{ d.package.version }}</td>
+              <td>
+                {% if d.status == 'successful' %}
+                  <span class="pill pill-green">Successful</span>
+                {% else %}
+                  <span class="pill pill-red">{{ d.status.replace('_',' ')|capitalize }}</span>
+                {% endif %}
+              </td>
+              <td>{{ d.completed_at | friendly_dt if d.completed_at else '—' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    {% endmacro %}
+
+    <div class="page-tabbed filter-tabs" data-default-tab="all">
+      <div class="page-tabs" role="tablist">
+        <button type="button" class="page-tab-btn" data-tab="all">All<span class="tab-count">{{ outcome_counts.all }}</span></button>
+        <button type="button" class="page-tab-btn" data-tab="successful">Successful<span class="tab-count">{{ outcome_counts.successful }}</span></button>
+        <button type="button" class="page-tab-btn" data-tab="failed">Failed<span class="tab-count">{{ outcome_counts.failed }}</span></button>
+      </div>
+
+      {% for key in ['all', 'successful', 'failed'] %}
+        <div class="page-tab-panel" data-tab-panel="{{ key }}" {{ 'hidden' if not loop.first }}>
+          {% if outcome_groups[key] %}
+            {{ history.grouped_history(outcome_groups[key], _deployment_rows) }}
+          {% else %}
+            <div class="empty">Nothing in this category yet.</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">No completed updates yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+[Unit]
+Description=Scheduler Discord notification bot
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/scheduler
+EnvironmentFile=/opt/scheduler/.env
+ExecStart=/opt/scheduler/venv/bin/python -m discord_bot.bot
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Users — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">Access control</p>
+    <h1 class="page-title">Users</h1>
+    <p class="page-sub">Accounts and roles</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('users.create') }}">+ New user</a>
+</div>
+
+<div class="card flush">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Active</th>
+          <th>Last login</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td class="primary">{{ u.username }}{% if u.id == current_user.id %} <span class="badge badge-muted" style="padding:2px 7px;">you</span>{% endif %}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.role.name if u.role }}</td>
+          <td>
+            <span class="status-dot {{ 'ok' if u.is_active_flag else '' }}"></span>
+            {{ 'Yes' if u.is_active_flag else 'No' }}
+          </td>
+          <td class="mono" style="font-size:13px;">{{ u.last_login_at.strftime('%Y-%m-%d %H:%M') if u.last_login_at else 'never' }}</td>
+          <td>
+            <div class="table-actions">
+              <a href="{{ url_for('users.edit', user_id=u.id) }}" class="btn btn-secondary btn-sm">Edit</a>
+              {% if u.id != current_user.id %}
+              <form method="POST" action="{{ url_for('users.delete', user_id=u.id) }}" onsubmit="return confirm('Delete {{ u.username }}?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

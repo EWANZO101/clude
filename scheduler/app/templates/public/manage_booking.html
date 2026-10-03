@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Manage your booking · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto max-w-lg px-4 py-16">
+  <h1 class="font-display text-2xl font-semibold text-ink text-center">Your booking</h1>
+
+  {% include "partials/flash.html" %}
+
+  <div class="card mt-8 p-6">
+    <div class="flex items-center gap-2">
+      <p class="font-medium text-ink">{{ booking.booking_type.name if booking.booking_type else "Meeting" }}</p>
+      <span class="text-[10px] font-medium uppercase tracking-wide rounded px-1.5 py-0.5 border
+        {{ 'border-status-available/30 text-status-available' if booking.status == 'confirmed'
+           else 'border-status-busy/30 text-status-busy' if booking.status == 'cancelled'
+           else 'border-border text-ink-faint' }}">
+        {{ booking.status }}
+      </span>
+    </div>
+    <p class="mt-2 text-sm text-ink-muted">
+      {{ booking.start_datetime.strftime('%A %d %B %Y') }}<br>
+      {{ booking.start_datetime.strftime('%H:%M') }} – {{ booking.end_datetime.strftime('%H:%M') }}
+    </p>
+    <p class="mt-3 text-sm text-ink-faint">Booked by {{ booking.name }} ({{ booking.email }})</p>
+    {% if booking.notes %}<p class="mt-3 text-sm text-ink-muted italic">"{{ booking.notes }}"</p>{% endif %}
+  </div>
+
+  {% if booking.status != 'cancelled' %}
+  <form method="POST" class="mt-6" onsubmit="return confirm('Cancel this booking?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn-danger w-full">Cancel this booking</button>
+  </form>
+  {% else %}
+  <p class="mt-6 text-center text-sm text-ink-muted">This booking has been cancelled.</p>
+  {% endif %}
+</div>
+{% endblock %}

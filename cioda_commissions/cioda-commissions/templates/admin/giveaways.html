@@ -1,0 +1,178 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Giveaways — Admin{% endblock %}
+{% block admin_content %}
+
+<div style="margin-bottom:1.25rem;">
+  <h1 class="font-display" style="font-size:1.6rem;margin-bottom:0.2rem;">Giveaways</h1>
+  <p style="color:var(--text-muted);font-size:0.85rem;font-style:italic;">
+    Run giveaways from here or with <code>/giveaway</code> in Discord (role <code>.</code> only) — both stay in sync.
+    Everything posts in <span class="font-mono">#🎊giveaways</span> (<span class="font-mono">{{ channel_id }}</span>).
+    People enter with the 🎉 button or on the <a href="/giveaways" style="color:var(--accent);">public giveaways page</a>.
+  </p>
+</div>
+
+{% if not bot_ready %}
+<div class="flash flash-warning" style="margin-bottom:1.25rem;">
+  No Discord bot token is set (Settings → Discord Bot), so giveaways can't be posted to Discord until one is added.
+</div>
+{% endif %}
+
+<!-- ── How it works ── -->
+<details class="card" style="margin-bottom:1.25rem;padding:0;">
+  <summary style="padding:0.85rem 1rem;cursor:pointer;font-family:'Cinzel',serif;font-size:0.78rem;color:var(--accent);letter-spacing:.06em;">
+    ❓ HOW GIVEAWAYS WORK
+  </summary>
+  <div style="padding:0 1rem 1rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.9rem;font-size:0.86rem;color:var(--text-secondary);line-height:1.55;">
+    <div>
+      <div style="color:var(--text-primary);font-weight:600;margin-bottom:0.25rem;">🎁 Prize types</div>
+      <b>🏷 Discount Code</b> — each winner gets their own single-use code (e.g. 20% or $10 off) DM'd to them.<br>
+      <b>🎨 Free Art Piece</b> — each winner gets a single-use 100%-off code for the commission type you pick.<br>
+      <b>✨ Something Else</b> — anything you like; you sort out delivery with the winner yourself.
+    </div>
+    <div>
+      <div style="color:var(--text-primary);font-weight:600;margin-bottom:0.25rem;">🏆 Win modes</div>
+      <b>🎲 Random draw</b> — entries stay open until the timer ends, then winners are picked at random.<br>
+      <b>⚡ First come, first served</b> — the first N people to enter win instantly; it ends as soon as all prizes are claimed (or when time runs out).
+    </div>
+    <div>
+      <div style="color:var(--text-primary);font-weight:600;margin-bottom:0.25rem;">📦 Delivery &amp; rerolls</div>
+      Winners are pinged in #giveaways and DM'd (with their code, if the prize has one). Codes show up under
+      <a href="/admin/discounts" style="color:var(--accent);">Discount Codes</a>.
+      Rerolling a winner switches off their code if it hasn't been used and picks someone new.
+    </div>
+  </div>
+</details>
+
+<!-- ── Start a giveaway ── -->
+<div class="card" style="margin-bottom:1.5rem;padding:0;">
+  <div style="padding:0.85rem 1rem;border-bottom:1px solid var(--border);">
+    <div class="font-display" style="font-size:0.78rem;color:var(--accent);letter-spacing:.06em;">🎁 START A GIVEAWAY</div>
+  </div>
+  <form method="POST" action="/admin/giveaways/new" style="padding:1rem;" onsubmit="fillUtc(this)">
+    <label class="form-label">What are you giving away?</label>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.5rem;margin-bottom:1rem;">
+      {% for key, label in prize_types.items() %}
+      <label class="card" style="padding:0.7rem 0.8rem;cursor:pointer;display:flex;gap:0.5rem;align-items:center;margin:0;">
+        <input type="radio" name="prize_type" value="{{ key }}" {{ 'checked' if loop.first }} onchange="showPrizeFields()">
+        <span style="color:var(--text-primary);">{{ label }}</span>
+      </label>
+      {% endfor %}
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.75rem;margin-bottom:0.85rem;">
+      <div data-for="discount">
+        <label class="form-label">Discount *</label>
+        <input type="text" name="discount" class="input" placeholder='e.g. "20%" or "$10"'>
+      </div>
+      <div data-for="free_art" style="grid-column:span 2;">
+        <label class="form-label">Commission type *</label>
+        <select name="commission_type_id" class="input">
+          {% for t in commission_types %}
+          <option value="{{ t.id }}">{{ t.category }} — {{ t.type_name }} (${{ '%g'|format(t.price) }})</option>
+          {% else %}
+          <option value="">No active commission types — add some first</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div data-for="discount free_art">
+        <label class="form-label">Codes valid for <span style="color:var(--text-muted);font-weight:400;">(days, 0 = forever)</span></label>
+        <input type="number" name="code_valid_days" class="input" min="0" max="3650" value="60">
+      </div>
+      <div style="grid-column:1/-1;">
+        <label class="form-label">Prize name <span data-for="discount free_art" style="color:var(--text-muted);font-weight:400;">(optional — auto-named if blank)</span><span data-for="custom"> *</span></label>
+        <input type="text" name="prize" class="input" maxlength="200" placeholder="e.g. Custom emote pack">
+      </div>
+      <div style="grid-column:1/-1;">
+        <label class="form-label">Description <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+        <textarea name="description" class="input" rows="3" maxlength="2000"
+                  placeholder="Rules, eligibility, anything entrants should know…"></textarea>
+      </div>
+      <div>
+        <label class="form-label">Win mode</label>
+        <select name="win_mode" class="input">
+          {% for key, label in win_modes.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Winners</label>
+        <input type="number" name="winners_count" class="input" min="1" max="50" value="1">
+      </div>
+      <div>
+        <label class="form-label">Ping when posted</label>
+        <select name="ping_mode" class="input">
+          {% for key, label in ping_modes.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Duration</label>
+        <input type="text" name="duration" class="input" placeholder="e.g. 3d, 1d 12h, 45m">
+      </div>
+      <div>
+        <label class="form-label">…or ends at <span style="color:var(--text-muted);font-weight:400;">(your time)</span></label>
+        <input type="datetime-local" class="input" data-utc-target="ends_at_utc">
+        <input type="hidden" name="ends_at_utc">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">🎉 Start Giveaway</button>
+  </form>
+</div>
+
+<!-- ── List ── -->
+{% if giveaways %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:var(--bg-elevated);">
+          {% for h in ['Prize', 'Status', 'Mode', 'Entries', 'Ends', 'Discord'] %}
+          <th style="padding:0.65rem 0.75rem;text-align:left;font-family:'Cinzel',serif;font-size:0.7rem;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;">{{ h }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in giveaways %}
+        <tr style="border-top:1px solid var(--border);cursor:pointer;{{ 'opacity:0.5;' if g.status == 'cancelled' }}"
+            onclick="location.href='/admin/giveaways/{{ g.giveaway_id }}'">
+          <td style="padding:0.7rem 0.75rem;">
+            <div style="color:var(--text-primary);font-weight:600;">{{ g.prize }}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">
+              <span class="font-mono">{{ g.giveaway_id }}</span> · {{ prize_types.get(g.prize_type, '') }}
+            </div>
+          </td>
+          <td style="padding:0.7rem 0.75rem;">{% include "admin/_giveaway_status.html" %}</td>
+          <td style="padding:0.7rem 0.75rem;font-size:0.85rem;color:var(--text-secondary);white-space:nowrap;">
+            {{ '⚡ First come' if g.win_mode == 'first_come' else '🎲 Random' }} · {{ g.winners_count }}
+          </td>
+          <td style="padding:0.7rem 0.75rem;color:var(--text-secondary);">{{ counts[g.giveaway_id] }}</td>
+          <td style="padding:0.7rem 0.75rem;font-size:0.85rem;color:var(--text-muted);white-space:nowrap;">
+            <time data-utc="{{ g.ends_at.isoformat() }}Z">{{ g.ends_at.strftime('%b %d, %H:%M') }} UTC</time>
+          </td>
+          <td style="padding:0.7rem 0.75rem;font-size:0.85rem;">
+            {% if g.discord_message_id %}<span style="color:var(--success);">● Posted</span>
+            {% else %}<span style="color:var(--warning);">● Not posted</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:2.5rem;color:var(--text-muted);font-style:italic;">
+  No giveaways yet. Start one above.
+</div>
+{% endif %}
+
+<script>
+// Only show the inputs that apply to the chosen prize type.
+function showPrizeFields() {
+  const type = document.querySelector('input[name="prize_type"]:checked').value;
+  document.querySelectorAll('[data-for]').forEach(el => {
+    el.style.display = el.dataset.for.split(' ').includes(type) ? '' : 'none';
+  });
+  document.querySelector('input[name="prize"]').required = (type === 'custom');
+}
+showPrizeFields();
+</script>
+{% include "admin/_giveaway_time_js.html" %}
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Server token — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-2">
+    {{ 'Token regenerated' if regenerated else server.name + ' registered' }}
+  </h1>
+  <p class="text-sm text-gray-400 mb-6">
+    Save this now — it won't be shown again. This one line replaces all
+    manual product config in server.cfg.
+  </p>
+
+  <div class="bg-surface-card border border-surface-border rounded-lg p-5 mb-6">
+    <div class="text-xs uppercase tracking-wide text-amber-400 mb-1">Add to server.cfg</div>
+    <div class="font-mono text-sm text-amber-300 break-all">setr cloudloader_server_token "{{ token }}"</div>
+  </div>
+
+  <p class="text-sm text-gray-500 mb-6">
+    Then <code class="text-gray-400">ensure cloudloader</code> and restart. Any
+    products you attach to {{ server.name }} — now or later — load automatically,
+    no further editing.
+  </p>
+
+  <a href="{{ url_for('portal.server_detail', server_id=server.id) }}" class="inline-block bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition">
+    Attach products to this server
+  </a>
+</div>
+{% endblock %}

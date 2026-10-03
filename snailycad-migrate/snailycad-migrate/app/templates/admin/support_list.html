@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Support — Admin — {{ app_name }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+
+<div class="flex items-center justify-between mb-4">
+  <div class="flex gap-2 text-xs flex-wrap">
+    <a href="{{ url_for('admin.support_tickets') }}"
+       class="px-2 py-1 rounded {{ 'bg-blue-600 text-white' if not status_filter else 'bg-panel border border-border text-gray-400' }}">All</a>
+    {% for s in statuses %}
+      <a href="{{ url_for('admin.support_tickets', status=s) }}"
+         class="px-2 py-1 rounded {{ 'bg-blue-600 text-white' if status_filter == s else 'bg-panel border border-border text-gray-400' }}">{{ s.replace("_"," ") }}</a>
+    {% endfor %}
+    <a href="{{ url_for('admin.support_tickets', assigned='me') }}"
+       class="px-2 py-1 rounded {{ 'bg-blue-600 text-white' if assigned_filter == 'me' else 'bg-panel border border-border text-gray-400' }}">Assigned to me</a>
+    <a href="{{ url_for('admin.support_tickets', assigned='unassigned') }}"
+       class="px-2 py-1 rounded {{ 'bg-blue-600 text-white' if assigned_filter == 'unassigned' else 'bg-panel border border-border text-gray-400' }}">Unassigned</a>
+  </div>
+  <a href="{{ url_for('admin.support_new_for_user') }}"
+     class="text-xs px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-500">+ Open ticket for user</a>
+</div>
+
+<div class="bg-panel border border-border rounded-lg p-4">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-gray-500 border-b border-border">
+        <th class="py-2">Subject</th>
+        <th class="py-2">User</th>
+        <th class="py-2">Priority</th>
+        <th class="py-2">Status</th>
+        <th class="py-2">Assigned</th>
+        <th class="py-2">Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ticket in tickets %}
+      <tr class="border-b border-border/50">
+        <td class="py-2">
+          <a href="{{ url_for('admin.support_ticket_detail', ticket_id=ticket.id) }}" class="text-blue-400 hover:text-blue-300">
+            {{ ticket.subject }}
+          </a>
+        </td>
+        <td class="py-2 text-gray-300">{{ ticket.user.email if ticket.user else "—" }}</td>
+        <td class="py-2">
+          {% set pcolor = {'low':'text-gray-400','normal':'text-blue-400','high':'text-yellow-400','urgent':'text-red-400'} %}
+          <span class="{{ pcolor.get(ticket.priority, 'text-gray-400') }}">{{ ticket.priority }}</span>
+        </td>
+        <td class="py-2 text-gray-400">{{ ticket.status.replace("_"," ") }}</td>
+        <td class="py-2 text-gray-400">{{ ticket.assignee.email if ticket.assignee else "—" }}</td>
+        <td class="py-2 text-gray-500">{{ ticket.updated_at }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="py-4 text-center text-gray-500">No tickets found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

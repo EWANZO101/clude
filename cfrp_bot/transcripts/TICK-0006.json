@@ -1,0 +1,28 @@
+{
+  "ticket_id": "TICK-0006",
+  "ticket_type": "dispatch",
+  "opened_by": "Xander Kruger",
+  "opened_at": "2026-05-07 18:14:58",
+  "closed_by": "Xander Kruger",
+  "closed_at": "2026-05-07 18:15 UTC",
+  "messages": [
+    {
+      "ts": "2026-05-07T18:14:58.875000+00:00",
+      "author": "GSRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1501614137984155790> <@1041313268234457098>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-07T18:14:59.764000+00:00",
+      "author": "GSRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ server.name }} — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-1">{{ server.name }}</h1>
+  <div class="flex items-center gap-2 mb-1">
+    <span class="text-xs px-2 py-0.5 rounded-full {{ 'bg-emerald-950 text-emerald-400' if online else 'bg-gray-800 text-gray-500' }}">
+      {{ 'online' if online else 'offline' }}
+    </span>
+    <span class="text-xs text-gray-500">last check-in: {{ last_seen_text }}</span>
+  </div>
+  <p class="text-sm text-gray-500 font-mono mb-6 break-all">{{ server.token_prefix }}••••••••••••••••••••••••••••••••</p>
+
+  <h2 class="text-sm font-medium text-gray-400 mb-3">Attached products</h2>
+  {% if attached %}
+    <div class="space-y-2 mb-6">
+      {% for sl in attached %}
+        <div class="flex items-center justify-between gap-3 bg-surface-card border border-surface-border rounded-lg px-4 py-3">
+          <div class="min-w-0 flex-1">
+            <div class="text-white text-sm font-medium truncate">{{ sl.license.product.name }}</div>
+            <div class="text-gray-500 text-xs font-mono truncate">{{ sl.license.license_key }}</div>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <form method="POST" action="{{ url_for('portal.set_channel', server_id=server.id, license_id=sl.license_id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <select name="channel" onchange="this.form.submit()"
+                class="text-xs bg-surface border border-surface-border rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand">
+                <option value="stable" {{ 'selected' if sl.channel == 'stable' }}>Stable</option>
+                <option value="beta" {{ 'selected' if sl.channel == 'beta' }}>Beta</option>
+              </select>
+            </form>
+            <form method="POST" action="{{ url_for('portal.detach_license', server_id=server.id, license_id=sl.license_id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="text-xs text-red-400 hover:text-red-300">Remove</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500 mb-6">Nothing attached yet.</p>
+  {% endif %}
+
+  {% if available_licenses %}
+    <h2 class="text-sm font-medium text-gray-400 mb-3">Add a product</h2>
+    <form method="POST" action="{{ url_for('portal.attach_license', server_id=server.id) }}" class="flex gap-3 mb-8">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <select name="license_id" class="flex-1 bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+        {% for lic in available_licenses %}
+          <option value="{{ lic.id }}">{{ lic.product.name }} — {{ lic.license_key }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition whitespace-nowrap">
+        Attach
+      </button>
+    </form>
+  {% endif %}
+
+  <div class="flex gap-3 pt-4 border-t border-surface-border">
+    <form method="POST" action="{{ url_for('portal.regenerate_token', server_id=server.id) }}"
+          onsubmit="return confirm('This invalidates the current token - update server.cfg with the new one right after. Continue?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="text-sm text-amber-400 hover:text-amber-300 border border-surface-border rounded-md px-3 py-1.5 transition">
+        Regenerate token
+      </button>
+    </form>
+    <form method="POST" action="{{ url_for('portal.delete_server', server_id=server.id) }}"
+          onsubmit="return confirm('Remove this server? This cannot be undone.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="text-sm text-red-400 hover:text-red-300 border border-surface-border rounded-md px-3 py-1.5 transition">
+        Remove server
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

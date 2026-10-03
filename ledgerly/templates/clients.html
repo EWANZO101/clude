@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Clients · Ledgerly{% endblock %}
+{% block content %}
+<p class="text-gold text-xs tracking-[0.2em] uppercase mb-1">People</p>
+<h1 class="font-display text-4xl tracking-tight mb-8">Clients</h1>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <div class="lg:col-span-2 space-y-3">
+    {% if not clients %}
+    <div class="border border-dashed border-white/10 rounded-2xl p-10 text-center text-muted">No clients yet — add your first one.</div>
+    {% endif %}
+    {% for c in clients %}
+    <div class="card p-4 flex items-center justify-between">
+      <div>
+        <p class="font-medium">{{ c.name }}</p>
+        {% if c.email %}<p class="text-xs text-muted">{{ c.email }}</p>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div>
+    <form method="post" class="card p-5 space-y-4">
+      <p class="font-display text-lg mb-1">Add a client</p>
+      <div>
+        <label class="block text-xs text-muted mb-1.5">Name</label>
+        <input name="name" required class="w-full input-field px-3 py-2 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs text-muted mb-1.5">Email (optional)</label>
+        <input type="email" name="email" class="w-full input-field px-3 py-2 text-sm">
+      </div>
+      <button class="w-full btn-primary py-2 text-sm">Add client</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

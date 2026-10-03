@@ -1,0 +1,28 @@
+{
+  "ticket_id": "TICK-0008",
+  "ticket_type": "whitelist",
+  "opened_by": "e",
+  "opened_at": "2026-05-28 20:27:55",
+  "closed_by": "e",
+  "closed_at": "2026-05-28 20:28 UTC",
+  "messages": [
+    {
+      "ts": "2026-05-28T20:27:56.018000+00:00",
+      "author": "GSRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1501614137984155790> <@344560012997165057>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-28T20:27:56.641000+00:00",
+      "author": "GSRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

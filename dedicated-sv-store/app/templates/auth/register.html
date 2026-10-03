@@ -1,0 +1,23 @@
+{% extends "layouts/auth.html" %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}Create an account — {{ app_name }}{% endblock %}
+{% block auth_title %}Create your account{% endblock %}
+{% block auth_subtitle %}Get started buying, building or hosting servers.{% endblock %}
+{% block content %}
+<form method="POST" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="grid grid-cols-2 gap-3">
+    {{ field(form.first_name, autocomplete="given-name") }}
+    {{ field(form.last_name, autocomplete="family-name") }}
+  </div>
+  {{ field(form.email, autocomplete="email", placeholder="you@example.com") }}
+  {{ field(form.password, autocomplete="new-password") }}
+  {{ field(form.confirm_password, autocomplete="new-password") }}
+  <button type="submit" class="btn-primary w-full">Create account</button>
+</form>
+{% endblock %}
+{% block auth_footer %}
+<p class="text-center text-sm text-text-secondary mt-6">
+  Already have an account? <a href="{{ url_for('auth.login') }}" class="text-brand-400 hover:text-brand-300">Log in</a>
+</p>
+{% endblock %}

@@ -1,0 +1,7 @@
+{
+  "version": "3.2",
+  "supported_os": [
+    "ubuntu",
+    "debian"
+  ]
+}

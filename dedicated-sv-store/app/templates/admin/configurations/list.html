@@ -1,0 +1,26 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Custom Configurations — Admin{% endblock %}
+{% block page_title %}Custom configurations{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Name</th><th>Customer</th><th>Components</th><th>Monthly price</th><th>Status</th><th>Created</th></tr></thead>
+    <tbody>
+      {% for config in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ config.name }}</td>
+        <td class="text-text-secondary">{{ config.user.email }}</td>
+        <td>{{ config.components|length }}</td>
+        <td class="text-text-primary">£{{ config.monthly_price }}/mo</td>
+        <td><span class="badge-neutral">{{ config.status|hwval }}</span></td>
+        <td class="text-text-muted">{{ config.created_at.strftime("%d %b %Y") }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-text-muted py-8">No saved configurations yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.configurations") }}
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Add Role — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.list_roles') }}">← Roles</a></p>
+<div class="panel" style="max-width:480px;">
+  <h1>Add Custom Role</h1>
+  <form method="post">
+    <label>Name (lowercase, no spaces)</label>
+    <input type="text" name="name" required autofocus placeholder="e.g. welding_lead">
+    <label>Description (optional)</label>
+    <textarea name="description" rows="3" style="width:100%; padding:10px 12px; border-radius:7px; border:1px solid var(--panel-border); background:var(--bg); color:var(--text);"></textarea>
+    <button type="submit" style="margin-top:18px;">Create Role</button>
+  </form>
+</div>
+{% endblock %}

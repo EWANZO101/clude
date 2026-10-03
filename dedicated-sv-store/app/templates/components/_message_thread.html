@@ -1,0 +1,21 @@
+{% macro message_thread(messages) %}
+<div class="space-y-4">
+  {% for m in messages %}
+  <div class="flex gap-3 {{ 'opacity-80' if m.is_internal_note }}">
+    <div class="h-8 w-8 rounded-full bg-surface-700 flex items-center justify-center text-xs font-medium text-text-secondary flex-shrink-0">
+      {{ m.sender.first_name[:1] if m.sender.first_name else m.sender.email[:1] | upper }}
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2">
+        <span class="text-sm font-medium text-text-primary">{{ m.sender.full_name }}</span>
+        {% if m.is_internal_note %}<span class="badge-warning">Internal note</span>{% endif %}
+        <span class="text-xs text-text-muted">{{ m.created_at.strftime("%d %b %Y %H:%M") }}</span>
+      </div>
+      <p class="text-sm text-text-secondary whitespace-pre-line mt-0.5">{{ m.body }}</p>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-text-muted text-sm">No messages yet.</p>
+  {% endfor %}
+</div>
+{% endmacro %}

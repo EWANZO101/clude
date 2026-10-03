@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block header %}Accounts{% endblock %}
+{% block content %}
+<div class="max-w-2xl space-y-6">
+  <div class="bg-amber-500/10 border border-amber-500/30 text-amber-300 text-sm rounded-xl p-4">
+    Storing passwords and 2FA secrets here lets this app log into your accounts without you present.
+    That's convenient, but it's a single point of failure: if <code>ENCRYPTION_KEY</code> or this database
+    ever leaks, every connected account leaks with it. It may also violate the platform's terms of service.
+    {% if dry_run %}
+      Automation is currently in <strong>dry-run</strong> mode, so nothing actually logs into these
+      platforms yet — set <code>PUBLISH_DRY_RUN=false</code> in your .env when you're ready to go live.
+    {% else %}
+      <strong>Live mode is ON</strong> — "Test login" will open a real browser session against the platform.
+    {% endif %}
+  </div>
+
+  <div class="bg-base-900 border border-base-700 rounded-xl p-6">
+    <h3 class="text-white font-semibold mb-3">Connect an account</h3>
+    <form method="post" action="{{ url_for('accounts.connect') }}" class="space-y-3">
+      <select name="platform" class="w-full bg-base-800 border border-base-700 rounded-lg px-3 py-2 text-sm">
+        <option value="instagram">Instagram</option>
+        <option value="facebook">Facebook</option>
+        <option value="whatsapp">WhatsApp</option>
+        <option value="discord">Discord</option>
+      </select>
+      <input name="username" placeholder="Username / handle" class="w-full bg-base-800 border border-base-700 rounded-lg px-3 py-2 text-sm">
+      <input name="password" type="password" placeholder="Password" class="w-full bg-base-800 border border-base-700 rounded-lg px-3 py-2 text-sm">
+      <input name="totp_secret" placeholder="2FA TOTP secret (optional, from your authenticator app setup)" class="w-full bg-base-800 border border-base-700 rounded-lg px-3 py-2 text-sm">
+      <button class="px-4 py-2 bg-accent-600 hover:bg-accent-500 rounded-lg text-sm font-medium text-white">Save (encrypted)</button>
+    </form>
+  </div>
+
+  <div class="space-y-3">
+    {% for a in accounts %}
+    <div class="bg-base-900 border border-base-700 rounded-xl p-4 flex items-center justify-between">
+      <div>
+        <div class="text-white text-sm font-medium">{{ a.platform|capitalize }} · {{ a.username }}</div>
+        <div class="text-xs text-slate-500">{{ a.last_login_status or 'Not tested yet' }}</div>
+      </div>
+      <div class="flex gap-2">
+        <form method="post" action="{{ url_for('accounts.test', account_id=a.id) }}">
+          <button class="px-3 py-1.5 bg-base-800 hover:bg-base-700 rounded-lg text-xs">Test login</button>
+        </form>
+        <form method="post" action="{{ url_for('accounts.delete', account_id=a.id) }}">
+          <button class="px-3 py-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-lg text-xs">Remove</button>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <p class="text-slate-500 text-sm">No accounts connected yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

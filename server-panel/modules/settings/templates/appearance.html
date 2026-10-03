@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}Appearance — {{ panel_name }}{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">Settings</p>
+    <h1 class="page-title">Appearance &amp; Branding</h1>
+    <p class="page-sub">Choose how the panel looks on this browser. Changes apply immediately, everywhere in the app.</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="align-items:start;">
+  <div style="display:flex; flex-direction:column; gap:16px;">
+
+    <div class="card tight">
+      <div class="card-label">Mode</div>
+      <div class="theme-mode-row" id="mode-picker">
+        <label class="theme-mode-option" data-mode-option="dark">
+          <input type="radio" name="mode" value="dark">
+          <div class="theme-mode-swatch dark-swatch"></div>
+          <div class="theme-mode-name">Dark</div>
+        </label>
+        <label class="theme-mode-option" data-mode-option="light">
+          <input type="radio" name="mode" value="light">
+          <div class="theme-mode-swatch light-swatch"></div>
+          <div class="theme-mode-name">Light</div>
+        </label>
+      </div>
+    </div>
+
+    <div class="card tight">
+      <div class="card-label">Accent color</div>
+      <div class="accent-row" id="accent-picker">
+        <label class="accent-option" data-accent-option="indigo">
+          <input type="radio" name="accent" value="indigo">
+          <span class="accent-swatch" style="background:#6672ff;"></span>
+          <span>Indigo</span>
+        </label>
+        <label class="accent-option" data-accent-option="teal">
+          <input type="radio" name="accent" value="teal">
+          <span class="accent-swatch" style="background:#2dd4bf;"></span>
+          <span>Teal</span>
+        </label>
+        <label class="accent-option" data-accent-option="rose">
+          <input type="radio" name="accent" value="rose">
+          <span class="accent-swatch" style="background:#fb64a3;"></span>
+          <span>Rose</span>
+        </label>
+      </div>
+      <p class="card-meta" id="theme-save-status" style="margin-top:14px;">&nbsp;</p>
+    </div>
+
+    <div class="card tight">
+      <div class="card-header">
+        <div class="card-label" style="margin:0;">Branding</div>
+        <span class="badge badge-muted">Preview — this browser only</span>
+      </div>
+      <p class="page-sub" style="margin:0 0 16px;">
+        These fields update the live preview instantly. They're saved locally so you can try
+        them out; making custom branding apply for every admin who logs in requires a small
+        backend change (a branding record + logo upload endpoint) that isn't wired up yet.
+      </p>
+
+      <div class="field">
+        <label for="brand-name-input">Company / product name</label>
+        <input type="text" id="brand-name-input" placeholder="OpsLabSystems" maxlength="40">
+      </div>
+
+      <div class="field">
+        <label for="brand-footer-input">Sidebar tagline</label>
+        <input type="text" id="brand-footer-input" placeholder="SERVER PANEL" maxlength="30">
+      </div>
+
+      <div class="field">
+        <label for="brand-logo-input">Logo (sidebar mark)</label>
+        <div class="field-row">
+          <input type="file" id="brand-logo-input" accept="image/png,image/svg+xml,image/jpeg" style="flex:1;">
+          <button type="button" class="btn btn-ghost btn-sm" id="brand-logo-clear">Reset</button>
+        </div>
+        <p class="card-meta" style="margin-top:6px;">PNG, JPG, or SVG. Square images work best.</p>
+      </div>
+
+      <div class="btn-row" style="margin-top:4px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="brand-reset-all">Reset branding</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card flush" style="overflow:hidden;">
+    <div style="padding:16px 18px; border-bottom:1px solid var(--border-subtle);">
+      <div class="card-label" style="margin:0;">Live preview</div>
+    </div>
+    <div style="padding:22px; display:flex; flex-direction:column; gap:18px;">
+      <div>
+        <p class="card-meta" style="margin:0 0 8px;">Sidebar</p>
+        <div class="brand" style="border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:14px; margin:0;">
+          <div class="brand-mark" id="preview-brand-mark">OL</div>
+          <div class="brand-text">
+            <span class="brand-name" id="preview-brand-name">{{ panel_name or 'OpsLab' }}</span>
+            <span class="brand-sub" id="preview-brand-sub">SERVER PANEL</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p class="card-meta" style="margin:0 0 8px;">Stat card</p>
+        <div class="card stat" style="margin:0;">
+          <div class="card-header">
+            <div class="card-label" style="margin:0;">CPU Usage</div>
+            <span class="trend-chip flat">--</span>
+          </div>
+          <div class="card-value">42<small>%</small></div>
+          <div class="progress-track"><div class="progress-fill" style="width:42%;"></div></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary btn-sm">Primary action</button>
+        <button type="button" class="btn btn-secondary btn-sm">Secondary</button>
+        <span class="badge badge-ok">Online</span>
+        <span class="badge badge-warn">Warning</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .theme-mode-row { display:flex; gap:10px; }
+  .theme-mode-option { flex:1; cursor:pointer; }
+  .theme-mode-option input { position:absolute; opacity:0; pointer-events:none; }
+  .theme-mode-swatch {
+    height: 54px; border-radius: var(--radius); border: 1px solid var(--border-subtle);
+    margin-bottom: 8px;
+  }
+  .dark-swatch { background: linear-gradient(135deg, #18160f, #211e17); }
+  .light-swatch { background: linear-gradient(135deg, #ffffff, #f3f1eb); }
+  .theme-mode-option.selected .theme-mode-swatch { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+  .theme-mode-name { font-size: 12.5px; color: var(--text-secondary); text-align:center; }
+  .theme-mode-option.selected .theme-mode-name { color: var(--text-primary); font-weight: 600; }
+
+  .accent-row { display:flex; gap: 18px; flex-wrap: wrap; }
+  .accent-option { display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; }
+  .accent-option input { position:absolute; opacity:0; pointer-events:none; }
+  .accent-swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; display:block; }
+  .accent-option.selected .accent-swatch { border-color: var(--text-primary); box-shadow: 0 0 0 2px var(--bg-panel), 0 0 0 4px var(--border-strong); }
+  .accent-option span:last-child { font-size: 11.5px; color: var(--text-muted); }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var modePicker = document.getElementById('mode-picker');
+    var accentPicker = document.getElementById('accent-picker');
+    var status = document.getElementById('theme-save-status');
+
+    function paintMode() {
+      var mode = window.OpsLabTheme.getMode();
+      modePicker.querySelectorAll('.theme-mode-option').forEach(function (opt) {
+        var selected = opt.getAttribute('data-mode-option') === mode;
+        opt.classList.toggle('selected', selected);
+        opt.querySelector('input').checked = selected;
+      });
+    }
+    function paintAccent() {
+      var accent = window.OpsLabTheme.getAccent();
+      accentPicker.querySelectorAll('.accent-option').forEach(function (opt) {
+        var selected = opt.getAttribute('data-accent-option') === accent;
+        opt.classList.toggle('selected', selected);
+        opt.querySelector('input').checked = selected;
+      });
+    }
+    function flashSaved() {
+      status.textContent = 'Saved — applied across the panel on this browser.';
+      clearTimeout(window.__themeStatusTimer);
+      window.__themeStatusTimer = setTimeout(function () { status.textContent = '\u00A0'; }, 2500);
+    }
+
+    paintMode();
+    paintAccent();
+
+    modePicker.querySelectorAll('.theme-mode-option').forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        window.OpsLabTheme.setMode(opt.getAttribute('data-mode-option'));
+        paintMode();
+        flashSaved();
+      });
+    });
+    accentPicker.querySelectorAll('.accent-option').forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        window.OpsLabTheme.setAccent(opt.getAttribute('data-accent-option'));
+        paintAccent();
+        flashSaved();
+      });
+    });
+
+    /* ---- Branding preview (local to this browser, see note on the page) ---- */
+    var NAME_KEY = 'opslab-branding-name';
+    var FOOTER_KEY = 'opslab-branding-footer';
+    var LOGO_KEY = 'opslab-branding-logo';
+
+    var nameInput = document.getElementById('brand-name-input');
+    var footerInput = document.getElementById('brand-footer-input');
+    var logoInput = document.getElementById('brand-logo-input');
+    var logoClear = document.getElementById('brand-logo-clear');
+    var resetAll = document.getElementById('brand-reset-all');
+
+    var previewName = document.getElementById('preview-brand-name');
+    var previewSub = document.getElementById('preview-brand-sub');
+    var previewMark = document.getElementById('preview-brand-mark');
+
+    function applyBranding() {
+      var name, footer, logo;
+      try {
+        name = window.localStorage.getItem(NAME_KEY);
+        footer = window.localStorage.getItem(FOOTER_KEY);
+        logo = window.localStorage.getItem(LOGO_KEY);
+      } catch (e) { return; }
+
+      document.querySelectorAll('.brand-name').forEach(function (el) { el.textContent = name || '{{ panel_name or "OpsLab" }}'; });
+      document.querySelectorAll('.brand-sub').forEach(function (el) { el.textContent = footer || 'SERVER PANEL'; });
+      document.querySelectorAll('.brand-mark').forEach(function (el) {
+        if (logo) {
+          el.innerHTML = '<img src="' + logo + '" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">';
+        } else {
+          el.textContent = 'OL';
+        }
+      });
+
+      nameInput.value = name || '';
+      footerInput.value = footer || '';
+    }
+
+    nameInput.addEventListener('input', function () {
+      try { window.localStorage.setItem(NAME_KEY, nameInput.value); } catch (e) {}
+      applyBranding();
+    });
+    footerInput.addEventListener('input', function () {
+      try { window.localStorage.setItem(FOOTER_KEY, footerInput.value); } catch (e) {}
+      applyBranding();
+    });
+    logoInput.addEventListener('change', function () {
+      var file = logoInput.files && logoInput.files[0];
+      if (!file) return;
+      if (file.size > 200 * 1024) {
+        alert('Please choose an image under 200KB for the browser-local preview.');
+        logoInput.value = '';
+        return;
+      }
+      var reader = new FileReader();
+      reader.onload = function () {
+        try { window.localStorage.setItem(LOGO_KEY, reader.result); } catch (e) {}
+        applyBranding();
+      };
+      reader.readAsDataURL(file);
+    });
+    logoClear.addEventListener('click', function () {
+      try { window.localStorage.removeItem(LOGO_KEY); } catch (e) {}
+      logoInput.value = '';
+      applyBranding();
+    });
+    resetAll.addEventListener('click', function () {
+      try {
+        window.localStorage.removeItem(NAME_KEY);
+        window.localStorage.removeItem(FOOTER_KEY);
+        window.localStorage.removeItem(LOGO_KEY);
+      } catch (e) {}
+      applyBranding();
+    });
+
+    applyBranding();
+  })();
+</script>
+{% endblock %}

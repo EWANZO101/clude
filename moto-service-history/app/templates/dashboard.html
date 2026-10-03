@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Your garage — {{ site_name|default('Moto Service History') }}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="font-bold text-2xl">Your garage</h1>
+  <a href="{{ url_for('moto.new') }}" class="inline-flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-800 font-medium rounded-lg text-sm px-4 py-2.5 text-center transition">+ Add motorcycle</a>
+</div>
+
+{% if motorcycles %}
+<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for m in motorcycles %}
+  <a href="{{ url_for('moto.view', moto_id=m.id) }}" class="group card overflow-hidden hover:border-gauge/50 transition">
+    <div class="aspect-[16/10] bg-asphalt-alt flex items-center justify-center">
+      {% set p = m.photos.first() %}
+      {% if p %}
+        <img src="{{ url_for('main.serve_upload', filename=p.filename) }}" class="w-full h-full object-cover" alt="">
+      {% else %}
+        <span class="text-ink-faint text-xs font-mono">NO PHOTO</span>
+      {% endif %}
+    </div>
+    <div class="p-4">
+      <h3 class="font-semibold text-ink group-hover:text-gauge transition">{{ m.display_name }}</h3>
+      {% if m.registration %}<span class="plate text-[10px] mt-2 inline-block">{{ m.registration }}</span>{% endif %}
+      <div class="mt-3 flex items-center justify-between text-xs text-ink-faint font-mono">
+        <span>{{ m.mileage|commas if m.mileage else '—' }} mi</span>
+        <span>{{ m.service_records.count() }} service record{{ 's' if m.service_records.count() != 1 }}</span>
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card-flat border-dashed p-10 text-center">
+  <p class="text-ink-muted mb-4">Your garage is empty. Add your first motorcycle to start its service history.</p>
+  <a href="{{ url_for('moto.new') }}" class="inline-flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-800 font-medium rounded-lg text-sm px-4 py-2.5 text-center transition">+ Add motorcycle</a>
+</div>
+{% endif %}
+{% endblock %}

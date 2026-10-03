@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Activity — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold text-white mb-1">Activity</h1>
+  <p class="text-sm text-gray-500 mb-6">Who did what across your workspace — useful once you've got a team, not just yourself.</p>
+
+  {% set labels = {
+    'product_created': 'created product',
+    'secret_regenerated': 'regenerated secret key for',
+    'license_revoked': 'revoked license',
+    'team_member_invited': 'invited',
+    'team_member_removed': 'removed',
+    'team_member_joined': 'joined the team:',
+    'domain_changed': 'set custom domain to',
+    'domain_removed': 'removed the custom domain',
+    'marketplace_listed': 'listed on marketplace:',
+    'marketplace_unlisted': 'removed from marketplace:',
+  } %}
+
+  {% if entries %}
+    <div class="space-y-2">
+      {% for e in entries %}
+        <div class="flex items-center justify-between gap-3 flex-wrap bg-surface-card border border-surface-border rounded-lg px-4 py-3 text-sm">
+          <div class="min-w-0 flex-1 truncate">
+            <span class="text-white">{{ e.actor.username }}</span>
+            <span class="text-gray-400"> {{ labels.get(e.action, e.action) }}</span>
+            {% if e.detail %}<span class="text-gray-300 font-mono"> {{ e.detail }}</span>{% endif %}
+          </div>
+          <span class="text-gray-500 text-xs flex-shrink-0">{{ e.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500">No activity recorded yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

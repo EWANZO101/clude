@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — {{ tenant_name }}{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin:18px 0;">
+  <div class="stat-card">
+    <div class="value">{{ total_users }}</div>
+    <div class="label">Active Users</div>
+  </div>
+  <div class="stat-card"><div class="value">{{ low_stock_count }}</div><div class="label">Items Low Stock</div></div>
+  <div class="stat-card"><div class="value">{{ tools_available }}</div><div class="label">Tools Available</div></div>
+  <div class="stat-card"><div class="value">{{ tools_out }}</div><div class="label">Tools Out</div></div>
+  <div class="stat-card"><div class="value">{{ active_projects }}</div><div class="label">Active Projects</div></div>
+  <div class="stat-card"><div class="value">{{ wire_in_stock }}</div><div class="label">Wire Spools In Stock</div></div>
+</div>
+<div class="panel">
+  <p class="muted">
+    Items, Tools, Projects, Scan Barcode, Welding Wire, the Admin Panel, and the Stock Audit engine are all live.
+    Part 8 wraps up with final integration polish.
+  </p>
+  <a href="{{ url_for('scan.index') }}" class="btn">Scan Barcode</a>
+</div>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-top:24px;">
+  <h2 style="font-size:16px; margin:0;">Recent Activity</h2>
+  <a href="{{ url_for('dashboard.activity') }}">View all →</a>
+</div>
+<div class="panel" style="padding:0;">
+  {% if recent_activity %}
+    <table style="width:100%; border-collapse:collapse;">
+      <tbody>
+        {% for e in recent_activity %}
+          {% set glyph, color = event_style(e.event_type) %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:10px 14px; width:24px; text-align:center; color:{{ color }}; font-weight:700;">{{ glyph }}</td>
+            <td style="padding:10px 14px; font-size:13px;">
+              <strong>{{ e.entity_name }}</strong>
+              {% if e.actor %}— {{ e.actor }}{% endif %}
+              {% if e.project %}<span class="muted">for {{ e.project }}</span>{% endif %}
+              {% if e.detail %}<div class="muted" style="font-size:12px;">{{ e.detail }}</div>{% endif %}
+            </td>
+            <td style="padding:10px 14px; text-align:right; white-space:nowrap; font-size:12px;" class="muted">
+              {{ e.created_at.strftime('%Y-%m-%d %H:%M') }}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted" style="padding:20px;">No activity recorded yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

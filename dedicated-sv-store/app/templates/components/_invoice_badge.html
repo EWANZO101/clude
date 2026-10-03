@@ -1,0 +1,8 @@
+{% macro invoice_status_badge(status) %}
+{% set v = status.value %}
+{% if v == "paid" %}<span class="badge-success">{{ status|hwval }}</span>
+{% elif v in ("overdue", "cancelled") %}<span class="badge-danger">{{ status|hwval }}</span>
+{% elif v == "refunded" %}<span class="badge-neutral">{{ status|hwval }}</span>
+{% else %}<span class="badge-warning">{{ status|hwval }}</span>
+{% endif %}
+{% endmacro %}

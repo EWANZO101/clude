@@ -1,0 +1,173 @@
+{% extends "layouts/admin.html" %}
+{% block title %}Time Off · {{ app_name }}{% endblock %}
+{% block page_content %}
+
+<div class="mb-8">
+  <h1 class="font-display text-2xl font-semibold text-ink">Time off</h1>
+  <p class="mt-1 text-sm text-ink-muted">Holidays, days off, and one-off unavailable periods. These take those times out of your availability automatically.</p>
+</div>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <div class="lg:col-span-2 card divide-y divide-border">
+    {% if entries %}
+      {% for entry in entries %}
+      <div class="flex items-center justify-between gap-4 p-5">
+        <div>
+          <p class="font-medium text-ink">
+            {% if entry.start_datetime.date() == entry.end_datetime.date() %}
+              {{ entry.start_datetime.strftime('%a %d %b %Y') }}
+            {% else %}
+              {{ entry.start_datetime.strftime('%a %d %b') }} – {{ entry.end_datetime.strftime('%a %d %b %Y') }}
+            {% endif %}
+          </p>
+          <p class="mt-0.5 text-sm text-ink-muted">
+            {% if entry.all_day %}
+              All day
+            {% else %}
+              {{ entry.start_datetime.strftime('%H:%M') }} – {{ entry.end_datetime.strftime('%H:%M') }}
+            {% endif %}
+            {% if entry.reason %} · {{ entry.reason }}{% endif %}
+          </p>
+        </div>
+        <div class="flex shrink-0 items-center gap-1.5">
+          <a href="{{ url_for('admin.edit_time_off', time_off_id=entry.id) }}" class="btn-ghost !px-2" aria-label="Edit">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </a>
+          <form method="POST" action="{{ url_for('admin.delete_time_off', time_off_id=entry.id) }}">
+            {{ form.hidden_tag() }}
+            <button type="submit" class="btn-ghost !px-2" aria-label="Remove">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="p-8 text-center">
+        <p class="text-sm text-ink-muted">No time off scheduled. Add a holiday or a day off using the form.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card p-6">
+    <h2 class="font-display text-base font-semibold text-ink mb-4">Add time off</h2>
+    <form method="POST" action="{{ url_for('admin.time_off') }}" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="mb-4 grid grid-cols-2 gap-3">
+        <div>
+          <label class="field-label" for="{{ form.start_date.id }}">Start date</label>
+          {{ form.start_date(class_="field-input") }}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.end_date.id }}">End date</label>
+          {{ form.end_date(class_="field-input") }}
+        </div>
+      </div>
+      {% for error in form.start_date.errors + form.end_date.errors %}
+        <p class="field-error -mt-2 mb-3">{{ error }}</p>
+      {% endfor %}
+
+      <label class="mb-4 flex items-center gap-2 text-sm text-ink-muted" id="all-day-label">
+        {{ form.all_day(class_="rounded border-border bg-surface-raised text-accent focus:ring-accent focus:ring-offset-base", id="all-day-toggle") }}
+        All day
+      </label>
+
+      <div id="partial-day-fields" class="mb-4 grid grid-cols-2 gap-3">
+        <div>
+          <label class="field-label" for="{{ form.start_time.id }}">Starts</label>
+          {{ form.start_time(class_="field-input") }}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.end_time.id }}">Ends</label>
+          {{ form.end_time(class_="field-input") }}
+        </div>
+      </div>
+      {% for error in form.end_time.errors %}
+        <p class="field-error -mt-2 mb-3">{{ error }}</p>
+      {% endfor %}
+
+      <div class="mb-5">
+        <label class="field-label" for="{{ form.reason.id }}">Reason (optional)</label>
+        {{ form.reason(class_="field-input", placeholder="e.g. Christmas Day") }}
+      </div>
+
+      <button type="submit" class="btn-primary w-full">Add time off</button>
+    </form>
+  </div>
+</div>
+
+<div class="mt-8 card p-6">
+  <h2 class="font-display text-base font-semibold text-ink mb-1">Share access</h2>
+  <p class="mb-4 text-sm text-ink-muted">
+    Create a link that lets someone else add time off for you — a simple calendar with a quick add
+    (date, time, reason). No login, just the link, with an optional PIN.
+  </p>
+
+  {% if share_links %}
+    <div class="mb-5 divide-y divide-border rounded-lg border border-border">
+      {% for link in share_links %}
+      {% set share_url = url_for('timeoff_share.gate', token=link.token, _external=True) %}
+      <div class="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
+          <p class="font-medium text-ink">{{ link.label or 'Untitled link' }}</p>
+          <p class="mt-0.5 text-xs text-ink-faint">
+            {% if link.pin_protected %}PIN protected{% else %}Open link — no PIN{% endif %}
+            {% if link.last_used_at %} · last used {{ link.last_used_at.strftime('%d %b %Y') }}{% endif %}
+          </p>
+          <div class="mt-2 flex gap-2">
+            <input type="text" readonly value="{{ share_url }}" class="field-input font-mono text-xs" onclick="this.select()">
+            <button type="button" class="btn-secondary shrink-0" onclick="navigator.clipboard.writeText('{{ share_url }}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500);">Copy</button>
+          </div>
+        </div>
+        <form method="POST" action="{{ url_for('admin.delete_time_off_share', link_id=link.id) }}" class="shrink-0">
+          {{ delete_share_form.hidden_tag() }}
+          <button type="submit" class="btn-ghost !px-2" aria-label="Remove link">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
+          </button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="POST" action="{{ url_for('admin.create_time_off_share') }}" novalidate class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end">
+    {{ share_form.hidden_tag() }}
+    <div>
+      <label class="field-label" for="{{ share_form.label.id }}">Label (optional)</label>
+      {{ share_form.label(class_="field-input", placeholder="e.g. Mum") }}
+    </div>
+    <label class="flex items-center gap-2 pb-2.5 text-sm text-ink-muted sm:pb-2.5" id="share-pin-label">
+      {{ share_form.protect_with_pin(class_="rounded border-border bg-surface-raised text-accent focus:ring-accent focus:ring-offset-base", id="share-pin-toggle") }}
+      PIN
+    </label>
+    <div id="share-pin-field" class="hidden">
+      <label class="field-label" for="{{ share_form.pin.id }}">4-6 digit PIN</label>
+      {{ share_form.pin(class_="field-input", maxlength=6, inputmode="numeric", placeholder="1234") }}
+    </div>
+    <button type="submit" class="btn-primary">Create link</button>
+  </form>
+  {% for error in share_form.pin.errors %}<p class="field-error mt-2">{{ error }}</p>{% endfor %}
+</div>
+
+<script>
+  const sharePinToggle = document.getElementById("share-pin-toggle");
+  const sharePinField = document.getElementById("share-pin-field");
+  function syncSharePinField() {
+    sharePinField.classList.toggle("hidden", !sharePinToggle.checked);
+  }
+  sharePinToggle.addEventListener("change", syncSharePinField);
+  syncSharePinField();
+</script>
+
+<script>
+  const toggle = document.getElementById("all-day-toggle");
+  const partialFields = document.getElementById("partial-day-fields");
+  function syncPartialFields() {
+    partialFields.classList.toggle("hidden", toggle.checked);
+  }
+  toggle.addEventListener("change", syncPartialFields);
+  syncPartialFields();
+</script>
+
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Install CloudLoader — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-2">Install CloudLoader</h1>
+  <p class="text-sm text-gray-400 mb-6">
+    One resource, one line in server.cfg, covers every {{ config.SITE_NAME }}
+    script you own. No editing config files per product — attach purchases
+    to your server from the portal instead.
+  </p>
+
+  <a href="{{ url_for('cloudloader.download') }}" class="inline-block bg-brand hover:bg-brand-hover text-white rounded-md px-5 py-2.5 text-sm font-medium transition mb-3">
+    Download CloudLoader.zip
+  </a>
+  <div>
+    <a href="{{ url_for('docs.api_reference') }}" class="text-sm text-gray-400 hover:text-white transition">Building something custom? See the API reference →</a>
+  </div>
+  <div class="mb-5"></div>
+
+  <ol class="space-y-4 text-sm text-gray-300">
+    <li>
+      <span class="text-white font-medium">1. Extract</span> the zip into
+      your server's <code class="text-gray-400">resources/</code> folder.
+    </li>
+    <li>
+      <span class="text-white font-medium">2. Register a server</span> in
+      {% if current_user.is_authenticated %}
+        your <a href="{{ url_for('portal.servers') }}" class="text-brand hover:text-brand-hover">portal</a> —
+      {% else %}
+        your portal (<a href="{{ url_for('auth.login') }}" class="text-brand hover:text-brand-hover">log in</a>
+        or <a href="{{ url_for('auth.register') }}" class="text-brand hover:text-brand-hover">sign up</a> first) —
+      {% endif %}
+      you'll get a one-line token to add to server.cfg:
+      <pre class="bg-surface-card border border-surface-border rounded-md p-3 mt-2 text-xs font-mono text-gray-300 overflow-x-auto">ensure cloudloader
+setr cloudloader_server_token "srv_..."</pre>
+    </li>
+    <li>
+      <span class="text-white font-medium">3. Attach your purchases</span> to
+      that server from the same portal page — anything bought with your
+      account email shows up there automatically, no license keys to copy
+      by hand.
+    </li>
+    <li>
+      <span class="text-white font-medium">4. Restart your server.</span>
+      CloudLoader fetches everything attached to that token automatically.
+      Attach a new purchase later and it picks it up on the next
+      re-check — no restart even required.
+    </li>
+  </ol>
+</div>
+{% endblock %}

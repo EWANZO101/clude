@@ -1,0 +1,18 @@
+{% extends "layout/base.html" %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <h1 class="text-xl font-semibold">Audit log</h1>
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border overflow-x-auto">
+    {% for entry in pagination.items %}
+      <div class="p-4 flex items-center justify-between text-sm gap-4">
+        <span class="text-slate-200">{{ entry.action }}</span>
+        <span class="text-slate-500 text-xs">{{ entry.target_type or '' }} {{ entry.target_id or '' }}</span>
+        <span class="text-slate-500 text-xs whitespace-nowrap">{{ entry.created_at.strftime('%d %b %Y %H:%M') }}</span>
+      </div>
+    {% else %}
+      <p class="p-4 text-sm text-slate-500">No audit entries yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

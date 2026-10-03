@@ -1,0 +1,43 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Recurring payments{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  {{ ui.page_header("Recurring payments", "Detected from transactions that repeat with the same amount across 2+ months.") }}
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    {% for r in items %}
+      <div class="p-4 flex items-center justify-between gap-3 text-sm hover:bg-surface-hover/40 transition-colors">
+        <div>
+          <p class="text-slate-100 flex items-center gap-2">{{ r.display_name }}
+            {% if r.status == 'confirmed' %}{{ ui.badge('Confirmed', 'success') }}
+            {% elif r.status == 'cancelled' %}{{ ui.badge('Cancelled', 'neutral') }}
+            {% else %}{{ ui.badge('Detected', 'info') }}{% endif %}
+          </p>
+          <p class="text-xs text-slate-500 mt-0.5">last {{ r.last_payment_date }} · next ~{{ r.next_payment_date }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-slate-200 tabular-nums font-medium">{{ r.amount_minor | money }}</span>
+          {% if r.status == 'detected' %}
+            <form method="POST" action="{{ url_for('finance.confirm_recurring', item_id=r.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-xs text-accent hover:text-accent-hover">Confirm</button></form>
+            <form method="POST" action="{{ url_for('finance.ignore_recurring', item_id=r.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-xs text-slate-400 hover:text-slate-200">Not a subscription</button></form>
+          {% elif r.status == 'confirmed' %}
+            <form method="POST" action="{{ url_for('finance.mark_recurring_cancelled', item_id=r.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-xs text-amber-400 hover:text-amber-300">Mark cancelled</button></form>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      {% call ui.empty_state("Nothing detected yet", "Import more transaction history to detect recurring payments.", "repeat") %}{% endcall %}
+    {% endfor %}
+  </div>
+  {% if ignored_count %}
+    <p class="text-xs text-slate-600">
+      {% if show_ignored %}
+        <a href="{{ url_for('finance.recurring') }}" class="text-accent hover:text-accent-hover hover:underline">Hide the {{ ignored_count }} you marked "not a subscription"</a>
+      {% else %}
+        {{ ignored_count }} marked "not a subscription" are hidden —
+        <a href="{{ url_for('finance.recurring', show_ignored=1) }}" class="text-accent hover:text-accent-hover hover:underline">show them</a>
+      {% endif %}
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

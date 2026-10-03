@@ -1,0 +1,45 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}Coupons — Admin{% endblock %}
+{% block page_title %}Coupons{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Used</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for coupon in coupons %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ coupon.code }}</td>
+          <td class="text-text-secondary">{{ coupon.discount_type|hwval }}</td>
+          <td class="text-text-secondary">{{ coupon.value }}{{ "%" if coupon.discount_type.value == "percent" else "" }}</td>
+          <td class="text-text-secondary">{{ coupon.used_count }}{{ "/" ~ coupon.max_uses if coupon.max_uses else "" }}</td>
+          <td>{% if coupon.is_active %}<span class="badge-success">Active</span>{% else %}<span class="badge-neutral">Disabled</span>{% endif %}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.coupon_toggle', coupon_id=coupon.id) }}">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-brand-400 hover:text-brand-300 text-sm">{{ "Disable" if coupon.is_active else "Enable" }}</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-text-muted py-8">No coupons yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Add coupon</h2>
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      {{ field(form.code, placeholder="SAVE10") }}
+      {{ field(form.discount_type) }}
+      {{ field(form.value) }}
+      {{ field(form.max_uses) }}
+      {{ field(form.description, rows=2) }}
+      {{ checkbox(form.is_active) }}
+      <button type="submit" class="btn-primary w-full">Add coupon</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

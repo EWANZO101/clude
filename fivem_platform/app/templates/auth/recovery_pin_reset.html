@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}New recovery PIN — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-2">Recovery PIN updated</h1>
+  <p class="text-sm text-gray-400 mb-6">Your old recovery PIN no longer works. This new one is shown once — save it now.</p>
+
+  <div class="bg-surface-card border border-surface-border rounded-lg p-5">
+    <div class="text-xs uppercase tracking-wide text-amber-400 mb-1">New Recovery PIN</div>
+    <div class="font-mono text-lg text-amber-300">{{ recovery_pin }}</div>
+  </div>
+
+  <a href="{{ url_for('dashboard.index') }}" class="inline-block mt-6 bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition">
+    Back to dashboard
+  </a>
+</div>
+{% endblock %}

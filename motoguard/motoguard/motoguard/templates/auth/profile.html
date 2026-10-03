@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "_macros.html" import loc_picker with context %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <p class="eyebrow mb-1">Account</p>
+  <h1 class="font-display font-800 text-2xl text-chalk mb-5">Profile &amp; alerts</h1>
+  <form method="post" class="space-y-4 card p-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div><label class="label">Your area</label>
+      {{ loc_picker('prof', 'city', 'region', 'country', 'lat', 'lng',
+                    current_user.city or '', current_user.region or '', current_user.country or '',
+                    current_user.lat or '', current_user.lng or '') }}
+      <p class="text-xs text-mute mt-1.5">Used to match nearby alerts to you — never shown to other riders.</p>
+    </div>
+    <div><label class="label">Alert radius (miles)</label><input name="alert_radius_miles" type="number" step="any" min="1" value="{{ current_user.alert_radius_miles or '' }}" placeholder="Blank = network default" class="input"></div>
+    <label class="flex items-center gap-3 text-sm text-chalk card-2 p-3 cursor-pointer">
+      <input type="checkbox" name="alerts_opt_in" {{ 'checked' if current_user.alerts_opt_in }} class="w-4 h-4 accent-plate">
+      Email me when a bike is reported stolen near me
+    </label>
+    <button class="btn btn-primary">Save changes</button>
+  </form>
+
+  <p class="eyebrow mb-3 mt-8">Account &amp; security</p>
+  <div class="space-y-4">
+    <form method="post" action="{{ url_for('auth.change_email') }}" class="space-y-3 card p-5">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div><label class="label">Change email</label>
+        <input name="new_email" type="email" value="{{ current_user.email }}" class="input" required></div>
+      <div><label class="label">Current password</label>
+        <input name="current_password" type="password" placeholder="Confirm it's you" class="input" required></div>
+      <button class="btn btn-ghost btn-sm">Update email</button>
+    </form>
+
+    <form method="post" action="{{ url_for('auth.change_password') }}" class="space-y-3 card p-5">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div><label class="label">Current password</label>
+        <input name="current_password" type="password" class="input" required></div>
+      <div><label class="label">New password</label>
+        <input name="new_password" type="password" placeholder="At least 8 characters" class="input" required></div>
+      <button class="btn btn-ghost btn-sm">Update password</button>
+    </form>
+  </div>
+
+  <p class="eyebrow mb-3 mt-8">Your data &amp; privacy</p>
+  <div class="space-y-4">
+    <div class="card p-5">
+      <h3 class="text-chalk font-medium mb-1">Download my data</h3>
+      <p class="text-mute text-sm mb-3">Export everything we hold about you as a JSON file.</p>
+      <a href="{{ url_for('auth.export_data') }}" class="btn btn-ghost btn-sm">Download my data</a>
+    </div>
+
+    <form method="post" action="{{ url_for('auth.delete_account') }}"
+          onsubmit="return confirm('This permanently deletes your account and data. Continue?')"
+          class="space-y-3 card p-5" style="border-color:rgba(255,69,58,.4)">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <h3 class="text-stolen font-medium">Delete my account</h3>
+      <p class="text-mute text-sm">This permanently erases your account, bikes, photos and messages. Sightings you reported on other people's bikes are kept but anonymised. This cannot be undone.</p>
+      <div><label class="label">Current password</label>
+        <input name="current_password" type="password" class="input" required></div>
+      <div><label class="label">Type DELETE to confirm</label>
+        <input name="confirm" placeholder="DELETE" class="input" required></div>
+      <button class="btn btn-block" style="background:#FF453A;color:#fff">Permanently delete my account</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

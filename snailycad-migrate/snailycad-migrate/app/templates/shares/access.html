@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Shared file — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto bg-panel border border-border rounded-lg p-6">
+  <h1 class="text-lg font-semibold text-gray-100 mb-2">Shared SnailyCAD export</h1>
+
+  {% if error %}
+    <div class="border border-red-800 bg-red-900/30 rounded-md px-4 py-3 text-sm text-red-300">
+      {{ error }}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500 mb-6">
+      Enter the PIN you were given to download this file.
+    </p>
+    <form method="POST" novalidate class="space-y-4">
+      {{ form.hidden_tag() }}
+      {% include "_form_errors.html" %}
+      <div>
+        {{ form.pin.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.pin(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200 tracking-widest text-center text-lg", autocomplete="off", maxlength="10") }}
+      </div>
+      {{ form.submit(class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md py-2") }}
+    </form>
+    <p class="text-xs text-gray-600 mt-4">
+      This link expires {{ link.expires_at }} (UTC). Too many wrong PINs will lock it.
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

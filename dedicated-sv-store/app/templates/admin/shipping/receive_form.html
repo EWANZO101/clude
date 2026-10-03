@@ -1,0 +1,17 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}Record Receiving — Admin{% endblock %}
+{% block page_title %}Record receiving — {{ shipment.shipment_number }}{% endblock %}
+{% block content %}
+<form method="POST" novalidate class="max-w-2xl card p-6">
+  {{ form.hidden_tag() }}
+  <div class="grid sm:grid-cols-2 gap-x-4">
+    {{ field(form.condition) }}
+    {{ field(form.packaging_condition) }}
+    {{ field(form.accessories_included) }}
+    <div class="sm:col-span-2">{{ checkbox(form.damage_noted) }}</div>
+    <div class="sm:col-span-2">{{ field(form.notes, rows=3) }}</div>
+  </div>
+  <button type="submit" class="btn-primary mt-2">Save receiving record</button>
+</form>
+{% endblock %}

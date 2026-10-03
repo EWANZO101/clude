@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}API Reference — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <h1 class="text-2xl font-bold tracking-tight text-white mb-2">API reference</h1>
+  <p class="text-sm text-gray-400 mb-8">
+    Every endpoint {{ config.SITE_NAME }} exposes. CloudLoader calls these
+    automatically — this is for anyone building something beyond it: a
+    custom launcher, a status page, a website integration.
+  </p>
+
+  <div class="bg-surface-card border border-surface-border rounded-lg p-5 mb-8">
+    <h2 class="text-white font-medium mb-3">Authentication — four different credentials</h2>
+    <p class="text-sm text-gray-400 mb-3">Each one grants different access. Using the wrong one for a job either fails outright or (worse) over-shares.</p>
+    <div class="space-y-3 text-sm">
+      <div>
+        <span class="font-mono text-brand">api_key</span>
+        <span class="text-gray-400"> (<code class="font-mono text-xs">pk_...</code>) — public. Safe to embed in distributed code. Identifies a product, nothing more.</span>
+      </div>
+      <div>
+        <span class="font-mono text-brand">secret_key</span>
+        <span class="text-gray-400"> (<code class="font-mono text-xs">sk_...</code>) — private. Never leaves your dashboard. Only needed for <code class="font-mono text-xs">/api/license/check</code>.</span>
+      </div>
+      <div>
+        <span class="font-mono text-brand">server_token</span>
+        <span class="text-gray-400"> (<code class="font-mono text-xs">srv_...</code>) — a customer's own credential, from their portal. Identifies their server, not a product.</span>
+      </div>
+      <div>
+        <span class="font-mono text-brand">X-Signature</span>
+        <span class="text-gray-400"> header — HMAC-SHA256 of the raw request body using a product's Tebex webhook secret. Only relevant for the Tebex webhook endpoint.</span>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bg-surface-card border border-surface-border rounded-lg p-5 mb-8">
+    <h2 class="text-white font-medium mb-3">Endpoints</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
+      <a href="#server-config" class="text-brand hover:text-brand-hover font-mono">POST /api/server/config</a>
+      <a href="#ping" class="text-brand hover:text-brand-hover font-mono">GET /api/ping</a>
+      <a href="#license-activate" class="text-brand hover:text-brand-hover font-mono">POST /api/license/activate</a>
+      <a href="#license-check" class="text-brand hover:text-brand-hover font-mono">POST /api/license/check</a>
+      <a href="#update-check" class="text-brand hover:text-brand-hover font-mono">POST /api/update/check</a>
+      <a href="#module-list" class="text-brand hover:text-brand-hover font-mono">POST /api/module/list</a>
+      <a href="#module-download" class="text-brand hover:text-brand-hover font-mono">POST /api/module/download</a>
+      <a href="#config-load" class="text-brand hover:text-brand-hover font-mono">POST /api/config/load</a>
+      <a href="#tebex-webhook" class="text-brand hover:text-brand-hover font-mono">POST /api/tebex/webhook</a>
+    </div>
+  </nav>
+
+  {% macro endpoint(id, method, path, auth, rate, desc) %}
+  <div id="{{ id }}" class="bg-surface-card border border-surface-border rounded-lg p-5 mb-4 scroll-mt-6">
+    <div class="flex items-center gap-2 mb-2 flex-wrap">
+      <span class="text-xs font-mono px-2 py-0.5 rounded-full {{ 'bg-emerald-950 text-emerald-400' if method == 'GET' else 'bg-blue-950 text-blue-400' }}">{{ method }}</span>
+      <span class="font-mono text-sm text-white">{{ path }}</span>
+      <span class="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 ml-auto">{{ auth }}</span>
+    </div>
+    <p class="text-sm text-gray-400 mb-3">{{ desc }}</p>
+    <p class="text-xs text-gray-500 mb-3">Rate limit: {{ rate }}</p>
+    {{ caller() }}
+  </div>
+  {% endmacro %}
+
+  {% call endpoint('server-config', 'POST', '/api/server/config', 'server_token', '30/min',
+    'The one call CloudLoader makes at startup. Given just a server token, returns every attached product ready to use — no manual per-product setup. Revoked or suspended licenses are silently excluded, so a customer server never has to handle that itself.') %}
+    <div class="text-xs text-gray-500 mb-1">Request</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto mb-3">{
+  "server_token": "srv_..."
+}</pre>
+    <div class="text-xs text-gray-500 mb-1">Response</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto">{
+  "server_name": "My Main Server",
+  "products": [
+    {
+      "product_id": "PRD-123456",
+      "product_name": "Dispatch System",
+      "api_key": "pk_...",
+      "license_key": "XXXX-XXXX-XXXX-XXXX",
+      "api_base": "https://this-or-a-custom-domain.com",
+      "channel": "stable"
+    }
+  ]
+}</pre>
+  {% endcall %}
+
+  {% call endpoint('ping', 'GET', '/api/ping', 'none', 'unlimited',
+    'Unauthenticated health check. Used to verify a custom domain is actually reaching this platform before it goes live for anyone.') %}
+    <div class="text-xs text-gray-500 mb-1">Response</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto">{ "ok": true, "platform": "{{ config.SITE_NAME }}" }</pre>
+  {% endcall %}
+
+  {% call endpoint('license-activate', 'POST', '/api/license/activate/&lt;product_id&gt;', 'api_key (public)', '120/min',
+    'Validates a license using only the public api_key — this is what a distributed script should call, since the secret_key never has to leave your dashboard. Also accepts an optional channel ("stable" or "beta").') %}
+    <div class="text-xs text-gray-500 mb-1">Request</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto mb-3">{
+  "api_key": "pk_...",
+  "license_key": "XXXX-XXXX-XXXX-XXXX",
+  "server_id": "optional, e.g. sv_hostname"
+}</pre>
+    <div class="text-xs text-gray-500 mb-1">Response (200) / invalid (401, 403, or 404)</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto">{ "valid": true, "product": { "name": "...", "version": "..." } }
+{ "valid": false, "message": "License is revoked." }</pre>
+  {% endcall %}
+
+  {% call endpoint('license-check', 'POST', '/api/license/check/&lt;product_id&gt;', 'api_key + secret_key', '120/min',
+    'The elevated version of license activation — requires the private secret_key too. Meant for your own server-side integrations (a website checking a customer\'s status), never for anything distributed to customers.') %}
+    <div class="text-xs text-gray-500 mb-1">Request</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto mb-3">{
+  "api_key": "pk_...",
+  "secret_key": "sk_...",
+  "license_key": "XXXX-XXXX-XXXX-XXXX",
+  "server_id": "optional"
+}</pre>
+    <div class="text-xs text-gray-500 mb-1">Response</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto">{
+  "valid": true,
+  "product": { "name": "...", "version": "..." },
+  "license": { "status": "active", "expires_at": null }
+}</pre>
+  {% endcall %}
+
+  {% call endpoint('update-check', 'POST', '/api/update/check/&lt;product_id&gt;', 'api_key (public)', '60/min',
+    'Compares a version string you send against the product\'s current published version.') %}
+    <div class="text-xs text-gray-500 mb-1">Request</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto mb-3">{ "api_key": "pk_...", "current_version": "1.0.0" }</pre>
+    <div class="text-xs text-gray-500 mb-1">Response</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto">{ "latest_version": "1.2.0", "update_available": true }</pre>
+  {% endcall %}
+
+  {% call endpoint('module-list', 'POST', '/api/module/list/&lt;product_id&gt;', 'api_key + valid license', '60/min',
+    'Lists modules available to a specific license. Pass channel: "beta" to also receive beta overrides — you still get every stable module too; beta never means fewer modules, just newer ones where a developer has published an override.') %}
+    <div class="text-xs text-gray-500 mb-1">Request</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto mb-3">{
+  "api_key": "pk_...",
+  "license_key": "XXXX-XXXX-XXXX-XXXX",
+  "channel": "stable"
+}</pre>
+    <div class="text-xs text-gray-500 mb-1">Response</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto">{
+  "modules": [
+    { "name": "menu", "display_name": "Test Menu", "side": "server", "version": "1.0.0", "channel": "stable" }
+  ]
+}</pre>
+  {% endcall %}
+
+  {% call endpoint('module-download', 'POST', '/api/module/download/&lt;product_id&gt;/&lt;module_name&gt;', 'api_key + valid license', '60/min',
+    'Returns the actual Lua source for one module. This is what makes code "delivered from the platform" — it never has to exist as a file on the customer\'s disk.') %}
+    <div class="text-xs text-gray-500 mb-1">Request</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto mb-3">{
+  "api_key": "pk_...",
+  "license_key": "XXXX-XXXX-XXXX-XXXX",
+  "channel": "stable"
+}</pre>
+    <div class="text-xs text-gray-500 mb-1">Response</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto">{
+  "name": "menu",
+  "side": "server",
+  "version": "1.0.0",
+  "channel": "stable",
+  "code": "RegisterCommand(...)"
+}</pre>
+  {% endcall %}
+
+  {% call endpoint('config-load', 'POST', '/api/config/load/&lt;product_id&gt;', 'api_key + valid license', '60/min',
+    'Returns whatever JSON object a developer has published as that product\'s remote config — values they can change live without republishing any code. {} if nothing is set.') %}
+    <div class="text-xs text-gray-500 mb-1">Request</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto mb-3">{ "api_key": "pk_...", "license_key": "XXXX-XXXX-XXXX-XXXX" }</pre>
+    <div class="text-xs text-gray-500 mb-1">Response</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto">{ "config": { "maxCalls": 10, "cooldownSeconds": 30 } }</pre>
+  {% endcall %}
+
+  {% call endpoint('tebex-webhook', 'POST', '/api/tebex/webhook/&lt;product_id&gt;', 'X-Signature (HMAC-SHA256)', '60/min',
+    'Where Tebex purchase events land. The signature is HMAC-SHA256 of the raw request body using the product\'s webhook secret (from the product\'s Tebex settings page) — this is what you paste into Tebex\'s own webhook configuration, not something you call directly.') %}
+    <div class="text-xs text-gray-500 mb-1">Request body</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto mb-3">{
+  "email": "customer@example.com",
+  "package_id": "optional - filtered against integration setting",
+  "quantity": 1
+}</pre>
+    <div class="text-xs text-gray-500 mb-1">Response</div>
+    <pre class="bg-surface border border-surface-border rounded-md p-3 text-xs font-mono text-gray-300 overflow-x-auto">{ "status": "ok", "license_keys": ["XXXX-XXXX-XXXX-XXXX"] }</pre>
+  {% endcall %}
+
+  <p class="text-xs text-gray-500 mt-8">
+    Every endpoint above rejects invalid credentials with a real error status
+    (401/403/404), never a silent 200 with empty data — safe to treat any
+    non-200 response as "this call failed" without inspecting the body first.
+  </p>
+</div>
+{% endblock %}

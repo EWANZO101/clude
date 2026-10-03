@@ -1,0 +1,8 @@
+{% macro request_status_badge(status) %}
+{% set v = status.value %}
+{% if v in ("completed", "approved") %}<span class="badge-success">{{ status|hwval }}</span>
+{% elif v in ("rejected",) %}<span class="badge-danger">{{ status|hwval }}</span>
+{% elif v in ("draft", "information_required") %}<span class="badge-warning">{{ status|hwval }}</span>
+{% else %}<span class="badge-info">{{ status|hwval }}</span>
+{% endif %}
+{% endmacro %}

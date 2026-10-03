@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% block title %}{{ client.name }} · ClientHub{% endblock %}
+{% block content %}
+
+<div class="pt-6 pb-4 flex flex-wrap items-start justify-between gap-3">
+  <div class="flex items-center gap-3">
+    <div class="w-14 h-14 rounded-xl bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 font-bold text-lg flex items-center justify-center">
+      {{ client.initials }}
+    </div>
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ client.name }}</h1>
+        <span class="text-xs px-2 py-1 rounded-full font-medium
+          {% if client.status == 'Active' %} bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
+          {% elif client.status == 'Inactive' %} bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
+          {% else %} bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 {% endif %}">
+          {{ client.status }}
+        </span>
+      </div>
+      {% if client.company %}<p class="text-slate-500 dark:text-slate-400 text-sm">{{ client.company }}</p>{% endif %}
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{{ url_for('client_edit', client_id=client.id) }}"
+       class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">✏️ Edit</a>
+    <form method="post" action="{{ url_for('client_delete', client_id=client.id) }}"
+          onsubmit="return confirm('Delete {{ client.name }} and ALL their files, notes and projects? This cannot be undone.');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="px-3 py-2 rounded-lg border border-red-200 dark:border-red-900 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">🗑️ Delete</button>
+    </form>
+  </div>
+</div>
+
+<!-- Contact strip -->
+<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-500 dark:text-slate-400 mb-6">
+  {% if client.email %}<span>✉️ {{ client.email }}</span>{% endif %}
+  {% if client.phone %}<span>📞 {{ client.phone }}</span>{% endif %}
+  {% if client.address %}<span>📍 {{ client.address }}</span>{% endif %}
+</div>
+
+<!-- Tabs -->
+<div class="border-b border-slate-200 dark:border-slate-800 mb-6">
+  <nav class="flex gap-1 overflow-x-auto">
+    {% for key, label, icon in [('overview','Overview','📊'), ('files','Files','📁'), ('notes','Notes','📝'), ('projects','Projects','🗂️')] %}
+    <a href="{{ url_for('client_detail', client_id=client.id, tab=key) }}"
+       class="px-4 py-2.5 text-sm font-medium border-b-2 whitespace-nowrap
+       {% if tab == key %} border-brand-600 text-brand-600 dark:text-brand-400 {% else %} border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 {% endif %}">
+      {{ icon }} {{ label }}
+    </a>
+    {% endfor %}
+  </nav>
+</div>
+
+{% if tab == 'overview' %}
+  <div class="grid lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+      <h2 class="font-semibold text-slate-900 dark:text-white mb-2">Overview</h2>
+      {% if client.summary %}
+        <p class="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-line">{{ client.summary }}</p>
+      {% else %}
+        <p class="text-sm text-slate-400">No summary added yet. <a href="{{ url_for('client_edit', client_id=client.id) }}" class="text-brand-600 hover:underline">Add one</a>.</p>
+      {% endif %}
+
+      <h3 class="font-semibold text-slate-900 dark:text-white mt-6 mb-2 text-sm">Recent files</h3>
+      {% if recent_files %}
+        <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for f in recent_files %}
+          <li class="py-2 flex items-center justify-between text-sm">
+            <span class="truncate">{{ CATEGORY_ICONS.get(f.category,'📎') }} {{ f.original_filename }}</span>
+            <span class="text-xs text-slate-400 shrink-0 ml-3">{{ f.uploaded_at | dt }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-slate-400">No files uploaded yet.</p>
+      {% endif %}
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+      <h2 class="font-semibold text-slate-900 dark:text-white mb-3">At a glance</h2>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between"><span class="text-slate-400">Files</span><span class="font-medium">{{ client.file_count }}</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Projects</span><span class="font-medium">{{ projects|length }}</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Notes</span><span class="font-medium">{{ notes|length }}</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Client since</span><span class="font-medium">{{ client.created_at | dt('%b %Y') }}</span></div>
+      </div>
+    </div>
+  </div>
+
+{% elif tab == 'files' %}
+  <!-- Upload box -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 mb-6">
+    <h2 class="font-semibold text-slate-900 dark:text-white mb-3">Upload files</h2>
+    <form method="post" action="{{ url_for('file_upload', client_id=client.id) }}" enctype="multipart/form-data"
+          class="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label class="block text-xs font-medium mb-1 text-slate-500">Category</label>
+        <select name="category" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-brand-500">
+          {% for slug, label, icon in CATEGORIES %}
+          <option value="{{ slug }}">{{ icon }} {{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1 text-slate-500">Files</label>
+        <input type="file" name="files" multiple required
+               class="w-full text-sm text-slate-600 dark:text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-brand-50 dark:file:bg-brand-900/40 file:text-brand-700 dark:file:text-brand-300 file:text-sm file:font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+      </div>
+      <button class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium h-[38px]">Upload</button>
+      <div class="sm:col-span-3">
+        <label class="block text-xs font-medium mb-1 text-slate-500">Note about these files (optional)</label>
+        <input type="text" name="description" placeholder="e.g. Signed contract v2, site photos from visit…"
+               class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-brand-500">
+      </div>
+    </form>
+  </div>
+
+  <!-- Files by category -->
+  <div class="space-y-4">
+    {% for slug, label, icon in CATEGORIES %}
+    {% set items = files_by_category.get(slug, []) %}
+    <details class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl group" {% if items %}open{% endif %}>
+      <summary class="cursor-pointer list-none px-5 py-3 flex items-center justify-between">
+        <span class="font-medium text-sm text-slate-800 dark:text-slate-200">{{ icon }} {{ label }}</span>
+        <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">{{ items|length }}</span>
+      </summary>
+      <div class="border-t border-slate-100 dark:border-slate-800">
+        {% if items %}
+        <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for f in items %}
+          <li class="px-5 py-3 flex items-center gap-3">
+            {% if f.is_image %}
+              <a href="{{ url_for('file_view', file_id=f.id) }}" target="_blank">
+                <img src="{{ url_for('file_view', file_id=f.id) }}" class="w-10 h-10 rounded object-cover border border-slate-200 dark:border-slate-700">
+              </a>
+            {% else %}
+              <span class="w-10 h-10 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg">{{ icon }}</span>
+            {% endif %}
+            <div class="min-w-0 flex-1">
+              <a href="{{ url_for('file_view', file_id=f.id) }}" target="_blank" class="text-sm font-medium text-slate-800 dark:text-slate-200 hover:text-brand-600 truncate block">{{ f.original_filename }}</a>
+              <p class="text-xs text-slate-400">{{ f.filesize | filesize }} · uploaded {{ f.uploaded_at | dt }}{% if f.description %} · {{ f.description }}{% endif %}</p>
+            </div>
+            <a href="{{ url_for('file_download', file_id=f.id) }}" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">Download</a>
+            <form method="post" action="{{ url_for('file_delete', file_id=f.id) }}" onsubmit="return confirm('Delete this file?');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="text-xs px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">Delete</button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="px-5 py-4 text-sm text-slate-400">No files in this category yet.</p>
+        {% endif %}
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+
+{% elif tab == 'notes' %}
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 mb-6">
+    <h2 class="font-semibold text-slate-900 dark:text-white mb-3">New note</h2>
+    <form method="post" action="{{ url_for('note_new', client_id=client.id) }}" class="space-y-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="text" name="title" placeholder="Note title" required
+             class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-brand-500">
+      <textarea name="content" rows="3" placeholder="Write your note…"
+                class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-brand-500"></textarea>
+      <button class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium">Add note</button>
+    </form>
+  </div>
+
+  <div class="grid sm:grid-cols-2 gap-4">
+    {% for n in notes %}
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+      <div class="flex items-start justify-between gap-2">
+        <h3 class="font-semibold text-slate-900 dark:text-white text-sm">{% if n.pinned %}📌 {% endif %}{{ n.title }}</h3>
+        <button type="button" onclick="document.getElementById('note-edit-{{ n.id }}').classList.toggle('hidden')"
+                class="text-xs text-slate-400 hover:text-brand-600 shrink-0">Edit</button>
+      </div>
+      <p class="text-sm text-slate-600 dark:text-slate-300 mt-2 whitespace-pre-line">{{ n.content }}</p>
+      <p class="text-xs text-slate-400 mt-3">Updated {{ n.updated_at | dt }}</p>
+
+      <div id="note-edit-{{ n.id }}" class="hidden mt-3 border-t border-slate-100 dark:border-slate-800 pt-3">
+        <form method="post" action="{{ url_for('note_edit', note_id=n.id) }}" class="space-y-2">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="text" name="title" value="{{ n.title }}" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm">
+          <textarea name="content" rows="3" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm">{{ n.content }}</textarea>
+          <label class="flex items-center gap-2 text-xs text-slate-500">
+            <input type="checkbox" name="pinned" {% if n.pinned %}checked{% endif %}> Pin this note
+          </label>
+          <div class="flex gap-2">
+            <button class="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium">Save</button>
+          </div>
+        </form>
+        <form method="post" action="{{ url_for('note_delete', note_id=n.id) }}" onsubmit="return confirm('Delete this note?');" class="mt-2">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900 text-red-500 text-xs font-medium">Delete note</button>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <p class="text-sm text-slate-400 col-span-2">No notes yet.</p>
+    {% endfor %}
+  </div>
+
+{% elif tab == 'projects' %}
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 mb-6">
+    <h2 class="font-semibold text-slate-900 dark:text-white mb-3">New project</h2>
+    <form method="post" action="{{ url_for('project_new', client_id=client.id) }}" class="grid sm:grid-cols-2 gap-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="text" name="name" placeholder="Project name" required
+             class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-brand-500">
+      <select name="status" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-brand-500">
+        {% for s in PROJECT_STATUSES %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+      </select>
+      <textarea name="description" rows="2" placeholder="Description" class="sm:col-span-2 w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-brand-500"></textarea>
+      <div>
+        <label class="block text-xs font-medium mb-1 text-slate-500">Due date</label>
+        <input type="date" name="due_date" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-brand-500">
+      </div>
+      <div class="flex items-end">
+        <button class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium">Add project</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="space-y-3">
+    {% for p in projects %}
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="font-semibold text-slate-900 dark:text-white">{{ p.name }}</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium
+              {% if p.status == 'Completed' %} bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
+              {% elif p.status == 'Active' %} bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300
+              {% elif p.status == 'On Hold' %} bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
+              {% else %} bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 {% endif %}">{{ p.status }}</span>
+          </div>
+          {% if p.description %}<p class="text-sm text-slate-600 dark:text-slate-300 mt-1">{{ p.description }}</p>{% endif %}
+          <p class="text-xs text-slate-400 mt-2">{% if p.due_date %}Due {{ p.due_date.strftime('%d %b %Y') }} · {% endif %}Created {{ p.created_at | dt }}</p>
+        </div>
+        <button type="button" onclick="document.getElementById('proj-edit-{{ p.id }}').classList.toggle('hidden')"
+                class="text-xs text-slate-400 hover:text-brand-600 shrink-0">Edit</button>
+      </div>
+
+      <div id="proj-edit-{{ p.id }}" class="hidden mt-3 border-t border-slate-100 dark:border-slate-800 pt-3">
+        <form method="post" action="{{ url_for('project_edit', project_id=p.id) }}" class="grid sm:grid-cols-2 gap-2">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="text" name="name" value="{{ p.name }}" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm">
+          <select name="status" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm">
+            {% for s in PROJECT_STATUSES %}<option value="{{ s }}" {% if p.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+          </select>
+          <textarea name="description" rows="2" class="sm:col-span-2 w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm">{{ p.description }}</textarea>
+          <input type="date" name="due_date" value="{{ p.due_date.isoformat() if p.due_date else '' }}" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm">
+          <div class="flex gap-2">
+            <button class="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium">Save</button>
+          </div>
+        </form>
+        <form method="post" action="{{ url_for('project_delete', project_id=p.id) }}" onsubmit="return confirm('Delete this project?');" class="mt-2">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900 text-red-500 text-xs font-medium">Delete project</button>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <p class="text-sm text-slate-400">No projects yet.</p>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% endblock %}

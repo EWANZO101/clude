@@ -1,0 +1,37 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}Photos & Documents — {{ app_name }}{% endblock %}
+{% block page_title %}{{ item.manufacturer }} {{ item.model }} — Photos &amp; documents{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2">
+    <div class="grid sm:grid-cols-2 gap-4">
+      {% for att in item.attachments %}
+      <div class="card p-4">
+        <p class="text-sm font-medium text-text-primary">{{ att.attachment_type.value.replace("_", " ")|title }}</p>
+        <p class="text-xs text-text-muted mb-3 truncate">{{ att.original_filename }}</p>
+        {% if req.is_editable %}
+        <form method="POST" action="{{ url_for('customer.request_item_attachment_delete', request_id=req.id, item_id=item.id, attachment_id=att.id) }}">
+          {% include "components/_csrf.html" %}
+          <button type="submit" class="text-status-danger hover:opacity-80 text-sm">Remove</button>
+        </form>
+        {% endif %}
+      </div>
+      {% else %}
+      <p class="text-text-muted col-span-2">No files uploaded yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% if req.is_editable %}
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Upload file</h2>
+    <form method="POST" enctype="multipart/form-data">
+      {{ form.hidden_tag() }}
+      {{ field(form.file) }}
+      {{ field(form.attachment_type) }}
+      <button type="submit" class="btn-primary w-full">Upload</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

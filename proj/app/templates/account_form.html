@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if account else "New" }} account — Claude Manager{% endblock %}
+{% block content %}
+<div class="max-w-xl">
+  <a href="{{ url_for('dashboard') }}" class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 mb-4 transition-colors">
+    <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Back to dashboard
+  </a>
+  <h1 class="text-xl font-semibold mb-6 tracking-tight">{{ "Edit" if account else "New" }} account</h1>
+
+  <form method="post" class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 space-y-5">
+    <div>
+      <label class="block text-xs font-medium text-gray-400 mb-1.5">Name</label>
+      <input name="name" value="{{ account.name if account else '' }}" required
+        class="w-full bg-gray-950/60 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition-shadow">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-400 mb-1.5">Team / org label</label>
+      <input name="team_label" value="{{ account.team_label if account else '' }}"
+        class="w-full bg-gray-950/60 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition-shadow">
+    </div>
+
+    <div class="pt-1 border-t border-gray-800/80"></div>
+
+    <div>
+      <label class="block text-xs font-medium text-gray-400 mb-1.5">Run session as</label>
+      <select name="os_user"
+        class="w-full bg-gray-950/60 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition-shadow">
+        <option value="" {{ "selected" if not (account and account.os_user) }}>Isolated config dir (service account)</option>
+        {% for u in allowed_os_users %}
+        <option value="{{ u }}" {{ "selected" if account and account.os_user == u }}>{{ u }} (dedicated Linux user)</option>
+        {% endfor %}
+      </select>
+      <p class="text-[11px] text-gray-600 mt-1.5">A dedicated Linux user runs this session under its own OS identity — its own home directory and file permissions, fully separate from every other account.</p>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-400 mb-1.5">Project path</label>
+      <input name="project_path" value="{{ account.project_path if account else '' }}" placeholder="leave blank to default to the account's home dir"
+        class="w-full bg-gray-950/60 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition-shadow">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-400 mb-1.5">Claude config dir <span class="text-gray-600">(isolates auth per account)</span></label>
+      <input name="config_dir" value="{{ account.config_dir if account else '' }}" placeholder="leave blank to auto-create"
+        class="w-full bg-gray-950/60 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition-shadow">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-400 mb-1.5">API key <span class="text-gray-600">(optional — overrides login auth)</span></label>
+      <input name="api_key" value="{{ account.api_key if account else '' }}" type="password"
+        class="w-full bg-gray-950/60 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition-shadow">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-400 mb-1.5">Model override</label>
+      <input name="model" value="{{ account.model if account else '' }}" placeholder="leave blank for default"
+        class="w-full bg-gray-950/60 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition-shadow">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-400 mb-1.5">Notes</label>
+      <textarea name="notes" rows="3"
+        class="w-full bg-gray-950/60 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition-shadow">{{ account.notes if account else '' }}</textarea>
+    </div>
+    <div class="flex gap-3 pt-2">
+      <button class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 transition-colors px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg shadow-indigo-950/40">Save</button>
+      <a href="{{ url_for('dashboard') }}" class="px-4 py-2.5 rounded-lg text-sm text-gray-400 hover:text-gray-100 transition-colors">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

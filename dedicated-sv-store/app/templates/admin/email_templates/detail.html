@@ -1,0 +1,21 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% block title %}{{ tmpl.name }} — Admin{% endblock %}
+{% block page_title %}{{ tmpl.name }}{% endblock %}
+{% block content %}
+<form method="POST" class="card p-6 max-w-3xl space-y-4">
+  {% include "components/_csrf.html" %}
+  <div>
+    <label class="field-label">Subject</label>
+    <input type="text" name="subject" value="{{ tmpl.subject }}" class="input-field">
+  </div>
+  <div>
+    <label class="field-label">Body (HTML)</label>
+    <textarea name="body_html" rows="14" class="input-field font-mono text-xs">{{ tmpl.body_html }}</textarea>
+  </div>
+  <label class="flex items-center gap-2 text-sm text-text-secondary">
+    <input type="checkbox" name="is_active" {{ "checked" if tmpl.is_active }} class="rounded border-border bg-surface-800 text-brand-600">
+    Active
+  </label>
+  <button type="submit" class="btn-primary">Save template</button>
+</form>
+{% endblock %}

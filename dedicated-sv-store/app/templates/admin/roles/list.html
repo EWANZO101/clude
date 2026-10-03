@@ -1,0 +1,23 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% block title %}Roles — Admin{% endblock %}
+{% block page_title %}Roles{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead>
+      <tr><th>Name</th><th>Description</th><th>Permissions</th><th>System role</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for role in roles %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ role.name }}</td>
+        <td class="text-text-secondary">{{ role.description or "—" }}</td>
+        <td>{{ role.permissions|length }}</td>
+        <td>{% if role.is_system %}<span class="badge-neutral">System</span>{% endif %}</td>
+        <td><a href="{{ url_for('admin.role_detail', role_id=role.id) }}" class="text-brand-400 hover:text-brand-300">View</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

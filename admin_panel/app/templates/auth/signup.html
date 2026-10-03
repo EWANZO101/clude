@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Sign up — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="panel">
+  <h1 style="margin-bottom:6px;">Create your account</h1>
+  <p class="muted" style="margin-bottom:18px;">You'll create your company and connect your first kiosk after signing up.</p>
+  <form method="post">
+    <label>Full name</label>
+    <input type="text" name="full_name" value="{{ full_name or '' }}" required autofocus>
+    <label>Email</label>
+    <input type="email" name="email" value="{{ email or '' }}" required>
+    <label>Password</label>
+    <input type="password" name="password" required minlength="10">
+    <label>Confirm password</label>
+    <input type="password" name="password_confirm" required minlength="10">
+    <button type="submit" class="btn-block" style="margin-top:20px;">Sign up</button>
+  </form>
+  <p class="muted" style="margin-top:18px; font-size:13px;">
+    Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a>
+  </p>
+</div>
+{% endblock %}

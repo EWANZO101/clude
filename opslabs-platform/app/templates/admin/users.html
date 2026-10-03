@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Users — Admin{% endblock %}
+{% block content %}
+<h1>Users</h1>
+<div class="card">
+  <table>
+    <tr><th>Email</th><th>Company</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.email }}{% if u.is_platform_admin %} <span class="badge active">platform admin</span>{% endif %}</td>
+      <td>{{ u.company.name if u.company else '—' }}</td>
+      <td>{{ u.role }}</td>
+      <td><span class="badge {{ u.status }}">{{ u.status }}</span></td>
+      <td>
+        {% if u.status == 'active' %}
+          <form class="inline" method="POST" action="{{ url_for('admin.suspend_user', user_id=u.id) }}">
+            <button class="secondary" type="submit">Suspend</button>
+          </form>
+        {% else %}
+          <form class="inline" method="POST" action="{{ url_for('admin.activate_user', user_id=u.id) }}">
+            <button class="secondary" type="submit">Activate</button>
+          </form>
+        {% endif %}
+        <form class="inline" method="POST" action="{{ url_for('admin.remove_user', user_id=u.id) }}"
+              onsubmit="return confirm('Remove {{ u.email }}? This cannot be undone.');">
+          <button class="danger" type="submit">Remove</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

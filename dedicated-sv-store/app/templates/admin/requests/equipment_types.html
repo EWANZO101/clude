@@ -1,0 +1,40 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}Equipment Types — Admin{% endblock %}
+{% block page_title %}Equipment types{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Name</th><th>Networking</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for t in types %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ t.name }}</td>
+          <td class="text-text-secondary">{{ "Yes" if t.is_networking else "No" }}</td>
+          <td>{% if t.is_active %}<span class="badge-success">Active</span>{% else %}<span class="badge-neutral">Disabled</span>{% endif %}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.equipment_type_toggle', type_id=t.id) }}">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-brand-400 hover:text-brand-300 text-sm">{{ "Disable" if t.is_active else "Enable" }}</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-text-muted py-8">No equipment types yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Add type</h2>
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      {{ field(form.name) }}
+      {{ checkbox(form.is_networking) }}
+      {{ checkbox(form.is_active) }}
+      <button type="submit" class="btn-primary w-full">Add type</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

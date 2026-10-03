@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="eyebrow mb-1">Moderation</p>
+<h1 class="font-display font-800 text-2xl text-chalk mb-5">Open reports</h1>
+<div class="space-y-2">
+{% for r in reports %}
+  <div class="card p-4 flex justify-between items-center gap-3">
+    <div><span class="font-display font-600 text-chalk">{{ r.target_type }} #{{ r.target_id }}</span><span class="text-mute text-sm"> — {{ r.reason or 'no reason given' }}</span><div class="eyebrow mt-1">{{ r.reporter.username }} · {{ r.created_at|ago }}</div></div>
+    <form method="post" action="{{ url_for('admin.resolve_report', report_id=r.id) }}" class="flex gap-1.5">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {% if r.target_type in ['post','comment'] %}<button name="action" value="hide" class="btn btn-danger btn-sm">Hide</button>{% endif %}
+      <button name="action" value="dismiss" class="btn btn-ghost btn-sm">Resolve</button>
+    </form>
+  </div>
+{% else %}<div class="card p-10 text-center text-mute text-sm">Queue is clear. Nice.</div>{% endfor %}
+</div>
+{% endblock %}

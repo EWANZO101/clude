@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}Find My Order — Cioda's Commissions{% endblock %}
+
+{% block drawer_title %}<span class="nav-logo" style="font-size:1rem;">Cioda's <span>Commissions</span></span>{% endblock %}
+{% block drawer_nav %}
+<div style="padding:1rem;display:flex;flex-direction:column;gap:0.65rem;">
+  <a href="/queue/waiting" class="btn btn-primary" style="justify-content:center;">✦ Commission Me</a>
+  <a href="/find-order" class="btn btn-ghost" style="justify-content:center;border-color:var(--accent);color:var(--accent);">🔍 Find My Order</a>
+  <a href="/contact/verify" class="btn btn-ghost" style="justify-content:center;">✉ Contact</a>
+  <a href="/admin" class="btn btn-ghost" style="justify-content:center;">Admin</a>
+</div>
+{% endblock %}
+
+{% block body %}
+<nav class="nav-bar">
+  <a class="nav-logo" href="/">Cioda's <span>Commissions</span></a>
+  <div class="public-nav-links">
+    <a href="/queue/waiting" class="btn btn-primary btn-sm">✦ Commission Me</a>
+    <a href="/find-order" class="btn btn-ghost btn-sm" style="border-color:var(--accent);color:var(--accent);">🔍 Find My Order</a>
+    <a href="/contact/verify" class="btn btn-ghost btn-sm">✉ Contact</a>
+    <a href="/admin" class="btn btn-ghost btn-sm">Admin</a>
+  </div>
+  <button class="hamburger-btn public-nav-hamburger" onclick="openDrawer()" aria-label="Open menu">☰</button>
+</nav>
+
+<main style="max-width:560px;margin:0 auto;padding:3rem 1.5rem;">
+  <!-- Header -->
+  <div style="text-align:center;margin-bottom:2.5rem;">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem;">🔍</div>
+    <h1 class="font-display" style="font-size:1.9rem;margin-bottom:0.6rem;color:var(--text-primary);">
+      Find My Order
+    </h1>
+    <p style="color:var(--text-secondary);font-size:1rem;font-style:italic;">
+      Pick whichever's fastest for you.
+    </p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}" style="margin-bottom:1.25rem;">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Search Form -->
+  <div class="card fade-in" style="margin-bottom:1.5rem;padding:0;">
+    <!-- Tabs -->
+    <div style="display:flex;border-bottom:1px solid var(--border);">
+      <button type="button" class="find-tab" data-tab="order_id" onclick="switchFindTab('order_id')"
+              style="flex:1;padding:0.85rem 0.5rem;background:none;border:none;cursor:pointer;
+                     font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:.03em;
+                     text-transform:uppercase;transition:all .15s;">🔢 Order #</button>
+      <button type="button" class="find-tab" data-tab="discord" onclick="switchFindTab('discord')"
+              style="flex:1;padding:0.85rem 0.5rem;background:none;border:none;cursor:pointer;
+                     font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:.03em;
+                     text-transform:uppercase;transition:all .15s;">💬 Discord</button>
+      <button type="button" class="find-tab" data-tab="name_email" onclick="switchFindTab('name_email')"
+              style="flex:1;padding:0.85rem 0.5rem;background:none;border:none;cursor:pointer;
+                     font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:.03em;
+                     text-transform:uppercase;transition:all .15s;">📧 Name + Email</button>
+    </div>
+
+    <div style="padding:1.5rem;">
+      <!-- Panel: Order Number (fastest) -->
+      <form method="POST" action="/find-order" id="panel-order_id" class="find-panel">
+        <input type="hidden" name="method" value="order_id">
+        <div style="margin-bottom:1.25rem;">
+          <label class="form-label" for="order_id">Order Number</label>
+          <input
+            class="input"
+            type="text"
+            id="order_id"
+            name="order_id"
+            placeholder="e.g. ORD-A1B2C3"
+            value="{{ submitted_order_id or '' }}"
+            required
+            autocomplete="off"
+            style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;"
+          >
+          <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.4rem;font-style:italic;">
+            Found in your confirmation message or Discord DM.
+          </p>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;font-size:0.95rem;padding:0.65rem;">
+          🔍 Go to My Order
+        </button>
+      </form>
+
+      <!-- Panel: Discord -->
+      <form method="POST" action="/find-order" id="panel-discord" class="find-panel" style="display:none;">
+        <input type="hidden" name="method" value="discord">
+        <div style="margin-bottom:1.5rem;">
+          <label class="form-label" for="customer_discord">Discord Handle</label>
+          <input
+            class="input"
+            type="text"
+            id="customer_discord"
+            name="customer_discord"
+            placeholder="e.g. yourname"
+            value="{{ submitted_discord or '' }}"
+            required
+            autocomplete="off"
+          >
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;font-size:0.95rem;padding:0.65rem;">
+          🔍 Search for My Order
+        </button>
+      </form>
+
+      <!-- Panel: Name + Email -->
+      <form method="POST" action="/find-order" id="panel-name_email" class="find-panel" style="display:none;">
+        <input type="hidden" name="method" value="name_email">
+        <div style="margin-bottom:1.25rem;">
+          <label class="form-label" for="customer_name">Your Name</label>
+          <input
+            class="input"
+            type="text"
+            id="customer_name"
+            name="customer_name"
+            placeholder="e.g. Alex Smith"
+            value="{{ submitted_name or '' }}"
+            required
+            autocomplete="name"
+          >
+        </div>
+        <div style="margin-bottom:1.5rem;">
+          <label class="form-label" for="customer_email">Email Address</label>
+          <input
+            class="input"
+            type="email"
+            id="customer_email"
+            name="customer_email"
+            placeholder="e.g. you@example.com"
+            value="{{ submitted_email or '' }}"
+            required
+            autocomplete="email"
+          >
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;font-size:0.95rem;padding:0.65rem;">
+          🔍 Search for My Order
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Results -->
+  {% if searched %}
+    {% if orders %}
+    <div class="fade-in">
+      <div style="font-family:'Cinzel',serif;font-size:0.75rem;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.85rem;">
+        Found {{ orders|length }} order{{ 's' if orders|length != 1 else '' }}
+      </div>
+      {% for order in orders %}
+      <div class="card" style="margin-bottom:0.85rem;border-color:var(--border-accent);display:flex;flex-direction:column;gap:0.6rem;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem;">
+          <div>
+            <div class="font-display" style="font-size:0.85rem;color:var(--accent);letter-spacing:0.04em;">
+              Order #{{ order.order_id }}
+            </div>
+            <div style="font-size:0.9rem;color:var(--text-secondary);margin-top:0.2rem;">
+              {{ order.commission_type or 'Commission' }}
+            </div>
+          </div>
+          <span class="badge badge-{{ order.status | lower | replace(' ', '') if order.status else 'awaiting' }}">
+            {{ order.status or 'Awaiting' }}
+          </span>
+        </div>
+        <div style="font-size:0.82rem;color:var(--text-muted);">
+          Placed {{ order.created_at.strftime('%b %d, %Y') if order.created_at else 'N/A' }}
+        </div>
+        <a href="/order/{{ order.unique_link }}" class="btn btn-primary btn-sm" style="align-self:flex-start;">
+          View Order →
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card fade-in" style="text-align:center;padding:2rem;border-color:#7f1d1d;">
+      <div style="font-size:1.8rem;margin-bottom:0.75rem;">😔</div>
+      <div class="font-display" style="color:#fca5a5;margin-bottom:0.5rem;font-size:0.95rem;">No Orders Found</div>
+      <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem;">
+        {% if method == 'order_id' %}
+        We couldn't find an order with that number.<br>
+        {% elif method == 'discord' %}
+        We couldn't find any orders under that Discord handle.<br>
+        {% else %}
+        We couldn't find any orders matching that name and email.<br>
+        {% endif %}
+        Please double-check and try again, or try a different search method above.
+      </p>
+      <p style="font-size:0.85rem;color:var(--text-muted);">
+        Still stuck? Reach out via Discord: <strong style="color:var(--text-primary);">totallynotcioda</strong><br>
+        or email <a href="mailto:cioda@ciodrawz.space" style="color:var(--accent);">cioda@ciodrawz.space</a>
+      </p>
+    </div>
+    {% endif %}
+  {% endif %}
+
+  <div style="text-align:center;margin-top:2rem;">
+    <a href="/" style="color:var(--text-muted);font-size:0.88rem;">← Back to Home</a>
+  </div>
+</main>
+
+<style>
+  .find-tab { color: var(--text-muted); border-bottom: 2px solid transparent; }
+  .find-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+</style>
+<script>
+  function switchFindTab(tab) {
+    document.querySelectorAll('.find-panel').forEach(p => p.style.display = (p.id === 'panel-' + tab) ? 'block' : 'none');
+    document.querySelectorAll('.find-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  }
+  switchFindTab('{{ method or "order_id" }}');
+</script>
+{% endblock %}

@@ -1,0 +1,46 @@
+{
+  "ticket_id": "TICK-0018",
+  "ticket_type": "whitelist",
+  "opened_by": "e",
+  "opened_at": "2026-04-02 10:01:59",
+  "closed_by": "e",
+  "closed_at": "2026-04-02 10:02 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-02T10:01:59.573000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1460361220329574521> <@344560012997165057>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:01:59.910000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:02:41.238000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "111111111111111111111",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:02:42.890000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "1111111111111111111",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

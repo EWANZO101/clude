@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Plans — Admin{% endblock %}
+{% block content %}
+<h1>Plans</h1>
+<p><a href="{{ url_for('admin.new_plan') }}" class="btn">+ New plan</a>
+   <a href="{{ url_for('admin.products') }}" class="btn secondary">View products</a></p>
+<div class="card">
+  <table>
+    <tr><th>Plan</th><th>Product</th><th>Period</th><th>Price</th><th>Credits</th><th>Trial</th><th>Stripe</th><th>Status</th><th>Actions</th></tr>
+    {% for p in plans %}
+    <tr>
+      <td>{{ p.name }}</td>
+      <td>{{ p.product.name }}</td>
+      <td>{{ p.billing_period }}</td>
+      <td>{{ '%.2f'|format(p.price_cents / 100) }} {{ p.currency|upper }}</td>
+      <td>{{ p.credit_allowance }}</td>
+      <td>{{ p.trial_days ~ 'd' if p.trial_days else '—' }}</td>
+      <td><span class="badge {{ 'active' if p.stripe_price_id else 'suspended' }}">{{ 'wired' if p.stripe_price_id else 'no price' }}</span></td>
+      <td><span class="badge {{ 'active' if p.is_active else 'suspended' }}">{{ 'active' if p.is_active else 'archived' }}</span></td>
+      <td>
+        <a class="btn secondary" style="margin:0;padding:0.3rem 0.6rem;font-size:0.8rem;" href="{{ url_for('admin.edit_plan', plan_id=p.id) }}">Edit</a>
+        {% if p.is_active %}
+        <form class="inline" method="POST" action="{{ url_for('admin.archive_plan', plan_id=p.id) }}"
+              onsubmit="return confirm('Archive {{ p.name }}? Existing subscribers keep it, but it can\'t be assigned to new companies.');">
+          <button class="secondary" type="submit">Archive</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

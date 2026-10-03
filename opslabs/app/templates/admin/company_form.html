@@ -1,0 +1,105 @@
+{% extends "admin/_layout.html" %}
+{% block admin_content %}
+
+<!-- Breadcrumb -->
+<nav class="flex items-center gap-2 text-xs text-gray-500 mb-5">
+  <a href="{{ url_for('admin.companies') }}" class="hover:text-ops-400">Companies</a>
+  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+  <span class="text-gray-400">{{ company.name if company else 'New company' }}</span>
+</nav>
+
+<div class="mb-8">
+  <h1 class="text-3xl font-semibold tracking-tight">{{ 'Edit' if company else 'New' }} Company</h1>
+  <p class="text-sm text-gray-400 mt-1">Each company gets its own ticket categories. Add one per line in the format <span class="font-mono text-ops-400">Name | Description</span>.</p>
+</div>
+
+<form method="post" class="space-y-5">
+
+  <!-- ===== Basic Info ===== -->
+  <div class="bg-ink-800/60 backdrop-blur-xl border border-ink-600 rounded-2xl p-6 space-y-5">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-gray-300 pb-2 border-b border-ink-600/60">Basic info</h2>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">Name <span class="text-red-400">*</span></label>
+        <input name="name" value="{{ company.name if company else '' }}" required class="form-input w-full px-4 py-2.5 text-sm" placeholder="e.g. NeonHost">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">Slug (URL-safe)</label>
+        <input name="slug" value="{{ company.slug if company else '' }}" class="form-input w-full px-4 py-2.5 text-sm font-mono" placeholder="auto-generated">
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">Tagline</label>
+      <input name="tagline" value="{{ company.tagline or '' if company else '' }}" class="form-input w-full px-4 py-2.5 text-sm" placeholder="Short one-liner shown on the homepage">
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">Description</label>
+      <textarea name="description" rows="3" class="form-textarea w-full px-4 py-3 text-sm">{{ company.description or '' if company else '' }}</textarea>
+    </div>
+
+    <div class="grid sm:grid-cols-[1fr,140px] gap-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">Logo URL</label>
+        <input name="logo_url" value="{{ company.logo_url or '' if company else '' }}" class="form-input w-full px-4 py-2.5 text-sm" placeholder="https://...">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">Accent</label>
+        <div class="flex items-center gap-2">
+          <input name="accent_color" type="color" value="{{ company.accent_color if company else '#3b82f6' }}"
+                 class="w-12 h-10 rounded-lg border border-ink-600 bg-ink-900 cursor-pointer">
+          <span class="text-xs text-gray-400 font-mono">{{ company.accent_color if company else '#3b82f6' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-ink-900/40 border border-ink-600 cursor-pointer">
+      <input type="checkbox" name="is_active" {% if not company or company.is_active %}checked{% endif %} class="w-4 h-4 rounded bg-ink-900 border-ink-600 text-ops-500 focus:ring-ops-500 focus:ring-2">
+      <div>
+        <div class="text-sm font-semibold text-white">Active</div>
+        <div class="text-xs text-gray-400">Visible to users when creating a ticket.</div>
+      </div>
+    </label>
+  </div>
+
+  <!-- ===== Categories form builder ===== -->
+  <div class="bg-ink-800/60 backdrop-blur-xl border border-ink-600 rounded-2xl p-6 space-y-4">
+    <div class="pb-2 border-b border-ink-600/60">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-gray-300">Ticket Categories</h2>
+      <p class="text-xs text-gray-400 mt-1">One per line. Format: <span class="font-mono text-ops-400">Category Name | Description</span> (description optional). Saving replaces all existing categories.</p>
+    </div>
+
+    <textarea name="categories" rows="10" class="form-textarea w-full px-4 py-3 text-sm font-mono">{% if company %}{% for c in company.categories %}{{ c.name }}{% if c.description %} | {{ c.description }}{% endif %}
+{% endfor %}{% else %}Website Development | Custom websites and updates
+FiveM Development | Scripts, maps, resources
+Tech Support | Fix issues and get the help you need
+Hosting Support | Reliable hosting solutions
+System Setup | Setup and optimize your systems
+Other | Anything tech related{% endif %}</textarea>
+
+    <div class="text-xs text-gray-500 flex flex-wrap items-center gap-x-4 gap-y-1">
+      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-ops-400"></span> Lines starting empty are ignored</span>
+      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-ops-400"></span> Description is optional</span>
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 sticky bottom-4 z-10 p-4 bg-ink-900/80 backdrop-blur-xl border border-ink-600 rounded-2xl shadow-2xl">
+    <a href="{{ url_for('admin.companies') }}" class="text-sm text-gray-400 hover:text-white text-center sm:text-left">Cancel</a>
+    <div class="flex gap-2">
+      {% if company %}
+      <form method="post" action="{{ url_for('admin.company_delete', cid=company.id) }}" onsubmit="return confirm('Delete {{ company.name }}? Tickets associated with this company will prevent deletion.')">
+        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-red-200 bg-red-500/10 border border-red-500/40 rounded-xl hover:bg-red-500/20 transition">
+          Delete
+        </button>
+      </form>
+      {% endif %}
+      <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-xl transition">
+        Save company
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

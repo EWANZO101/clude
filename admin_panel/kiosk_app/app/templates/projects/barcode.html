@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Barcode — {{ project.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('projects.list_projects') }}">← Projects</a></p>
+<div class="panel" style="max-width:400px; text-align:center;">
+  <h1>{{ project.name }}</h1>
+  {% if barcode_image %}
+    <div style="background:#fff; border-radius:8px; padding:16px; margin:16px 0;">
+      <img src="{{ barcode_image }}" alt="Barcode {{ project.barcode_code }}" style="width:100%; height:auto; display:block;">
+    </div>
+  {% else %}
+    <p class="muted">Couldn't render a scannable barcode for this code — use the text below.</p>
+  {% endif %}
+  <div style="font-size:20px; font-family:ui-monospace,monospace; letter-spacing:3px; padding:14px; background:var(--bg); border-radius:8px;">
+    {{ project.barcode_code }}
+  </div>
+  <p class="muted" style="font-size:12.5px; margin-top:12px;">Scan this at the kiosk's Scan screen to set it as the active project.</p>
+</div>
+{% endblock %}

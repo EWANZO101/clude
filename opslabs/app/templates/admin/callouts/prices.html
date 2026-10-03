@@ -1,0 +1,41 @@
+{% extends "admin/_layout.html" %}
+{% block admin_title %}Call-out prices{% endblock %}
+{% block admin_content %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+  <div>
+    <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight">Call-out prices</h1>
+    <p class="text-gray-400 mt-1 text-sm">Set an estimated price for each service. Visitors see it on the Book a call-out form when they choose a service. Leave blank for “confirmed after assessment”.</p>
+  </div>
+  <div class="flex items-center gap-2 self-start">
+    <a href="{{ url_for('callouts.pricing') }}" target="_blank" class="px-4 py-2 text-sm font-semibold text-gray-200 bg-white/5 border border-ink-600 rounded-lg">View live page ↗</a>
+    <a href="{{ url_for('callouts.admin_list') }}" class="px-4 py-2 text-sm font-semibold text-gray-200 bg-white/5 border border-ink-600 rounded-lg">← Requests</a>
+  </div>
+</div>
+
+{% for cat, msg in get_flashed_messages(with_categories=true) %}
+  <div class="mb-5 text-sm px-4 py-2.5 rounded-lg {{ 'bg-red-500/10 border border-red-500/30 text-red-200' if cat=='error' else 'bg-green-500/10 border border-green-500/30 text-green-200' }}">{{ msg }}</div>
+{% endfor %}
+
+<form method="post" class="space-y-6">
+  {% for grp, opts in service_groups %}
+  <div class="rounded-2xl border border-ink-600 bg-ink-800/40 p-5">
+    <div class="text-sm font-bold text-ops-200 mb-3">{{ grp }}</div>
+    <div class="space-y-2">
+      {% for o in opts %}
+        {% if o != other_label %}
+        <div class="flex items-center gap-3">
+          <label class="flex-1 text-sm text-gray-200">{{ o }}</label>
+          <input name="{{ o }}" value="{{ prices.get(o, '') }}"
+                 class="form-input w-44 text-sm" placeholder="e.g. £100 or 100-200">
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="sticky bottom-4">
+    <button class="w-full px-5 py-3 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-xl transition">Save prices</button>
+  </div>
+</form>
+{% endblock %}

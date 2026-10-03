@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Shared Calendars · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center px-4 py-12 text-center">
+
+  <span class="status-pill border-accent/30 bg-accent-muted text-accent mb-6">
+    <span class="status-dot bg-accent"></span>
+    Shared Calendars
+  </span>
+
+  <h1 class="font-display text-3xl font-semibold text-ink">Create a calendar you can share</h1>
+  <p class="mt-3 max-w-sm text-sm text-ink-muted">
+    Make a calendar, get a link, and send it to as many people as you like.
+    Everyone sets their own PIN to get in — no accounts, no passwords to remember.
+  </p>
+
+  {% include "partials/flash.html" %}
+
+  <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+    <a href="{{ url_for('calendarmaker.new_calendar') }}" class="btn-primary">Create a calendar</a>
+    <a href="{{ url_for('calendarmaker.recover') }}" class="btn-secondary">I already have one — find it</a>
+  </div>
+
+  <div class="mt-10 grid grid-cols-1 gap-4 text-left sm:grid-cols-3">
+    <div class="card p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide text-ink-muted">1. Create</p>
+      <p class="mt-1 text-sm text-ink-muted">Make a calendar and get a shareable link.</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide text-ink-muted">2. Share</p>
+      <p class="mt-1 text-sm text-ink-muted">Send the link to anyone — they set their own PIN.</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide text-ink-muted">3. Return</p>
+      <p class="mt-1 text-sm text-ink-muted">Lost the link? Recover it any time with your email.</p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Rollout v{{ rollout.package.version }} — {{ company.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('rollouts.list_rollouts', company_id=company.public_id) }}" class="crumb">← Staged rollouts</a>
+    <h1>Rollout: v{{ rollout.package.version }}</h1>
+    <div class="page-sub">
+      {% if rollout.status == 'completed' %}
+        <span class="pill pill-green">Completed</span>
+      {% elif rollout.status == 'halted' %}
+        <span class="pill pill-red">Halted</span>
+      {% else %}
+        <span class="pill pill-amber">In progress</span>
+        <span>{{ rollout.highest_pushed_batch() }} of {{ rollout.total_batches() }} batches pushed</span>
+      {% endif %}
+    </div>
+  </div>
+  {% if role in ["owner", "administrator"] and rollout.status == 'in_progress' %}
+    <div class="page-actions">
+      {% if rollout.has_next_batch() %}
+        <form method="post" action="{{ url_for('rollouts.advance', company_id=company.public_id, rollout_id=rollout.public_id) }}">
+          <button type="submit">Advance to batch {{ rollout.highest_pushed_batch() + 1 }}</button>
+        </form>
+      {% endif %}
+      <form method="post" action="{{ url_for('rollouts.halt', company_id=company.public_id, rollout_id=rollout.public_id) }}"
+            onsubmit="return confirm('Halt this rollout? No further batches will be pushed.');">
+        <button type="submit" class="btn btn-danger btn-sm">Halt</button>
+      </form>
+    </div>
+  {% endif %}
+</div>
+
+{% for batch_number, members in rollout.batches() %}
+  <div class="panel">
+    <h2>Batch {{ batch_number }}</h2>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Instance</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for m in members %}
+          <tr>
+            <td>{{ m.instance.display_name() }}</td>
+            <td>
+              {% if m.deployment %}
+                {% if m.deployment.status == 'successful' %}
+                  <span class="pill pill-green">Successful</span>
+                {% elif m.deployment.status in ['failed','rolled_back'] %}
+                  <span class="pill pill-red">{{ m.deployment.status.replace('_',' ')|capitalize }}</span>
+                {% else %}
+                  <span class="pill pill-amber">{{ m.deployment.status.replace('_',' ')|capitalize }}</span>
+                {% endif %}
+              {% else %}
+                <span class="muted">Not pushed yet</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+{% endfor %}
+{% endblock %}

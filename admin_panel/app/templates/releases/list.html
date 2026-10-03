@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Releases — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles"><h1>Update packages</h1></div>
+  <div class="page-actions">
+    {% import "_icons.html" as icons %}
+    <a href="{{ url_for('releases.build_from_source') }}" class="btn">{{ icons.icon('plus',14) }}Build Kiosk release</a>
+    <a href="{{ url_for('releases.upload') }}" class="btn">{{ icons.icon('plus',14) }}Upload package</a>
+  </div>
+</div>
+
+<div class="panel" style="padding:8px 22px 20px;">
+  {% if package_counts.all %}
+    {% import "_update_history.html" as history %}
+    {% macro _package_rows(rows) %}
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Version</th><th>Product</th><th>Status</th><th>Supported OS</th><th>Size</th><th>Uploaded by</th><th>Uploaded</th><th></th><th></th></tr></thead>
+        <tbody>
+          {% for p in rows %}
+            <tr>
+              <td class="mono" style="font-weight:600;">{{ p.version }}</td>
+              <td class="muted">{{ p.product.name if p.product else "Kiosk System" }}</td>
+              <td>
+                {% if p.withdrawn %}
+                  <span class="pill pill-muted">Withdrawn</span>
+                {% elif p.status == 'validated' %}
+                  <span class="pill pill-green">Validated</span>
+                {% else %}
+                  <span class="pill pill-red" {% if p.validation_log %}title="{{ p.validation_log.split('\n')[0] }}"{% endif %}>Invalid{% if p.validation_log %} ({{ p.validation_log.split('\n')|length }}){% endif %}</span>
+                {% endif %}
+              </td>
+              <td class="muted">{{ p.supported_os_list()|join(', ') or '—' }}</td>
+              <td class="muted mono">{{ (p.file_size / 1024 / 1024) | round(1) }} MB</td>
+              <td class="muted">{{ p.uploaded_by.full_name }}</td>
+              <td>{{ p.uploaded_at | friendly_dt }}</td>
+              <td><a href="{{ url_for('releases.detail', package_id=p.public_id) }}" class="btn btn-secondary btn-sm">Open →</a></td>
+              <td>
+                {% if p.id in deletable_ids %}
+                  <form method="post" action="{{ url_for('releases.delete', package_id=p.public_id) }}"
+                        onsubmit="return confirm('Permanently delete v{{ p.version }}? This can\'t be undone.');">
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    {% endmacro %}
+
+    <div class="page-tabbed filter-tabs" data-default-tab="all">
+      <div class="page-tabs" role="tablist">
+        <button type="button" class="page-tab-btn" data-tab="all">All<span class="tab-count">{{ package_counts.all }}</span></button>
+        <button type="button" class="page-tab-btn" data-tab="validated">Validated<span class="tab-count">{{ package_counts.validated }}</span></button>
+        <button type="button" class="page-tab-btn" data-tab="invalid">Invalid<span class="tab-count">{{ package_counts.invalid }}</span></button>
+        <button type="button" class="page-tab-btn" data-tab="withdrawn">Withdrawn<span class="tab-count">{{ package_counts.withdrawn }}</span></button>
+      </div>
+
+      {% for key in ['all', 'validated', 'invalid', 'withdrawn'] %}
+        <div class="page-tab-panel" data-tab-panel="{{ key }}" {{ 'hidden' if not loop.first }}>
+          {% if package_groups[key] %}
+            {{ history.grouped_history(package_groups[key], _package_rows) }}
+          {% else %}
+            <div class="empty">Nothing in this category yet.</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">No update packages uploaded yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

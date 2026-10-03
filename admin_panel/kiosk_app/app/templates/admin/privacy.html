@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Privacy & Data Retention — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.index') }}">← Admin Panel</a></p>
+<h1>Privacy &amp; Data Retention</h1>
+<p class="muted" style="font-size:13px;">POPIA-relevant controls for the personal information this kiosk stores (local user accounts, login/checkout/issuance history, admin audit log). See also the <a href="{{ url_for('privacy_notice') }}" target="_blank">public privacy notice</a> shown to staff.</p>
+
+<div class="panel">
+  <h2 style="margin-top:0; font-size:15px;">Retention</h2>
+  <p class="muted" style="font-size:13px;">
+    {% if configured_retention_days %}
+      Records are auto-purged once they're older than <strong>{{ configured_retention_days }} days</strong> (set via the Client Portal / Instance Agent config).
+    {% else %}
+      No automatic retention window is configured — history accumulates indefinitely until purged manually below or a retention period is set via the Client Portal.
+    {% endif %}
+  </p>
+  <p class="muted" style="font-size:12px;">Only closed/historical rows are ever eligible: an in-progress tool checkout or open wire issuance is never purged regardless of age. Manual purges are logged to the audit log below.</p>
+
+  <form method="post" action="{{ url_for('admin.purge_personal_data') }}" onsubmit="return confirm('Permanently delete closed activity/issuance/checkout/audit records older than the entered number of days? This cannot be undone.');" style="margin-top:14px; display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+    <div>
+      <label style="margin:0 0 6px;">Purge records older than (days, minimum {{ min_retention_days }})</label>
+      <input type="text" name="days" placeholder="{{ configured_retention_days or min_retention_days }}" style="width:160px;">
+    </div>
+    <button type="submit" style="background:var(--red);">Purge now</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h2 style="margin-top:0; font-size:15px;">Data subject requests</h2>
+  <p class="muted" style="font-size:13px;">To erase a former staff member's personal data (username/badge/password), deactivate their account, then use <strong>Erase personal data</strong> on the <a href="{{ url_for('admin.list_users') }}">Users</a> page. Historical custody/safety records (who had which tool/PPE/wire and when) are kept as a separate business record and aren't affected — see the note on that action.</p>
+</div>
+{% endblock %}

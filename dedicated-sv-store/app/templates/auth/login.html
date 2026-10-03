@@ -1,0 +1,22 @@
+{% extends "layouts/auth.html" %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}Log in — {{ app_name }}{% endblock %}
+{% block auth_title %}Welcome back{% endblock %}
+{% block auth_subtitle %}Log in to manage your servers and infrastructure.{% endblock %}
+{% block content %}
+<form method="POST" novalidate>
+  {{ form.hidden_tag() }}
+  {{ field(form.email, autocomplete="email", placeholder="you@example.com") }}
+  {{ field(form.password, autocomplete="current-password", placeholder="••••••••") }}
+  <div class="flex items-center justify-between mb-6">
+    {{ checkbox(form.remember) }}
+    <a href="{{ url_for('auth.forgot_password') }}" class="text-sm text-brand-400 hover:text-brand-300">Forgot password?</a>
+  </div>
+  <button type="submit" class="btn-primary w-full">Log in</button>
+</form>
+{% endblock %}
+{% block auth_footer %}
+<p class="text-center text-sm text-text-secondary mt-6">
+  Don't have an account? <a href="{{ url_for('auth.register') }}" class="text-brand-400 hover:text-brand-300">Sign up</a>
+</p>
+{% endblock %}

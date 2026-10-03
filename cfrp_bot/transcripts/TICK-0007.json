@@ -1,0 +1,28 @@
+{
+  "ticket_id": "TICK-0007",
+  "ticket_type": "whitelist",
+  "opened_by": "Pierre jordaan",
+  "opened_at": "2026-05-09 08:36:07",
+  "closed_by": "Pierre jordaan",
+  "closed_at": "2026-05-09 08:36 UTC",
+  "messages": [
+    {
+      "ts": "2026-05-09T08:36:08.321000+00:00",
+      "author": "GSRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1501614137984155790> <@842719474405998612>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-09T08:36:09.120000+00:00",
+      "author": "GSRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

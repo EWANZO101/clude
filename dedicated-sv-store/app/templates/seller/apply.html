@@ -1,0 +1,15 @@
+{% extends "layouts/auth.html" %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}Apply to sell — {{ app_name }}{% endblock %}
+{% block auth_title %}Apply to become a seller{% endblock %}
+{% block auth_subtitle %}Tell us about your business to start listing servers.{% endblock %}
+{% block content %}
+<form method="POST" novalidate>
+  {{ form.hidden_tag() }}
+  {{ field(form.business_name) }}
+  {{ field(form.description, rows=4) }}
+  {{ field(form.support_email, placeholder=current_user.email) }}
+  {{ field(form.website_url, placeholder="https://") }}
+  <button type="submit" class="btn-primary w-full">Submit application</button>
+</form>
+{% endblock %}

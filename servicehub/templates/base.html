@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ServiceHub{% endblock %} · OpsLab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  {% if session.get('user_id') %}
+  <div class="topbar">
+    <div class="brand">
+      <span class="mark">SH</span>
+      ServiceHub <span class="sub">by OpsLab</span>
+    </div>
+    <nav class="topnav">
+      <a href="{{ url_for('dashboard') }}" class="btn btn-sm">Dashboard</a>
+      <a href="{{ url_for('system_services') }}" class="btn btn-sm">All active services</a>
+      <a href="{{ url_for('service_new') }}" class="btn btn-sm btn-primary">+ New service</a>
+      <span class="user">{{ session.get('username') }}</span>
+      <a href="{{ url_for('logout') }}" class="btn btn-sm">Log out</a>
+    </nav>
+  </div>
+  {% endif %}
+
+  <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

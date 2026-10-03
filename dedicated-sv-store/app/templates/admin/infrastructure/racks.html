@@ -1,0 +1,38 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}Racks — Admin{% endblock %}
+{% block page_title %}Racks{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Datacenter</th><th>Rack</th><th>Row</th><th>Used / Total U</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for rack in racks %}
+        <tr>
+          <td class="text-text-secondary">{{ rack.datacenter.code }}</td>
+          <td class="font-medium text-text-primary">{{ rack.name }}</td>
+          <td class="text-text-secondary">{{ rack.row or "—" }}</td>
+          <td class="text-text-secondary">{{ rack.used_u }} / {{ rack.total_u }}</td>
+          <td>{% if rack.is_active %}<span class="badge-success">Active</span>{% else %}<span class="badge-neutral">Disabled</span>{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-text-muted py-8">No racks yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Add rack</h2>
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      {{ field(form.datacenter_id) }}
+      {{ field(form.name, placeholder="R12") }}
+      {{ field(form.row) }}
+      {{ field(form.total_u) }}
+      {{ checkbox(form.is_active) }}
+      <button type="submit" class="btn-primary w-full">Add rack</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

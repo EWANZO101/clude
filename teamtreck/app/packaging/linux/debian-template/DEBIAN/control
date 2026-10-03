@@ -1,0 +1,10 @@
+Package: teamtreck-agent
+Version: 0.18.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: TeamTreck <support@teamtreck.example>
+Description: TeamTreck desktop time-tracking agent
+ Background agent that syncs time entries, screenshots, and activity
+ monitoring with a TeamTreck server. Pairs with the browser extension
+ for URL tracking (see /usr/share/teamtreck-agent/browser-extension).

@@ -1,0 +1,157 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Debts{% endblock %}
+{% block content %}
+<div class="space-y-5">
+  {{ ui.page_header("Debts", "Money owed to companies, and what's scheduled to pay it off.") }}
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+    <p class="text-xs text-slate-500 flex items-center gap-1.5">{{ ui.icon('alert-triangle', 'w-3.5 h-3.5 text-slate-600') }} Total owed to companies</p>
+    <p class="text-2xl font-semibold tabular-nums mt-1 {{ 'text-red-400' if total_owed_minor > 0 else 'text-emerald-400' }}">{{ total_owed_minor | money }}</p>
+    <p class="text-xs text-slate-600 mt-1.5">Monthly-equivalent payments on these are already subtracted from your "safe to spend" figure on Bills and Purchases.</p>
+  </div>
+
+  <details class="bg-surface-card border border-surface-border rounded-2xl group">
+    <summary class="cursor-pointer select-none px-5 py-3.5 text-sm font-medium text-slate-200 flex items-center gap-2 list-none">
+      <span class="text-accent">{{ ui.icon('plus', 'w-4 h-4') }}</span> Add a debt
+    </summary>
+    <form method="POST" action="{{ url_for('finance.new_debt') }}" class="flex flex-wrap gap-2 p-5 pt-0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input name="creditor_name" placeholder="Who it's owed to" required class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      <input name="remaining" placeholder="Amount owed now" class="w-32 bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      <input name="original" placeholder="Original amount (optional)" class="w-40 bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      <input name="monthly_payment" placeholder="Payment amount" class="w-32 bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      <select name="frequency" class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+        <option value="monthly">Monthly</option>
+        <option value="fortnightly">Fortnightly</option>
+        <option value="weekly">Weekly</option>
+        <option value="variable">Varies each time</option>
+      </select>
+      <input type="date" name="next_payment_date" class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      <input name="notes" placeholder="Notes (optional)" class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      {{ ui.button("Add", type="submit", variant="primary") }}
+    </form>
+  </details>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    {% for d in debts %}
+      <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-3 hover:border-slate-700 transition-colors {{ 'opacity-50' if d.settled }}">
+        <div class="flex items-center justify-between">
+          <p class="font-medium text-slate-100">{{ d.creditor_name }}</p>
+          {% if d.settled %}{{ ui.badge('Paid off', 'success') }}{% endif %}
+        </div>
+
+        {% if d.original_minor %}
+          <div class="h-1.5 bg-surface rounded-full overflow-hidden">
+            <div class="h-full bg-accent rounded-full transition-all" style="width: {{ (100 - (d.remaining_minor / d.original_minor * 100)) | round | int }}%"></div>
+          </div>
+        {% endif %}
+
+        <p class="text-lg font-semibold tabular-nums text-white">{{ d.remaining_minor | money }} <span class="text-xs font-normal text-slate-500">left</span></p>
+
+        {% if not d.settled %}
+          {% if d.has_custom_schedule %}
+            <div class="text-xs text-slate-500">
+              Custom schedule · {{ d.payments_remaining }} payment(s) left
+              {% if d.next_scheduled_payment %} · next {{ d.next_scheduled_payment.due_date }} for {{ d.next_scheduled_payment.amount_minor | money }}{% endif %}
+            </div>
+
+            <!-- Calendar-style list of every payment in the schedule -->
+            <div class="rounded-xl border border-surface-border divide-y divide-surface-border overflow-hidden">
+              {% for p in d.scheduled_payments %}
+                <div class="flex items-center gap-2 p-2 text-xs {{ 'opacity-40' if p.paid }}">
+                  <form method="POST" action="{{ url_for('finance.edit_debt_payment', debt_id=d.id, payment_id=p.id) }}" class="flex items-center gap-2 flex-1">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="date" name="due_date" value="{{ p.due_date }}" {{ 'disabled' if p.paid }}
+                           onchange="this.form.submit()" class="bg-surface border border-surface-border rounded-lg px-2 py-1 text-xs w-32 focus:outline-none focus:ring-2 focus:ring-accent">
+                    <input name="amount" value="{{ '%.2f' | format(p.amount_minor / 100) }}" {{ 'disabled' if p.paid }}
+                           onblur="if(this.value != this.defaultValue) this.form.submit()"
+                           class="bg-surface border border-surface-border rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-2 focus:ring-accent">
+                  </form>
+                  {% if not p.paid %}
+                    <form method="POST" action="{{ url_for('finance.mark_debt_payment_paid', debt_id=d.id, payment_id=p.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="text-emerald-400 hover:text-emerald-300 hover:underline">Paid</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('finance.delete_debt_payment', debt_id=d.id, payment_id=p.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="text-red-400 hover:text-red-300">{{ ui.icon('x', 'w-3 h-3') }}</button>
+                    </form>
+                  {% else %}
+                    <span class="text-emerald-500 flex items-center gap-1">{{ ui.icon('check', 'w-3 h-3') }} paid</span>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+
+            <form method="POST" action="{{ url_for('finance.add_debt_payment', debt_id=d.id) }}" class="flex gap-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="date" name="due_date" required class="bg-surface border border-surface-border rounded-lg px-2 py-1 text-xs w-32 focus:outline-none focus:ring-2 focus:ring-accent">
+              <input name="amount" placeholder="Amount" required class="bg-surface border border-surface-border rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-2 focus:ring-accent">
+              <button class="text-xs text-accent hover:text-accent-hover hover:underline">+ add payment</button>
+            </form>
+
+            <form method="POST" action="{{ url_for('finance.clear_debt_schedule', debt_id=d.id) }}"
+                  onsubmit="return confirm('Clear this custom schedule and go back to a single fixed payment amount?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="text-xs text-slate-500 hover:text-slate-300 hover:underline">Clear custom schedule</button>
+            </form>
+
+          {% else %}
+            <p class="text-xs text-slate-500">
+              {{ d.monthly_payment_minor | money }} / {{ d.frequency }}
+              {% if d.frequency == 'variable' %}<span class="text-amber-500">— not included in monthly total</span>{% endif %}
+              {% if d.payments_remaining %} · {{ d.payments_remaining }} payment(s) left{% endif %}
+              {% if d.next_payment_date %} · next due {{ d.next_payment_date }}{% endif %}
+            </p>
+
+            <form method="POST" action="{{ url_for('finance.update_debt_frequency', debt_id=d.id) }}" class="flex gap-2 items-center">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <label class="text-xs text-slate-500">Paid:</label>
+              <select name="frequency" onchange="this.form.submit()" class="bg-surface border border-surface-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+                <option value="monthly" {{ 'selected' if d.frequency == 'monthly' }}>Monthly</option>
+                <option value="fortnightly" {{ 'selected' if d.frequency == 'fortnightly' }}>Fortnightly</option>
+                <option value="weekly" {{ 'selected' if d.frequency == 'weekly' }}>Weekly</option>
+                <option value="variable" {{ 'selected' if d.frequency == 'variable' }}>Varies each time</option>
+              </select>
+            </form>
+
+            <form method="POST" action="{{ url_for('finance.log_debt_payment', debt_id=d.id) }}" class="flex gap-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input name="amount" placeholder="Amount (blank = {{ d.monthly_payment_minor | money }})" class="flex-1 bg-surface border border-surface-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+              <button class="text-xs bg-accent hover:bg-accent-hover text-white px-3 py-1 rounded-lg transition-colors">Log payment</button>
+            </form>
+
+            <details>
+              <summary class="cursor-pointer select-none text-xs text-accent hover:text-accent-hover">Set up a custom payment schedule</summary>
+              <form method="POST" action="{{ url_for('finance.generate_debt_schedule', debt_id=d.id) }}" class="flex flex-wrap gap-2 mt-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="number" name="count" min="1" max="120" placeholder="No. of payments" required class="w-28 bg-surface border border-surface-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+                <input type="date" name="start_date" required class="bg-surface border border-surface-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+                <select name="interval" class="bg-surface border border-surface-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+                  <option value="weekly">Weekly</option>
+                  <option value="fortnightly">Fortnightly</option>
+                  <option value="monthly" selected>Monthly</option>
+                </select>
+                <input name="total_amount" placeholder="Total (blank = {{ d.remaining_minor | money }})" class="w-40 bg-surface border border-surface-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+                <button class="text-xs bg-accent hover:bg-accent-hover text-white px-3 py-1 rounded-lg transition-colors">Generate schedule</button>
+              </form>
+              <p class="text-[11px] text-slate-600 mt-1">Splits the total evenly across each payment to start — every date and amount can then be edited individually.</p>
+            </details>
+          {% endif %}
+        {% endif %}
+
+        {% if d.notes %}<p class="text-xs text-slate-600">{{ d.notes }}</p>{% endif %}
+        <form method="POST" action="{{ url_for('finance.delete_debt', debt_id=d.id) }}" onsubmit="return confirm('Remove this debt?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="text-xs text-red-400 hover:text-red-300">Remove</button>
+        </form>
+      </div>
+    {% else %}
+      <div class="lg:col-span-2">
+        {% call ui.empty_state("Nothing owed on record", "Add a debt above to start tracking it.", "check-square") %}{% endcall %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

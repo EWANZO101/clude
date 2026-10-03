@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}{{ server.name }} — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow"><span class="status-dot" id="online-dot"></span><span id="online-label">checking…</span></p>
+    <h1 class="page-title">{{ server.name }}</h1>
+    <p class="page-sub mono">{{ server.http_host }}:{{ server.http_port }}{% if server.service_unit %} · {{ server.service_unit }}{% endif %}</p>
+  </div>
+  <div class="topbar-actions">
+    {% if server.service_unit %}
+      <form method="POST" action="{{ url_for('gameservers.service_control', server_id=server.id, action='restart') }}" onsubmit="return confirm('Restart {{ server.service_unit }}?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-secondary btn-sm">Restart service</button>
+      </form>
+      <form method="POST" action="{{ url_for('gameservers.service_control', server_id=server.id, action='stop') }}" onsubmit="return confirm('Stop {{ server.service_unit }}?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm" style="background:var(--bg-panel-raised); border:1px solid var(--danger); color:var(--danger);">Stop</button>
+      </form>
+      <form method="POST" action="{{ url_for('gameservers.service_control', server_id=server.id, action='start') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-secondary btn-sm">Start</button>
+      </form>
+    {% endif %}
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('gameservers.edit', server_id=server.id) }}">Edit</a>
+  </div>
+</div>
+
+{% if service_status and service_status.get('error') %}
+  <div class="flash flash-error">Service status: {{ service_status.error }}</div>
+{% endif %}
+
+<div class="grid grid-2" style="align-items:start;">
+  <div class="card">
+    <div class="card-label">Server</div>
+    <div id="dynamic-info" class="card-meta">Loading…</div>
+    <div style="margin-top:14px;">
+      <div class="card-label" style="margin-bottom:6px;">Players (<span id="player-count">—</span>)</div>
+      <div class="table-wrap" style="max-height:340px; overflow-y:auto;">
+        <table class="data-table" id="players-table">
+          <thead><tr><th>ID</th><th>Name</th><th>Ping</th></tr></thead>
+          <tbody id="players-tbody"><tr><td colspan="3" class="empty-state">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Resources (<span id="resource-count">—</span>)</div>
+    <div id="resources-list" class="mono" style="max-height:200px; overflow-y:auto; font-size:12.5px; line-height:1.9; color:var(--text-secondary);">Loading…</div>
+
+    {% if server.service_unit %}
+    <div style="margin-top:16px;">
+      <div class="card-label" style="margin-bottom:6px;">Live log tail</div>
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('systemctl.logs_page', name=server.service_unit) }}">Open logs</a>
+    </div>
+    {% endif %}
+
+    {% if server.ban_resource_note %}
+    <div style="margin-top:16px; font-size:12.5px; color:var(--text-muted);">
+      <strong style="color:var(--text-secondary);">Bans:</strong> {{ server.ban_resource_note }}
+      — persistent/synced bans aren't reachable via RCON or the HTTP API; use this resource/txAdmin directly.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card flush" style="margin-top:16px;">
+  <div class="card-header" style="padding:16px 18px 0;">
+    <div class="card-label" style="margin:0;">RCON Console</div>
+    {% if server.has_rcon() %}
+      <button class="btn btn-secondary btn-sm" id="rcon-test-btn" style="margin-left:auto;">Test connection</button>
+    {% endif %}
+  </div>
+  {% if server.has_rcon() %}
+    <pre id="rcon-output" class="mono console-pane" style="height:260px; margin:12px 18px 0;"></pre>
+    <form id="rcon-form" style="display:flex; gap:8px; padding:14px 18px;">
+      <input type="text" id="rcon-command" placeholder="say hello world / kick 3 reason / start my_resource"
+             class="mono" style="flex:1; background:var(--bg-void); border:1px solid var(--border-strong); border-radius:var(--radius); padding:10px 12px; color:var(--text-primary); font-size:13px;"
+             autocomplete="off">
+      <button type="submit" class="btn btn-primary btn-sm">Send</button>
+    </form>
+  {% else %}
+    <div class="empty-state">No RCON password configured. <a href="{{ url_for('gameservers.edit', server_id=server.id) }}">Add one</a> to enable the console.</div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+(function () {
+  const serverId = {{ server.id | tojson }};
+  const csrfToken = {{ csrf_token() | tojson }};
+  const onlineDot = document.getElementById('online-dot');
+  const onlineLabel = document.getElementById('online-label');
+  const dynamicInfo = document.getElementById('dynamic-info');
+  const playerCount = document.getElementById('player-count');
+  const playersTbody = document.getElementById('players-tbody');
+  const resourceCount = document.getElementById('resource-count');
+  const resourcesList = document.getElementById('resources-list');
+
+  function renderSnapshot(snap) {
+    if (snap.online) {
+      onlineDot.className = 'status-dot ok live';
+      onlineLabel.textContent = 'online';
+    } else {
+      onlineDot.className = 'status-dot danger';
+      onlineLabel.textContent = snap.error ? ('offline — ' + snap.error) : 'offline';
+    }
+
+    if (snap.dynamic) {
+      const d = snap.dynamic;
+      dynamicInfo.innerHTML =
+        '<div><strong style="color:var(--text-primary);">' + (d.hostname || '—').replace(/\^[0-9]/g, '') + '</strong></div>' +
+        '<div style="margin-top:6px;">Map: ' + (d.mapname || '—') + ' · Gametype: ' + (d.gametype || '—') + '</div>' +
+        '<div>Clients: ' + (d.clients ?? '—') + ' / ' + (d.sv_maxclients ?? '—') + '</div>';
+    } else if (!snap.online) {
+      dynamicInfo.textContent = 'Server is unreachable.';
+    }
+
+    if (snap.players) {
+      playerCount.textContent = snap.players.length;
+      if (snap.players.length === 0) {
+        playersTbody.innerHTML = '<tr><td colspan="3" class="empty-state">No players online.</td></tr>';
+      } else {
+        playersTbody.innerHTML = snap.players.map(p =>
+          '<tr><td class="mono">' + p.id + '</td><td>' + (p.name || '').replace(/</g, '&lt;') + '</td><td class="mono">' + (p.ping ?? '—') + '</td></tr>'
+        ).join('');
+      }
+    }
+
+    if (snap.resources) {
+      resourceCount.textContent = snap.resources.length;
+      resourcesList.textContent = snap.resources.join(', ');
+    }
+  }
+
+  const socket = io('/gameservers');
+  socket.on('connect', () => socket.emit('subscribe', { server_id: serverId }));
+  socket.on('status_update', renderSnapshot);
+  window.addEventListener('beforeunload', () => socket.emit('unsubscribe', { server_id: serverId }));
+
+  // Immediate first paint via the plain HTTP endpoint, so the page isn't
+  // blank for the ~5s until the first socket push arrives.
+  fetch('/gameservers/' + serverId + '/api/status')
+    .then(r => r.json()).then(renderSnapshot).catch(() => {});
+
+  const rconOutput = document.getElementById('rcon-output');
+  const rconForm = document.getElementById('rcon-form');
+  const rconTestBtn = document.getElementById('rcon-test-btn');
+
+  function appendRcon(line) {
+    if (!rconOutput) return;
+    rconOutput.textContent += line + "\n";
+    rconOutput.scrollTop = rconOutput.scrollHeight;
+  }
+
+  if (rconForm) {
+    rconForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('rcon-command');
+      const command = input.value.trim();
+      if (!command) return;
+      appendRcon('> ' + command);
+      input.value = '';
+      fetch('/gameservers/' + serverId + '/api/rcon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ command }),
+      }).then(r => r.json()).then(data => {
+        appendRcon(data.ok ? (data.output || '(no output)') : ('[error] ' + data.error));
+      }).catch(err => appendRcon('[error] ' + err));
+    });
+  }
+
+  if (rconTestBtn) {
+    rconTestBtn.addEventListener('click', () => {
+      rconTestBtn.disabled = true;
+      fetch('/gameservers/' + serverId + '/api/rcon/test', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+      }).then(r => r.json()).then(data => {
+        appendRcon(data.ok ? ('[test ok] ' + data.output) : ('[test failed] ' + data.error));
+        rconTestBtn.disabled = false;
+      }).catch(err => { appendRcon('[test failed] ' + err); rconTestBtn.disabled = false; });
+    });
+  }
+})();
+</script>
+{% endblock %}

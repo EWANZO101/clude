@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Sign in — Claude Manager{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto mt-16 sm:mt-24">
+  <div class="flex justify-center mb-6">
+    <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-950/50">
+      <svg viewBox="0 0 24 24" class="h-6 w-6 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.9L19 9.8l-4.9 1.9L12 16.6l-1.9-4.9L5 9.8l4.9-1.9L12 3z"/><path d="M19 15l.9 2.3L22 18.2l-2.1.9L19 21.4l-.9-2.3-2.1-.9 2.1-.9L19 15z"/></svg>
+    </span>
+  </div>
+  <div class="bg-gray-900/70 border border-gray-800 rounded-2xl p-8 shadow-2xl shadow-black/30">
+    <h1 class="text-lg font-semibold mb-1 text-center">Claude Manager</h1>
+    <p class="text-sm text-gray-500 text-center mb-6">Sign in to manage your Claude sessions</p>
+    <form method="post" class="space-y-4">
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-1.5">Username</label>
+        <input name="username" autofocus
+          class="w-full bg-gray-950/60 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition-shadow" required>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-1.5">Password</label>
+        <input type="password" name="password"
+          class="w-full bg-gray-950/60 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition-shadow" required>
+      </div>
+      <button class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 transition-colors rounded-lg py-2.5 text-sm font-medium shadow-lg shadow-indigo-950/40">
+        Sign in
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

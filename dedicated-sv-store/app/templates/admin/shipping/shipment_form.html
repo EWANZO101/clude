@@ -1,0 +1,20 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}Create Shipment — Admin{% endblock %}
+{% block page_title %}Create shipment for {{ req.request_number }}{% endblock %}
+{% block content %}
+<form method="POST" novalidate class="max-w-2xl card p-6">
+  {{ form.hidden_tag() }}
+  <div class="grid sm:grid-cols-2 gap-x-4">
+    {{ field(form.carrier) }}
+    {{ field(form.tracking_number) }}
+    {{ field(form.destination_name) }}
+    {{ field(form.destination_address) }}
+    {{ field(form.weight_kg) }}
+    {{ field(form.dimensions) }}
+    {{ field(form.declared_value) }}
+    {{ field(form.insurance_value) }}
+  </div>
+  <button type="submit" class="btn-primary mt-2">Create shipment</button>
+</form>
+{% endblock %}

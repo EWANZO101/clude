@@ -1,0 +1,22 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% block title %}Webhooks — Admin{% endblock %}
+{% block page_title %}Webhooks{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Owner</th><th>URL</th><th>Events</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for wh in webhooks %}
+      <tr>
+        <td class="text-text-secondary">{{ wh.owner.email if wh.owner else "—" }}</td>
+        <td class="text-text-primary font-mono text-xs truncate max-w-xs">{{ wh.url }}</td>
+        <td class="text-text-secondary text-xs">{{ wh.events|join(", ") if wh.events else "all" }}</td>
+        <td>{% if wh.is_active %}<span class="badge-success">Active</span>{% else %}<span class="badge-neutral">Disabled</span>{% endif %}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="text-center text-text-muted py-8">No webhooks registered yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

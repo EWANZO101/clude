@@ -1,0 +1,40 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Support Tickets — Admin{% endblock %}
+{% block page_title %}Support tickets{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="p-4 border-b border-border">
+    <form method="GET" class="flex gap-2">
+      <select name="status" class="input-field max-w-xs" onchange="this.form.submit()">
+        <option value="">All statuses</option>
+        {% for status in statuses %}
+        <option value="{{ status.value }}" {{ "selected" if status_filter == status.value }}>{{ status.value|replace("_"," ")|title }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+  <table class="table-base">
+    <thead><tr><th>Ticket #</th><th>Customer</th><th>Subject</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for ticket in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ ticket.ticket_number }}</td>
+        <td class="text-text-secondary">{{ ticket.user.email }}</td>
+        <td class="text-text-secondary">{{ ticket.subject }}</td>
+        <td class="capitalize">
+          {% if ticket.priority.value == "urgent" %}<span class="badge-danger">Urgent</span>
+          {% elif ticket.priority.value == "high" %}<span class="badge-warning">High</span>
+          {% else %}<span class="badge-neutral">{{ ticket.priority.value|title }}</span>{% endif %}
+        </td>
+        <td><span class="badge-info">{{ ticket.status.value|replace("_"," ")|title }}</span></td>
+        <td><a href="{{ url_for('admin.ticket_detail', ticket_id=ticket.id) }}" class="text-brand-400 hover:text-brand-300">View</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-text-muted py-8">No tickets yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.tickets", status=status_filter) }}
+</div>
+{% endblock %}

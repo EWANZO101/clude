@@ -1,0 +1,33 @@
+{% extends "portal/_base.html" %}
+{% set active_page = 'projects' %}
+{% block portal_title %}Projects{% endblock %}
+{% block portal_actions %}
+  <a href="{{ url_for('portal.project_new') }}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-lg shadow-glow-sm hover:shadow-glow transition">New project</a>
+{% endblock %}
+{% block portal_content %}
+{% if projects %}
+<div class="grid sm:grid-cols-2 gap-4">
+  {% for p in projects %}
+  <a href="{{ url_for('portal.project_detail', pid=p.id) }}" class="pcard-h p-6 block">
+    <div class="flex items-start justify-between gap-3">
+      <h3 class="font-bold text-lg truncate">{{ p.title }}</h3>
+      <span class="pbadge shrink-0" style="background:{{ p.stage_meta.color }}1f;color:{{ p.stage_meta.color }};">{{ p.stage_meta.label }}</span>
+    </div>
+    {% if p.summary %}<p class="text-sm text-gray-400 mt-2 line-clamp-2">{{ p.summary }}</p>{% endif %}
+    <div class="mt-4 h-2.5 rounded-full bg-ink-600/60 overflow-hidden">
+      <div class="h-full rounded-full transition-all" style="width:{{ p.effective_percent }}%;background:{{ p.stage_meta.color }};"></div>
+    </div>
+    <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
+      <span>{{ p.effective_percent }}% complete</span>
+      <span>Updated {{ p.updated_at|dtdate }}</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="pcard p-12 text-center">
+  <p class="text-gray-400">No projects yet.</p>
+  <a href="{{ url_for('portal.project_new') }}" class="mt-4 inline-flex px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-lg">Start your first project</a>
+</div>
+{% endif %}
+{% endblock %}

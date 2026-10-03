@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="relative min-h-[calc(100vh-3.5rem)] flex items-center justify-center py-16 px-4">
+  <div class="absolute inset-0 grid-overlay pointer-events-none opacity-70"></div>
+  <div class="relative w-full max-w-[400px] animate-fade-up">
+    <div class="flex justify-center mb-6"><svg viewBox="0 0 64 64" width="40" height="40" aria-hidden="true">
+        <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="#fafafa" stroke-width="5" stroke-linejoin="round"/>
+        <polygon points="32,4 56,18 32,32" fill="#3b82f6"/>
+        <polygon points="32,32 56,18 56,46 32,60" fill="#fafafa"/>
+      </svg></div>
+    <h1 class="text-2xl font-semibold text-center tracking-tight text-white">Sign in to OpsLab</h1>
+    <p class="text-center text-sm text-gray-400 mt-2">Welcome back — pick up where you left off.</p>
+    <div class="mt-8 rounded-xl border border-white/[.08] bg-ink-900 p-6 sm:p-7">
+      <form method="post" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1.5" for="identifier">Username or email</label>
+          <input id="identifier" type="text" name="identifier" required autofocus autocomplete="username" class="form-input w-full px-3 h-10 text-sm" placeholder="you@example.com">
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-sm font-medium text-gray-300" for="password">Password</label>
+            <a href="{{ url_for('auth.forgot') }}" class="text-xs text-gray-400 hover:text-white">Forgot password?</a>
+          </div>
+          <input id="password" type="password" name="password" required autocomplete="current-password" class="form-input w-full px-3 h-10 text-sm" placeholder="••••••••">
+        </div>
+        <button type="submit" class="ui-btn ui-btn-primary w-full !h-10">Sign in</button>
+      </form>
+
+      {% if sso_providers %}
+      <div class="my-5 flex items-center gap-3">
+        <div class="flex-1 h-px bg-white/[.08]"></div>
+        <span class="text-xs text-gray-500">or</span>
+        <div class="flex-1 h-px bg-white/[.08]"></div>
+      </div>
+      <div class="grid grid-cols-1 gap-2">
+        {% for pid, p in sso_providers.items() %}
+        <a href="{{ url_for('sso.start', provider=pid, next=request.args.get('next','')) }}" class="ui-btn ui-btn-ghost w-full !h-10">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="{{ p.icon }}"/></svg>
+          Continue with {{ p.label }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <p class="text-center text-sm text-gray-400 mt-6">Don't have an account? <a href="{{ url_for('auth.register') }}" class="text-white font-medium hover:underline underline-offset-4">Create one</a></p>
+    <p class="text-center text-xs text-gray-600 mt-3">By signing in you agree to OpsLab Systems' terms of service.</p>
+  </div>
+</section>
+{% endblock %}

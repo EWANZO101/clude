@@ -1,0 +1,73 @@
+{% extends "layout/base.html" %}
+{% block title %}Bank setup guide{% endblock %}
+{% block content %}
+<div class="max-w-2xl space-y-6">
+  <div>
+    <a href="{{ url_for('finance.new_account') }}" class="text-xs text-accent hover:underline">&larr; Back to accounts</a>
+    <h1 class="text-xl font-semibold mt-2 mb-1">Bank setup guide</h1>
+    <p class="text-xs text-slate-500">Exactly where each field comes from, per bank.</p>
+  </div>
+
+  {% for bank in banks %}
+    {% set s = bank.setup %}
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold">{{ bank.name }}</h2>
+        {% if bank.connectable %}
+          <span class="text-xs text-emerald-400">Configured</span>
+        {% elif s.kind == 'direct' %}
+          <span class="text-xs text-amber-400">Not configured yet</span>
+        {% else %}
+          <span class="text-xs text-slate-600">Not implemented</span>
+        {% endif %}
+      </div>
+
+      {% if s.kind == 'direct' %}
+        <ol class="text-xs text-slate-400 space-y-1.5 list-decimal list-inside">
+          {% for step in s.steps %}
+            <li>{{ step }}</li>
+          {% endfor %}
+        </ol>
+        <div class="bg-surface border border-surface-border rounded-lg p-3 space-y-2">
+          <div>
+            <div class="text-[11px] text-slate-500 mb-0.5">Redirect URL to paste into {{ s.portal_name }}</div>
+            <code class="text-xs text-slate-300 break-all">{{ redirect_uri }}</code>
+          </div>
+          <div>
+            <div class="text-[11px] text-slate-500 mb-0.5">.env keys to set</div>
+            <code class="text-xs text-slate-300">{{ s.env_vars | join(' / ') }}</code>
+          </div>
+        </div>
+        <p class="text-[11px] text-slate-600">{{ s.note }}</p>
+        <a href="{{ s.portal_url }}" target="_blank" class="inline-block text-xs text-accent hover:underline">Open {{ s.portal_name }} &rarr;</a>
+      {% else %}
+        <p class="text-xs text-slate-400">
+          No developer portal to register with — {{ s.display_name }} doesn't issue individual OAuth
+          credentials to self-hosted apps like this one. This app has no integration code for it yet.
+        </p>
+        <p class="text-xs text-slate-500">
+          Until that's built, use <a href="{{ url_for('finance.new_account') }}#manual" class="text-accent hover:underline">Add manually</a>
+          to track the account and update the balance by hand.
+        </p>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-2">
+    <h2 class="text-sm font-semibold">Adding a bank that isn't Monzo</h2>
+    <p class="text-xs text-slate-400">
+      Most UK banks don't hand out OAuth apps one at a time — you'd go through an Open Banking
+      aggregator that covers all of them behind one integration:
+    </p>
+    <ul class="text-xs text-slate-400 space-y-1">
+      {% for agg in aggregators %}
+        <li>
+          <a href="{{ agg.url }}" target="_blank" class="text-accent hover:underline">{{ agg.name }}</a>
+          — {{ agg.note }}
+        </li>
+      {% endfor %}
+    </ul>
+    <p class="text-[11px] text-slate-600">None of these are wired up yet — this is just where a future integration would start.</p>
+  </div>
+</div>
+{% endblock %}

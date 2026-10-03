@@ -1,0 +1,141 @@
+* , *::before, *::after { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; height: 100%; width: 100%;
+  background: #111827; color: #f3f4f6;
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.kiosk-screen {
+  height: 100vh; width: 100vw;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px;
+}
+
+/* ── Idle screen ─────────────────────────────────────────────────────── */
+.idle-center { text-align: center; max-width: 560px; width: 100%; }
+.idle-icon { font-size: 84px; color: #2563eb; margin-bottom: 24px; }
+.idle-title { font-size: 40px; font-weight: 800; margin: 0 0 8px; color: #f9fafb; }
+.idle-subtitle { font-size: 16px; color: #6b7280; margin: 0 0 28px; }
+
+.scan-input {
+  width: 100%;
+  font-size: 22px;
+  text-align: center;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 2px solid #374151;
+  background: #1f2937;
+  color: #f9fafb;
+  letter-spacing: 1px;
+  outline: none;
+}
+.scan-input:focus { border-color: #2563eb; }
+
+.scan-error {
+  margin-top: 18px; font-size: 15px; color: #fca5a5;
+  background: #450a0a; border-radius: 10px; padding: 12px 16px;
+}
+.scan-message {
+  margin-top: 18px; font-size: 15px; color: #93c5fd;
+  background: #1e3a5f; border-radius: 10px; padding: 12px 16px; max-width: 480px;
+}
+
+/* ── Dashboard screen ────────────────────────────────────────────────── */
+.dashboard-screen { justify-content: flex-start; padding: 0; }
+.dash-header {
+  width: 100%; padding: 24px 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid #1f2937;
+}
+.dash-welcome { font-size: 26px; font-weight: 800; color: #f9fafb; }
+.dash-hint { font-size: 14px; color: #6b7280; margin-top: 2px; }
+
+.btn-done {
+  background: #064e3b; color: #6ee7b7; border: none; border-radius: 12px;
+  padding: 16px 28px; font-size: 16px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.dash-center {
+  flex: 1; width: 100%; max-width: 560px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 24px; margin: 0 auto;
+}
+.dash-icon { font-size: 64px; color: #2563eb; margin-bottom: 20px; }
+
+.idle-progress-wrap { width: 100%; height: 6px; background: #1f2937; }
+.idle-progress-bar { height: 100%; width: 100%; background: #2563eb; transition: width 1s linear; }
+
+/* ── Pair phone button ───────────────────────────────────────────────── */
+.pair-phone-btn {
+  position: fixed; bottom: 24px; right: 24px;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #1f2937; border: 2px solid #374151; color: #93c5fd;
+  font-size: 22px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.test-scanner-btn {
+  position: fixed; bottom: 24px; left: 24px;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #1f2937; border: 2px solid #374151; color: #93c5fd;
+  font-size: 22px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.scanner-test-result {
+  font-size: 48px; font-weight: 800; margin: 12px 0;
+  font-variant-numeric: tabular-nums;
+}
+.scanner-test-result.pending { color: #9ca3af; }
+.scanner-test-result.success { color: #34d399; }
+.scanner-test-result.fail { color: #f87171; }
+
+/* ── Quantity modal ──────────────────────────────────────────────────── */
+.kiosk-modal {
+  display: none; position: fixed; inset: 0; z-index: 50;
+  background: rgba(0,0,0,.7);
+  align-items: center; justify-content: center;
+}
+.kiosk-modal.open { display: flex; }
+.kiosk-modal-card {
+  background: #1f2937; border-radius: 20px; padding: 28px;
+  width: 100%; max-width: 380px; text-align: center;
+}
+.qty-item-name { font-size: 20px; font-weight: 700; color: #f9fafb; }
+.qty-item-stock { font-size: 13px; color: #6b7280; margin-top: 4px; margin-bottom: 18px; }
+.qty-display {
+  font-size: 48px; font-weight: 800; color: #f9fafb;
+  background: #111827; border-radius: 14px; padding: 14px; margin-bottom: 16px;
+}
+.qty-keypad {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;
+}
+.qty-key {
+  font-size: 22px; font-weight: 700; color: #f3f4f6;
+  background: #374151; border: none; border-radius: 12px;
+  padding: 20px 0; cursor: pointer;
+}
+.qty-key:active { background: #4b5563; }
+.qty-key-clear { font-size: 14px; }
+.qty-actions { display: flex; gap: 10px; }
+.btn-cancel, .btn-remove {
+  flex: 1; padding: 16px; border-radius: 12px; border: none;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.btn-cancel { background: #374151; color: #d1d5db; }
+.btn-remove { background: #b91c1c; color: #fecaca; }
+
+/* ── Browse-mode entry link on the scan dashboard ────────────────────── */
+.browse-link {
+  position: fixed; bottom: 24px; right: 24px;
+  display: flex; align-items: center; gap: 8px;
+  background: #1f2937; color: #d1d5db; border: 1px solid #374151;
+  padding: 10px 16px; border-radius: 12px; font-size: 14px; font-weight: 600;
+  text-decoration: none; z-index: 20;
+}
+.browse-link:active { background: #374151; }

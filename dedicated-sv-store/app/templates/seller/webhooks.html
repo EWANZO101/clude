@@ -1,0 +1,38 @@
+{% extends "layouts/seller_dashboard.html" %}
+{% block title %}Webhooks — Seller Portal{% endblock %}
+{% block page_title %}Webhooks{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>URL</th><th>Events</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for wh in webhooks %}
+        <tr>
+          <td class="text-text-primary font-mono text-xs truncate max-w-xs">{{ wh.url }}</td>
+          <td class="text-text-secondary text-xs">{{ wh.events|join(", ") if wh.events else "all" }}</td>
+          <td>{% if wh.is_active %}<span class="badge-success">Active</span>{% else %}<span class="badge-neutral">Disabled</span>{% endif %}</td>
+          <td>
+            <form method="POST" action="{{ url_for('seller.webhook_delete', webhook_id=wh.id) }}">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-status-danger hover:opacity-80 text-sm">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-text-muted py-8">No webhooks registered yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Add webhook</h2>
+    <form method="POST" class="space-y-3">
+      {% include "components/_csrf.html" %}
+      <input type="url" name="url" class="input-field" placeholder="https://example.com/webhook" required>
+      <input type="text" name="events" class="input-field" placeholder="order.created,order.paid (blank = all)">
+      <button type="submit" class="btn-primary w-full">Add webhook</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

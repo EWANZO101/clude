@@ -1,0 +1,176 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}{{ vehicle.name }}{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  {% call ui.page_header(vehicle.name, vehicle.make ~ ' ' ~ vehicle.model ~ (' · ' ~ vehicle.year|string if vehicle.year else '') ~ (' · ' ~ vehicle.registration if vehicle.registration else '') ~ ' · ' ~ vehicle.fuel_type|capitalize) %}
+    <span id="live-indicator" class="hidden items-center gap-1.5 text-xs text-emerald-400 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mr-1">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 live-dot"></span> Live
+    </span>
+    {{ ui.button("Log fill-up", href=url_for('fuel.new_entry', vehicle_id=vehicle.id), variant="primary", icon_name="plus") }}
+    {{ ui.button("Edit", href=url_for('fuel.edit_vehicle', vehicle_id=vehicle.id), variant="secondary", icon_name="edit") }}
+  {% endcall %}
+
+  <div id="stat-tiles" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    {{ ui.stat_tile("Average MPG", summary.average_mpg or '—') }}
+    {{ ui.stat_tile("Cost per mile", (summary.average_cost_per_mile_minor | money) if summary.average_cost_per_mile_minor else '—') }}
+    {{ ui.stat_tile("Total spent", summary.total_spent_minor | money) }}
+    {{ ui.stat_tile("Total litres", summary.total_litres) }}
+  </div>
+
+  <div id="fills-section" class="space-y-2 {{ 'hidden' if not summary.fills }}">
+    <h2 class="text-lg font-semibold text-white">Fill-to-full MPG</h2>
+    <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border overflow-x-auto" id="fills-list">
+      {% for f in summary.fills %}
+        <div class="p-3 flex items-center justify-between text-sm gap-3">
+          <span class="text-slate-300">{{ f.date.strftime('%d %b %Y') }}</span>
+          <span class="text-slate-500">{{ f.distance_miles }} mi</span>
+          <span class="text-slate-500">{{ f.litres_used }} L</span>
+          <span class="text-slate-100 font-medium">{{ f.mpg or '—' }} MPG</span>
+          <span class="text-slate-100">{{ (f.cost_per_mile_minor | money) if f.cost_per_mile_minor else '—' }}/mi</span>
+        </div>
+      {% endfor %}
+    </div>
+    <p class="text-xs text-slate-500">MPG is calculated fill-to-full — log every fill-up (not just full tanks) for accurate figures, and tick "full tank" whenever you actually filled up.</p>
+  </div>
+
+  <div class="space-y-2">
+    <h2 class="text-lg font-semibold text-white">Fuel log</h2>
+    <div id="entries-list" class="space-y-4">
+      {% for month_label, month_entries in entries_by_month %}
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5 px-1">{{ month_label }}</p>
+          <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+            {% for e in month_entries %}
+              <a href="{{ url_for('fuel.edit_entry', entry_id=e.id) }}" class="p-3 flex items-center justify-between text-sm hover:bg-surface-hover transition-colors gap-3">
+                <span class="text-slate-300">{{ e.date.strftime('%d %b %Y') }}</span>
+                <span class="text-slate-500">{{ e.odometer or '—' }} mi</span>
+                <span class="text-slate-500">{{ e.litres or '—' }} L</span>
+                {{ ui.badge('Full', 'success') if e.full_tank else ui.badge('Partial', 'neutral') }}
+                <span class="text-slate-100 font-medium">{{ e.cost_minor | money }}</span>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      {% else %}
+        {% call ui.empty_state("No fill-ups logged for this vehicle yet", icon_name="fuel") %}
+          {{ ui.button("Log fill-up", href=url_for('fuel.new_entry', vehicle_id=vehicle.id), variant="primary", icon_name="plus") }}
+        {% endcall %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var vehicleId = {{ vehicle.id | tojson }};
+  var moneyFmt = function (minor) {
+    var sign = minor < 0 ? '-' : '';
+    return sign + '£' + (Math.abs(minor) / 100).toFixed(2);
+  };
+  var fmtDate = function (iso) {
+    var d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  function renderStats(s) {
+    var tiles = document.querySelectorAll('#stat-tiles [data-tile]');
+    // Stat tiles don't carry data attributes from the server-rendered macro,
+    // so re-render the whole block from the same markup shape instead.
+    document.getElementById('stat-tiles').innerHTML = [
+      ['Average MPG', s.average_mpg != null ? s.average_mpg : '—'],
+      ['Cost per mile', s.average_cost_per_mile_minor != null ? moneyFmt(s.average_cost_per_mile_minor) : '—'],
+      ['Total spent', moneyFmt(s.total_spent_minor)],
+      ['Total litres', s.total_litres],
+    ].map(function (t) {
+      return '<div class="bg-surface-card border border-surface-border rounded-2xl p-4 hover:border-slate-700 transition-colors">' +
+        '<p class="text-xs text-slate-500 mb-1.5">' + t[0] + '</p>' +
+        '<p class="text-lg font-semibold text-white tabular-nums">' + t[1] + '</p></div>';
+    }).join('');
+  }
+
+  function renderFills(fills) {
+    var section = document.getElementById('fills-section');
+    section.classList.toggle('hidden', !fills.length);
+    document.getElementById('fills-list').innerHTML = fills.map(function (f) {
+      return '<div class="p-3 flex items-center justify-between text-sm gap-3">' +
+        '<span class="text-slate-300">' + fmtDate(f.date) + '</span>' +
+        '<span class="text-slate-500">' + f.distance_miles + ' mi</span>' +
+        '<span class="text-slate-500">' + f.litres_used + ' L</span>' +
+        '<span class="text-slate-100 font-medium">' + (f.mpg != null ? f.mpg : '—') + ' MPG</span>' +
+        '<span class="text-slate-100">' + (f.cost_per_mile_minor != null ? moneyFmt(f.cost_per_mile_minor) : '—') + '/mi</span></div>';
+    }).join('');
+  }
+
+  function monthLabel(iso) {
+    var d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  }
+
+  function renderEntries(entries) {
+    var list = document.getElementById('entries-list');
+    if (!entries.length) {
+      list.innerHTML = '<p class="p-4 text-sm text-slate-500">No fill-ups logged for this vehicle yet.</p>';
+      return;
+    }
+    var groups = [];
+    var currentLabel = null;
+    entries.forEach(function (e) {
+      var label = monthLabel(e.date);
+      if (label !== currentLabel) {
+        groups.push([label, []]);
+        currentLabel = label;
+      }
+      groups[groups.length - 1][1].push(e);
+    });
+    list.innerHTML = groups.map(function (g) {
+      var rows = g[1].map(function (e) {
+        var badge = e.full_tank
+          ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-emerald-500/10 text-emerald-300 border-emerald-500/20">Full</span>'
+          : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-500/10 text-slate-300 border-slate-500/20">Partial</span>';
+        return '<a href="' + e.edit_url + '" class="p-3 flex items-center justify-between text-sm hover:bg-surface-hover transition-colors gap-3">' +
+          '<span class="text-slate-300">' + fmtDate(e.date) + '</span>' +
+          '<span class="text-slate-500">' + (e.odometer != null ? e.odometer : '—') + ' mi</span>' +
+          '<span class="text-slate-500">' + (e.litres != null ? e.litres : '—') + ' L</span>' +
+          badge +
+          '<span class="text-slate-100 font-medium">' + moneyFmt(e.cost_minor) + '</span></a>';
+      }).join('');
+      return '<div><p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5 px-1">' + g[0] + '</p>' +
+        '<div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">' + rows + '</div></div>';
+    }).join('');
+  }
+
+  function refresh() {
+    fetch('/fuel/vehicles/' + vehicleId + '/summary.json', { headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        renderStats(data.summary);
+        renderFills(data.summary.fills);
+        renderEntries(data.entries);
+      })
+      .catch(function () {});
+  }
+
+  function connect() {
+    var es = new EventSource('/fuel/vehicles/' + vehicleId + '/stream');
+    var indicator = document.getElementById('live-indicator');
+    es.onopen = function () { indicator.classList.remove('hidden'); indicator.classList.add('inline-flex'); };
+    es.addEventListener('changed', function () { refresh(); });
+    es.onerror = function () {
+      // EventSource auto-reconnects; the stream itself also cycles every
+      // ~50s server-side, so this fires often and harmlessly -- just drop
+      // the "live" indicator until the next open.
+      indicator.classList.add('hidden');
+      indicator.classList.remove('inline-flex');
+    };
+  }
+
+  if (!!window.EventSource) {
+    connect();
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "layout/base.html" %}
+{% block title %}Sessions{% endblock %}
+{% block content %}
+<div class="max-w-2xl space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-semibold">Active sessions</h1>
+    <form method="POST" action="{{ url_for('auth.revoke_all_sessions') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="text-sm text-red-400 hover:underline">Sign out all devices</button>
+    </form>
+  </div>
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    {% for s in sessions %}
+      <div class="p-4 flex items-center justify-between text-sm">
+        <div>
+          <p class="text-slate-200">{{ s.user_agent or "Unknown device" }}</p>
+          <p class="text-slate-500 text-xs mt-1">{{ s.ip_address }} · last active {{ s.last_active_at.strftime('%d %b %Y %H:%M') }}</p>
+        </div>
+        <form method="POST" action="{{ url_for('auth.revoke_session', session_id=s.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="text-red-400 hover:underline text-xs">Sign out</button>
+        </form>
+      </div>
+    {% else %}
+      <p class="p-4 text-sm text-slate-500">No active sessions.</p>
+    {% endfor %}
+  </div>
+
+  <h2 class="text-lg font-semibold pt-2">Login history</h2>
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    {% for h in history %}
+      <div class="p-4 flex items-center justify-between text-sm">
+        <span class="{{ 'text-emerald-400' if h.success else 'text-red-400' }}">{{ 'Success' if h.success else 'Failed' }}</span>
+        <span class="text-slate-500 text-xs">{{ h.ip_address }} · {{ h.created_at.strftime('%d %b %Y %H:%M') }}</span>
+      </div>
+    {% else %}
+      <p class="p-4 text-sm text-slate-500">No login history yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

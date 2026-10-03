@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Stories — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div class="hero">
+  <h1>{{ get_text('index','hero_title','Share Your Story') }}</h1>
+  <p>{{ get_text('index','hero_subtitle','For those whose cases have been officially closed.') }}</p>
+  <p class="hero-intro" style="margin-top:.5rem;font-size:.85rem;color:var(--muted);max-width:580px;line-height:1.65">{{ get_text('index','intro_text','This platform exists for individuals who have experienced false allegations and whose cases have been officially closed.') }}</p>
+  <div class="hero-actions" style="margin-top:1.1rem;display:flex;flex-wrap:wrap;gap:.6rem">
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('create_post') }}" class="btn btn-primary">✏ Share Your Story</a>
+    {% else %}
+      <a href="{{ url_for('register') }}" class="btn btn-primary">Register to Post</a>
+      <a href="{{ url_for('login') }}" class="btn btn-ghost">Login</a>
+    {% endif %}
+    <a href="{{ url_for('advice') }}" class="btn btn-ghost" style="border-color:rgba(88,166,255,.3);color:var(--accent)">→ Advice Forum</a>
+  </div>
+</div>
+
+<!-- ── Report Lookup Widget ── -->
+<div class="lookup-widget" style="margin-bottom:1.75rem">
+  <div class="card">
+    <div class="card-body" style="padding:.9rem 1.15rem">
+      <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.7rem;flex-wrap:wrap">
+        <span style="font-size:1.1rem">🔍</span>
+        <div>
+          <h2 style="font-size:.9rem;font-weight:600;margin:0">Check a Report</h2>
+          <p style="font-size:.76rem;color:var(--muted);margin:.08rem 0 0">Already submitted a report? Enter your Report ID to check its status.</p>
+        </div>
+      </div>
+      <form id="inline-lookup-form" onsubmit="doInlineLookup(event)" style="display:flex;gap:.45rem;flex-wrap:wrap">
+        <input type="text" id="inline-rp-id"
+               class="form-input"
+               placeholder="e.g. RP-24AB56EE"
+               style="flex:1;min-width:180px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.04em"
+               autocomplete="off" spellcheck="false" maxlength="20">
+        <button type="submit" class="btn btn-primary btn-sm" style="align-self:flex-end">Check Status</button>
+      </form>
+      <div id="inline-lookup-result" style="display:none;margin-top:.8rem"></div>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+  <h2 style="font-size:1rem;font-weight:600;color:var(--text);margin:0">Recent Stories</h2>
+  <span style="font-size:.82rem;color:var(--muted)">{{ posts.total }} post{{ 's' if posts.total != 1 }}</span>
+</div>
+
+{% if posts.items %}
+  <div style="display:flex;flex-direction:column;gap:.85rem">
+    {% for post in posts.items %}
+    <div class="post-card" onclick="window.location='{{ url_for('post_detail', post_id=post.post_id) }}'" style="cursor:pointer">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:.45rem;margin-bottom:.3rem">
+            <span class="post-id">{{ post.post_id }}</span>
+            {% if post.tag %}<span class="post-tag">{{ post.tag }}</span>{% endif %}
+            {% if post.status == 'verified_true' %}<span class="status-badge badge-verified">✓ Verified</span>{% endif %}
+          </div>
+          <a href="{{ url_for('post_detail', post_id=post.post_id) }}" class="post-title" onclick="event.stopPropagation()">{{ post.title }}</a>
+          <p class="post-excerpt">{{ post.content[:280] }}</p>
+          <div class="post-meta" style="margin-top:.5rem">
+            <span>by <a href="{{ url_for('profile', username=post.author.username) }}" style="color:var(--accent);text-decoration:none" onclick="event.stopPropagation()">{{ post.author.username }}</a></span>
+            <span>{{ post.created_at.strftime('%d %b %Y') }}</span>
+            <span>{{ post.comments|length }} comment{{ 's' if post.comments|length != 1 }}</span>
+            {% if post.media %}<span>📎 {{ post.media|length }}</span>{% endif %}
+          </div>
+        </div>
+        <button onclick="event.stopPropagation();openReportModal('{{ post.post_id }}')" class="btn btn-ghost btn-sm" style="flex-shrink:0" title="Report">⚑</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if posts.pages > 1 %}
+  <div class="pagination">
+    {% if posts.has_prev %}<a href="{{ url_for('index', page=posts.prev_num) }}" class="page-btn">← Prev</a>{% endif %}
+    {% for p in posts.iter_pages(left_edge=1,right_edge=1,left_current=2,right_current=2) %}
+      {% if p %}<a href="{{ url_for('index', page=p) }}" class="page-btn {% if p==posts.page %}active{% endif %}">{{ p }}</a>
+      {% else %}<span class="page-btn" style="cursor:default">…</span>{% endif %}
+    {% endfor %}
+    {% if posts.has_next %}<a href="{{ url_for('index', page=posts.next_num) }}" class="page-btn">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+
+{% else %}
+<div class="card" style="text-align:center;padding:3rem 1.5rem">
+  <p style="font-size:2rem;margin-bottom:.6rem">📋</p>
+  <p style="color:var(--muted)">No stories posted yet. Be the first.</p>
+  {% if current_user.is_authenticated %}
+    <a href="{{ url_for('create_post') }}" class="btn btn-primary" style="margin-top:1rem">Share Your Story</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function doInlineLookup(e) {
+  e.preventDefault();
+  const input  = document.getElementById('inline-rp-id');
+  const result = document.getElementById('inline-lookup-result');
+  const id     = input.value.trim().toUpperCase();
+  if (!id) return;
+
+  result.style.display = 'block';
+  result.innerHTML = '<div style="font-size:.85rem;color:var(--muted);padding:.5rem 0">Searching…</div>';
+
+  try {
+    const res  = await fetch('/report-portal/lookup-json', {
+      method:  'POST',
+      headers: {'Content-Type':'application/json'},
+      body:    JSON.stringify({report_id: id})
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      result.innerHTML = `<div style="padding:.7rem .9rem;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.22);border-radius:8px;font-size:.84rem;color:var(--danger)">✕ ${data.error}</div>`;
+      return;
+    }
+
+    const colours = {pending:'var(--warn)',seen:'var(--accent)',resolved:'var(--success)',dismissed:'var(--muted)'};
+    const borderC = colours[data.status] || 'var(--border)';
+    const unread  = (data.messages||[]).filter(m=>m.sender==='admin'&&!m.is_read).length;
+    const unreadHtml = unread ? `<span style="background:var(--success);color:#0d1117;font-size:.7rem;font-weight:700;padding:.1rem .42rem;border-radius:10px;margin-left:.4rem">${unread} NEW</span>` : '';
+    const explain = {
+      pending:'⏳ Your report is in the queue — admin team reviews within <strong>24 hours</strong>.',
+      seen:'👀 An admin has seen your report and may send a message via the private ticket.',
+      resolved:'✓ This report has been marked as resolved.',
+      dismissed:'This report has been reviewed and closed.'
+    };
+
+    result.innerHTML = `
+      <div style="border:1px solid var(--border);border-left:3px solid ${borderC};border-radius:10px;overflow:hidden">
+        <div style="padding:.85rem 1.1rem;background:var(--surface)">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.4rem">
+            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--muted);background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.15);padding:.13rem .43rem;border-radius:4px">${data.report_id}</span>
+              <span style="font-size:.75rem;padding:.13rem .48rem;border-radius:4px">${data.status.charAt(0).toUpperCase()+data.status.slice(1)}</span>
+              ${unreadHtml}
+            </div>
+            <span style="font-size:.75rem;color:${data.admin_seen?'var(--success)':'var(--muted)'}">
+              ${data.admin_seen?'✓ Seen by admin':'⏳ Awaiting review'}
+            </span>
+          </div>
+          <p style="font-size:.8rem;color:var(--muted);margin:0">Re: <span style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">${data.post_ref_id}</span> — ${data.created_at}</p>
+        </div>
+        <div style="padding:.65rem 1.1rem;background:${borderC}1a;border-top:1px solid ${borderC}44;font-size:.83rem;color:var(--muted)">${explain[data.status]||''}</div>
+        ${unread?`<div style="padding:.6rem 1.1rem;background:rgba(63,185,80,.07);border-top:1px solid rgba(63,185,80,.18);font-size:.82rem;color:var(--success)">📬 You have <strong>${unread}</strong> unread message${unread!==1?'s':''} from the admin team.</div>`:''}
+        <div style="padding:.75rem 1.1rem;border-top:1px solid var(--border);display:flex;gap:.5rem;flex-wrap:wrap">
+          <a href="/report-portal/report/${data.report_id}${data.claim_token?'?token='+data.claim_token:''}" class="btn btn-primary btn-sm">💬 Open Ticket</a>
+          <a href="/report-portal/lookup" class="btn btn-ghost btn-sm">Full Portal →</a>
+        </div>
+      </div>`;
+  } catch(err) {
+    result.innerHTML = '<div style="font-size:.84rem;color:var(--danger);padding:.5rem 0">✕ Error — please try again.</div>';
+  }
+}
+</script>
+{% endblock %}

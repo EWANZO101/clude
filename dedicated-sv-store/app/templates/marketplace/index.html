@@ -1,0 +1,67 @@
+{% extends "layouts/public.html" %}
+{% from "components/_server_card.html" import server_card with context %}
+{% block title %}{{ app_name }} — Dedicated Server & Infrastructure Marketplace{% endblock %}
+{% block content %}
+<div x-data="{ showBanner: true }" x-show="showBanner" x-transition
+     class="w-full bg-brand-600 border-b border-brand-500">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
+    <span class="relative flex h-2.5 w-2.5 flex-shrink-0">
+      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+    </span>
+    <p class="flex-1 text-sm font-medium text-white text-center sm:text-left">
+      <span class="font-bold">Coming soon:</span> new servers are on their way — check back shortly!
+    </p>
+    <button type="button" @click="showBanner = false" aria-label="Dismiss"
+            class="flex-shrink-0 text-white/80 hover:text-white">
+      <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+      </svg>
+    </button>
+  </div>
+</div>
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-28 text-center">
+  <span class="badge-info mb-6">Multi-vendor marketplace</span>
+  <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-text-primary mt-4 mb-6">
+    Dedicated servers,<br class="hidden sm:block"> built your way.
+  </h1>
+  <p class="text-lg text-text-secondary max-w-2xl mx-auto mb-10">
+    Buy dedicated servers from vetted sellers, configure your own from scratch,
+    or ship us your existing hardware to host in our datacenters.
+  </p>
+  <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+    <a href="{{ url_for('marketplace.servers') }}" class="btn-primary px-6 py-3 text-base">Browse servers</a>
+    <a href="{{ url_for('marketplace.build_server') }}" class="btn-secondary px-6 py-3 text-base">Build a server</a>
+  </div>
+</section>
+
+<section class="max-w-7xl mx-auto px-4 sm:px-6 pb-24 grid sm:grid-cols-3 gap-6">
+  <div class="card p-6">
+    <div class="h-10 w-10 rounded-lg bg-brand-600/15 text-brand-400 flex items-center justify-center mb-4">01</div>
+    <h3 class="font-semibold text-text-primary mb-2">Marketplace</h3>
+    <p class="text-sm text-text-secondary">Browse dedicated servers from multiple sellers with transparent specs and pricing.</p>
+  </div>
+  <div class="card p-6">
+    <div class="h-10 w-10 rounded-lg bg-brand-600/15 text-brand-400 flex items-center justify-center mb-4">02</div>
+    <h3 class="font-semibold text-text-primary mb-2">Custom builder</h3>
+    <p class="text-sm text-text-secondary">Configure CPU, RAM, storage, networking and more with live compatibility checks and pricing.</p>
+  </div>
+  <div class="card p-6">
+    <div class="h-10 w-10 rounded-lg bg-brand-600/15 text-brand-400 flex items-center justify-center mb-4">03</div>
+    <h3 class="font-semibold text-text-primary mb-2">Bring your own equipment</h3>
+    <p class="text-sm text-text-secondary">Ship your own servers and networking equipment to be racked, powered and connected.</p>
+  </div>
+</section>
+
+{% if featured %}
+<section class="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-xl font-semibold text-text-primary">Featured servers</h2>
+    <a href="{{ url_for('marketplace.servers') }}" class="text-sm text-brand-400 hover:text-brand-300">View all &rarr;</a>
+  </div>
+  <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+    {% for server in featured %}{{ server_card(server) }}{% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

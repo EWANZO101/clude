@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{% block portal_title %}Portal{% endblock %} · OpsLab Systems{% endblock %}
+
+{% block head_extra %}
+<style>
+  .pcard { background:#0b1224; border:1px solid #1b2a4a; border-radius:16px; }
+  .pcard-h { background:#0b1224; border:1px solid #1b2a4a; border-radius:16px; transition:border-color .2s, transform .2s; }
+  .pcard-h:hover { border-color:rgba(33,150,243,.45); transform:translateY(-2px); }
+  .pnav-link { display:flex; align-items:center; gap:.7rem; padding:.6rem .8rem; border-radius:.7rem; font-size:.9rem; color:#9fb0c9; transition:.15s; white-space:nowrap; }
+  .pnav-link:hover { background:rgba(255,255,255,.05); color:#fff; }
+  .pnav-link.active { background:rgba(33,150,243,.12); color:#71b7ff; border:1px solid rgba(33,150,243,.3); }
+  .pbadge { font-size:11px; padding:2px 9px; border-radius:999px; font-weight:700; letter-spacing:.4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set _u = url_for %}
+{% set active = active_page|default('') %}
+
+<!-- Announcement banners -->
+{% if portal_announcements %}
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-4 space-y-2">
+    {% for a in portal_announcements %}
+    <div class="flex items-start gap-3 p-4 rounded-xl border
+      {% if a.level=='success' %}bg-green-500/10 border-green-500/30 text-green-200
+      {% elif a.level=='warning' %}bg-yellow-500/10 border-yellow-500/30 text-yellow-200
+      {% elif a.level=='danger' %}bg-red-500/10 border-red-500/30 text-red-200
+      {% else %}bg-ops-500/10 border-ops-500/30 text-ops-200{% endif %}">
+      <div><div class="font-semibold text-sm">{{ a.title }}</div>{% if a.body %}<div class="text-sm opacity-90 mt-0.5">{{ a.body }}</div>{% endif %}</div>
+    </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+  <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+
+    <!-- Sidebar (desktop) -->
+    <aside class="hidden lg:block lg:col-span-3 xl:col-span-2">
+      <div class="pcard p-3 sticky top-20 space-y-1">
+        <a href="{{ _u('portal.dashboard') }}"     class="pnav-link {{ 'active' if active=='dashboard' }}"><span>Dashboard</span></a>
+        <a href="{{ _u('portal.projects') }}"       class="pnav-link {{ 'active' if active=='projects' }}"><span>Projects</span></a>
+        <a href="{{ _u('portal.appointments') }}"   class="pnav-link {{ 'active' if active=='appointments' }}"><span>Appointments</span></a>
+        <a href="{{ _u('portal.invoices') }}"        class="pnav-link {{ 'active' if active=='invoices' }}"><span>Invoices</span></a>
+        <a href="{{ _u('tickets.index') }}"          class="pnav-link"><span>Support tickets</span></a>
+        <a href="{{ _u('portal.notifications') }}"   class="pnav-link {{ 'active' if active=='notifications' }}">
+          <span>Notifications</span>
+          {% if portal_unread %}<span class="ml-auto pbadge bg-ops-500/20 text-ops-300">{{ portal_unread }}</span>{% endif %}
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="lg:col-span-9 xl:col-span-10">
+      <!-- Mobile horizontal nav -->
+      <div class="lg:hidden -mx-1 mb-5 overflow-x-auto">
+        <div class="flex gap-2 px-1 pb-1">
+          <a href="{{ _u('portal.dashboard') }}"   class="pnav-link {{ 'active' if active=='dashboard' }}">Dashboard</a>
+          <a href="{{ _u('portal.projects') }}"     class="pnav-link {{ 'active' if active=='projects' }}">Projects</a>
+          <a href="{{ _u('portal.appointments') }}" class="pnav-link {{ 'active' if active=='appointments' }}">Appointments</a>
+          <a href="{{ _u('portal.invoices') }}"      class="pnav-link {{ 'active' if active=='invoices' }}">Invoices</a>
+          <a href="{{ _u('portal.notifications') }}" class="pnav-link {{ 'active' if active=='notifications' }}">Alerts{% if portal_unread %} ({{ portal_unread }}){% endif %}</a>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 mb-6">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">{% block portal_heading %}{{ self.portal_title() }}{% endblock %}</h1>
+        <div>{% block portal_actions %}{% endblock %}</div>
+      </div>
+
+      {% block portal_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

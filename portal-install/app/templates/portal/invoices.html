@@ -1,0 +1,35 @@
+{% extends "portal/_base.html" %}
+{% set active_page = 'invoices' %}
+{% block portal_title %}Invoices{% endblock %}
+{% block portal_content %}
+{% if invoices %}
+<div class="pcard overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-ink-900/60 text-gray-400 text-[11px] uppercase tracking-widest">
+        <tr>
+          <th class="text-left px-5 py-3">Invoice</th>
+          <th class="text-left px-5 py-3 hidden sm:table-cell">Issued</th>
+          <th class="text-left px-5 py-3">Status</th>
+          <th class="text-right px-5 py-3">Total</th>
+          <th class="px-5 py-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in invoices %}
+        <tr class="border-t border-ink-600/40 hover:bg-white/[.02]">
+          <td class="px-5 py-3 font-mono text-ops-300">{{ inv.number }}</td>
+          <td class="px-5 py-3 text-gray-400 hidden sm:table-cell">{{ inv.issued_at|dtdate if inv.issued_at else '—' }}</td>
+          <td class="px-5 py-3"><span class="pbadge" style="background:{{ inv.status_meta.color }}1f;color:{{ inv.status_meta.color }};">{{ inv.status_meta.label }}</span></td>
+          <td class="px-5 py-3 text-right font-semibold">{{ inv.total_display }}</td>
+          <td class="px-5 py-3 text-right"><a href="{{ url_for('portal.invoice_detail', iid=inv.id) }}" class="text-ops-400 hover:text-ops-300 font-semibold">View →</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="pcard p-12 text-center text-gray-400">No invoices yet.</div>
+{% endif %}
+{% endblock %}

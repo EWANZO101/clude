@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import field, btn_primary, btn_secondary %}
+{% block title %}MOT API settings — Admin{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <h1 class="font-bold text-2xl mb-2">MOT API settings</h1>
+  <p class="text-sm text-ink-muted mb-6">Credentials for the UK Government DVSA MOT History API. These are stored in the database — no code changes or redeploys needed.</p>
+  <form method="post" class="card p-6 space-y-4">
+    {{ form.hidden_tag() }}
+    {{ field(form.dvsa_api_key, help="X-API-Key subscription key") }}
+    {{ field(form.dvsa_client_id) }}
+    {{ field(form.dvsa_client_secret) }}
+    {{ field(form.dvsa_token_url, help="OAuth2 token endpoint") }}
+    {{ field(form.dvsa_scope_url, help="OAuth2 scope URL") }}
+    {{ field(form.dvsa_api_base) }}
+    <div class="flex items-center gap-3 pt-2">
+      {{ btn_primary('Save settings') }}
+      {{ btn_secondary('Back', url_for('admin.dashboard')) }}
+    </div>
+  </form>
+</div>
+{% endblock %}

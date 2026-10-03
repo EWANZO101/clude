@@ -1,0 +1,46 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}{{ 'Edit company' if company else 'Add company' }}{% endblock %}
+{% block content %}
+<div class="max-w-xl space-y-5">
+  {{ ui.page_header('Edit company' if company else 'Add a company') }}
+  <div class="bg-surface-card border border-surface-border rounded-2xl p-6">
+    <form method="POST" class="space-y-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {{ ui.field_input("company_name", "Company name", value=company.company_name if company else "", required=true) }}
+      <div class="grid grid-cols-2 gap-3">
+        {{ ui.field_input("company_number", "Company number", value=company.company_number if company else "") }}
+        {{ ui.field_input("incorporation_date", "Incorporation date", type="date", value=company.incorporation_date if company else "") }}
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="space-y-1">
+          <label class="text-sm text-slate-400">Company type</label>
+          <select name="company_type" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+            {% for val, lbl in [('ltd','Private limited (Ltd)'), ('llp','LLP'), ('plc','PLC'), ('sole_trader','Sole trader'), ('other','Other')] %}
+              <option value="{{ val }}" {{ 'selected' if company and company.company_type == val }}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="space-y-1">
+          <label class="text-sm text-slate-400">Status</label>
+          <select name="company_status" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+            {% for val, lbl in [('active','Active'), ('dormant','Dormant'), ('dissolved','Dissolved')] %}
+              <option value="{{ val }}" {{ 'selected' if company and company.company_status == val }}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      {{ ui.field_input("registered_office_address", "Registered office address", value=company.registered_office_address if company else "") }}
+      {{ ui.field_input("sic_codes", "SIC codes", value=company.sic_codes if company else "", placeholder="Comma-separated") }}
+      <div class="space-y-1">
+        <label class="text-sm text-slate-400">Notes</label>
+        <textarea name="notes" rows="3" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">{{ company.notes if company else '' }}</textarea>
+      </div>
+      <div class="flex items-center gap-2 pt-2">
+        {{ ui.button("Save", type="submit", variant="primary", icon_name="check") }}
+        {{ ui.button("Cancel", href=url_for('main.company_detail', company_id=company.id) if company else url_for('main.dashboard'), variant="secondary") }}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

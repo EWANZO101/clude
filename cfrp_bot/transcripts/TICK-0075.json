@@ -1,0 +1,73 @@
+{
+  "ticket_id": "TICK-0075",
+  "ticket_type": "whitelist",
+  "opened_by": "Keanu KD",
+  "opened_at": "2026-04-30 21:07:09",
+  "closed_by": "Alex Bento | Pierre jordaan",
+  "closed_at": "2026-05-02 18:37 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-30T21:07:10.144000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1451691985730539592> <@1401129802991407155>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-30T21:07:10.971000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-30T21:08:07.654000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "staff",
+      "content": "Hi do you have time for quick chat",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-30T21:08:14.192000+00:00",
+      "author": "Keanu KD",
+      "author_id": "1401129802991407155",
+      "role": "",
+      "content": "yes",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-30T21:08:31.420000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "staff",
+      "content": "Join waiting room",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-30T21:08:48.746000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "staff",
+      "content": "https://discord.com/channels/1213807920635052043/1497863377643503657",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-30T21:22:43.084000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "staff",
+      "content": "Okay enjoy city if you have any questions sor concern s you can sent msg in <#1492615958903259167>",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

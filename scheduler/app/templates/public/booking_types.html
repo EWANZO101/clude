@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Book time with {{ owner.name }} · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto max-w-2xl px-4 py-12 sm:py-16">
+  <div class="mb-10 text-center">
+    <h1 class="font-display text-2xl font-semibold text-ink">Book time with {{ owner.name }}</h1>
+    <p class="mt-2 text-sm text-ink-muted">Choose the kind of meeting you'd like.</p>
+  </div>
+
+  {% include "partials/flash.html" %}
+
+  {% if types %}
+    <div class="space-y-3">
+      {% for bt in types %}
+      <a href="{{ url_for('public.pick_slot', type_id=bt.id) }}" class="card flex items-center justify-between gap-4 p-5 hover:border-ink-faint transition-colors">
+        <div>
+          <p class="font-medium text-ink">{{ bt.name }}</p>
+          {% if bt.description %}<p class="mt-1 text-sm text-ink-muted">{{ bt.description }}</p>{% endif %}
+        </div>
+        <span class="shrink-0 text-sm font-medium text-accent">{{ bt.duration }} min &rarr;</span>
+      </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card p-8 text-center">
+      <p class="text-sm text-ink-muted">No meeting types are available to book right now.</p>
+    </div>
+  {% endif %}
+
+  <p class="mt-8 text-center text-xs text-ink-faint">
+    Need a calendar to share with a group instead?
+    <a href="{{ url_for('calendarmaker.welcome') }}" class="text-accent hover:underline">Create a shared calendar</a>
+  </p>
+</div>
+{% endblock %}

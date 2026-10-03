@@ -1,0 +1,41 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_request_badge.html" import request_status_badge with context %}
+{% from "components/_progress_stepper.html" import progress_bar_compact with context %}
+{% block title %}My Requests — {{ app_name }}{% endblock %}
+{% block page_title %}Bring Your Own Equipment{% endblock %}
+{% block header_actions %}
+<form method="POST" action="{{ url_for('customer.request_new') }}">
+  {% include "components/_csrf.html" %}
+  <button type="submit" class="btn-primary">New hosting request</button>
+</form>
+{% endblock %}
+{% block content %}
+{% if requests %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Request #</th><th>Items</th><th>Status</th><th>Progress</th><th>Created</th><th></th></tr></thead>
+    <tbody>
+      {% for req in requests %}
+      {% set progress = req.progress_info %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ req.request_number }}</td>
+        <td class="text-text-secondary">{{ req.total_item_count }}</td>
+        <td>{{ request_status_badge(req.status) }}</td>
+        <td>{{ progress_bar_compact(progress.percent, stopped=progress.stopped) }}</td>
+        <td class="text-text-muted">{{ req.created_at.strftime("%d %b %Y") }}</td>
+        <td><a href="{{ url_for('customer.request_detail', request_id=req.id) }}" class="text-brand-400 hover:text-brand-300">View</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card p-10 text-center text-text-secondary">
+  <p class="mb-4">Ship your own servers, switches, routers and other infrastructure to be racked, powered and connected in our datacenters.</p>
+  <form method="POST" action="{{ url_for('customer.request_new') }}" class="inline">
+    {% include "components/_csrf.html" %}
+    <button type="submit" class="btn-primary">Create your first hosting request</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

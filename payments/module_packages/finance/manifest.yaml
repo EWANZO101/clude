@@ -1,0 +1,73 @@
+id: finance
+name: Finance
+version: "1.2.0"
+author: OpsLab Systems
+description: Accounts, transactions, budgets, bills, subscriptions, planned purchases, savings and forecasting.
+core_compatibility: "0.x"
+dependencies:
+  - python-dateutil>=2.9
+  - requests>=2.31
+  - cryptography>=42
+permissions:
+  - finance.view
+  - finance.edit
+navigation:
+  - label: Finance
+    icon: wallet
+    url: /finance/
+    position: 10
+  - label: Transactions
+    icon: list
+    url: /finance/transactions
+    position: 11
+  - label: Accounts
+    icon: landmark
+    url: /finance/accounts
+    position: 12
+  - label: Budgets
+    icon: pie-chart
+    url: /finance/budgets
+    position: 13
+  - label: Bills
+    icon: receipt
+    url: /finance/bills
+    position: 14
+  - label: Subscriptions
+    icon: repeat
+    url: /finance/subscriptions
+    position: 15
+  - label: Calendar
+    icon: calendar
+    url: /finance/calendar
+    position: 16
+  - label: Planned Purchases
+    icon: shopping-cart
+    url: /finance/purchases
+    position: 17
+  - label: Monthly Planning
+    icon: calendar-check
+    url: /finance/planning
+    position: 18
+  - label: Savings
+    icon: piggy-bank
+    url: /finance/savings
+    position: 19
+  - label: Debts
+    icon: alert-triangle
+    url: /finance/debts
+    position: 20
+  - label: What's Due
+    icon: alarm-clock
+    url: /finance/due
+    position: 21
+dashboard_widgets:
+  - key: current_balance
+    label: Current balance
+  - key: monthly_spending
+    label: Monthly spending
+  - key: recent_transactions
+    label: Recent transactions
+  - key: budgets
+    label: Budgets
+  - key: upcoming_bills
+    label: Upcoming bills

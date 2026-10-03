@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}SSL Certificates — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="1.5"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+      certbot
+    </p>
+    <h1 class="page-title">SSL Certificates</h1>
+    <p class="page-sub">TLS certificates managed by Certbot on this host</p>
+  </div>
+  {% if installed and current_user.has_permission('ssl.manage') %}
+  <form method="POST" action="{{ url_for('ssl.renew') }}" onsubmit="return confirm('Run certbot renew now? Certificates outside their renewal window are left untouched.');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-primary" type="submit">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a9 9 0 10-2.6 6.3L21 12"/><path d="M21 3v5h-5"/></svg>
+      Check &amp; renew
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+{% if not installed %}
+  <div class="card">
+    <div class="empty-state">
+      <strong>certbot isn't installed</strong>
+      Install it (<code>apt install certbot python3-certbot-nginx</code>) and issue certificates for
+      your domains, then reload this page.
+    </div>
+  </div>
+{% elif error %}
+  <div class="flash flash-error">{{ error }}</div>
+{% else %}
+
+  <div class="grid" style="margin-bottom:16px;">
+    <div class="card stat">
+      <div class="card-label">Certificates</div>
+      <div class="card-value">{{ certs | length }}</div>
+      <div class="card-meta">managed by certbot</div>
+    </div>
+    <div class="card stat">
+      <div class="card-label">Needs attention</div>
+      <div class="card-value" style="color: {{ 'var(--danger)' if expiring_count else 'var(--text-primary)' }};">{{ expiring_count }}</div>
+      <div class="card-meta">expiring within 14 days or already expired</div>
+    </div>
+  </div>
+
+  {% if not certs %}
+  <div class="card">
+    <div class="empty-state">
+      <strong>No certificates found</strong>
+      Run <code>certbot --nginx</code> to issue one for a domain, then reload this page.
+    </div>
+  </div>
+  {% else %}
+  <div class="card flush">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Certificate</th><th>Domains</th><th>Expires</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for cert in certs %}
+          <tr>
+            <td class="mono primary">{{ cert.name }}</td>
+            <td>
+              {% for d in cert.domains %}<span class="badge badge-muted" style="margin:2px;">{{ d }}</span>{% endfor %}
+            </td>
+            <td class="mono">
+              {% if cert.expiry %}
+                {{ cert.expiry.strftime('%Y-%m-%d') }}
+                <span class="card-meta" style="margin:0; display:inline;">
+                  ({{ cert.days_left }} day{{ 's' if cert.days_left != 1 }})
+                </span>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if cert.status == 'valid' %}
+              <span class="badge badge-ok">Valid</span>
+              {% elif cert.status == 'expiring' %}
+              <span class="badge badge-warn">Expiring soon</span>
+              {% elif cert.status == 'expired' %}
+              <span class="badge badge-danger">Expired / invalid</span>
+              {% else %}
+              <span class="badge badge-muted">Unknown</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+{% endif %}
+{% endblock %}

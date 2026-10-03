@@ -1,0 +1,34 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Payouts — Admin{% endblock %}
+{% block page_title %}Seller payouts{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Seller</th><th>Order</th><th>Gross</th><th>Commission</th><th>Net</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for payout in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ payout.seller.business_name }}</td>
+        <td class="text-text-secondary">{{ payout.order.order_number }}</td>
+        <td class="text-text-secondary">£{{ payout.gross_amount }}</td>
+        <td class="text-text-secondary">£{{ payout.commission_amount }}</td>
+        <td class="text-text-primary">£{{ payout.net_amount }}</td>
+        <td>{% if payout.status == "paid" %}<span class="badge-success">Paid</span>{% else %}<span class="badge-warning">Pending</span>{% endif %}</td>
+        <td>
+          {% if payout.status != "paid" %}
+          <form method="POST" action="{{ url_for('admin.payout_mark_paid', payout_id=payout.id) }}">
+            {% include "components/_csrf.html" %}
+            <button type="submit" class="text-brand-400 hover:text-brand-300 text-sm">Mark paid</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center text-text-muted py-8">No payouts yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.payouts") }}
+</div>
+{% endblock %}

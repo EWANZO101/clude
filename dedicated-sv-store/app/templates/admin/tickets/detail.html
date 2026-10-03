@@ -1,0 +1,50 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_message_thread.html" import message_thread with context %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}{{ ticket.ticket_number }} — Admin{% endblock %}
+{% block page_title %}{{ ticket.subject }}{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-6">
+    <div class="card p-5">
+      <p class="text-sm text-text-secondary whitespace-pre-line mb-4">{{ ticket.description }}</p>
+      {{ message_thread(ticket.messages) }}
+    </div>
+    <form method="POST" class="card p-5">
+      {{ form.hidden_tag() }}
+      <input type="hidden" name="action" value="reply">
+      {{ field(form.body, rows=3, placeholder="Write a reply…") }}
+      {{ checkbox(form.is_internal_note) }}
+      <button type="submit" class="btn-primary">Send</button>
+    </form>
+  </div>
+  <div class="card p-5 space-y-4">
+    <dl class="space-y-2 text-sm">
+      <div class="flex justify-between"><dt class="text-text-muted">Customer</dt><dd class="text-text-primary">{{ ticket.user.email }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Category</dt><dd class="text-text-primary">{{ ticket.category }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Priority</dt><dd class="text-text-primary capitalize">{{ ticket.priority.value }}</dd></div>
+    </dl>
+    <form method="POST" class="space-y-2">
+      {% include "components/_csrf.html" %}
+      <input type="hidden" name="action" value="set_status">
+      <select name="status" class="input-field">
+        {% for status in statuses %}
+        <option value="{{ status.value }}" {{ "selected" if status == ticket.status }}>{{ status.value|replace("_"," ")|title }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-secondary w-full">Update status</button>
+    </form>
+    <form method="POST" class="space-y-2">
+      {% include "components/_csrf.html" %}
+      <input type="hidden" name="action" value="assign_staff">
+      <select name="staff_id" class="input-field">
+        <option value="">— Unassigned —</option>
+        {% for staff in staff_users %}
+        <option value="{{ staff.id }}" {{ "selected" if ticket.assigned_staff_id == staff.id }}>{{ staff.email }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-secondary w-full">Assign</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,2297 @@
+{% extends "base.html" %}
+{% block title %}{{ inst.name }} · Control panel — {{ panel_name }}{% endblock %}
+{% block content %}
+<input type="hidden" id="csrf_token" value="{{ csrf_token() }}">
+<div class="txp">
+
+<nav class="tx-crumbs">
+  <a href="{{ url_for('txadmin.index') }}"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>All servers</a><span>/</span>
+  <a href="{{ url_for('txadmin.index') }}#/i/{{ inst.id }}">{{ inst.name }}</a><span>/</span><span class="cur">Control panel</span>
+</nav>
+
+<section class="tx-dhero">
+  <div class="tx-dhero-top">
+    <div class="tx-avatar" id="hdr-avatar"></div>
+    <div class="tx-dhero-id">
+      <h2>{{ inst.name }} <span class="tx-status" id="hdr-state"><i></i>Connecting…</span></h2>
+      <div class="tx-chips">
+        <span class="tx-chip">connect {{ inst.join or inst.connect }}</span>
+        <button class="tx-copy" type="button" data-copy="connect {{ inst.join or inst.connect }}" data-what="Connect command" title="Copy connect command"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h10a1 1 0 011 1v1"/></svg></button>
+        <span class="tx-chip" id="hdr-link">live link…</span>
+      </div>
+    </div>
+    <div class="tx-dhero-actions">
+      <button class="tx-btn tx-btn-primary" type="button" data-ctl="start" id="btn-start" style="display:none"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>Start server</button>
+      <button class="tx-btn tx-btn-ghost" type="button" data-ctl="restart" id="btn-restart" style="display:none"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-2.6-6.36"/><path d="M21 3v6h-6"/></svg>Restart</button>
+      <button class="tx-btn tx-btn-soft-danger" type="button" data-ctl="stop" id="btn-stop" style="display:none"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>
+      <a class="tx-btn tx-btn-ghost tx-btn-icon" href="{{ inst.tx_url }}" target="_blank" rel="noopener" title="Open txAdmin"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M19 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1h5"/></svg></a>
+    </div>
+  </div>
+  <div class="tx-metrics" id="metrics"></div>
+</section>
+
+<div id="link-error" class="tx-callout warn" style="display:none;margin-bottom:16px"></div>
+
+<nav class="tx-tabs" id="tabs">
+  <button class="tx-tab on" data-tab="dashboard" id="tab-dash"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard <span class="n txe-badge" id="tab-err-n" style="display:none"></span></button>
+  <button class="tx-tab" data-tab="console"><svg viewBox="0 0 24 24"><path d="M4 17l6-5-6-5M12 19h8"/></svg>Console</button>
+  <button class="tx-tab" data-tab="players"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0113 0M16 4.5a3.5 3.5 0 010 7M18.5 20a6.5 6.5 0 00-3-5.5"/></svg>Players <span class="n" id="tab-players-count" style="display:none"></span></button>
+  <button class="tx-tab" data-tab="history"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6z"/></svg>Bans &amp; warns</button>
+  <button class="tx-tab" data-tab="resources"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/></svg>Resources <span class="n" id="tab-res-count" style="display:none"></span></button>
+  <button class="tx-tab" data-tab="config"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h4"/></svg>server.cfg <span class="n" id="tab-cfg-dirty" style="display:none">●</span></button>
+  <button class="tx-tab" data-tab="claude"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>Claude Code <span class="n" id="tab-claude-n" style="display:none"></span></button>
+  <button class="tx-tab" data-tab="api"><svg viewBox="0 0 24 24"><path d="M8 6L2 12l6 6M16 6l6 6-6 6"/></svg>API</button>
+</nav>
+
+<!-- ======================= DASHBOARD ======================= -->
+<section class="txp-pane" data-pane="dashboard">
+  <div class="tx-two">
+    <div>
+      <section class="tx-panel">
+        <div class="tx-panel-head"><div class="grow"><h3>Online now</h3><p id="dash-online-sub">—</p></div><a class="tx-btn tx-btn-ghost tx-btn-sm" href="#players" data-goto="players">All players</a></div>
+        <div id="dash-players"><div class="txp-loading"><span class="tx-spinner"></span></div></div>
+      </section>
+      <section class="tx-panel">
+        <div class="tx-panel-head"><div class="grow"><h3>Announcement</h3><p>Shown to every player on the server</p></div></div>
+        <div class="tx-panel-body">
+          <div class="tx-field"><textarea id="announce-text" rows="3" placeholder="Server restarting in 5 minutes…" maxlength="500"></textarea></div>
+          <div class="txp-row"><span class="txp-counter" id="announce-count">0 / 500</span><span class="spacer"></span>
+            <button class="tx-btn tx-btn-primary tx-btn-sm" id="announce-btn"><svg viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8z"/></svg>Send</button></div>
+        </div>
+      </section>
+    </div>
+    <div>
+      <section class="tx-panel" id="err-card">
+        <div class="tx-panel-head"><div class="grow"><h3>Live errors</h3><p id="err-sub">Watching the server console…</p></div>
+          <button class="tx-btn tx-btn-ghost tx-btn-sm" id="err-clear" style="display:none">Clear</button></div>
+        <div id="err-list"><div class="txp-loading"><span class="tx-spinner"></span></div></div>
+      </section>
+      <section class="tx-panel">
+        <div class="tx-panel-head"><div class="grow"><h3>Scheduled restart</h3><p id="sched-info">—</p></div>
+          <button class="tx-btn tx-btn-ghost tx-btn-sm" id="sched-skip">Skip next</button></div>
+        <div class="tx-panel-body">
+          <div class="txp-chips">
+            <button class="txp-chipbtn" data-sched="+5">5 min</button>
+            <button class="txp-chipbtn" data-sched="+15">15 min</button>
+            <button class="txp-chipbtn" data-sched="+30">30 min</button>
+            <button class="txp-chipbtn" data-sched="+60">1 hour</button>
+          </div>
+          <div class="txp-row" style="margin-top:12px">
+            <div class="tx-field" style="flex:1"><input type="time" id="sched-time"></div>
+            <button class="tx-btn tx-btn-ghost tx-btn-sm" id="sched-at">Schedule at time</button>
+          </div>
+        </div>
+      </section>
+      <section class="tx-panel">
+        <div class="tx-panel-head"><div class="grow"><h3>Quick commands</h3><p>Sent straight to the server console</p></div></div>
+        <div class="tx-panel-body">
+          <div class="txp-chips" id="quick-cmds">
+            <button class="txp-chipbtn" data-cmd="refresh">refresh</button>
+            <button class="txp-chipbtn" data-cmd="status">status</button>
+            <button class="txp-chipbtn" data-cmd="txaPing">txaPing</button>
+            <button class="txp-chipbtn" data-cmd="resmon 1">resmon</button>
+          </div>
+          <form class="txp-row" id="quick-form" style="margin-top:12px" autocomplete="off">
+            <div class="tx-field" style="flex:1"><input type="text" id="quick-cmd" placeholder="Any console command…" spellcheck="false"></div>
+            <button class="tx-btn tx-btn-ghost tx-btn-sm" type="submit">Run</button>
+          </form>
+        </div>
+      </section>
+      <section class="tx-panel danger">
+        <div class="tx-panel-head"><div class="grow"><h3 style="color:var(--danger)">Kick everyone</h3><p>Disconnects every player with a reason</p></div></div>
+        <div class="tx-panel-body">
+          <div class="txp-row"><div class="tx-field" style="flex:1"><input type="text" id="kickall-reason" placeholder="Reason (optional)"></div>
+            <button class="tx-btn tx-btn-soft-danger tx-btn-sm" id="kickall-btn">Kick all</button></div>
+          <p class="txp-note">Start / Restart / Stop at the top control the game server through txAdmin, and txAdmin keeps running. To stop the whole service, use the <a href="{{ url_for('txadmin.index') }}#/i/{{ inst.id }}">server page</a>.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= CONSOLE ======================= -->
+<section class="txp-pane" data-pane="console" hidden>
+  <div class="tx-term txp-console-term">
+    <div class="tx-term-bar"><i></i><i></i><i></i><span>{{ inst.name }} — live console</span>
+      <label><input type="checkbox" id="console-follow" checked> auto-scroll</label>
+      <button class="tx-copy" type="button" id="console-clear" title="Clear view" style="color:#8a90a3"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+    </div>
+    <pre id="console"></pre>
+    <form class="txp-console-input" id="console-form" autocomplete="off">
+      <span class="txp-prompt">❯</span>
+      <input type="text" id="console-cmd" placeholder="Type a command… (↑/↓ history)" spellcheck="false">
+      <button class="tx-btn tx-btn-primary tx-btn-sm" type="submit">Send</button>
+    </form>
+  </div>
+</section>
+
+<!-- ======================= PLAYERS ======================= -->
+<section class="txp-pane" data-pane="players" hidden>
+  <section class="tx-panel">
+    <div class="tx-panel-head"><div class="grow"><h3>Online players</h3><p id="online-meta">—</p></div>
+      <label class="tx-search txp-mini-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input type="text" id="online-filter" placeholder="Filter online…"></label></div>
+    <div id="online-list"><div class="txp-loading"><span class="tx-spinner"></span></div></div>
+  </section>
+  <section class="tx-panel">
+    <div class="tx-panel-head"><div class="grow"><h3>Player database</h3><p>Everyone txAdmin has seen</p></div></div>
+    <form class="txp-filters" id="psearch-form">
+      <label class="tx-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input type="text" id="psearch-q" placeholder="Search players…"></label>
+      <select class="txp-select" id="psearch-type"><option value="playerName">by name</option><option value="playerIds">by identifier</option><option value="playerNotes">by notes</option></select>
+      <select class="txp-select" id="psearch-filter"><option value="">All players</option><option value="isOnline">Online</option><option value="isAdmin">Admins</option><option value="isWhitelisted">Whitelisted</option><option value="hasNote">Has note</option></select>
+      <select class="txp-select" id="psearch-sort"><option value="tsLastConnection">Last seen</option><option value="tsJoined">First joined</option><option value="playTime">Play time</option></select>
+      <button class="tx-btn tx-btn-ghost tx-btn-sm" type="submit">Search</button>
+    </form>
+    <div id="psearch-results"></div>
+    <div class="txp-more"><button class="tx-btn tx-btn-ghost tx-btn-sm" id="psearch-more" style="display:none">Load more</button></div>
+  </section>
+</section>
+
+<!-- ======================= HISTORY ======================= -->
+<section class="txp-pane" data-pane="history" hidden>
+  <section class="tx-panel">
+    <div class="tx-panel-head"><div class="grow"><h3>Bans &amp; warnings</h3><p>Every action recorded by txAdmin</p></div>
+      <button class="tx-btn tx-btn-primary tx-btn-sm" type="button" id="offline-ban-btn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Ban identifiers</button></div>
+    <form class="txp-filters" id="hsearch-form">
+      <label class="tx-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input type="text" id="hsearch-q" placeholder="Search history…"></label>
+      <select class="txp-select" id="hsearch-type"><option value="identifiers">by identifier</option><option value="reason">by reason</option><option value="actionId">by action ID</option></select>
+      <div class="tx-seg" id="hsearch-seg"><button type="button" class="on" data-hf="">All</button><button type="button" data-hf="ban">Bans</button><button type="button" data-hf="warn">Warns</button></div>
+      <button class="tx-btn tx-btn-ghost tx-btn-sm" type="submit">Search</button>
+    </form>
+    <div id="hsearch-results"><div class="txp-loading"><span class="tx-spinner"></span></div></div>
+    <div class="txp-more"><button class="tx-btn tx-btn-ghost tx-btn-sm" id="hsearch-more" style="display:none">Load more</button></div>
+  </section>
+</section>
+
+<!-- ======================= RESOURCES ======================= -->
+<section class="txp-pane" data-pane="resources" hidden>
+  <div class="txr">
+    <aside class="tx-panel txr-tree-panel">
+      <div class="tx-panel-head"><div class="grow"><h3>Folders</h3><p id="res-sub">—</p></div></div>
+      <nav class="txr-tree" id="res-tree"><div class="txp-loading"><span class="tx-spinner"></span></div></nav>
+    </aside>
+    <section class="tx-panel txr-main">
+      <div class="tx-panel-head">
+        <div class="grow"><h3 id="res-title">All resources</h3><p id="res-title-sub"></p></div>
+        <div class="txr-bulk" id="res-bulk">
+          <button class="tx-btn tx-btn-ghost tx-btn-sm" data-bulk="start" title="Start every stopped resource in this folder"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>Start all <span class="n"></span></button>
+          <button class="tx-btn tx-btn-ghost tx-btn-sm" data-bulk="restart" title="Restart every running resource in this folder"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-2.6-6.36"/><path d="M21 3v6h-6"/></svg>Restart all <span class="n"></span></button>
+          <button class="tx-btn tx-btn-soft-danger tx-btn-sm" data-bulk="stop" title="Stop every running resource in this folder"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop all <span class="n"></span></button>
+        </div>
+        <span class="txr-sep"></span>
+        <button class="tx-btn tx-btn-ghost tx-btn-sm" id="res-refresh" title="Scan for new or changed resource folders"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 019-9 9.8 9.8 0 016.7 2.7L21 8M21 3v5h-5M21 12a9 9 0 01-9 9 9.8 9.8 0 01-6.7-2.7L3 16M3 21v-5h5"/></svg>Rescan</button>
+        <button class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" id="res-reload" title="Reload list"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-2.6-6.36"/><path d="M21 3v6h-6"/></svg></button>
+      </div>
+      <div class="txp-filters">
+        <label class="tx-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input type="text" id="res-filter" placeholder="Search resources…  ( / )"></label>
+        <div class="tx-seg" id="res-seg">
+          <button type="button" class="on" data-rs="all">All <span class="n" id="rs-all"></span></button>
+          <button type="button" data-rs="running">Running <span class="n" id="rs-running"></span></button>
+          <button type="button" data-rs="stopped">Stopped <span class="n" id="rs-stopped"></span></button>
+        </div>
+        <span class="spacer"></span>
+        <form class="txp-row" id="res-start-form" autocomplete="off">
+          <div class="tx-field"><input type="text" id="res-start-name" placeholder="ensure by name" spellcheck="false"></div>
+          <button class="tx-btn tx-btn-primary tx-btn-sm" type="submit"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>Ensure</button>
+        </form>
+      </div>
+      <div id="res-list"><div class="txp-loading"><span class="tx-spinner"></span></div></div>
+    </section>
+  </div>
+</section>
+
+<!-- ======================= CONFIG ======================= -->
+<section class="txp-pane" data-pane="config" hidden>
+  <div id="cfg-msg" class="tx-callout" style="display:none"></div>
+  <div class="txc">
+    <section class="tx-panel txc-main">
+      <div class="txc-bar">
+        <div class="txc-files" id="cfg-files"></div>
+        <span class="txc-state" id="cfg-state"></span>
+        <span class="spacer"></span>
+        <button class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" id="cfg-find" title="Find (Ctrl+F)"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+        <button class="tx-btn tx-btn-ghost tx-btn-sm" id="cfg-reload" title="Discard changes and reload from disk"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-2.6-6.36"/><path d="M21 3v6h-6"/></svg>Reload</button>
+        <button class="tx-btn tx-btn-ghost tx-btn-sm" id="cfg-save-restart" disabled>Save &amp; restart</button>
+        <button class="tx-btn tx-btn-primary tx-btn-sm" id="cfg-save" disabled><svg viewBox="0 0 24 24"><path d="M5 3h11l5 5v11a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M7 3v5h8M7 21v-7h10v7"/></svg>Save <span class="tx-kbd" style="margin-left:2px">Ctrl S</span></button>
+      </div>
+      <div class="txc-editor-wrap">
+        <div id="cfg-editor"></div>
+        <textarea id="cfg-fallback" spellcheck="false" style="display:none"></textarea>
+        <div class="txc-empty" id="cfg-empty" style="display:none"></div>
+      </div>
+      <div class="txc-foot">
+        <span id="cfg-path"></span><span class="spacer"></span><span id="cfg-pos"></span>
+      </div>
+    </section>
+    <aside class="tx-panel txc-side">
+      <div class="tx-panel-head"><div class="grow"><h3>Outline</h3><p>Click a line to jump to it</p></div></div>
+      <div class="txc-outline" id="cfg-outline"></div>
+      <div class="txc-tip">
+        <strong>Saving server.cfg</strong> goes through txAdmin, which checks your <code>exec</code> files and endpoints and keeps <code>server.cfg.bkp</code>. Changes apply on the next server restart.
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ======================= CLAUDE CODE ======================= -->
+<section class="txp-pane" data-pane="claude" hidden>
+  <section class="tx-panel txcc-hero">
+    <div class="txcc-hero-in">
+      <div class="txcc-logo"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></div>
+      <div class="grow">
+        <h3>Edit your server with Claude, from any browser or phone</h3>
+        <p>Chat with Claude on <a href="https://claude.ai/code" target="_blank" rel="noopener">claude.ai/code</a> and it edits the real files on this server: configs, scripts, new resources. No uploading or downloading.</p>
+      </div>
+      <div class="txcc-acct" id="cc-account"><span class="tx-spinner"></span></div>
+    </div>
+    <div class="txcc-cta" id="cc-cta" style="display:none"></div>
+  </section>
+
+  <section class="tx-panel">
+    <div class="tx-panel-head"><div class="grow"><h3>Getting started</h3><p id="cc-steps-sub">Do these once, top to bottom</p></div></div>
+    <ol class="txcc-steps" id="cc-steps"><li class="txp-loading"><span class="tx-spinner"></span></li></ol>
+  </section>
+  <div id="cc-alert"></div>
+  <div class="tx-two">
+    <section class="tx-panel">
+      <div class="tx-panel-head"><div class="grow"><h3>Linked folders</h3><p id="cc-links-sub">—</p></div>
+        <button class="tx-btn tx-btn-ghost tx-btn-sm" id="cc-startall" style="display:none"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>Start all</button>
+        <button class="tx-btn tx-btn-ghost tx-btn-sm" id="cc-stopall" style="display:none"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop all</button>
+        <button class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" id="cc-refresh" title="Refresh"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-2.6-6.36"/><path d="M21 3v6h-6"/></svg></button></div>
+      <div id="cc-links"><div class="txp-loading"><span class="tx-spinner"></span></div></div>
+    </section>
+    <section class="tx-panel">
+      <div class="tx-panel-head"><div class="grow"><h3>Link a folder</h3><p>Pick what Claude can see and edit</p></div></div>
+      <div class="tx-panel-body">
+        <div class="tx-field"><label>Folder</label><select id="cc-target"></select></div>
+        <div class="tx-field" style="margin-top:12px"><label>When Claude wants to edit files</label>
+          <select id="cc-mode">
+            <option value="default">Ask me in claude.ai first (safest)</option>
+            <option value="acceptEdits">Edit files without asking, ask before commands</option>
+            <option value="plan">Plan only, no edits</option>
+            <option value="auto">Auto (Claude decides, asks for risky actions)</option>
+          </select></div>
+        <div class="txp-row" style="margin-top:14px"><span class="spacer"></span><button class="tx-btn tx-btn-primary tx-btn-sm" id="cc-link-btn"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.7-1.7"/></svg>Link to claude.ai</button></div>
+        <div class="txcc-all">
+          <div class="grow"><strong>Link all folders</strong><span id="cc-all-desc">One session per top-level folder, all at once.</span></div>
+          <button class="tx-btn tx-btn-ghost tx-btn-sm" id="cc-link-all"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.7-1.7"/></svg>Link all</button>
+        </div>
+        <div class="txcc-hint">In claude.ai/code this will be called <code id="cc-example">{{ inst.name }} · …</code>. Claude can only see and edit what's inside the folder you pick, so <strong>Whole resources folder</strong> is easiest. Pick one resource to keep Claude focused on it.</div>
+      </div>
+    </section>
+  </div>
+  <div class="tx-two">
+    <section class="tx-panel">
+      <div class="tx-panel-head"><div class="grow"><h3>Things you can ask</h3><p>Copy one into claude.ai/code to try it</p></div></div>
+      <div class="txcc-examples" id="cc-examples"></div>
+    </section>
+    <section class="tx-panel">
+      <div class="tx-panel-head"><div class="grow"><h3>Good to know</h3></div></div>
+      <div class="txcc-faq">
+        <details open><summary>Where do I find my session?</summary><p>On <a href="https://claude.ai/code" target="_blank" rel="noopener">claude.ai/code</a> (or the <strong>Code</strong> tab in the Claude app), look in the session list for the name shown under <em>Linked folders</em>, like <code>{{ inst.name }} · resources</code>. Click it and start typing.</p></details>
+        <details><summary>When do my changes show up in game?</summary><p>Files change on the server as soon as Claude saves them. FiveM only loads them when the resource restarts, so open the <a href="#resources" data-goto="resources">Resources</a> tab and press Restart on it. For big changes, use Restart at the top of the page.</p></details>
+        <details><summary>Why does Claude ask before it does things?</summary><p>With <em>“Ask me first”</em>, Claude shows you each file edit or command in claude.ai and waits for you to approve it. That's the safest setting for a live server. You can relink with <em>“Edit files without asking”</em> if you trust it to just get on with it.</p></details>
+        <details><summary>Does it stop when I close the browser?</summary><p>No. The link keeps running on the server, even after panel restarts and reboots. Use <strong>Stop</strong> or <strong>Unlink</strong> on this page to turn it off.</p></details>
+        <details><summary>Is it safe?</summary><p>Only full admins of this panel can set it up, and it uses the Claude account shown at the top of this page. Claude runs on the server itself, so treat access to that Claude account like the server's admin password.</p></details>
+        <details><summary>Something's wrong?</summary><p>Press <strong>Session</strong> on a linked folder to see Claude Code's screen on the server. If a link says <em>Stopped with an error</em>, press Start again. If it keeps happening, Unlink it and link it again.</p></details>
+      </div>
+    </section>
+  </div>
+</section>
+
+<!-- Claude Code session viewer (answers Claude Code's terminal questions) -->
+<div class="modal-overlay tx-overlay" id="cc-modal">
+  <div class="tx-modal tx-modal-lg">
+    <div class="tx-modal-head">
+      <div class="tx-modal-icon"><svg viewBox="0 0 24 24"><path d="M4 17l6-5-6-5M12 19h8"/></svg></div>
+      <div><h3 id="cc-m-title">Claude Code</h3><p id="cc-m-sub"></p></div>
+      <button class="tx-x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="tx-modal-body" style="gap:12px">
+      <div id="cc-m-ask"></div>
+      <div class="tx-term"><div class="tx-term-bar"><i></i><i></i><i></i><span id="cc-m-term">session</span></div><pre id="cc-m-screen" style="height:330px;max-height:none"></pre></div>
+      <form class="txp-row" id="cc-m-form" autocomplete="off">
+        <div class="tx-field" style="flex:1"><input type="text" id="cc-m-input" placeholder="Type a reply (sent with Enter)…" spellcheck="false"></div>
+        <button class="tx-btn tx-btn-primary tx-btn-sm" type="submit">Send</button>
+      </form>
+      <div class="txp-chips" id="cc-m-keys">
+        <button class="txp-chipbtn" data-k="Enter">Enter</button><button class="txp-chipbtn" data-k="Up">↑</button><button class="txp-chipbtn" data-k="Down">↓</button>
+        <button class="txp-chipbtn" data-k="Escape">Esc</button><button class="txp-chipbtn" data-k="C-c">Ctrl+C</button>
+      </div>
+    </div>
+    <div class="tx-modal-foot"><span class="tx-foot-status" id="cc-m-status"></span>
+      <button class="tx-btn tx-btn-ghost" type="button" data-close>Close</button></div>
+  </div>
+</div>
+
+<!-- ======================= API ======================= -->
+<section class="txp-pane" data-pane="api" hidden>
+  <div class="tx-two">
+    <section class="tx-panel">
+      <div class="tx-panel-head"><div class="grow"><h3>API tokens</h3><p>For scripts, bots and other apps</p></div>
+        <button class="tx-btn tx-btn-primary tx-btn-sm" id="token-new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New token</button></div>
+      <div id="token-created" style="display:none" class="tx-panel-body"></div>
+      <div id="token-list"><div class="txp-loading"><span class="tx-spinner"></span></div></div>
+    </section>
+    <div class="tx-term"><div class="tx-term-bar"><i></i><i></i><i></i><span>quick start</span>
+      <button class="tx-copy" type="button" id="api-copy" title="Copy" style="color:#8a90a3"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h10a1 1 0 011 1v1"/></svg></button></div>
+      <pre id="api-example"></pre></div>
+  </div>
+  <section class="tx-panel">
+    <div class="tx-panel-head"><div class="grow"><h3>Endpoints</h3><p>Base URL <code id="api-base"></code> · this server's id is <code>{{ inst.id }}</code></p></div></div>
+    <div style="overflow-x:auto"><table class="tx-table txp-api-table"><thead><tr><th>Method</th><th>Path</th><th>Body / query</th><th>Does</th></tr></thead><tbody id="api-endpoints"></tbody></table></div>
+  </section>
+</section>
+
+</div>
+
+<!-- VS Code-style resource file editor -->
+<div class="txe-overlay" id="txe" hidden>
+  <div class="txe-backdrop" id="txe-backdrop" title="Click to close the editor"></div>
+  <div class="txe-win" role="dialog" aria-label="Resource editor">
+    <div class="txe-titlebar">
+      <span class="txe-dots"><i></i><i></i><i></i></span>
+      <span class="txe-wintitle" id="txe-wintitle">editor</span>
+      <span class="spacer"></span>
+      <label class="txe-switch" title="Save automatically one second after you stop typing"><input type="checkbox" id="txe-autosave"><span class="track"><span class="knob"></span></span>Auto save</label>
+      <button class="txe-tbtn" id="txe-save" title="Save (Ctrl+S)">Save</button>
+      <button class="txe-tbtn" id="txe-saveall" title="Save all (Ctrl+Alt+S)">Save all</button>
+      <button class="txe-tbtn accent" id="txe-restart" title="Save all and restart this resource (Ctrl+Shift+R)">Save &amp; restart</button>
+      <button class="txe-tbtn icon" id="txe-close" title="Close editor (back to resources)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="txe-body">
+      <aside class="txe-explorer">
+        <div class="txe-ex-title">Explorer</div>
+        <div class="txe-ex-res" id="txe-res"></div>
+        <div class="txe-ex-filter"><input type="text" id="txe-filter" placeholder="Filter files…" spellcheck="false"></div>
+        <div class="txe-tree" id="txe-tree"></div>
+      </aside>
+      <section class="txe-main">
+        <div class="txe-tabs" id="txe-tabs"></div>
+        <div class="txe-crumb" id="txe-crumb"></div>
+        <div class="txe-edwrap"><div id="txe-editor"></div>
+          <div class="txe-welcome" id="txe-welcome">
+            <div class="txe-wl-logo"><svg viewBox="0 0 24 24"><path d="M8 6L2 12l6 6M16 6l6 6-6 6"/></svg></div>
+            <div class="txe-keys">
+              <div><span>Quick open file</span><kbd>Ctrl</kbd><kbd>P</kbd></div>
+              <div><span>Save</span><kbd>Ctrl</kbd><kbd>S</kbd></div>
+              <div><span>Find / replace</span><kbd>Ctrl</kbd><kbd>F</kbd> <kbd>Ctrl</kbd><kbd>H</kbd></div>
+              <div><span>Command palette</span><kbd>F1</kbd></div>
+              <div><span>Go to line</span><kbd>Ctrl</kbd><kbd>G</kbd></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <div class="txe-status">
+      <span class="txe-st-res" id="txe-st-res"></span>
+      <span id="txe-st-save"></span>
+      <span class="spacer"></span>
+      <span id="txe-st-pos"></span><span>Spaces: <b id="txe-st-tab">4</b></span><span>UTF-8</span><span id="txe-st-eol">LF</span><span id="txe-st-lang"></span>
+    </div>
+    <div class="txe-quick" id="txe-quick" hidden>
+      <input type="text" id="txe-quick-input" placeholder="Search files by name…" spellcheck="false">
+      <div class="txe-quick-list" id="txe-quick-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Player drawer -->
+<div class="modal-overlay tx-overlay txp-drawer-overlay" id="player-modal">
+  <aside class="txp-drawer txp">
+    <div class="txp-drawer-head">
+      <div class="tx-avatar" id="pm-avatar">?</div>
+      <div style="flex:1;min-width:0"><h3 id="pm-title">Player</h3><p id="pm-sub"></p></div>
+      <button class="tx-x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="txp-drawer-body" id="pm-body"></div>
+  </aside>
+</div>
+
+<!-- Prompt modal -->
+<div class="modal-overlay tx-overlay" id="prompt-modal">
+  <div class="tx-modal tx-modal-sm">
+    <div class="tx-modal-head">
+      <div class="tx-modal-icon" id="prompt-icon"></div>
+      <div><h3 id="prompt-title"></h3><p id="prompt-sub"></p></div>
+      <button class="tx-x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <form id="prompt-form" class="tx-modal-body" autocomplete="off"></form>
+    <div class="tx-modal-foot"><span class="tx-foot-status"></span>
+      <button class="tx-btn tx-btn-ghost" type="button" data-close>Cancel</button><button class="tx-btn tx-btn-primary" type="button" id="prompt-ok">OK</button></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/txadmin.css') }}?v=2">
+<style>
+  .txp-pane { display: flex; flex-direction: column; gap: 16px; }
+  .txp-pane[hidden] { display: none; }
+  .txp-pane .tx-two > div > .tx-panel + .tx-panel, .txp-pane .tx-two > div > .tx-panel { margin-top: 0; }
+  .txp-pane .tx-two > div { display: flex; flex-direction: column; gap: 16px; }
+  .txp-pane .tx-panel + .tx-panel { margin-top: 0; }
+  .txp-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .txp-row .spacer, .txp-filters .spacer { flex: 1; }
+  .txp-row .tx-field input { height: 34px; }
+  .tx-field input[type=time] { width: 100%; height: 34px; padding: 0 12px; border-radius: 10px; background: var(--bg-void); border: 1px solid var(--border-strong); color: var(--text-primary); font-family: var(--font-mono); color-scheme: dark; }
+  :root[data-mode="light"] .tx-field input[type=time] { color-scheme: light; }
+  .txp-counter { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+  .txp-note { font-size: 12px; color: var(--text-muted); margin: 12px 0 0; line-height: 1.55; }
+  .txp-loading { display: grid; place-items: center; padding: 34px; }
+  .txp-empty { padding: 34px 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+  .txp-empty svg { width: 26px !important; height: 26px !important; display: block; margin: 0 auto 10px; opacity: .6; }
+  .txp-more { text-align: center; }
+  .txp-more .tx-btn { margin: 0 0 16px; }
+
+  .txp-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .txp-chipbtn { height: 32px; padding: 0 14px; border-radius: 99px; border: 1px solid var(--border-subtle); background: var(--bg-panel-raised); color: var(--text-secondary);
+    font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: var(--font-mono); transition: all .15s; }
+  .txp-chipbtn:hover { color: var(--accent-bright); border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: var(--accent-dim); }
+
+  .txp-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 12px 20px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-panel-raised); }
+  .txp-filters .tx-search { height: 34px; max-width: 320px; background: var(--bg-panel); }
+  .txp-filters .tx-seg { background: var(--bg-panel); }
+  .txp-filters .tx-seg button { height: 26px; }
+  .txp-filters .tx-field input { height: 34px; width: 180px; }
+  .txp-select { height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--border-subtle); background: var(--bg-panel); color: var(--text-primary); font-size: 12.5px; }
+  .txp-mini-search { height: 32px; max-width: 220px; min-width: 160px; }
+
+  /* players */
+  .txp-player { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .txp-pav { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--text-primary);
+    background: var(--bg-panel-hover); border: 1px solid var(--border-subtle); font-family: var(--font-display); }
+  .txp-pname { font-size: 13.5px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .txp-pname:hover { color: var(--accent-bright); cursor: pointer; }
+  .txp-psub { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+  .txp-acts { display: flex; gap: 4px; justify-content: flex-end; opacity: .85; }
+  .tx-table tr:hover .txp-acts { opacity: 1; }
+  .txp-id { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); }
+  .tx-badge.bad { color: var(--danger); background: var(--danger-dim); } .tx-badge.accent { color: var(--accent-bright); background: var(--accent-dim); }
+  .txp-wrap { white-space: normal; max-width: 360px; line-height: 1.45; }
+
+  /* console */
+  .txp-console-term { display: flex; flex-direction: column; height: calc(100vh - 330px); min-height: 440px; }
+  .txp-console-term pre { flex: 1; max-height: none; }
+  .txp-console-input { display: flex; gap: 10px; align-items: center; padding: 10px 12px; background: #0f1116; border-top: 1px solid #1c1f28; }
+  .txp-console-input input { flex: 1; height: 36px; background: #08090c; border: 1px solid #262a35; border-radius: 9px; color: #e5e7eb; padding: 0 12px; font-family: var(--font-mono); font-size: 13px; }
+  .txp-console-input input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+  .txp-prompt { font-family: var(--font-mono); color: var(--accent-bright); font-size: 15px; }
+  .ansi-30 { color: #6b7280 } .ansi-31 { color: #f87171 } .ansi-32 { color: #4ade80 } .ansi-33 { color: #facc15 } .ansi-34 { color: #60a5fa } .ansi-35 { color: #e879f9 } .ansi-36 { color: #22d3ee } .ansi-37 { color: #e5e7eb }
+  .ansi-90 { color: #9ca3af } .ansi-91 { color: #fca5a5 } .ansi-92 { color: #86efac } .ansi-93 { color: #fde68a } .ansi-94 { color: #93c5fd } .ansi-95 { color: #f0abfc } .ansi-96 { color: #67e8f9 } .ansi-97 { color: #fff }
+  .ansi-b { font-weight: 700 } .txp-me { color: var(--accent-bright); }
+
+  /* resources */
+  .txp-res { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; padding: 16px 20px; }
+  .txp-res-item { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 6px 0 12px; border-radius: 10px; border: 1px solid var(--border-subtle); background: var(--bg-panel-raised); transition: border-color .15s; }
+  .txp-res-item:hover { border-color: var(--border-strong); }
+  .txp-res-item i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+  .txp-res-item span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 12.5px; color: var(--text-primary); }
+  .txp-res-item .tx-copy { width: 28px; height: 28px; opacity: 0; }
+  .txp-res-item:hover .tx-copy { opacity: .8; }
+  .txp-res-item .tx-copy.stop:hover { color: var(--danger); }
+
+  /* resources: folder tree + grouped list */
+  .txr { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .txr { grid-template-columns: 1fr; } .txr-tree-panel { position: static !important; max-height: 300px; } }
+  .txr-tree-panel { position: sticky; top: 16px; max-height: calc(100vh - 32px); display: flex; flex-direction: column; margin: 0 !important; }
+  .txr-main { margin: 0 !important; }
+  .txr-tree { overflow-y: auto; padding: 8px; }
+  .txr-node { display: flex; align-items: center; gap: 6px; width: 100%; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: none; cursor: pointer;
+    color: var(--text-secondary); font-size: 12.5px; font-family: var(--font-mono); text-align: left; }
+  .txr-node:hover { background: var(--bg-panel-hover); color: var(--text-primary); }
+  .txr-node.on { background: var(--accent-dim); color: var(--accent-bright); }
+  .txr-node .caret { width: 14px; height: 14px; display: grid; place-items: center; color: var(--text-muted); transition: transform .12s; flex-shrink: 0; }
+  .txr-node .caret.open { transform: rotate(90deg); }
+  .txr-node .caret.none { visibility: hidden; }
+  .txr-node .lbl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .txr-node .ct { font-size: 10.5px; color: var(--text-muted); white-space: nowrap; }
+  .txr-node.on .ct { color: inherit; opacity: .8; }
+  .txr-node .ct b { color: var(--ok); font-weight: 600; }
+  .txr-node.root { font-family: var(--font-body); font-weight: 600; margin-bottom: 4px; }
+  .txr-node svg { width: 14px !important; height: 14px !important; }
+  .txr-kids { margin-left: 12px; padding-left: 6px; border-left: 1px solid var(--border-subtle); }
+
+  .txr-bulk { display: flex; gap: 6px; flex-wrap: wrap; }
+  .txr-bulk .n { font-family: var(--font-mono); font-size: 10.5px; opacity: .7; }
+  .txr-bulk .tx-btn:disabled { opacity: .4; }
+  .txr-sep { width: 1px; height: 22px; background: var(--border-subtle); }
+  .txr-gacts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .txr-gacts .tx-btn { height: 28px; padding: 0 10px; font-size: 12px; }
+  .txr-gacts .tx-btn svg { width: 13px !important; height: 13px !important; }
+  .txr-gacts .tx-btn .n { font-family: var(--font-mono); font-size: 10.5px; opacity: .7; }
+  .txr-gacts .tx-btn:disabled { opacity: .35; }
+  @media (max-width: 700px) { .txr-ghead { flex-wrap: wrap; } .txr-gacts { order: 5; width: 100%; padding-left: 24px; } }
+  .txr-busy { pointer-events: none; opacity: .6; }
+  .txr-group + .txr-group { border-top: 1px solid var(--border-subtle); }
+  .txr-ghead { display: flex; align-items: center; gap: 10px; padding: 12px 20px; cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 1; background: var(--bg-panel); }
+  .txr-ghead:hover { background: var(--bg-panel-raised); }
+  .txr-ghead .caret { color: var(--text-muted); transition: transform .12s; display: grid; place-items: center; }
+  .txr-ghead .caret svg { width: 14px !important; height: 14px !important; }
+  .txr-group.open .txr-ghead .caret { transform: rotate(90deg); }
+  .txr-path { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-primary); font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .txr-path span { color: var(--text-muted); font-weight: 400; }
+  .txr-meter { width: 70px; height: 5px; border-radius: 99px; background: var(--bg-panel-hover); overflow: hidden; }
+  .txr-meter i { display: block; height: 100%; background: var(--ok); border-radius: 99px; }
+  .txr-gct { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); width: 52px; text-align: right; }
+  .txr-group:not(.open) .txp-res { display: none; }
+  .txr-group .txp-res { padding: 0 20px 16px; }
+  .txp-res-item.off { opacity: .62; } .txp-res-item.off i { background: var(--text-muted); }
+  .txp-res-item.off:hover { opacity: 1; }
+  .txp-res-item mark { background: var(--warn-dim); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+  /* cfg editor */
+  .txc { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
+  @media (max-width: 1100px) { .txc { grid-template-columns: 1fr; } .txc-side { position: static !important; } }
+  .txc-main, .txc-side { margin: 0 !important; }
+  .txc-main { display: flex; flex-direction: column; height: calc(100vh - 330px); min-height: 480px; }
+  .txc-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap; }
+  .txc-bar .spacer { flex: 1; }
+  .txc-files { display: flex; gap: 4px; flex-wrap: wrap; }
+  .txc-file { height: 30px; padding: 0 12px; border-radius: 8px; border: 1px solid transparent; background: none; color: var(--text-muted); font-family: var(--font-mono); font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .txc-file:hover { color: var(--text-primary); background: var(--bg-panel-hover); }
+  .txc-file.on { color: var(--text-primary); background: var(--bg-panel-raised); border-color: var(--border-subtle); }
+  .txc-file .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+  .txc-state { font-size: 12px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px; }
+  .txc-state.dirty { color: var(--warn); }
+  .txc-state.saved { color: var(--ok); }
+  .txc-editor-wrap { flex: 1; min-height: 0; position: relative; }
+  #cfg-editor { position: absolute; inset: 0; }
+  #cfg-fallback { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; resize: none; padding: 12px 16px; background: var(--bg-void); color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; line-height: 1.6; outline: none; }
+  .txc-empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px; }
+  .txc-foot { display: flex; gap: 10px; padding: 6px 14px; border-top: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); background: var(--bg-panel-raised); }
+  .txc-foot .spacer { flex: 1; }
+  .txc-foot span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .txc-side { position: sticky; top: 16px; max-height: calc(100vh - 32px); display: flex; flex-direction: column; }
+  .txc-outline { overflow-y: auto; padding: 6px 8px 10px; flex: 1; }
+  .txc-sec { font-size: 10.5px; text-transform: uppercase; letter-spacing: .09em; color: var(--text-muted); font-weight: 700; padding: 10px 8px 4px; display: flex; justify-content: space-between; }
+  .txc-line { display: flex; gap: 8px; align-items: baseline; width: 100%; padding: 4px 8px; border: 0; background: none; border-radius: 6px; cursor: pointer; text-align: left; font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+  .txc-line:hover { background: var(--bg-panel-hover); color: var(--text-primary); }
+  .txc-line .ln { color: var(--text-muted); font-size: 10.5px; width: 26px; flex-shrink: 0; text-align: right; }
+  .txc-line .tx { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .txc-line .tx b { color: var(--accent-bright); font-weight: 500; }
+  .txc-tip { margin: 0 12px 12px; padding: 10px 12px; border-radius: 10px; background: var(--bg-panel-raised); border: 1px solid var(--border-subtle); font-size: 11.5px; line-height: 1.55; color: var(--text-muted); }
+  .txc-tip strong { color: var(--text-secondary); }
+  #cfg-msg { white-space: pre-wrap; }
+
+  /* resource tiles: edit affordance */
+  .txp-res-item .txr-name { cursor: pointer; }
+  .txp-res-item .txr-name:hover { color: var(--accent-bright); text-decoration: underline; text-underline-offset: 3px; }
+  .txr-cfg { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; letter-spacing: .04em; padding: 2px 5px; border-radius: 4px; color: var(--data); background: var(--data-dim); flex-shrink: 0; cursor: pointer; }
+  .txp-res-item .tx-copy.edit { opacity: .55; }
+  .txp-res-item:hover .tx-copy.edit { opacity: 1; color: var(--accent-bright); }
+
+  /* VS Code-style editor overlay (always dark, like the console) */
+  .txe-overlay { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 28px; }
+  .txe-overlay[hidden] { display: none; }
+  .txe-backdrop { position: absolute; inset: 0; background: rgba(4, 5, 8, .62); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); cursor: zoom-out; animation: txe-fade .15s ease-out; }
+  @keyframes txe-fade { from { opacity: 0; } }
+  .txe-win { position: relative; width: min(1500px, 100%); height: min(940px, 100%); display: flex; flex-direction: column; border-radius: 12px; overflow: hidden;
+    background: #1e1e1e; border: 1px solid #2b2b2b; box-shadow: 0 50px 120px -30px rgba(0,0,0,.85); animation: tx-pop .18s ease-out; color: #cccccc; font-family: var(--font-body); }
+  @media (max-width: 720px) { .txe-overlay { padding: 0; } .txe-win { border-radius: 0; } .txe-explorer { display: none; } }
+  .txe-win svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .txe-titlebar { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 10px 0 14px; background: #181818; border-bottom: 1px solid #2b2b2b; flex-shrink: 0; }
+  .txe-titlebar .spacer, .txe-status .spacer { flex: 1; }
+  .txe-dots { display: flex; gap: 7px; } .txe-dots i { width: 11px; height: 11px; border-radius: 50%; }
+  .txe-dots i:nth-child(1) { background: #ff5f57; } .txe-dots i:nth-child(2) { background: #febc2e; } .txe-dots i:nth-child(3) { background: #28c840; }
+  .txe-wintitle { font-size: 12.5px; color: #9d9d9d; margin-left: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .txe-tbtn { height: 26px; padding: 0 11px; border-radius: 5px; border: 1px solid #3c3c3c; background: #2a2a2a; color: #cccccc; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .txe-tbtn:hover:not(:disabled) { background: #333; color: #fff; }
+  .txe-tbtn:disabled { opacity: .45; cursor: default; }
+  .txe-tbtn.accent { background: #0e639c; border-color: #1177bb; color: #fff; } .txe-tbtn.accent:hover:not(:disabled) { background: #1177bb; }
+  .txe-tbtn.icon { width: 30px; padding: 0; justify-content: center; border-color: transparent; background: none; }
+  .txe-tbtn.icon:hover { background: #c42b1c; color: #fff; }
+  .txe-switch { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #9d9d9d; cursor: pointer; margin-right: 6px; user-select: none; }
+  .txe-switch input { display: none; }
+  .txe-switch .track { width: 28px; height: 16px; border-radius: 99px; background: #3c3c3c; position: relative; transition: background .15s; }
+  .txe-switch .knob { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #9d9d9d; transition: transform .15s, background .15s; }
+  .txe-switch input:checked + .track { background: #0e639c; } .txe-switch input:checked + .track .knob { transform: translateX(12px); background: #fff; }
+  .txe-switch input:checked ~ * { color: #fff; }
+
+  .txe-body { flex: 1; min-height: 0; display: flex; }
+  .txe-explorer { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; background: #181818; border-right: 1px solid #2b2b2b; }
+  .txe-ex-title { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #9d9d9d; padding: 10px 16px 6px; }
+  .txe-ex-res { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #cccccc; padding: 4px 16px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .txe-ex-res span { color: #6e6e6e; font-weight: 400; text-transform: none; letter-spacing: 0; }
+  .txe-ex-filter { padding: 0 10px 8px; }
+  .txe-ex-filter input { width: 100%; height: 26px; background: #313131; border: 1px solid #3c3c3c; border-radius: 4px; color: #ccc; padding: 0 8px; font-size: 12px; outline: none; }
+  .txe-ex-filter input:focus { border-color: #0078d4; }
+  .txe-tree { flex: 1; overflow-y: auto; padding-bottom: 12px; font-size: 13px; }
+  .txe-node { display: flex; align-items: center; gap: 5px; height: 22px; padding-right: 8px; cursor: pointer; white-space: nowrap; color: #cccccc; border: 1px solid transparent; }
+  .txe-node:hover { background: #2a2d2e; }
+  .txe-node.on { background: #37373d; border-color: #0078d4; }
+  .txe-node.off { color: #6e6e6e; cursor: default; }
+  .txe-node .cv { width: 16px; display: grid; place-items: center; color: #9d9d9d; transition: transform .1s; }
+  .txe-node .cv.open { transform: rotate(90deg); }
+  .txe-node .nm { overflow: hidden; text-overflow: ellipsis; }
+  .txe-node .dirty { width: 8px; height: 8px; border-radius: 50%; background: #e2c08d; margin-left: auto; flex-shrink: 0; }
+  .txe-ic { width: 16px; text-align: center; font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; flex-shrink: 0; }
+  .txe-ic.lua { color: #569cd6; } .txe-ic.js { color: #f1e05a; } .txe-ic.ts { color: #3178c6; } .txe-ic.json { color: #cbcb41; } .txe-ic.cfg { color: #a074c4; }
+  .txe-ic.html { color: #e37933; } .txe-ic.css { color: #519aba; } .txe-ic.md { color: #519aba; } .txe-ic.sql { color: #dad8d8; } .txe-ic.yml { color: #a074c4; } .txe-ic.xml { color: #e37933; } .txe-ic.bin { color: #6e6e6e; }
+  .txe-ic.dir { color: #dcb67a; }
+
+  .txe-main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: #1e1e1e; }
+  .txe-tabs { display: flex; height: 35px; background: #181818; overflow-x: auto; flex-shrink: 0; scrollbar-width: thin; }
+  .txe-tabs:empty { display: none; }
+  .txe-tab { display: flex; align-items: center; gap: 6px; padding: 0 8px 0 12px; min-width: 0; max-width: 220px; height: 35px; cursor: pointer; font-size: 13px; color: #9d9d9d;
+    background: #181818; border-right: 1px solid #2b2b2b; border-top: 1px solid transparent; flex-shrink: 0; }
+  .txe-tab.on { background: #1e1e1e; color: #fff; border-top-color: #0078d4; }
+  .txe-tab .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .txe-tab .x { width: 20px; height: 20px; border-radius: 4px; display: grid; place-items: center; color: inherit; opacity: 0; border: 0; background: none; cursor: pointer; padding: 0; }
+  .txe-tab:hover .x, .txe-tab.on .x { opacity: 1; }
+  .txe-tab .x:hover { background: #3c3c3c; }
+  .txe-tab .x svg { width: 13px; height: 13px; }
+  .txe-tab.dirty .x::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #cccccc; }
+  .txe-tab.dirty .x svg { display: none; }
+  .txe-tab.dirty .x:hover::before { display: none; } .txe-tab.dirty .x:hover svg { display: block; }
+  .txe-crumb { height: 22px; display: flex; align-items: center; gap: 4px; padding: 0 14px; font-size: 12px; color: #9d9d9d; flex-shrink: 0; }
+  .txe-crumb:empty { display: none; }
+  .txe-crumb b { color: #cccccc; font-weight: 400; }
+  .txe-edwrap { flex: 1; min-height: 0; position: relative; }
+  #txe-editor { position: absolute; inset: 0; }
+  .txe-welcome { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; background: #1e1e1e; }
+  .txe-wl-logo svg { width: 90px; height: 90px; color: #2b2b2b; stroke-width: 1.4; }
+  .txe-keys { display: grid; gap: 10px; font-size: 13px; color: #9d9d9d; }
+  .txe-keys div { display: flex; align-items: center; gap: 6px; } .txe-keys span { width: 150px; text-align: right; margin-right: 10px; }
+  .txe-keys kbd { font-family: var(--font-mono); font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #2a2a2a; border: 1px solid #3c3c3c; border-bottom-width: 2px; color: #cccccc; }
+
+  .txe-status { display: flex; align-items: center; gap: 14px; height: 24px; padding: 0 12px; background: #0e639c; color: #fff; font-size: 12px; flex-shrink: 0; white-space: nowrap; overflow: hidden; }
+  .txe-status.warn { background: #8a5a00; }
+  .txe-st-res { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+  .txe-status b { font-weight: 400; }
+
+  .txe-quick { position: absolute; top: 46px; left: 50%; transform: translateX(-50%); width: min(600px, 92%); background: #252526; border: 1px solid #454545; border-radius: 8px;
+    box-shadow: 0 16px 40px rgba(0,0,0,.6); z-index: 5; padding: 6px; }
+  .txe-quick[hidden] { display: none; }
+  .txe-quick input { width: 100%; height: 30px; background: #313131; border: 1px solid #0078d4; border-radius: 4px; color: #fff; padding: 0 10px; font-size: 13px; outline: none; }
+  .txe-quick-list { max-height: 360px; overflow-y: auto; margin-top: 6px; }
+  .txe-qi { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #cccccc; }
+  .txe-qi .dir { color: #8b8b8b; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .txe-qi.on, .txe-qi:hover { background: #04395e; }
+  .txe-qi mark { background: none; color: #2aaaff; font-weight: 700; }
+
+  /* claude code */
+  .txcc-hero { margin: 0 !important; background: radial-gradient(120% 180% at 100% 0%, color-mix(in srgb, #d97757 16%, transparent), transparent 60%), var(--bg-panel) !important; }
+  .txcc-hero-in { display: flex; gap: 16px; align-items: center; padding: 20px 22px; flex-wrap: wrap; }
+  .txcc-hero-in .grow { flex: 1; min-width: 240px; }
+  .txcc-hero h3 { margin: 0; font-size: 16px; color: var(--text-primary); font-weight: 700; }
+  .txcc-hero p { margin: 5px 0 0; font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+  .txcc-logo { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; background: linear-gradient(135deg, #e3906f, #c15f3c); color: #fff; box-shadow: 0 10px 24px -12px #d97757; }
+  .txcc-logo svg { width: 24px !important; height: 24px !important; }
+  .txcc-acct { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--bg-panel-raised); font-size: 12.5px; }
+  .txcc-acct .who { line-height: 1.35; } .txcc-acct .who b { color: var(--text-primary); display: block; font-size: 13px; } .txcc-acct .who span { color: var(--text-muted); }
+  .txcc-link { display: flex; gap: 12px; align-items: flex-start; padding: 14px 20px; }
+  .txcc-link + .txcc-link { border-top: 1px solid var(--border-subtle); }
+  .txcc-link-ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; background: var(--bg-panel-hover); color: var(--text-muted); }
+  .txcc-link-ico.ok { background: var(--ok-dim); color: var(--ok); } .txcc-link-ico.warn { background: var(--warn-dim); color: var(--warn); } .txcc-link-ico.bad { background: var(--danger-dim); color: var(--danger); }
+  .txcc-link-main { flex: 1; min-width: 0; }
+  .txcc-link-t { font-weight: 650; color: var(--text-primary); font-size: 13.5px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .txcc-link-d { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .txcc-link-a { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .txcc-ask { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 14px; border-radius: 12px; background: var(--warn-dim); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); font-size: 13px; color: var(--text-primary); }
+  .txcc-ask strong { flex: 1; min-width: 200px; }
+  .txcc-how { margin: 18px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; }
+  .txr-cc { color: #d97757 !important; }
+
+  .txcc-cta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 22px; border-top: 1px solid var(--border-subtle); background: color-mix(in srgb, var(--ok) 8%, transparent); }
+  .txcc-cta .grow { flex: 1; min-width: 220px; font-size: 13px; color: var(--text-secondary); }
+  .txcc-cta .grow strong { color: var(--text-primary); display: block; font-size: 14px; margin-bottom: 2px; }
+  .txcc-cta .tx-btn { height: 42px; padding: 0 20px; font-size: 14px; }
+  .txcc-steps { list-style: none; margin: 0; padding: 6px 0; }
+  .txcc-step { display: flex; gap: 14px; align-items: center; padding: 12px 20px; }
+  .txcc-step + .txcc-step { border-top: 1px solid var(--border-subtle); }
+  .txcc-step .num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-weight: 700; font-size: 13px; font-family: var(--font-mono);
+    background: var(--bg-panel-raised); border: 2px solid var(--border-strong); color: var(--text-muted); }
+  .txcc-step.done .num { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .txcc-step.now .num { border-color: var(--accent); color: var(--accent-bright); box-shadow: 0 0 0 4px var(--accent-dim); }
+  .txcc-step .num svg { width: 15px !important; height: 15px !important; stroke-width: 3; }
+  .txcc-step .body { flex: 1; min-width: 0; }
+  .txcc-step .t { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .txcc-step.done .t { color: var(--text-secondary); }
+  .txcc-step .d { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; line-height: 1.5; }
+  .txcc-step:not(.now):not(.done) { opacity: .6; }
+  .txcc-hint { margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: var(--bg-panel-raised); border: 1px solid var(--border-subtle); font-size: 12.5px; color: var(--text-secondary); line-height: 1.55; }
+  .txcc-examples { padding: 8px 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .txcc-ex { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-subtle); background: var(--bg-panel-raised); font-size: 13px; color: var(--text-primary); }
+  .txcc-ex .tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); width: 62px; flex-shrink: 0; }
+  .txcc-ex span.q { flex: 1; min-width: 0; line-height: 1.45; }
+  .txcc-faq { padding: 6px 20px 14px; }
+  .txcc-faq details { border-bottom: 1px solid var(--border-subtle); }
+  .txcc-faq details:last-child { border-bottom: 0; }
+  .txcc-faq summary { cursor: pointer; list-style: none; padding: 12px 0; font-size: 13.5px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+  .txcc-faq summary::-webkit-details-marker { display: none; }
+  .txcc-faq summary::before { content: "›"; font-size: 17px; line-height: 1; color: var(--text-muted); transition: transform .15s; width: 10px; }
+  .txcc-faq details[open] summary::before { transform: rotate(90deg); }
+  .txcc-faq p { margin: 0 0 12px 18px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+  .txcc-all { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 12px 14px; border-radius: 12px; border: 1px dashed var(--border-strong); }
+  .txcc-all .grow { flex: 1; min-width: 0; font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
+  .txcc-all .grow strong { display: block; color: var(--text-primary); font-size: 13.5px; }
+
+  /* live errors */
+  .txe-badge { background: var(--danger-dim) !important; color: var(--danger) !important; }
+  .txer { display: flex; gap: 12px; padding: 12px 20px; align-items: flex-start; }
+  .txer + .txer { border-top: 1px solid var(--border-subtle); }
+  .txer-ico { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex-shrink: 0; background: var(--danger-dim); color: var(--danger); }
+  .txer-main { flex: 1; min-width: 0; }
+  .txer-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+  .txer-h b { font-family: var(--font-mono); color: var(--text-primary); }
+  .txer-h .loc { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); }
+  .txer-h .cnt { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; color: var(--danger); background: var(--danger-dim); padding: 1px 6px; border-radius: 5px; }
+  .txer-h .when { margin-left: auto; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .txer-msg { font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; line-height: 1.45; word-break: break-word; }
+  .txer-msg .why { display: block; color: var(--danger); margin-top: 2px; font-family: var(--font-mono); font-size: 11.5px; }
+  .txer-det { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: #08090c; color: #c9ced9; font-family: var(--font-mono); font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow: auto; display: none; }
+  .txer.open .txer-det { display: block; }
+  .txer-a { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .txer-a .sent { font-size: 11.5px; color: var(--ok); display: inline-flex; align-items: center; gap: 4px; }
+  .txp-res-item .txr-err { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; padding: 2px 5px; border-radius: 4px; color: var(--danger); background: var(--danger-dim); cursor: pointer; flex-shrink: 0; }
+
+  /* drawer */
+  .txp-drawer-overlay { justify-content: flex-end !important; align-items: stretch !important; padding: 0 !important; }
+  .txp-drawer { width: min(520px, 100vw); height: 100vh; display: flex; flex-direction: column; background: var(--bg-panel); border-left: 1px solid var(--border-subtle); box-shadow: -30px 0 60px -30px rgba(0,0,0,.6); }
+  .txp-drawer-overlay.open .txp-drawer { animation: txp-slide .22s ease-out; }
+  @keyframes txp-slide { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .txp-drawer-head { display: flex; gap: 14px; align-items: center; padding: 20px; border-bottom: 1px solid var(--border-subtle);
+    background: radial-gradient(120% 160% at 100% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%); }
+  .txp-drawer-head h3 { margin: 0; font-size: 17px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .txp-drawer-head p { margin: 4px 0 0; font-size: 12.5px; color: var(--text-muted); }
+  .txp-drawer-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+  .txp-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; border-radius: 12px; overflow: hidden; background: var(--border-subtle); border: 1px solid var(--border-subtle); }
+  .txp-stats > div { background: var(--bg-panel-raised); padding: 10px 12px; }
+  .txp-acts-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .txp-ids { border: 1px solid var(--border-subtle); border-radius: 12px; overflow: hidden; }
+  .txp-ids div { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 12px; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-secondary); background: var(--bg-panel-raised); }
+  .txp-ids div + div { border-top: 1px solid var(--border-subtle); }
+  .txp-ids div span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .txp-ids b { color: var(--text-muted); font-weight: 600; width: 64px; flex-shrink: 0; }
+  .txp-timeline { list-style: none; margin: 0; padding: 0; }
+  .txp-timeline li { position: relative; padding: 0 0 14px 22px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+  .txp-timeline li::before { content: ""; position: absolute; left: 4px; top: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+  .txp-timeline li.ban::before { background: var(--danger); }
+  .txp-timeline li:not(:last-child)::after { content: ""; position: absolute; left: 7px; top: 16px; bottom: 0; width: 2px; background: var(--border-subtle); }
+  .txp-timeline li.revoked { opacity: .5; }
+  .txp-timeline strong { color: var(--text-primary); }
+  .txp-timeline .meta { font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono); }
+
+  /* api */
+  .txp-api-table td { font-size: 12.5px; vertical-align: top; }
+  .txp-api-table td:nth-child(2) { font-family: var(--font-mono); white-space: nowrap; color: var(--text-primary); }
+  .txp-api-table td:nth-child(3) { font-family: var(--font-mono); font-size: 11.5px; }
+  .txp-method { display: inline-block; min-width: 48px; text-align: center; font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; padding: 3px 6px; border-radius: 6px; }
+  .txp-method.post { color: var(--warn); background: var(--warn-dim); } .txp-method.get { color: var(--ok); background: var(--ok-dim); } .txp-method.delete { color: var(--danger); background: var(--danger-dim); }
+  .txp-token { display: flex; gap: 8px; align-items: center; font-family: var(--font-mono); font-size: 12.5px; background: var(--bg-void); padding: 10px 8px 10px 12px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent); color: var(--text-primary); }
+  .txp-token span { flex: 1; min-width: 0; word-break: break-all; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+<script>
+(function () {
+  const SID = {{ inst.id }};
+  const NAME = {{ inst.name|tojson }};
+  const API = '/tx/api/v1';
+  const BASE = API + '/servers/' + SID;
+  const $ = (s, r) => (r || document).querySelector(s);
+  const csrf = () => document.getElementById('csrf_token').value;
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const enc = encodeURIComponent;
+
+  const P = {
+    copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h10a1 1 0 011 1v1"/>',
+    check: '<path d="M5 12l5 5 9-11"/>',
+    alert: '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0113 0M16 4.5a3.5 3.5 0 010 7M18.5 20a6.5 6.5 0 00-3-5.5"/>',
+    shield: '<path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6z"/>',
+    box: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>',
+    msg: '<path d="M21 12a8 8 0 01-11.6 7.1L3 21l1.9-6.4A8 8 0 1121 12z"/>',
+    boot: '<path d="M16 17l5-5-5-5M21 12H9M13 21H5a2 2 0 01-2-2V5a2 2 0 012-2h8"/>',
+    warn: '<path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
+    ban: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+    restart: '<path d="M21 12a9 9 0 11-2.6-6.36"/><path d="M21 3v6h-6"/>',
+    stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+    key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M18 5l3 3M15 8l2 2"/>',
+    trash: '<path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>',
+    star: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  };
+  const ico = (n) => '<svg viewBox="0 0 24 24">' + (P[n] || '') + '</svg>';
+  const initials = (n) => (String(n || '?').replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2) || '?').toUpperCase();
+  $('#hdr-avatar').textContent = initials(NAME);
+
+  async function call(method, path, body) {
+    const opts = { method, headers: {} };
+    if (method !== 'GET') { opts.headers['Content-Type'] = 'application/json'; opts.headers['X-CSRFToken'] = csrf(); opts.body = JSON.stringify(body || {}); }
+    let res, data;
+    try { res = await fetch(path, opts); } catch (e) { return { ok: false, error: 'Network error' }; }
+    try { data = await res.json(); } catch (e) { data = { ok: false, error: 'HTTP ' + res.status }; }
+    return data;
+  }
+  const get = (p) => call('GET', p);
+  const post = (p, b) => call('POST', p, b);
+
+  function toast(msg, kind) {
+    const el = document.createElement('div');
+    el.className = 'toast flash-' + (kind || 'success');
+    el.innerHTML = '<span>' + esc(msg) + '</span><span class="toast-close">&times;</span>';
+    const close = () => { el.style.opacity = '0'; setTimeout(() => el.remove(), 200); };
+    el.querySelector('.toast-close').addEventListener('click', close);
+    document.getElementById('toast-stack').appendChild(el);
+    setTimeout(close, kind === 'error' ? 8000 : 3500);
+  }
+  function report(r, okMsg) {
+    if (!r.ok) { toast(r.error || 'Failed', 'error'); return false; }
+    toast(r.message || okMsg || 'Done');
+    return true;
+  }
+  function copy(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (!btn) return toast('Copied');
+      const prev = btn.innerHTML; btn.classList.add('done'); btn.innerHTML = ico('check');
+      setTimeout(() => { btn.classList.remove('done'); btn.innerHTML = prev; }, 1300);
+    }, () => toast("Couldn't copy", 'error'));
+  }
+  document.addEventListener('click', (e) => { const b = e.target.closest('[data-copy]'); if (b) { e.preventDefault(); e.stopPropagation(); copy(b.dataset.copy, b); } });
+  const copyBtn = (v) => '<button class="tx-copy" type="button" data-copy="' + esc(v) + '" title="Copy">' + ico('copy') + '</button>';
+
+  const fmtDur = (ms) => {
+    if (ms == null || ms === false || isNaN(ms)) return '—';
+    let s = Math.floor(ms / 1000); const d = Math.floor(s / 86400); s %= 86400;
+    const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+    return d ? d + 'd ' + h + 'h' : h ? h + 'h ' + m + 'm' : m + 'm';
+  };
+  const fmtMin = (min) => min == null ? '—' : (min >= 60 ? Math.floor(min / 60) + 'h ' + (min % 60) + 'm' : min + 'm');
+  const fmtTs = (ts) => { if (!ts || typeof ts !== 'number') return '—'; const d = new Date(ts < 1e12 ? ts * 1000 : ts); return d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }); };
+  const rel = (ts) => {
+    if (!ts || typeof ts !== 'number') return '—';
+    const diff = Date.now() - (ts < 1e12 ? ts * 1000 : ts), s = Math.abs(diff) / 1000;
+    const v = s < 60 ? 'just now' : s < 3600 ? Math.floor(s / 60) + 'm' : s < 86400 ? Math.floor(s / 3600) + 'h' : Math.floor(s / 86400) + 'd';
+    return v === 'just now' ? v : (diff >= 0 ? v + ' ago' : 'in ' + v);
+  };
+  const empty = (icon, text) => '<div class="txp-empty">' + ico(icon) + text + '</div>';
+
+  // ---------------------------------------------------------------- modals
+  const openModal = (id) => document.getElementById(id).classList.add('open');
+  const closeModal = (id) => document.getElementById(id).classList.remove('open');
+  document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-close]')) m.classList.remove('open'); }));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); });
+
+  /* prompt({title, sub, icon, fields:[{name,label,type,value,placeholder,options,hint}], ok, danger, text}) -> values|null */
+  function prompt({ title, sub, icon, fields, ok, danger, text }) {
+    return new Promise(resolve => {
+      $('#prompt-title').textContent = title;
+      $('#prompt-sub').textContent = sub || '';
+      $('#prompt-icon').className = 'tx-modal-icon' + (danger ? ' danger' : '');
+      $('#prompt-icon').innerHTML = ico(icon || (danger ? 'alert' : 'info'));
+      const form = $('#prompt-form');
+      form.innerHTML = (text ? '<div class="tx-confirm-text">' + text + '</div>' : '') + (fields || []).map(f => {
+        let input;
+        if (f.type === 'select') input = '<select name="' + f.name + '">' + f.options.map(([v, l]) => '<option value="' + esc(v) + '"' + (v === f.value ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select>';
+        else if (f.type === 'textarea') input = '<textarea name="' + f.name + '" rows="' + (f.rows || 3) + '" placeholder="' + esc(f.placeholder || '') + '">' + esc(f.value || '') + '</textarea>';
+        else input = '<input type="text" name="' + f.name + '" value="' + esc(f.value || '') + '" placeholder="' + esc(f.placeholder || '') + '">';
+        return '<div class="tx-field"><label>' + esc(f.label) + '</label>' + input + (f.hint ? '<div class="hint">' + f.hint + '</div>' : '') + '</div>';
+      }).join('');
+      const btn = $('#prompt-ok'); btn.textContent = ok || 'OK'; btn.className = 'tx-btn ' + (danger ? 'tx-btn-danger' : 'tx-btn-primary');
+      let done = false;
+      const modal = $('#prompt-modal');
+      const obs = new MutationObserver(() => { if (!modal.classList.contains('open') && !done) { done = true; obs.disconnect(); resolve(null); } });
+      const submit = () => {
+        if (done) return; done = true; obs.disconnect();
+        const v = {}; form.querySelectorAll('[name]').forEach(el => { v[el.name] = el.value; });
+        closeModal('prompt-modal'); resolve(v);
+      };
+      btn.onclick = submit; form.onsubmit = (e) => { e.preventDefault(); submit(); };
+      openModal('prompt-modal'); obs.observe(modal, { attributes: true, attributeFilter: ['class'] });
+      const first = form.querySelector('input, textarea');
+      setTimeout(() => (first || btn).focus(), 60);
+    });
+  }
+
+  // ---------------------------------------------------------------- tabs
+  const TABS = ['dashboard', 'console', 'players', 'history', 'resources', 'config', 'claude', 'api'];
+  let activeTab = 'dashboard';
+  function showTab(name) {
+    activeTab = name;
+    document.querySelectorAll('#tabs .tx-tab').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+    document.querySelectorAll('.txp-pane').forEach(p => { p.hidden = p.dataset.pane !== name; });
+    try { history.replaceState(null, '', '#' + name); } catch (e) {}
+    if (name === 'console') { pollConsole(); setTimeout(() => $('#console-cmd').focus(), 50); }
+    if (name === 'players' && !playersSearched) searchPlayers(true);
+    if (name === 'history' && !historyLoaded) loadHistory(true);
+    if (name === 'resources') loadResources();
+    if (name === 'api') loadTokens();
+    if (name === 'config') openCfgTab();
+    if (name === 'claude') loadClaude();
+  }
+  document.querySelectorAll('#tabs .tx-tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  document.querySelectorAll('[data-goto]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); showTab(a.dataset.goto); }));
+
+  // ---------------------------------------------------------------- overview
+  let ov = null;
+  async function pollOverview() {
+    const r = await get(BASE);
+    const banner = $('#link-error');
+    if (!r.ok) {
+      banner.style.display = '';
+      banner.innerHTML = ico('alert') + '<div><strong>Can\'t reach txAdmin.</strong> ' + esc(r.error) +
+        (/login|password|saved/i.test(r.error) ? ' <a href="/tx#/i/' + SID + '/settings">Set or reset the txAdmin password →</a>' : '') + '</div>';
+      setHeader(null, true); return;
+    }
+    banner.style.display = 'none';
+    ov = r;
+    setHeader(r);
+    renderMetrics(r);
+    renderOnline(r.players);
+  }
+
+  function serverState(r) {
+    const st = r && r.status, svc = r && r.service;
+    if (!svc || !svc.active) return ['bad', 'Service stopped'];
+    if (!st) return ['warn', 'Connecting'];
+    if (st.configState && st.configState !== 'ready') return ['warn', 'Needs setup'];
+    if (st.runner && st.runner.isChildAlive) {
+      const h = (st.server && st.server.health) || '';
+      return h === 'ONLINE' ? ['ok', 'Online'] : ['warn', h ? h.charAt(0) + h.slice(1).toLowerCase() : 'Starting'];
+    }
+    return ['bad', 'Server stopped'];
+  }
+  function setHeader(r, err) {
+    const [cls, label] = err ? ['bad', 'Unreachable'] : serverState(r);
+    $('#hdr-state').className = 'tx-status ' + cls;
+    $('#hdr-state').innerHTML = '<i></i>' + esc(label);
+    $('#hdr-link').textContent = err ? 'live link down' : (r.link === 'connected' ? 'live link connected' : 'live link: ' + r.link);
+    const alive = !err && r.status && r.status.runner && r.status.runner.isChildAlive;
+    const canStart = !err && r.service && r.service.active && !alive;
+    $('#btn-start').style.display = canStart ? '' : 'none';
+    $('#btn-stop').style.display = alive ? '' : 'none';
+    $('#btn-restart').style.display = alive ? '' : 'none';
+  }
+  const metric = (l, v, sub) => '<div class="tx-metric"><div class="tx-metric-l">' + esc(l) + '</div><div class="tx-metric-v">' + esc(v) + '</div>' + (sub ? '<div class="txp-counter" style="margin-top:2px">' + esc(sub) + '</div>' : '') + '</div>';
+  function renderMetrics(r) {
+    const st = r.status || {}, srv = st.server || {}, sch = st.scheduler || {};
+    const dash = r.dashboard || {};
+    const slots = (dash.server && dash.server.playerSlots) || dash.playerSlots || null;
+    const hasNext = typeof sch.nextRelativeMs === 'number';
+    const next = hasNext ? 'in ' + fmtDur(sch.nextRelativeMs) : 'none';
+    $('#metrics').innerHTML =
+      metric('Players', (r.players || []).length + (slots ? ' / ' + slots : ''), 'online now') +
+      metric('Uptime', srv.uptime ? fmtDur(srv.uptime) : '—', srv.healthReason || '') +
+      metric('Next restart', next, hasNext ? (sch.nextSkip ? 'skipped' : sch.nextIsTemp ? 'one-off' : 'scheduled') : '') +
+      metric('Whitelist', srv.whitelist || '—', 'txAdmin mode') +
+      metric('Signed in as', (r.admin && r.admin.name) || '—', r.admin && r.admin.isMaster ? 'master admin' : '');
+    $('#sched-info').textContent = hasNext ? 'Next restart ' + next + (sch.nextSkip ? ' (skipped)' : '') : 'No restart scheduled';
+    $('#sched-skip').style.display = hasNext ? '' : 'none';
+    $('#sched-skip').textContent = sch.nextSkip ? 'Un-skip' : 'Skip next';
+    const n = (r.players || []).length;
+    $('#tab-players-count').style.display = n ? '' : 'none';
+    $('#tab-players-count').textContent = n;
+    $('#dash-online-sub').textContent = n ? n + ' player' + (n === 1 ? '' : 's') + (slots ? ' of ' + slots + ' slots' : '') : 'Nobody is connected';
+  }
+
+  // ---------------------------------------------------------------- players (online)
+  function playerTable(players, compact) {
+    if (!players.length) return empty('users', compact ? 'No one is online right now.' : 'No online players match.');
+    return '<div style="overflow-x:auto"><table class="tx-table"><thead><tr><th>Player</th>' + (compact ? '' : '<th>ID</th>') + '<th></th></tr></thead><tbody>' +
+      players.map(p => '<tr><td><div class="txp-player"><div class="txp-pav">' + esc(initials(p.displayName)) + '</div><div style="min-width:0"><div class="txp-pname" data-pview="' + p.netid + '">' + esc(p.displayName) + '</div>' +
+          '<div class="txp-psub">#' + esc(p.netid) + (p.license && !compact ? ' · ' + esc(p.license.slice(0, 12)) + '…' : '') + '</div></div></div></td>' +
+        (compact ? '' : '<td class="txp-id">' + esc(p.netid) + '</td>') +
+        '<td><div class="txp-acts">' +
+          (compact ? '' : '<button class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" title="Message" data-pact="message" data-netid="' + p.netid + '" data-name="' + esc(p.displayName) + '">' + ico('msg') + '</button>' +
+            '<button class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" title="Warn" data-pact="warn" data-netid="' + p.netid + '" data-name="' + esc(p.displayName) + '">' + ico('warn') + '</button>') +
+          '<button class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" title="Kick" data-pact="kick" data-netid="' + p.netid + '" data-name="' + esc(p.displayName) + '">' + ico('boot') + '</button>' +
+          (compact ? '' : '<button class="tx-btn tx-btn-soft-danger tx-btn-sm tx-btn-icon" title="Ban" data-pact="ban" data-netid="' + p.netid + '" data-name="' + esc(p.displayName) + '">' + ico('ban') + '</button>') +
+          '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-pview="' + p.netid + '">View</button>' +
+        '</div></td></tr>').join('') + '</tbody></table></div>';
+  }
+  let lastOnlineKey = '', onlinePlayers = [];
+  function renderOnline(players) {
+    const key = JSON.stringify(players);
+    if (key === lastOnlineKey) return;
+    lastOnlineKey = key; onlinePlayers = players;
+    $('#dash-players').innerHTML = playerTable(players.slice(0, 8), true) + (players.length > 8 ? '<div class="txp-note" style="padding:0 20px 14px">+' + (players.length - 8) + ' more on the Players tab</div>' : '');
+    paintOnlineFull();
+  }
+  function paintOnlineFull() {
+    const q = $('#online-filter').value.trim().toLowerCase();
+    const list = onlinePlayers.filter(p => !q || String(p.displayName).toLowerCase().includes(q) || String(p.netid) === q);
+    $('#online-list').innerHTML = playerTable(list, false);
+    $('#online-meta').textContent = onlinePlayers.length + ' online';
+  }
+  $('#online-filter').addEventListener('input', paintOnlineFull);
+  document.addEventListener('click', (e) => {
+    const v = e.target.closest('[data-pview]'); if (v) return openPlayer({ netid: v.dataset.pview });
+    const l = e.target.closest('[data-plicense]'); if (l) return openPlayer({ license: l.dataset.plicense });
+    const a = e.target.closest('[data-pact]');
+    if (a) return playerAction(a.dataset.pact, a.dataset.license ? { license: a.dataset.license } : { netid: a.dataset.netid }, a.dataset.name);
+  });
+
+  // ---------------------------------------------------------------- server controls
+  document.querySelectorAll('[data-ctl]').forEach(b => b.addEventListener('click', async () => {
+    const action = b.dataset.ctl;
+    if (action !== 'start') {
+      const v = await prompt({ title: action === 'stop' ? 'Stop the server?' : 'Restart the server?', ok: action === 'stop' ? 'Stop server' : 'Restart server', danger: action === 'stop', icon: action === 'stop' ? 'stop' : 'restart',
+        text: 'Everyone connected to <strong>' + esc(NAME) + '</strong> will be disconnected.' });
+      if (!v) return;
+    }
+    b.disabled = true;
+    const r = await post(BASE + '/control', { action });
+    b.disabled = false;
+    report(r, 'Server ' + action + ' requested');
+    setTimeout(pollOverview, 1500);
+  }));
+
+  $('#announce-text').addEventListener('input', (e) => { $('#announce-count').textContent = e.target.value.length + ' / 500'; });
+  $('#announce-btn').addEventListener('click', async () => {
+    const msg = $('#announce-text').value.trim(); if (!msg) return $('#announce-text').focus();
+    if (report(await post(BASE + '/announce', { message: msg }), 'Announcement sent')) { $('#announce-text').value = ''; $('#announce-count').textContent = '0 / 500'; }
+  });
+  document.querySelectorAll('[data-sched]').forEach(b => b.addEventListener('click', async () => { report(await post(BASE + '/schedule', { time: b.dataset.sched }), 'Restart scheduled'); pollOverview(); }));
+  $('#sched-at').addEventListener('click', async () => { const t = $('#sched-time').value; if (!t) return $('#sched-time').focus(); report(await post(BASE + '/schedule', { time: t }), 'Restart scheduled'); pollOverview(); });
+  $('#sched-skip').addEventListener('click', async () => {
+    const skipped = ov && ov.status && ov.status.scheduler && ov.status.scheduler.nextSkip;
+    report(await post(BASE + '/schedule', { skip: !skipped }), skipped ? 'Next restart re-enabled' : 'Next restart skipped'); pollOverview();
+  });
+  $('#kickall-btn').addEventListener('click', async () => {
+    const v = await prompt({ title: 'Kick everyone?', ok: 'Kick all players', danger: true, icon: 'boot', text: 'Every player on the server will be disconnected.' });
+    if (!v) return;
+    report(await post(BASE + '/kick-all', { reason: $('#kickall-reason').value }), 'Everyone kicked');
+  });
+  async function runCommand(cmd) {
+    const r = await post(BASE + '/console', { command: cmd });
+    if (r.ok) toast('Sent: ' + cmd + ' (output is on the Console tab)'); else toast(r.error, 'error');
+  }
+  document.querySelectorAll('[data-cmd]').forEach(b => b.addEventListener('click', () => runCommand(b.dataset.cmd)));
+  $('#quick-form').addEventListener('submit', (e) => { e.preventDefault(); const c = $('#quick-cmd').value.trim(); if (c) { runCommand(c); $('#quick-cmd').value = ''; } });
+
+  // ---------------------------------------------------------------- console
+  const ANSI_RE = /\x1b\[([0-9;]*)m/g;
+  function ansiToHtml(text) {
+    let out = '', last = 0, open = false, m;
+    ANSI_RE.lastIndex = 0;
+    while ((m = ANSI_RE.exec(text))) {
+      out += esc(text.slice(last, m.index)); last = ANSI_RE.lastIndex;
+      const codes = m[1].split(';').filter(Boolean).map(Number);
+      if (open) { out += '</span>'; open = false; }
+      const cls = codes.filter(c => (c >= 30 && c <= 37) || (c >= 90 && c <= 97)).map(c => 'ansi-' + c);
+      if (codes.includes(1)) cls.push('ansi-b');
+      if (cls.length && !codes.includes(0)) { out += '<span class="' + cls.join(' ') + '">'; open = true; }
+    }
+    out += esc(text.slice(last).replace(/\x1b\[[0-9;]*[A-Za-z]/g, ''));
+    if (open) out += '</span>';
+    return out;
+  }
+  let consoleOffset = null, consoleBusy = false;
+  async function pollConsole() {
+    if (consoleBusy) return; consoleBusy = true;
+    try {
+      const r = await get(BASE + '/console' + (consoleOffset != null ? '?offset=' + consoleOffset : ''));
+      if (!r.ok) return;
+      const el = $('#console');
+      if (r.reset) el.innerHTML = '';
+      if (r.data) {
+        el.insertAdjacentHTML('beforeend', ansiToHtml(r.data));
+        if (el.textContent.length > 400000) el.innerHTML = ansiToHtml(el.textContent.slice(-300000));
+        if ($('#console-follow').checked) el.scrollTop = el.scrollHeight;
+      }
+      if (!el.textContent) el.innerHTML = '<span style="color:#6b7184">Waiting for console output…</span>';
+      consoleOffset = r.offset;
+    } finally { consoleBusy = false; }
+  }
+  const cmdHistory = []; let histIdx = -1;
+  $('#console-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = $('#console-cmd'), cmd = input.value.trim(); if (!cmd) return;
+    cmdHistory.unshift(cmd); if (cmdHistory.length > 50) cmdHistory.pop(); histIdx = -1;
+    input.value = '';
+    const el = $('#console');
+    if (/Waiting for console output/.test(el.textContent)) el.innerHTML = '';
+    el.insertAdjacentHTML('beforeend', '<span class="txp-me">❯ ' + esc(cmd) + '</span>\n');
+    el.scrollTop = el.scrollHeight;
+    const r = await post(BASE + '/console', { command: cmd });
+    if (!r.ok) toast(r.error, 'error');
+    setTimeout(pollConsole, 400);
+  });
+  $('#console-cmd').addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp' && cmdHistory.length) { histIdx = Math.min(cmdHistory.length - 1, histIdx + 1); e.target.value = cmdHistory[histIdx]; e.preventDefault(); }
+    if (e.key === 'ArrowDown') { histIdx = Math.max(-1, histIdx - 1); e.target.value = histIdx < 0 ? '' : cmdHistory[histIdx]; e.preventDefault(); }
+  });
+  $('#console-clear').addEventListener('click', () => { $('#console').innerHTML = ''; });
+
+  // ---------------------------------------------------------------- player actions + drawer
+  const refQs = (ref) => ref.license ? '?license=' + enc(ref.license) : '?netid=' + enc(ref.netid);
+  const BAN_DURATIONS = [['2 hours', '2 hours'], ['8 hours', '8 hours'], ['1 day', '1 day'], ['2 days', '2 days'], ['1 week', '1 week'], ['2 weeks', '2 weeks'], ['1 month', '1 month'], ['permanent', 'Permanent']];
+
+  async function playerAction(action, ref, name) {
+    const who = name || (ref.netid != null ? '#' + ref.netid : 'this player');
+    let body;
+    if (action === 'kick') { const v = await prompt({ title: 'Kick ' + who, icon: 'boot', ok: 'Kick', danger: true, fields: [{ name: 'reason', label: 'Reason', placeholder: 'Shown to the player' }] }); if (!v) return; body = { reason: v.reason }; }
+    else if (action === 'warn') { const v = await prompt({ title: 'Warn ' + who, icon: 'warn', ok: 'Issue warning', fields: [{ name: 'reason', label: 'Reason', placeholder: 'Shown to the player and saved in history' }] }); if (!v) return; body = { reason: v.reason }; }
+    else if (action === 'message') { const v = await prompt({ title: 'Message ' + who, icon: 'msg', ok: 'Send', fields: [{ name: 'message', label: 'Message', type: 'textarea' }] }); if (!v || !v.message.trim()) return; body = { message: v.message }; }
+    else if (action === 'ban') {
+      const v = await prompt({ title: 'Ban ' + who, icon: 'ban', ok: 'Ban player', danger: true, fields: [
+        { name: 'reason', label: 'Reason', placeholder: 'Shown to the player when they try to join' },
+        { name: 'duration', label: 'Duration', type: 'select', value: '1 day', options: BAN_DURATIONS },
+      ] });
+      if (!v) return; body = { reason: v.reason, duration: v.duration };
+    }
+    const r = await post(BASE + '/player/' + action + refQs(ref), body);
+    if (report(r, { kick: 'Player kicked', warn: 'Warning issued', message: 'Message sent', ban: 'Player banned' }[action])) {
+      if ($('#player-modal').classList.contains('open')) openPlayer(ref);
+      if (action === 'ban' || action === 'warn') historyLoaded = false;
+      setTimeout(pollOverview, 800);
+    }
+  }
+
+  async function openPlayer(ref) {
+    $('#pm-title').textContent = 'Loading…'; $('#pm-sub').textContent = ''; $('#pm-avatar').textContent = '…';
+    $('#pm-body').innerHTML = '<div class="txp-loading"><span class="tx-spinner"></span></div>';
+    openModal('player-modal');
+    const r = await get(BASE + '/player' + refQs(ref));
+    if (!r.ok) { $('#pm-title').textContent = 'Player'; $('#pm-body').innerHTML = '<div class="tx-callout warn">' + ico('alert') + '<div>' + esc(r.error) + '</div></div>'; return; }
+    const p = r.result.player || r.result;
+    $('#pm-avatar').textContent = initials(p.displayName);
+    $('#pm-title').textContent = p.displayName || 'Player';
+    $('#pm-sub').innerHTML = (p.isConnected ? '<span class="tx-status ok" style="height:20px;font-size:11px"><i></i>Online #' + esc(p.netid) + '</span> session ' + fmtMin(p.sessionTime)
+      : '<span class="tx-status" style="height:20px;font-size:11px"><i></i>Offline</span>') + (p.isRegistered ? '' : ' · not in database');
+    const ids = (p.idsOnline && p.idsOnline.length ? p.idsOnline : p.idsOffline) || [];
+    const hw = (p.hwidsOnline && p.hwidsOnline.length ? p.hwidsOnline : p.hwidsOffline) || [];
+    const lic = p.license;
+    const actRef = p.isConnected ? 'data-netid="' + esc(p.netid) + '"' : 'data-license="' + esc(lic) + '"';
+    const nm = ' data-name="' + esc(p.displayName) + '"';
+    const hist = p.actionHistory || [];
+    const stat = (l, v) => '<div><div class="tx-metric-l">' + l + '</div><div class="tx-metric-v" style="font-size:13px">' + v + '</div></div>';
+    $('#pm-body').innerHTML =
+      '<div class="txp-stats">' + stat('Play time', fmtMin(p.playTime)) + stat('Last seen', p.isConnected ? 'now' : rel(p.tsLastConnection)) + stat('First joined', fmtTs(p.tsJoined)) + stat('Whitelisted', p.tsWhitelisted ? rel(p.tsWhitelisted) : 'no') + '</div>' +
+      '<div><div class="tx-vault-title">Actions</div><div class="txp-acts-grid">' +
+        (p.isConnected ? '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-pact="message" ' + actRef + nm + '>' + ico('msg') + 'Message</button>' : '') +
+        '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-pact="warn" ' + actRef + nm + '>' + ico('warn') + 'Warn</button>' +
+        (p.isConnected ? '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-pact="kick" ' + actRef + nm + '>' + ico('boot') + 'Kick</button>' : '') +
+        '<button class="tx-btn tx-btn-soft-danger tx-btn-sm" data-pact="ban" ' + actRef + nm + '>' + ico('ban') + 'Ban</button>' +
+        (p.isRegistered ? '<button class="tx-btn tx-btn-ghost tx-btn-sm" id="pm-wl">' + ico('star') + (p.tsWhitelisted ? 'Unwhitelist' : 'Whitelist') + '</button>' : '') +
+      '</div></div>' +
+      '<div><div class="tx-vault-title">Identifiers</div><div class="txp-ids">' + (ids.length ? ids.map(id => { const [k, ...rest] = String(id).split(':'); return '<div><b>' + esc(k) + '</b><span>' + esc(rest.join(':')) + '</span>' + copyBtn(id) + '</div>'; }).join('') : '<div><span>none recorded</span></div>') + '</div>' +
+        (hw.length ? '<div class="txp-note" style="margin-top:8px">' + hw.length + ' hardware ID' + (hw.length === 1 ? '' : 's') + ' recorded</div>' : '') + '</div>' +
+      (p.isRegistered ? '<div><div class="tx-vault-title">Notes</div><div class="tx-field"><textarea id="pm-note" rows="3" placeholder="Private notes for staff…">' + esc((p.notes && p.notes.text) || '') + '</textarea></div>' +
+        '<div class="txp-row" style="margin-top:8px">' + (p.notes && p.notes.lastAdmin ? '<span class="txp-counter">last edited by ' + esc(p.notes.lastAdmin) + '</span>' : '') + '<span class="spacer"></span><button class="tx-btn tx-btn-ghost tx-btn-sm" id="pm-note-save">Save note</button></div></div>' : '') +
+      '<div><div class="tx-vault-title">History · ' + hist.length + '</div>' + (hist.length ? '<ul class="txp-timeline">' + hist.map(h =>
+        '<li class="' + esc(h.type) + (h.revokedBy ? ' revoked' : '') + '"><strong>' + esc((h.type || '').toUpperCase()) + '</strong> ' + esc(h.reason) +
+        '<div class="meta">' + esc(h.id) + ' · ' + esc(h.author) + ' · ' + fmtTs(h.ts) + (h.exp ? ' · until ' + fmtTs(h.exp) : '') + (h.revokedBy ? ' · revoked by ' + esc(h.revokedBy) : '') + '</div>' +
+        (!h.revokedBy ? '<button class="tx-btn tx-btn-ghost tx-btn-sm" style="margin-top:6px" data-revoke="' + esc(h.id) + '">Revoke</button>' : '') + '</li>').join('') + '</ul>' : '<div class="tx-callout ok">' + ico('check') + '<div>Clean record.</div></div>') + '</div>';
+    const ns = $('#pm-note-save');
+    if (ns) ns.addEventListener('click', async () => report(await post(BASE + '/player/save_note?license=' + enc(lic), { note: $('#pm-note').value }), 'Note saved'));
+    const wl = $('#pm-wl');
+    if (wl) wl.addEventListener('click', async () => { if (report(await post(BASE + '/player/whitelist?license=' + enc(lic), { status: !p.tsWhitelisted }), 'Whitelist updated')) openPlayer(ref); });
+    $('#pm-body').querySelectorAll('[data-revoke]').forEach(b => b.addEventListener('click', async () => { if (report(await post(BASE + '/history/revoke', { action_id: b.dataset.revoke }), 'Action revoked')) { historyLoaded = false; openPlayer(ref); } }));
+  }
+
+  // ---------------------------------------------------------------- player database
+  let pOffset = null, playersSearched = false;
+  async function searchPlayers(reset) {
+    playersSearched = true;
+    if (reset) { pOffset = null; $('#psearch-results').innerHTML = '<div class="txp-loading"><span class="tx-spinner"></span></div>'; }
+    const qs = new URLSearchParams({ sort: $('#psearch-sort').value, desc: 'true' });
+    const q = $('#psearch-q').value.trim(); if (q) { qs.set('q', q); qs.set('type', $('#psearch-type').value); }
+    if ($('#psearch-filter').value) qs.set('filters', $('#psearch-filter').value);
+    if (pOffset) { qs.set('offset_param', pOffset.param); qs.set('offset_license', pOffset.license); }
+    const r = await get(BASE + '/players/search?' + qs);
+    if (!r.ok) { $('#psearch-results').innerHTML = '<div class="tx-panel-body"><div class="tx-callout warn">' + ico('alert') + '<div>' + esc(r.error) + '</div></div></div>'; return; }
+    const rows = r.result.players || [];
+    const sortKey = $('#psearch-sort').value;
+    const html = rows.map(p => '<tr><td><div class="txp-player"><div class="txp-pav">' + esc(initials(p.displayName)) + '</div><div style="min-width:0"><div class="txp-pname" data-plicense="' + esc(p.license) + '">' + esc(p.displayName) + '</div>' +
+        '<div class="txp-psub">' + (p.isOnline ? '<span class="tx-badge ok">online</span> ' : '') + (p.isAdmin ? '<span class="tx-badge accent">admin</span> ' : '') + esc((p.license || '').slice(0, 12)) + '…</div></div></div></td>' +
+      '<td>' + fmtMin(p.playTime) + '</td><td>' + rel(p.tsJoined) + '</td><td>' + rel(p.tsLastConnection) + '</td>' +
+      '<td><div class="txp-acts"><button class="tx-btn tx-btn-ghost tx-btn-sm" data-plicense="' + esc(p.license) + '">View</button></div></td></tr>').join('');
+    if (reset) $('#psearch-results').innerHTML = rows.length ? '<div style="overflow-x:auto"><table class="tx-table"><thead><tr><th>Player</th><th>Play time</th><th>Joined</th><th>Last seen</th><th></th></tr></thead><tbody id="psearch-body">' + html + '</tbody></table></div>'
+      : empty('search', q || $('#psearch-filter').value ? 'No players match.' : 'No players have joined yet.');
+    else $('#psearch-body').insertAdjacentHTML('beforeend', html);
+    const last = rows[rows.length - 1];
+    pOffset = last && !r.result.hasReachedEnd ? { param: last[sortKey], license: last.license } : null;
+    $('#psearch-more').style.display = pOffset ? '' : 'none';
+  }
+  $('#psearch-form').addEventListener('submit', (e) => { e.preventDefault(); searchPlayers(true); });
+  ['#psearch-filter', '#psearch-sort'].forEach(s => $(s).addEventListener('change', () => searchPlayers(true)));
+  $('#psearch-more').addEventListener('click', () => searchPlayers(false));
+
+  // ---------------------------------------------------------------- history
+  let historyLoaded = false, hOffset = null, hFilter = '';
+  async function loadHistory(reset) {
+    if (reset) { hOffset = null; $('#hsearch-results').innerHTML = '<div class="txp-loading"><span class="tx-spinner"></span></div>'; }
+    historyLoaded = true;
+    const qs = new URLSearchParams({ desc: 'true' });
+    const q = $('#hsearch-q').value.trim(); if (q) { qs.set('q', q); qs.set('type', $('#hsearch-type').value); }
+    if (hFilter) qs.set('filter_type', hFilter);
+    if (hOffset) { qs.set('offset_param', hOffset.param); qs.set('offset_action', hOffset.id); }
+    const r = await get(BASE + '/history?' + qs);
+    if (!r.ok) { $('#hsearch-results').innerHTML = '<div class="tx-panel-body"><div class="tx-callout warn">' + ico('alert') + '<div>' + esc(r.error) + '</div></div></div>'; return; }
+    const rows = r.result.history || [];
+    const exp = (h) => h.type !== 'ban' ? '' : typeof h.banExpiration === 'number' ? 'until ' + fmtTs(h.banExpiration) : esc(h.banExpiration || 'permanent');
+    const html = rows.map(h => '<tr' + (h.isRevoked ? ' style="opacity:.55"' : '') + '>' +
+      '<td><span class="tx-badge ' + (h.type === 'ban' ? 'bad' : 'warn') + '">' + esc(h.type) + '</span>' + (h.isRevoked ? ' <span class="tx-badge muted">revoked</span>' : '') + '<div class="txp-id" style="margin-top:4px">' + esc(h.id) + '</div></td>' +
+      '<td><div class="txp-pname" style="cursor:default">' + esc(h.playerName || 'Unknown player') + '</div><div class="txp-psub">by ' + esc(h.author) + '</div></td>' +
+      '<td class="txp-wrap">' + esc(h.reason) + '</td><td title="' + esc(fmtTs(h.timestamp)) + '">' + rel(h.timestamp) + '</td><td>' + exp(h) + '</td>' +
+      '<td><div class="txp-acts">' + (!h.isRevoked ? '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-hrevoke="' + esc(h.id) + '">Revoke</button>' : '') + '</div></td></tr>').join('');
+    if (reset) $('#hsearch-results').innerHTML = rows.length ? '<div style="overflow-x:auto"><table class="tx-table"><thead><tr><th>Type</th><th>Player</th><th>Reason</th><th>When</th><th>Ban</th><th></th></tr></thead><tbody id="hsearch-body">' + html + '</tbody></table></div>'
+      : empty('shield', q || hFilter ? 'Nothing matches.' : 'No bans or warnings yet.');
+    else $('#hsearch-body').insertAdjacentHTML('beforeend', html);
+    const last = rows[rows.length - 1];
+    hOffset = last && !r.result.hasReachedEnd ? { param: last.timestamp, id: last.id } : null;
+    $('#hsearch-more').style.display = hOffset ? '' : 'none';
+  }
+  $('#hsearch-form').addEventListener('submit', (e) => { e.preventDefault(); loadHistory(true); });
+  $('#hsearch-seg').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    hFilter = b.dataset.hf; $('#hsearch-seg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); loadHistory(true);
+  }));
+  $('#hsearch-more').addEventListener('click', () => loadHistory(false));
+  $('#hsearch-results').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-hrevoke]'); if (!b) return;
+    const v = await prompt({ title: 'Revoke ' + b.dataset.hrevoke + '?', ok: 'Revoke', icon: 'shield', text: 'A revoked ban stops applying immediately. The record stays in history.' });
+    if (!v) return;
+    if (report(await post(BASE + '/history/revoke', { action_id: b.dataset.hrevoke }), 'Revoked')) loadHistory(true);
+  });
+  $('#offline-ban-btn').addEventListener('click', async () => {
+    const v = await prompt({ title: 'Ban identifiers', sub: 'For players who aren\'t in the database', icon: 'ban', ok: 'Ban', danger: true, fields: [
+      { name: 'ids', label: 'Identifiers', type: 'textarea', rows: 4, placeholder: 'license:abc123…\ndiscord:1234567890', hint: 'One per line.' },
+      { name: 'reason', label: 'Reason' },
+      { name: 'duration', label: 'Duration', type: 'select', value: 'permanent', options: BAN_DURATIONS },
+    ] });
+    if (!v) return;
+    const identifiers = v.ids.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+    if (report(await post(BASE + '/ban-ids', { identifiers, reason: v.reason, duration: v.duration }), 'Identifiers banned')) loadHistory(true);
+  });
+
+  // ---------------------------------------------------------------- resources
+  /* Folder-aware view. Each resource carries its [category] path; the
+     tree on the left filters to a folder (and everything under it), the
+     list groups by exact folder. Selection/collapsed state persists per
+     browser so the view stays put across reloads. */
+  const RKEY = 'txp-res-' + SID;
+  const rstore = (() => { try { return JSON.parse(localStorage.getItem(RKEY) || '{}'); } catch (e) { return {}; } })();
+  const rsave = () => { try { localStorage.setItem(RKEY, JSON.stringify(rstore)); } catch (e) {} };
+  let resources = [], resRunning = false;
+  let resFolder = rstore.folder || '', resStatus = 'all';
+  const collapsedGroups = new Set(rstore.collapsed || []);
+  const openTree = new Set(rstore.tree || []);
+  const prettyFolder = (f) => f === '' ? '(root)' : f;
+  const leaf = (f) => f.split('/').pop() || '(root)';
+  const inFolder = (r, f) => !f || r.folder === f || r.folder.startsWith(f + '/');
+
+  async function loadResources() {
+    const r = await get(BASE + '/resources');
+    if (!r.ok) { $('#res-list').innerHTML = '<div class="tx-panel-body"><div class="tx-callout warn">' + ico('alert') + '<div>' + esc(r.error) + '</div></div></div>'; return; }
+    resources = r.resources; resRunning = r.running;
+    const c = $('#tab-res-count');
+    c.style.display = resources.length ? '' : 'none'; c.textContent = r.running_count + '/' + resources.length;
+    $('#res-sub').textContent = resources.length + ' resources · ' + r.folder_count + ' folders';
+    if (resFolder && !resources.some(x => inFolder(x, resFolder))) resFolder = '';
+    renderTree(); renderResources();
+  }
+
+  function buildTree() {
+    const root = { path: '', kids: new Map(), total: 0, on: 0 };
+    resources.forEach(r => {
+      root.total++; if (r.running) root.on++;
+      let node = root, path = '';
+      (r.folder ? r.folder.split('/') : []).forEach(part => {
+        path = path ? path + '/' + part : part;
+        if (!node.kids.has(part)) node.kids.set(part, { path, name: part, kids: new Map(), total: 0, on: 0 });
+        node = node.kids.get(part); node.total++; if (r.running) node.on++;
+      });
+    });
+    return root;
+  }
+  function renderTree() {
+    const tree = buildTree();
+    const node = (n) => {
+      const kids = [...n.kids.values()].sort((a, b) => a.name.localeCompare(b.name));
+      const open = openTree.has(n.path) || (resFolder && (resFolder === n.path || resFolder.startsWith(n.path + '/')));
+      return '<button class="txr-node' + (resFolder === n.path ? ' on' : '') + '" data-folder="' + esc(n.path) + '" title="' + esc(n.path) + '">' +
+          '<span class="caret' + (kids.length ? (open ? ' open' : '') : ' none') + '" data-tog="' + esc(n.path) + '"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>' +
+          '<span class="lbl">' + esc(n.name) + '</span><span class="ct"><b>' + n.on + '</b>/' + n.total + '</span></button>' +
+        (kids.length && open ? '<div class="txr-kids">' + kids.map(node).join('') + '</div>' : '');
+    };
+    const top = [...tree.kids.values()].sort((a, b) => a.name.localeCompare(b.name));
+    $('#res-tree').innerHTML = '<button class="txr-node root' + (!resFolder ? ' on' : '') + '" data-folder=""><span class="caret none"></span><span class="lbl">All resources</span><span class="ct"><b>' + tree.on + '</b>/' + tree.total + '</span></button>' +
+      top.map(node).join('');
+  }
+  $('#res-tree').addEventListener('click', (e) => {
+    const tog = e.target.closest('[data-tog]');
+    if (tog && !tog.classList.contains('none')) {
+      const p = tog.dataset.tog; openTree.has(p) ? openTree.delete(p) : openTree.add(p);
+      rstore.tree = [...openTree]; rsave(); renderTree(); return;
+    }
+    const n = e.target.closest('[data-folder]'); if (!n) return;
+    resFolder = n.dataset.folder; if (resFolder) openTree.add(resFolder);
+    rstore.folder = resFolder; rstore.tree = [...openTree]; rsave();
+    renderTree(); renderResources();
+  });
+
+  function hl(name, q) {
+    if (!q) return esc(name);
+    const i = name.toLowerCase().indexOf(q);
+    return i < 0 ? esc(name) : esc(name.slice(0, i)) + '<mark>' + esc(name.slice(i, i + q.length)) + '</mark>' + esc(name.slice(i + q.length));
+  }
+  function renderResources() {
+    const q = $('#res-filter').value.trim().toLowerCase();
+    const scoped = resources.filter(r => inFolder(r, resFolder));
+    const searched = scoped.filter(r => !q || r.name.toLowerCase().includes(q) || r.folder.toLowerCase().includes(q));
+    const on = searched.filter(r => r.running).length;
+    $('#rs-all').textContent = searched.length; $('#rs-running').textContent = on; $('#rs-stopped').textContent = searched.length - on;
+    const list = searched.filter(r => resStatus === 'all' || (resStatus === 'running') === r.running);
+    paintBulkBar(scoped);
+    $('#res-title').textContent = resFolder ? leaf(resFolder) : 'All resources';
+    $('#res-title-sub').textContent = (resFolder ? resFolder + ' · ' : '') + scoped.filter(r => r.running).length + ' of ' + scoped.length + ' running' + (resRunning ? '' : ' · game server is not running');
+    if (!list.length) { $('#res-list').innerHTML = empty('search', resources.length ? 'No resources match.' : 'No resources found in the server data folder.'); return; }
+
+    const groups = new Map();
+    list.forEach(r => { if (!groups.has(r.folder)) groups.set(r.folder, []); groups.get(r.folder).push(r); });
+    const order = [...groups.keys()].sort((a, b) => (a === '(built-in)') - (b === '(built-in)') || a.localeCompare(b));
+    const forceOpen = !!q || order.length === 1;
+    $('#res-list').innerHTML = order.map(f => {
+      const items = groups.get(f).sort((a, b) => a.name.localeCompare(b.name));
+      const gOn = items.filter(r => r.running).length;
+      const parts = f.split('/');
+      const pathHtml = parts.length > 1 ? '<span>' + esc(parts.slice(0, -1).join('/') + '/') + '</span>' + esc(parts[parts.length - 1]) : esc(prettyFolder(f));
+      const open = forceOpen || !collapsedGroups.has(f);
+      return '<div class="txr-group' + (open ? ' open' : '') + '" data-group="' + esc(f) + '">' +
+        '<div class="txr-ghead" data-gtoggle="' + esc(f) + '"><span class="caret"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>' +
+          '<span class="txr-path">' + pathHtml + '</span>' +
+          (resRunning && f !== '(built-in)' ? '<span class="txr-gacts">' +
+            '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-gbulk="start" data-gfolder="' + esc(f) + '" title="Start every stopped resource in ' + esc(leaf(f)) + '"' + (gOn === items.length ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>Start all' + (items.length - gOn ? ' <span class="n">' + (items.length - gOn) + '</span>' : '') + '</button>' +
+            '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-gbulk="restart" data-gfolder="' + esc(f) + '" title="Restart every running resource in ' + esc(leaf(f)) + '"' + (gOn ? '' : ' disabled') + '>' + ico('restart') + 'Restart all</button>' +
+            '<button class="tx-btn tx-btn-ghost tx-btn-sm txr-cc" data-cclink="' + esc(f) + '" title="Work on this folder from claude.ai/code"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>Claude</button>' +
+            '<button class="tx-btn tx-btn-soft-danger tx-btn-sm" data-gbulk="stop" data-gfolder="' + esc(f) + '" title="Stop every running resource in ' + esc(leaf(f)) + '"' + (gOn ? '' : ' disabled') + '>' + ico('stop') + 'Stop all' + (gOn ? ' <span class="n">' + gOn + '</span>' : '') + '</button></span>' : '') +
+          '<span class="txr-meter" title="' + gOn + ' of ' + items.length + ' running"><i style="width:' + (items.length ? Math.round(gOn * 100 / items.length) : 0) + '%"></i></span>' +
+          '<span class="txr-gct">' + gOn + '/' + items.length + '</span></div>' +
+        '<div class="txp-res">' + items.map(r => '<div class="txp-res-item' + (r.running ? '' : ' off') + '"><i title="' + (r.running ? 'running' : 'stopped') + '"></i><span class="txr-name" data-edit="' + esc(r.name) + '" title="Edit files in ' + esc(r.folder + '/' + r.name) + '">' + hl(r.name, q) + '</span>' +
+          (errByRes[r.name] ? '<span class="txr-err" data-goerr="' + esc(r.name) + '" title="' + errByRes[r.name] + ' recent error(s). Click to see them">' + errByRes[r.name] + ' ERR</span>' : '') +
+          (r.has_config ? '<span class="txr-cfg" data-edit="' + esc(r.name) + '" title="Has a config file — click to edit">CONFIG</span>' : '') +
+          (r.folder !== '(built-in)' ? '<button class="tx-copy edit txr-cc" data-cclink="' + esc((r.folder ? r.folder + '/' : '') + r.name) + '" title="Open in claude.ai/code"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></button>' : '') +
+          (r.folder !== '(built-in)' ? '<button class="tx-copy edit" data-edit="' + esc(r.name) + '" title="Edit files"><svg viewBox="0 0 24 24"><path d="M8 6L2 12l6 6M16 6l6 6-6 6"/></svg></button>' : '') +
+          (r.running
+            ? '<button class="tx-copy" data-res="restart" data-name="' + esc(r.name) + '" title="Restart">' + ico('restart') + '</button><button class="tx-copy stop" data-res="stop" data-name="' + esc(r.name) + '" title="Stop">' + ico('stop') + '</button>'
+            : (resRunning ? '<button class="tx-copy" data-res="ensure" data-name="' + esc(r.name) + '" title="Start">' + '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>' + '</button>' : '')) +
+          '</div>').join('') + '</div></div>';
+    }).join('');
+  }
+  $('#res-list').addEventListener('click', async (e) => {
+    const ge = e.target.closest('[data-goerr]');
+    if (ge) { e.stopPropagation(); errFilter = ge.dataset.goerr; showTab('dashboard'); paintErrors(); return $('#err-card').scrollIntoView({ behavior: 'smooth' }); }
+    const ccl = e.target.closest('[data-cclink]');
+    if (ccl) { e.stopPropagation(); ccPrefill = ccl.dataset.cclink; return showTab('claude'); }
+    const ed = e.target.closest('[data-edit]');
+    if (ed) { e.stopPropagation(); return openEditor(ed.dataset.edit); }
+    const gb = e.target.closest('[data-gbulk]');
+    if (gb) { e.stopPropagation(); if (!gb.disabled) bulkAction(gb.dataset.gbulk, gb.dataset.gfolder, true, gb.closest('.txr-group')); return; }
+    const g = e.target.closest('[data-gtoggle]');
+    if (g) {
+      const f = g.dataset.gtoggle, el = g.parentElement;
+      el.classList.toggle('open');
+      el.classList.contains('open') ? collapsedGroups.delete(f) : collapsedGroups.add(f);
+      rstore.collapsed = [...collapsedGroups]; rsave(); return;
+    }
+    const b = e.target.closest('[data-res]'); if (!b) return;
+    const act = b.dataset.res, name = b.dataset.name;
+    if (act === 'stop') { const v = await prompt({ title: 'Stop ' + name + '?', ok: 'Stop resource', danger: true, icon: 'stop', text: 'Stopping a core resource (es_extended, oxmysql…) can break the server until it\'s restarted.' }); if (!v) return; }
+    b.disabled = true;
+    report(await post(BASE + '/resources/' + act, { name }), { stop: 'Stopped ', restart: 'Restarted ', ensure: 'Started ' }[act] + name);
+    b.disabled = false;
+    setTimeout(loadResources, 1200);
+  });
+  const BULK_SKIP = new Set(['monitor', 'sessionmanager', 'mapmanager', 'spawnmanager', 'hardcap', 'chat', 'yarn', 'webpack']);
+  const CORE_HINT = /^(es_extended|oxmysql|ox_lib|qb-core|qbx_core|ox_inventory|ox_target|pma-voice|esx_lib)$/;
+  function bulkTargets(action, folder, exact) {
+    const inScope = resources.filter(r => r.folder !== '(built-in)' && (exact ? r.folder === folder : inFolder(r, folder)));
+    return action === 'start' ? inScope.filter(r => !r.running) : inScope.filter(r => r.running && !BULK_SKIP.has(r.name));
+  }
+  function paintBulkBar(scoped) {
+    const bar = $('#res-bulk');
+    bar.style.display = resRunning ? '' : 'none';
+    ['start', 'restart', 'stop'].forEach(a => {
+      const n = bulkTargets(a, resFolder, false).length, b = bar.querySelector('[data-bulk="' + a + '"]');
+      b.disabled = !n; b.querySelector('.n').textContent = n ? n : '';
+    });
+  }
+  $('#res-bulk').querySelectorAll('[data-bulk]').forEach(b => b.addEventListener('click', () => bulkAction(b.dataset.bulk, resFolder, false)));
+
+  async function bulkAction(action, folder, exact, groupEl) {
+    const list = bulkTargets(action, folder, exact);
+    if (!list.length) return toast('Nothing to ' + action + ' here');
+    const where = folder ? '<code>' + esc(folder) + '</code>' + (exact ? '' : ' (and its subfolders)') : '<strong>every folder</strong>';
+    const verb = { start: 'Start', restart: 'Restart', stop: 'Stop' }[action];
+    const core = list.filter(r => CORE_HINT.test(r.name)).map(r => r.name);
+    const preview = list.slice(0, 12).map(r => '<code>' + esc(r.name) + '</code>').join(' ') + (list.length > 12 ? ' <span style="color:var(--text-muted)">+' + (list.length - 12) + ' more</span>' : '');
+    const v = await prompt({
+      title: verb + ' ' + list.length + ' resource' + (list.length === 1 ? '' : 's') + '?', ok: verb + ' ' + list.length, danger: action === 'stop',
+      icon: action === 'stop' ? 'stop' : action === 'restart' ? 'restart' : 'box',
+      text: verb + ' ' + (action === 'start' ? 'the stopped' : 'the running') + ' resources in ' + where + ':<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px">' + preview + '</div>' +
+        (core.length && action !== 'start' ? '<div class="tx-callout warn" style="margin-top:12px">' + ico('alert') + '<div>This includes core resources (' + core.map(esc).join(', ') + '). ' + (action === 'stop' ? 'Stopping them can break everything else until the server restarts.' : 'Players may lose data or get stuck while they reload.') + '</div></div>' : '') +
+        (!folder && action !== 'start' ? '<div class="txp-note">txAdmin\'s own resources are always left alone.</div>' : ''),
+    });
+    if (!v) return;
+    const target = groupEl || $('#res-list');
+    target.classList.add('txr-busy');
+    const btns = document.querySelectorAll('#res-bulk [data-bulk]'); btns.forEach(b => b.disabled = true);
+    const r = await post(BASE + '/resources/bulk', exact ? { action, names: list.map(x => x.name) } : { action, folder });
+    target.classList.remove('txr-busy');
+    if (!r.ok) { toast(r.error, 'error'); return loadResources(); }
+    toast(r.message, r.failed && r.failed.length ? 'error' : 'success');
+    if (r.failed && r.failed.length) console.warn('Bulk failures', r.failed);
+    setTimeout(loadResources, action === 'stop' ? 800 : 1800);
+  }
+
+  $('#res-seg').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    resStatus = b.dataset.rs; $('#res-seg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderResources();
+  }));
+  $('#res-filter').addEventListener('input', renderResources);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && activeTab === 'resources' && !/input|textarea|select/i.test(document.activeElement.tagName)) { e.preventDefault(); $('#res-filter').focus(); }
+  });
+  $('#res-reload').addEventListener('click', loadResources);
+  $('#res-refresh').addEventListener('click', async () => { if (report(await post(BASE + '/resources/refresh'), 'Resources rescanned')) setTimeout(loadResources, 800); });
+  $('#res-start-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = $('#res-start-name').value.trim(); if (!name) return;
+    if (report(await post(BASE + '/resources/ensure', { name }), 'Ensured ' + name)) { $('#res-start-name').value = ''; setTimeout(loadResources, 1500); }
+  });
+
+  // ---------------------------------------------------------------- server.cfg editor
+  let cfgFiles = [], cfgName = null, cfgSaved = '', cfgMtime = null, cfgEditor = null, cfgMonacoTried = false, cfgLoaded = false;
+  const cfgValue = () => cfgEditor ? cfgEditor.getValue() : $('#cfg-fallback').value;
+  const cfgDirty = () => cfgName != null && cfgValue() !== cfgSaved;
+  function cfgSetValue(v) {
+    if (cfgEditor) { cfgEditor.setValue(v); cfgEditor.setScrollTop(0); } else $('#cfg-fallback').value = v;
+  }
+  function cfgMsg(kind, text) {
+    const el = $('#cfg-msg');
+    if (!text) { el.style.display = 'none'; return; }
+    el.className = 'tx-callout ' + (kind === 'error' ? 'warn' : kind);
+    el.style.display = '';
+    el.innerHTML = ico(kind === 'ok' ? 'check' : kind === 'error' ? 'alert' : 'info') + '<div>' + esc(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>') + '</div>';
+    if (kind === 'error') el.style.borderColor = 'color-mix(in srgb, var(--danger) 40%, transparent)'; else el.style.borderColor = '';
+  }
+  function cfgUpdateState(extra) {
+    const dirty = cfgDirty();
+    $('#cfg-save').disabled = !dirty; $('#cfg-save-restart').disabled = !dirty;
+    const st = $('#cfg-state');
+    st.className = 'txc-state' + (dirty ? ' dirty' : extra === 'saved' ? ' saved' : '');
+    st.innerHTML = dirty ? '● unsaved changes' : extra === 'saved' ? ico('check') + ' saved' : '';
+    $('#tab-cfg-dirty').style.display = dirty ? '' : 'none';
+    document.querySelectorAll('.txc-file').forEach(b => { const d = b.querySelector('.dot'); if (d) d.style.display = dirty && b.dataset.file === cfgName ? '' : 'none'; });
+  }
+  window.addEventListener('beforeunload', (e) => { if (cfgDirty()) { e.preventDefault(); e.returnValue = ''; } });
+
+  function initCfgEditor(cb) {
+    if (cfgMonacoTried) return cb();
+    cfgMonacoTried = true;
+    const fallback = () => {
+      $('#cfg-editor').style.display = 'none';
+      const ta = $('#cfg-fallback'); ta.style.display = '';
+      ta.addEventListener('input', () => { cfgUpdateState(); cfgOutline(); });
+      ta.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); cfgSave(false); } });
+      cb();
+    };
+    if (typeof require === 'undefined') return fallback();
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    require(['vs/editor/editor.main'], () => {
+      monaco.languages.register({ id: 'fxcfg' });
+      monaco.languages.setMonarchTokensProvider('fxcfg', {
+        keywords: ['ensure', 'start', 'stop', 'restart', 'exec', 'set', 'sets', 'setr', 'seta', 'add_ace', 'remove_ace', 'add_principal', 'remove_principal',
+          'endpoint_add_tcp', 'endpoint_add_udp', 'load_server_icon', 'sv_hostname', 'sv_maxclients', 'sv_licenseKey', 'sv_endpointprivacy', 'sv_enforceGameBuild',
+          'sv_scriptHookAllowed', 'sv_master1', 'onesync', 'steam_webApiKey', 'rcon_password', 'sv_projectName', 'sv_projectDesc', 'tags', 'locale'],
+        tokenizer: { root: [
+          [/^\s*(#|\/\/).*$/, 'comment'],
+          [/\s(#|\/\/).*$/, 'comment'],
+          [/"([^"\\]|\\.)*"/, 'string'],
+          [/\b\d+(\.\d+)?\b/, 'number'],
+          [/\b(true|false|on|off|allow|deny)\b/, 'keyword.constant'],
+          [/[a-zA-Z_][\w.:-]*/, { cases: { '@keywords': 'keyword', '@default': 'identifier' } }],
+        ] },
+      });
+      const light = document.documentElement.getAttribute('data-mode') === 'light';
+      monaco.editor.defineTheme('txc-dark', { base: 'vs-dark', inherit: true, rules: [{ token: 'keyword', foreground: '98a1ff' }, { token: 'keyword.constant', foreground: 'f5b842' }, { token: 'comment', foreground: '626a82', fontStyle: 'italic' }], colors: { 'editor.background': '#0b0d12' } });
+      cfgEditor = monaco.editor.create($('#cfg-editor'), {
+        value: '', language: 'fxcfg', theme: light ? 'vs' : 'txc-dark', automaticLayout: true, minimap: { enabled: false },
+        fontSize: 13, fontFamily: 'JetBrains Mono, monospace', scrollBeyondLastLine: false, wordWrap: 'on', renderWhitespace: 'boundary', tabSize: 2,
+      });
+      cfgEditor.onDidChangeModelContent(() => { cfgUpdateState(); cfgOutlineSoon(); });
+      cfgEditor.onDidChangeCursorPosition((e) => { $('#cfg-pos').textContent = 'Ln ' + e.position.lineNumber + ', Col ' + e.position.column; });
+      cfgEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => cfgSave(false));
+      document.addEventListener('opslab-theme-changed', (e) => monaco.editor.setTheme(e.detail.mode === 'light' ? 'vs' : 'txc-dark'));
+      cb();
+    }, fallback);
+  }
+
+  async function openCfgTab() {
+    initCfgEditor(async () => {
+      if (cfgLoaded) { if (cfgEditor) cfgEditor.layout(); return; }
+      const r = await get(BASE + '/cfg');
+      if (!r.ok) return cfgEmpty(r.error);
+      cfgFiles = r.files;
+      if (!cfgFiles.length) return cfgEmpty('txAdmin hasn\'t deployed a server yet, so there\'s no server.cfg to edit. Run the setup wizard first.');
+      $('#cfg-files').innerHTML = cfgFiles.map(f => '<button class="txc-file" data-file="' + esc(f.name) + '">' + esc(f.name) + '<span class="dot" style="display:none"></span></button>').join('');
+      $('#cfg-files').querySelectorAll('[data-file]').forEach(b => b.addEventListener('click', () => cfgOpen(b.dataset.file)));
+      $('#cfg-path').textContent = r.profile;
+      cfgLoaded = true;
+      cfgOpen(cfgFiles[0].name);
+    });
+  }
+  function cfgEmpty(text) {
+    $('#cfg-empty').style.display = ''; $('#cfg-empty').innerHTML = '<div>' + ico('info') + '<div style="margin-top:8px">' + esc(text) + '</div></div>';
+    $('#cfg-outline').innerHTML = '';
+  }
+  async function cfgOpen(name, force) {
+    if (!force && name !== cfgName && cfgDirty()) {
+      const v = await prompt({ title: 'Discard changes?', ok: 'Discard', danger: true, text: 'You have unsaved changes in <code>' + esc(cfgName) + '</code>.' });
+      if (!v) return;
+    }
+    const r = await get(BASE + '/cfg/file?name=' + enc(name));
+    if (!r.ok) return cfgMsg('error', r.error);
+    cfgName = name; cfgSaved = r.content; cfgMtime = r.mtime;
+    $('#cfg-empty').style.display = 'none';
+    cfgSetValue(r.content);
+    document.querySelectorAll('.txc-file').forEach(b => b.classList.toggle('on', b.dataset.file === name));
+    const meta = cfgFiles.find(f => f.name === name) || {};
+    $('#cfg-path').textContent = name + (meta.main ? ' · saved through txAdmin (validated)' : ' · saved directly with a backup');
+    cfgMsg(null); cfgUpdateState(); cfgOutline();
+  }
+  $('#cfg-reload').addEventListener('click', async () => {
+    if (!cfgName) return;
+    if (cfgDirty()) { const v = await prompt({ title: 'Reload from disk?', ok: 'Discard & reload', danger: true, text: 'Your unsaved changes will be lost.' }); if (!v) return; }
+    cfgOpen(cfgName, true);
+  });
+  $('#cfg-find').addEventListener('click', () => { if (cfgEditor) { cfgEditor.focus(); cfgEditor.trigger('kbd', 'actions.find'); } });
+
+  async function cfgSave(andRestart, direct) {
+    if (!cfgName || !cfgDirty()) return;
+    if (andRestart) {
+      const v = await prompt({ title: 'Save and restart?', ok: 'Save & restart', icon: 'restart', text: 'The file is saved, then the game server restarts so the changes apply. Players will be disconnected.' });
+      if (!v) return;
+    }
+    const content = cfgValue();
+    $('#cfg-save').disabled = true;
+    $('#cfg-state').className = 'txc-state'; $('#cfg-state').innerHTML = '<span class="tx-spinner" style="width:12px;height:12px;border-width:2px"></span> saving…';
+    const r = await post(BASE + '/cfg/file', { name: cfgName, content, mtime: cfgMtime, direct: !!direct });
+    if (!r.ok) {
+      cfgUpdateState();
+      const meta = cfgFiles.find(f => f.name === cfgName) || {};
+      if (meta.main && !direct && /reach|login|session|password|txAdmin isn/i.test(r.error || '')) {
+        cfgMsg('error', r.error + '\n\ntxAdmin couldn\'t validate the file. You can save it directly instead (a backup is kept).');
+        const v = await prompt({ title: 'Save without txAdmin?', ok: 'Save directly', text: 'txAdmin isn\'t available to check the file. Save <code>' + esc(cfgName) + '</code> directly? A timestamped backup is made first.' });
+        if (v) return cfgSave(andRestart, true);
+        return;
+      }
+      cfgMsg('error', r.error || 'Save failed');
+      return;
+    }
+    cfgSaved = content; cfgMtime = r.mtime;
+    cfgUpdateState('saved');
+    cfgMsg(r.validation === 'warning' ? 'warn' : 'ok', r.message || 'Saved.');
+    toast(cfgName + ' saved');
+    if (andRestart) { report(await post(BASE + '/control', { action: 'restart' }), 'Server restarting'); setTimeout(pollOverview, 1500); }
+  }
+  $('#cfg-save').addEventListener('click', () => cfgSave(false));
+  $('#cfg-save-restart').addEventListener('click', () => cfgSave(true));
+
+  let outlineTimer = null;
+  const cfgOutlineSoon = () => { clearTimeout(outlineTimer); outlineTimer = setTimeout(cfgOutline, 350); };
+  function cfgOutline() {
+    const lines = cfgValue().split('\n');
+    const sec = { net: [], conv: [], res: [], exec: [], perm: [] };
+    lines.forEach((raw, i) => {
+      const l = raw.replace(/\s(#|\/\/).*$/, '').trim();
+      if (!l || l.startsWith('#') || l.startsWith('//')) return;
+      const [cmd, ...rest] = l.split(/\s+/);
+      const arg = rest.join(' ');
+      const c = cmd.toLowerCase();
+      const item = { n: i + 1, cmd, arg };
+      if (c.startsWith('endpoint_add')) sec.net.push(item);
+      else if (['set', 'sets', 'setr', 'seta'].includes(c) || c.startsWith('sv_') || ['onesync', 'load_server_icon', 'steam_webapikey'].includes(c)) sec.conv.push(item);
+      else if (['ensure', 'start', 'stop', 'restart'].includes(c)) sec.res.push(item);
+      else if (c === 'exec') sec.exec.push(item);
+      else if (c.includes('ace') || c.includes('principal')) sec.perm.push(item);
+    });
+    const mask = (it) => /licensekey|password|webapikey|connection_string|token|secret/i.test(it.cmd + ' ' + it.arg.split(/\s+/)[0]) ? (it.arg.split(/\s+/)[0] && /^(set|sets|setr|seta)$/i.test(it.cmd) ? it.arg.split(/\s+/)[0] + ' ••••' : '••••') : it.arg;
+    const block = (title, items, show) => items.length ? '<div class="txc-sec"><span>' + title + '</span><span>' + items.length + '</span></div>' +
+      items.map(it => '<button class="txc-line" data-line="' + it.n + '"><span class="ln">' + it.n + '</span><span class="tx">' + show(it) + '</span></button>').join('') : '';
+    $('#cfg-outline').innerHTML =
+      block('Network', sec.net, it => '<b>' + esc(it.cmd.replace('endpoint_add_', '')) + '</b> ' + esc(it.arg)) +
+      block('Settings', sec.conv, it => '<b>' + esc(it.cmd) + '</b> ' + esc(mask(it))) +
+      block('Exec', sec.exec, it => esc(it.arg)) +
+      block('Resources', sec.res, it => '<b>' + esc(it.cmd) + '</b> ' + esc(it.arg)) +
+      block('Permissions', sec.perm, it => '<b>' + esc(it.cmd) + '</b> ' + esc(it.arg)) || '<div class="txp-empty">Nothing to outline yet.</div>';
+  }
+  $('#cfg-outline').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-line]'); if (!b) return;
+    const n = Number(b.dataset.line);
+    if (cfgEditor) { cfgEditor.revealLineInCenter(n); cfgEditor.setPosition({ lineNumber: n, column: 1 }); cfgEditor.setSelection(new monaco.Selection(n, 1, n, cfgEditor.getModel().getLineMaxColumn(n))); cfgEditor.focus(); }
+    else { const ta = $('#cfg-fallback'); const lines = ta.value.split('\n'); const start = lines.slice(0, n - 1).join('\n').length + (n > 1 ? 1 : 0); ta.focus(); ta.setSelectionRange(start, start + lines[n - 1].length); }
+  });
+
+  // ---------------------------------------------------------------- live errors
+  let errs = [], errByRes = {}, errFilter = null, errOpen = new Set();
+  async function pollErrors() {
+    const r = await get(BASE + '/errors?limit=100');
+    if (!r.ok) return;
+    errs = r.errors;
+    const hour = Date.now() / 1000 - 3600;
+    errByRes = {};
+    errs.filter(e => e.last > hour).forEach(e => { errByRes[e.resource] = (errByRes[e.resource] || 0) + 1; });
+    const n = Object.values(errByRes).reduce((a, b) => a + b, 0);
+    $('#tab-err-n').style.display = n ? '' : 'none'; $('#tab-err-n').textContent = n;
+    $('#err-sub').textContent = !r.watching ? 'Console log not found yet' : n ? n + ' error' + (n === 1 ? '' : 's') + ' in the last hour' : 'No errors in the last hour 🎉';
+    paintErrors();
+  }
+  function paintErrors() {
+    const list = errFilter ? errs.filter(e => e.resource === errFilter) : errs;
+    $('#err-clear').style.display = errs.length ? '' : 'none';
+    const filt = errFilter ? '<div class="txp-filters" style="padding:8px 20px"><span>Showing <b>' + esc(errFilter) + '</b></span><span class="spacer"></span><button class="tx-btn tx-btn-ghost tx-btn-sm" id="err-unfilter">Show all</button></div>' : '';
+    $('#err-list').innerHTML = filt + (list.length ? list.slice(0, 12).map(e => {
+      const loc = e.file ? e.file + (e.line ? ':' + e.line : '') : '';
+      return '<div class="txer' + (errOpen.has(e.id) ? ' open' : '') + '" data-err="' + e.id + '"><div class="txer-ico">' + ico('alert') + '</div><div class="txer-main">' +
+        '<div class="txer-h"><b>' + esc(e.resource) + '</b>' + (loc ? '<span class="loc">' + esc(loc) + '</span>' : '') + (e.count > 1 ? '<span class="cnt">×' + e.count + '</span>' : '') + '<span class="when">' + rel(e.last) + '</span></div>' +
+        '<div class="txer-msg">' + esc(e.message.replace(/^SCRIPT ERROR: @[^:]+:\d+: ?/, '')) + (e.reason ? '<span class="why">' + esc(e.reason) + '</span>' : '') + '</div>' +
+        '<pre class="txer-det">' + esc([e.message].concat(e.detail || []).join('\n')) + '</pre>' +
+        '<div class="txer-a"><button class="tx-btn tx-btn-ghost tx-btn-sm" data-errtoggle="' + e.id + '">' + (errOpen.has(e.id) ? 'Hide details' : 'Details') + '</button>' +
+          (e.kind !== 'generic' ? '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-erredit="' + esc(e.resource) + '" data-errfile="' + esc(e.file || '') + '" data-errline="' + (e.line || '') + '"><svg viewBox="0 0 24 24"><path d="M8 6L2 12l6 6M16 6l6 6-6 6"/></svg>Open file</button>' : '') +
+          '<button class="tx-btn tx-btn-ghost tx-btn-sm txr-cc" data-errclaude="' + e.id + '"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>Fix with Claude</button>' +
+          ((e.sent_to || []).length ? '<span class="sent">' + ico('check') + 'sent to Claude</span>' : '') +
+        '</div></div></div>';
+    }).join('') : empty('check', errFilter ? 'No recent errors for ' + esc(errFilter) + '.' : 'No errors. When a script breaks, it shows up here instantly.'));
+    const uf = $('#err-unfilter'); if (uf) uf.onclick = () => { errFilter = null; paintErrors(); };
+    if (activeTab === 'resources' && resources.length) renderResources();
+  }
+  $('#err-list').addEventListener('click', async (e) => {
+    const t = e.target.closest('[data-errtoggle]');
+    if (t) { const id = +t.dataset.errtoggle; errOpen.has(id) ? errOpen.delete(id) : errOpen.add(id); return paintErrors(); }
+    const ed = e.target.closest('[data-erredit]');
+    if (ed) return openEditorAt(ed.dataset.erredit, ed.dataset.errfile, +ed.dataset.errline || null);
+    const c = e.target.closest('[data-errclaude]');
+    if (c) return sendErrorToClaude(+c.dataset.errclaude, c);
+  });
+  $('#err-clear').addEventListener('click', async () => { await post(BASE + '/errors/clear', errFilter ? { resource: errFilter } : {}); pollErrors(); });
+  async function sendErrorToClaude(id, btn) {
+    btn.disabled = true;
+    const r = await post(BASE + '/errors/' + id + '/claude', {});
+    btn.disabled = false;
+    if (!r.ok) {
+      if (/No Claude session covers/.test(r.error || '')) {
+        const v = await prompt({ title: 'Link this resource to Claude first', ok: 'Go to Claude Code', icon: 'info', text: esc(r.error) });
+        if (v) { const e = errs.find(x => x.id === id); ccPrefill = null; if (e) { const rr = resources.find(x => x.name === e.resource); if (rr) ccPrefill = (rr.folder ? rr.folder + '/' : '') + rr.name; } showTab('claude'); }
+        return;
+      }
+      return toast(r.error, 'error');
+    }
+    toast(r.message + (r.live.length ? '. Claude is on it, so check claude.ai/code.' : ''), r.live.length ? 'success' : 'error');
+    pollErrors();
+  }
+  async function openEditorAt(resource, file, line) {
+    await openEditor(resource);
+    if (!file) return;
+    const wait = (n) => new Promise(r => setTimeout(r, n));
+    for (let i = 0; i < 20 && !ED.files.length; i++) await wait(100);
+    if (ED.files.some(f => f.path === file)) { await openFile(file); if (line && ED.editor) { ED.editor.revealLineInCenter(line); ED.editor.setPosition({ lineNumber: line, column: 1 }); } }
+  }
+  pollErrors(); setInterval(() => { if (!document.hidden) pollErrors(); }, 5000);
+
+  // ---------------------------------------------------------------- VS Code-style resource editor
+  const ED = { res: null, folder: '', files: [], tabs: [], active: null, editor: null, ready: false, open: new Set(), timers: {} };
+  const AS_KEY = 'txe-autosave';
+  const LANGS = { lua: 'lua', js: 'javascript', mjs: 'javascript', cjs: 'javascript', jsx: 'javascript', ts: 'typescript', tsx: 'typescript', json: 'json',
+    html: 'html', htm: 'html', vue: 'html', css: 'css', scss: 'scss', yml: 'yaml', yaml: 'yaml', xml: 'xml', meta: 'xml', svg: 'xml', md: 'markdown',
+    sql: 'sql', ini: 'ini', toml: 'ini', env: 'ini', sh: 'shell', py: 'python', cfg: 'fxcfg', txt: 'plaintext', csv: 'plaintext' };
+  const LANG_NAMES = { lua: 'Lua', javascript: 'JavaScript', typescript: 'TypeScript', json: 'JSON', html: 'HTML', css: 'CSS', scss: 'SCSS', yaml: 'YAML', xml: 'XML',
+    markdown: 'Markdown', sql: 'SQL', ini: 'Ini', shell: 'Shell Script', python: 'Python', fxcfg: 'FXServer cfg', plaintext: 'Plain Text' };
+  const extOf = (p) => { const m = /\.([^./]+)$/.exec(p); return m ? m[1].toLowerCase() : ''; };
+  const langOf = (p) => LANGS[extOf(p)] || (/fxmanifest\.lua$|__resource\.lua$/.test(p) ? 'lua' : 'plaintext');
+  function icoFor(p, editable) {
+    const e = extOf(p);
+    const map = { lua: ['lua', 'LUA'], js: ['js', 'JS'], mjs: ['js', 'JS'], cjs: ['js', 'JS'], jsx: ['js', 'JSX'], ts: ['ts', 'TS'], tsx: ['ts', 'TSX'], json: ['json', '{}'],
+      cfg: ['cfg', '⚙'], html: ['html', '<>'], htm: ['html', '<>'], css: ['css', '#'], scss: ['css', '#'], md: ['md', 'M↓'], sql: ['sql', 'DB'], yml: ['yml', 'Y'], yaml: ['yml', 'Y'], xml: ['xml', '<>'], meta: ['xml', '<>'] };
+    const [cls, txt] = map[e] || (editable ? ['md', '≡'] : ['bin', '•']);
+    return '<span class="txe-ic ' + cls + '">' + esc(txt) + '</span>';
+  }
+  const tabByPath = (p) => ED.tabs.find(t => t.path === p);
+  const isDirty = (t) => t && t.model && t.model.getAlternativeVersionId() !== t.savedAlt;
+  const anyDirty = () => ED.tabs.some(isDirty);
+  const autosaveOn = () => $('#txe-autosave').checked;
+  try { $('#txe-autosave').checked = localStorage.getItem(AS_KEY) === '1'; } catch (e) {}
+  $('#txe-autosave').addEventListener('change', () => {
+    try { localStorage.setItem(AS_KEY, autosaveOn() ? '1' : '0'); } catch (e) {}
+    if (autosaveOn()) saveAll(true);
+    edStatus();
+  });
+
+  function withMonaco(cb) {
+    if (window.monaco && monaco.editor) return cb();
+    if (typeof require === 'undefined') return toast('The code editor couldn\'t load (CDN blocked?)', 'error');
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    require(['vs/editor/editor.main'], cb, () => toast('The code editor couldn\'t load', 'error'));
+  }
+  function ensureFxCfgLang() {
+    if (monaco.languages.getLanguages().some(l => l.id === 'fxcfg')) return;
+    monaco.languages.register({ id: 'fxcfg' });
+    monaco.languages.setMonarchTokensProvider('fxcfg', { tokenizer: { root: [
+      [/^\s*(#|\/\/).*$/, 'comment'], [/\s(#|\/\/).*$/, 'comment'], [/"([^"\\]|\\.)*"/, 'string'], [/\b\d+(\.\d+)?\b/, 'number'],
+      [/\b(ensure|start|stop|restart|exec|set|sets|setr|seta|add_ace|add_principal|remove_ace|endpoint_add_tcp|endpoint_add_udp)\b/, 'keyword'] ] } });
+  }
+  function initEditor() {
+    if (ED.editor) return;
+    ensureFxCfgLang();
+    ED.editor = monaco.editor.create($('#txe-editor'), {
+      model: null, theme: 'vs-dark', automaticLayout: true, fontSize: 13.5, fontFamily: 'JetBrains Mono, Consolas, monospace', fontLigatures: true,
+      minimap: { enabled: true, renderCharacters: false }, smoothScrolling: true, cursorBlinking: 'smooth', cursorSmoothCaretAnimation: 'on',
+      renderWhitespace: 'selection', bracketPairColorization: { enabled: true }, guides: { bracketPairs: true, indentation: true },
+      stickyScroll: { enabled: true }, scrollBeyondLastLine: false, tabSize: 4, mouseWheelZoom: true, padding: { top: 6 },
+    });
+    const K = monaco.KeyMod, C = monaco.KeyCode;
+    ED.editor.addCommand(K.CtrlCmd | C.KeyS, () => saveTab(ED.active));
+    ED.editor.addCommand(K.CtrlCmd | K.Alt | C.KeyS, () => saveAll());
+    ED.editor.addCommand(K.CtrlCmd | C.KeyP, () => quickOpen());
+    ED.editor.addCommand(K.CtrlCmd | K.Shift | C.KeyR, () => saveAndRestart());
+    ED.editor.addCommand(K.Alt | C.KeyW, () => closeTab(ED.active));
+    ED.editor.onDidChangeCursorPosition((e) => { $('#txe-st-pos').textContent = 'Ln ' + e.position.lineNumber + ', Col ' + e.position.column; });
+  }
+
+  async function openEditor(resource) {
+    const r = await get(BASE + '/resource-files?resource=' + enc(resource));
+    if (!r.ok) return toast(r.error, 'error');
+    withMonaco(() => {
+      initEditor();
+      ED.res = resource; ED.folder = r.folder; ED.files = r.files; ED.tabs = []; ED.active = null;
+      ED.open = new Set(['']);
+      r.configs.forEach(c => { const parts = c.split('/'); for (let i = 1; i < parts.length; i++) ED.open.add(parts.slice(0, i).join('/')); });
+      $('#txe-res').innerHTML = esc(resource) + ' <span>' + esc(r.folder || '') + '</span>';
+      $('#txe-st-res').innerHTML = '<svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/></svg>' + esc(resource);
+      $('#txe-filter').value = '';
+      monaco.editor.setTheme('vs-dark');  // themes are global in Monaco; the cfg tab may have set a light one
+      $('#txe').hidden = false;
+      document.body.style.overflow = 'hidden';
+      edRenderTree(); renderTabs();
+      if (r.truncated) toast('Large resource: only the first 3000 files are listed', 'error');
+      const first = r.configs[0] || (r.files.find(f => /fxmanifest\.lua$/.test(f.path)) || {}).path;
+      if (first) openFile(first); else edShowWelcome();
+    });
+  }
+
+  async function closeEditor(force) {
+    if (!force && anyDirty()) {
+      if (autosaveOn()) { await saveAll(true); if (anyDirty()) return; }
+      else {
+        const n = ED.tabs.filter(isDirty).length;
+        const v = await prompt({ title: n + ' unsaved file' + (n === 1 ? '' : 's'), icon: 'alert', ok: 'Continue',
+          text: 'You have unsaved changes in ' + ED.tabs.filter(isDirty).map(t => '<code>' + esc(t.path) + '</code>').join(', ') + '.',
+          fields: [{ name: 'act', label: 'Before closing', type: 'select', value: 'save', options: [['save', 'Save all, then close'], ['discard', 'Discard changes and close']] }] });
+        if (!v) return;
+        if (v.act === 'save') { await saveAll(); if (anyDirty()) return; }
+      }
+    }
+    Object.values(ED.timers).forEach(clearTimeout); ED.timers = {};
+    ED.tabs.forEach(t => t.model && t.model.dispose());
+    ED.tabs = []; ED.active = null;
+    if (ED.editor) ED.editor.setModel(null);
+    $('#txe').hidden = true; $('#txe-quick').hidden = true;
+    document.body.style.overflow = '';
+    if (cfgEditor) monaco.editor.setTheme(document.documentElement.getAttribute('data-mode') === 'light' ? 'vs' : 'txc-dark');
+    loadResources();
+  }
+  $('#txe-backdrop').addEventListener('click', () => closeEditor());
+  $('#txe-close').addEventListener('click', () => closeEditor());
+  window.addEventListener('beforeunload', (e) => { if (!$('#txe').hidden && anyDirty()) { e.preventDefault(); e.returnValue = ''; } });
+
+  function buildFileTree() {
+    const root = { name: '', path: '', dirs: new Map(), files: [] };
+    const q = $('#txe-filter').value.trim().toLowerCase();
+    ED.files.forEach(f => {
+      if (q && !f.path.toLowerCase().includes(q)) return;
+      const parts = f.path.split('/'); let node = root, acc = '';
+      parts.slice(0, -1).forEach(p => { acc = acc ? acc + '/' + p : p; if (!node.dirs.has(p)) node.dirs.set(p, { name: p, path: acc, dirs: new Map(), files: [] }); node = node.dirs.get(p); });
+      node.files.push(f);
+    });
+    return { root, q };
+  }
+  function edRenderTree() {
+    const { root, q } = buildFileTree();
+    const row = (depth, inner, cls, attrs) => '<div class="txe-node ' + (cls || '') + '" style="padding-left:' + (8 + depth * 12) + 'px" ' + attrs + '>' + inner + '</div>';
+    const walk = (node, depth) => {
+      let html = '';
+      [...node.dirs.values()].sort((a, b) => a.name.localeCompare(b.name)).forEach(d => {
+        const open = q || ED.open.has(d.path);
+        html += row(depth, '<span class="cv' + (open ? ' open' : '') + '"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span><span class="nm">' + esc(d.name) + '</span>', '', 'data-dir="' + esc(d.path) + '"');
+        if (open) html += walk(d, depth + 1);
+      });
+      node.files.sort((a, b) => a.path.localeCompare(b.path)).forEach(f => {
+        const name = f.path.split('/').pop(), t = tabByPath(f.path);
+        html += row(depth, '<span class="cv"></span>' + icoFor(f.path, f.editable) + '<span class="nm">' + esc(name) + '</span>' + (isDirty(t) ? '<span class="dirty"></span>' : ''),
+          (f.editable ? '' : 'off') + (ED.active === f.path ? ' on' : ''), 'data-file="' + esc(f.path) + '" title="' + esc(f.path) + (f.editable ? '' : ' (not editable)') + '"');
+      });
+      return html;
+    };
+    $('#txe-tree').innerHTML = walk(root, 0) || '<div style="padding:10px 16px;color:#6e6e6e;font-size:12px">No files match.</div>';
+  }
+  $('#txe-tree').addEventListener('click', (e) => {
+    const d = e.target.closest('[data-dir]');
+    if (d) { const p = d.dataset.dir; ED.open.has(p) ? ED.open.delete(p) : ED.open.add(p); return edRenderTree(); }
+    const f = e.target.closest('[data-file]');
+    if (f) { if (f.classList.contains('off')) return toast('This file can\'t be edited here (binary or over 1 MB)', 'error'); openFile(f.dataset.file); }
+  });
+  $('#txe-filter').addEventListener('input', edRenderTree);
+
+  async function openFile(path) {
+    let t = tabByPath(path);
+    if (!t) {
+      const r = await get(BASE + '/resource-file?resource=' + enc(ED.res) + '&path=' + enc(path));
+      if (!r.ok) return toast(r.error, 'error');
+      if (tabByPath(path)) return openFile(path);
+      const model = monaco.editor.createModel(r.content, langOf(path), monaco.Uri.parse('inmemory://txe/' + enc(ED.res) + '/' + path.split('/').map(enc).join('/')));
+      model.setEOL(r.eol === 'crlf' ? monaco.editor.EndOfLineSequence.CRLF : monaco.editor.EndOfLineSequence.LF);
+      t = { path, model, mtime: r.mtime, eol: r.eol, savedAlt: model.getAlternativeVersionId(), view: null, saving: false, error: null };
+      model.onDidChangeContent(() => onEdit(t));
+      ED.tabs.push(t);
+    }
+    if (ED.active && tabByPath(ED.active)) tabByPath(ED.active).view = ED.editor.saveViewState();
+    ED.active = path;
+    ED.editor.setModel(t.model);
+    if (t.view) ED.editor.restoreViewState(t.view);
+    ED.editor.focus();
+    $('#txe-welcome').style.display = 'none';
+    const parts = path.split('/'); for (let i = 1; i < parts.length; i++) ED.open.add(parts.slice(0, i).join('/'));
+    renderTabs(); edRenderTree(); edStatus();
+  }
+
+  function edShowWelcome() { $('#txe-welcome').style.display = ''; $('#txe-crumb').innerHTML = ''; edStatus(); }
+
+  function renderTabs() {
+    $('#txe-tabs').innerHTML = ED.tabs.map(t => '<div class="txe-tab' + (t.path === ED.active ? ' on' : '') + (isDirty(t) ? ' dirty' : '') + '" data-tab="' + esc(t.path) + '" title="' + esc(t.path) + '">' +
+      icoFor(t.path, true) + '<span class="nm">' + esc(t.path.split('/').pop()) + '</span><button class="x" data-tclose="' + esc(t.path) + '" title="Close (Alt+W)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>').join('');
+    const t = tabByPath(ED.active);
+    $('#txe-crumb').innerHTML = t ? esc(ED.res) + ' › ' + t.path.split('/').map((p, i, a) => i === a.length - 1 ? '<b>' + esc(p) + '</b>' : esc(p)).join(' › ') : '';
+    $('#txe-wintitle').textContent = (t ? (isDirty(t) ? '● ' : '') + t.path.split('/').pop() + ' — ' : '') + ED.res + ' — ' + NAME;
+  }
+  $('#txe-tabs').addEventListener('click', (e) => {
+    const x = e.target.closest('[data-tclose]'); if (x) { e.stopPropagation(); return closeTab(x.dataset.tclose); }
+    const t = e.target.closest('[data-tab]'); if (t) openFile(t.dataset.tab);
+  });
+  $('#txe-tabs').addEventListener('auxclick', (e) => { const t = e.target.closest('[data-tab]'); if (t && e.button === 1) closeTab(t.dataset.tab); });
+
+  async function closeTab(path) {
+    const t = tabByPath(path); if (!t) return;
+    if (isDirty(t)) {
+      if (autosaveOn()) await saveTab(path);
+      else {
+        const v = await prompt({ title: 'Save changes to ' + path.split('/').pop() + '?', icon: 'alert', ok: 'Continue',
+          fields: [{ name: 'act', label: 'Your changes will be lost if you don\'t save them.', type: 'select', value: 'save', options: [['save', 'Save'], ['discard', 'Don\'t save']] }] });
+        if (!v) return;
+        if (v.act === 'save') { await saveTab(path); if (isDirty(t)) return; }
+      }
+    }
+    clearTimeout(ED.timers[path]);
+    const idx = ED.tabs.indexOf(t);
+    ED.tabs.splice(idx, 1);
+    if (ED.active === path) {
+      const next = ED.tabs[idx] || ED.tabs[idx - 1];
+      ED.active = null;
+      if (next) openFile(next.path); else { ED.editor.setModel(null); edShowWelcome(); }
+    }
+    t.model.dispose();
+    renderTabs(); edRenderTree();
+  }
+
+  function onEdit(t) {
+    renderTabs(); edRenderTreeSoon(); edStatus();
+    if (autosaveOn()) { clearTimeout(ED.timers[t.path]); ED.timers[t.path] = setTimeout(() => saveTab(t.path, true), 1000); }
+  }
+  let edTreeTimer = null;
+  const edRenderTreeSoon = () => { clearTimeout(edTreeTimer); edTreeTimer = setTimeout(edRenderTree, 250); };
+
+  async function saveTab(path, quiet) {
+    const t = tabByPath(path); if (!t || !isDirty(t) || t.saving) return;
+    t.saving = true; edStatus();
+    const alt = t.model.getAlternativeVersionId();
+    const r = await post(BASE + '/resource-file', { resource: ED.res, path, content: t.model.getValue(), mtime: t.mtime });
+    t.saving = false;
+    if (!r.ok) {
+      t.error = r.error; edStatus();
+      if (/changed on disk/i.test(r.error || '')) {
+        const v = await prompt({ title: path.split('/').pop() + ' changed on disk', icon: 'alert', ok: 'Continue', text: esc(r.error),
+          fields: [{ name: 'act', label: 'What do you want to do?', type: 'select', value: 'overwrite', options: [['overwrite', 'Overwrite it with my version'], ['reload', 'Reload from disk (lose my changes)']] }] });
+        if (v && v.act === 'overwrite') { t.mtime = null; return saveTab(path, quiet); }
+        if (v && v.act === 'reload') {
+          const f = await get(BASE + '/resource-file?resource=' + enc(ED.res) + '&path=' + enc(path));
+          if (f.ok) { t.model.setValue(f.content); t.mtime = f.mtime; t.savedAlt = t.model.getAlternativeVersionId(); t.error = null; renderTabs(); edRenderTree(); edStatus(); }
+        }
+        return;
+      }
+      return toast(r.error, 'error');
+    }
+    t.mtime = r.mtime; t.error = null; t.savedAlt = alt; t.savedAt = new Date();
+    renderTabs(); edRenderTree(); edStatus();
+    if (!quiet) toast('Saved ' + path.split('/').pop());
+  }
+  async function saveAll(quiet) { for (const t of ED.tabs.filter(isDirty)) await saveTab(t.path, quiet); if (!quiet && !anyDirty()) toast('All files saved'); }
+  async function saveAndRestart() {
+    await saveAll(true);
+    if (anyDirty()) return;
+    const r = await post(BASE + '/resources/restart', { name: ED.res });
+    report(r, 'Saved and restarted ' + ED.res);
+  }
+  $('#txe-save').addEventListener('click', () => saveTab(ED.active));
+  $('#txe-saveall').addEventListener('click', () => saveAll());
+  $('#txe-restart').addEventListener('click', saveAndRestart);
+
+  function edStatus() {
+    const t = tabByPath(ED.active), st = $('#txe-st-save');
+    $('#txe-save').disabled = !isDirty(t); $('#txe-saveall').disabled = !anyDirty();
+    $('#txe-st-lang').textContent = t ? (LANG_NAMES[t.model.getLanguageId()] || t.model.getLanguageId()) : '';
+    $('#txe-st-eol').textContent = t ? (t.model.getEOL() === '\r\n' ? 'CRLF' : 'LF') : '';
+    $('#txe-st-tab').textContent = t ? t.model.getOptions().tabSize : '';
+    $('.txe-status').classList.toggle('warn', !!(t && t.error));
+    if (!t) st.textContent = '';
+    else if (t.saving) st.textContent = '⟳ Saving…';
+    else if (t.error) st.textContent = '⚠ ' + t.error;
+    else if (isDirty(t)) st.textContent = autosaveOn() ? '● Auto saving…' : '● Unsaved';
+    else st.textContent = t.savedAt ? '✓ Saved ' + t.savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : (autosaveOn() ? '✓ Auto save on' : '');
+  }
+
+  // Ctrl+P quick open (VS Code style)
+  let qiSel = 0, qiList = [];
+  function quickOpen() {
+    $('#txe-quick').hidden = false;
+    const inp = $('#txe-quick-input'); inp.value = ''; qiSel = 0; paintQuick(); inp.focus();
+  }
+  function paintQuick() {
+    const q = $('#txe-quick-input').value.trim().toLowerCase();
+    const score = (p) => { const n = p.toLowerCase(), b = n.split('/').pop(); if (!q) return 1; if (b.startsWith(q)) return 3; if (b.includes(q)) return 2; if (n.includes(q)) return 1;
+      let i = 0; for (const ch of n) { if (ch === q[i]) i++; if (i === q.length) return .5; } return 0; };
+    qiList = ED.files.filter(f => f.editable).map(f => ({ f, s: score(f.path) })).filter(x => x.s > 0).sort((a, b) => b.s - a.s || a.f.path.length - b.f.path.length).slice(0, 50).map(x => x.f);
+    qiSel = Math.min(qiSel, Math.max(0, qiList.length - 1));
+    const hlq = (s) => { if (!q) return esc(s); const i = s.toLowerCase().indexOf(q); return i < 0 ? esc(s) : esc(s.slice(0, i)) + '<mark>' + esc(s.slice(i, i + q.length)) + '</mark>' + esc(s.slice(i + q.length)); };
+    $('#txe-quick-list').innerHTML = qiList.map((f, i) => { const parts = f.path.split('/'); return '<div class="txe-qi' + (i === qiSel ? ' on' : '') + '" data-qi="' + i + '">' + icoFor(f.path, true) +
+      '<span>' + hlq(parts.pop()) + '</span><span class="dir">' + esc(parts.join('/')) + '</span></div>'; }).join('') || '<div style="padding:8px;color:#8b8b8b;font-size:12.5px">No matching files</div>';
+    const on = $('#txe-quick-list .on'); if (on) on.scrollIntoView({ block: 'nearest' });
+  }
+  $('#txe-quick-input').addEventListener('input', () => { qiSel = 0; paintQuick(); });
+  $('#txe-quick-input').addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { qiSel = Math.min(qiList.length - 1, qiSel + 1); paintQuick(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { qiSel = Math.max(0, qiSel - 1); paintQuick(); e.preventDefault(); }
+    else if (e.key === 'Enter') { const f = qiList[qiSel]; $('#txe-quick').hidden = true; if (f) openFile(f.path); e.preventDefault(); }
+    else if (e.key === 'Escape') { $('#txe-quick').hidden = true; if (ED.editor) ED.editor.focus(); e.preventDefault(); e.stopPropagation(); }
+  });
+  $('#txe-quick-list').addEventListener('click', (e) => { const r = e.target.closest('[data-qi]'); if (r) { $('#txe-quick').hidden = true; openFile(qiList[+r.dataset.qi].path); } });
+  $('#txe-quick-input').addEventListener('blur', () => setTimeout(() => { $('#txe-quick').hidden = true; }, 150));
+
+  // shortcuts that also work when focus is in the explorer, not the editor
+  document.addEventListener('keydown', (e) => {
+    if ($('#txe').hidden) return;
+    const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+    if (mod && k === 'p') { e.preventDefault(); quickOpen(); }
+    else if (mod && e.altKey && k === 's') { e.preventDefault(); saveAll(); }
+    else if (mod && k === 's') { e.preventDefault(); saveTab(ED.active); }
+    else if (e.key === 'Escape' && document.activeElement && document.activeElement.closest && document.activeElement.closest('.txe-explorer')) { e.preventDefault(); closeEditor(); }
+  }, true);
+
+  // ---------------------------------------------------------------- Claude Code (claude.ai/code Remote Control)
+  let ccData = null, ccPrefill = null, ccTimer = null, ccView = null;
+  const ccState = (l) => {
+    if (l.status === 'running') return ['ok', 'Live: open it in claude.ai'];
+    if (l.status === 'waiting') return ['warn', 'Needs your answer'];
+    if (l.status === 'untrusted' || !l.trusted) return ['warn', 'Not allowed yet (step 2)'];
+    if (l.status === 'auth') return ['warn', 'Log in needed'];
+    if (l.status === 'exited') return ['bad', 'Stopped with an error'];
+    return ['', 'Stopped'];
+  };
+  async function loadClaude() {
+    clearInterval(ccTimer);
+    const r = await get('/tx/api/instance/' + SID + '/claude');
+    if (!r.ok) {
+      $('#cc-account').innerHTML = ''; $('#cc-links').innerHTML = '<div class="tx-panel-body"><div class="tx-callout warn">' + ico('alert') + '<div>' + esc(r.error) + '</div></div></div>';
+      $('#cc-link-btn').disabled = true; return;
+    }
+    ccData = r; paintClaude();
+    ccTimer = setInterval(async () => {
+      if (activeTab !== 'claude' || document.hidden) return clearInterval(ccTimer);
+      const r2 = await get('/tx/api/instance/' + SID + '/claude'); if (r2.ok) { ccData = r2; paintClaude(true); }
+    }, 5000);
+  }
+  function paintClaude(soft) {
+    const r = ccData, a = r.account;
+    $('#cc-account').innerHTML = !a.installed ? '<span style="color:var(--danger)">Claude Code isn\'t installed on this server</span>'
+      : a.loggedIn ? '<span class="tx-status ok" style="height:auto;padding:0;border:0;background:none"><i></i></span><div class="who"><b>' + esc(a.email || 'Logged in') + '</b><span>' + esc(a.orgName || '') + ' · ' + esc(a.version || '') + '</span></div><button class="tx-btn tx-btn-ghost tx-btn-sm" id="cc-logout">Log out</button>'
+      : '<div class="who"><b>Not logged in</b><span>Needs a Claude subscription</span></div><button class="tx-btn tx-btn-primary tx-btn-sm" id="cc-login">Log in</button>';
+    const lo = $('#cc-logout'); if (lo) lo.onclick = ccLogout;
+    const li = $('#cc-login'); if (li) li.onclick = ccLogin;
+    paintSteps(r);
+    // links
+    const n = r.links.filter(l => l.status === 'running').length;
+    $('#tab-claude-n').style.display = n ? '' : 'none'; $('#tab-claude-n').textContent = n;
+    $('#cc-links-sub').textContent = r.links.length ? r.links.length + ' linked · ' + n + ' live' : 'Nothing linked yet';
+    $('#cc-links').innerHTML = r.links.length ? r.links.map(l => {
+      const [t, label] = ccState(l);
+      return '<div class="txcc-link"><div class="txcc-link-ico ' + t + '">' + ico(l.rel_path && l.rel_path.split('/').pop().startsWith('[') ? 'box' : 'box') + '</div><div class="txcc-link-main">' +
+        '<div class="txcc-link-t">' + esc(l.rel_path ? l.rel_path.split('/').pop() : 'resources (everything)') + '<span class="tx-status ' + t + '" style="height:22px;font-size:11px"><i></i>' + esc(label) + '</span></div>' +
+        '<div class="txcc-link-d" title="' + esc(l.path || '') + '">session “' + esc(l.name) + '” · ' + esc(l.permission_mode) + (l.live_errors ? ' · <span style="color:var(--ok)">live errors on</span>' : '') + '</div>' +
+        (l.status === 'waiting' ? '<div class="txcc-ask" style="margin-top:10px">' + ico('alert') + '<strong>' + esc(l.question || 'Claude Code is asking something') + '</strong><button class="tx-btn tx-btn-primary tx-btn-sm" data-ccview="rc-' + l.id + '" data-cctitle="' + esc(l.name) + '">Answer</button></div>' : '') +
+        '<div class="txcc-link-a">' +
+          (l.status === 'running' ? '<a class="tx-btn tx-btn-primary tx-btn-sm" href="' + esc(l.url || 'https://claude.ai/code') + '" target="_blank" rel="noopener">' + ico('ext') + 'Open in claude.ai</a>' : '') +
+          (l.alive ? '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-ccview="rc-' + l.id + '" data-cctitle="' + esc(l.name) + '">' + ico('info') + 'Session</button><button class="tx-btn tx-btn-ghost tx-btn-sm" data-ccact="stop" data-cc="' + l.id + '">' + ico('stop') + 'Stop</button>'
+                   : '<button class="tx-btn tx-btn-ghost tx-btn-sm" data-ccact="start" data-cc="' + l.id + '"' + (r.root_trusted && a.loggedIn ? '' : ' disabled') + '>' + ico('play') + 'Start</button>') +
+          '<button class="tx-btn tx-btn-ghost tx-btn-sm tx-btn-icon" title="Unlink" data-ccact="remove" data-cc="' + l.id + '" data-ccname="' + esc(l.name) + '">' + ico('trash') + '</button>' +
+        '</div></div></div>';
+    }).join('') : empty('box', 'Link a folder and it appears in claude.ai/code.');
+    // targets
+    if (!soft || !$('#cc-target').options.length) {
+      const linked = new Set(r.links.map(l => l.rel_path));
+      const opts = r.targets.filter(t => !linked.has(t.rel_path)).map(t => '<option value="' + esc(t.rel_path) + '">' +
+        (t.kind === 'root' ? '📁 ' : t.kind === 'folder' ? '  '.repeat(t.rel_path.split('/').length) + '📁 ' : '  '.repeat((t.folder || '').split('/').filter(Boolean).length + 1) + '◆ ') + esc(t.label) + '</option>');
+      $('#cc-target').innerHTML = opts.join('');
+      if (ccPrefill != null) { $('#cc-target').value = ccPrefill; if ($('#cc-target').value !== ccPrefill) toast('That folder is already linked'); ccPrefill = null; }
+    }
+    $('#cc-link-btn').disabled = !a.installed || !$('#cc-target').options.length;
+    const linkedSet = new Set(r.links.map(l => l.rel_path));
+    const tops = r.targets.filter(t => t.kind === 'folder' && !t.rel_path.includes('/'));
+    const missing = tops.filter(t => !linkedSet.has(t.rel_path));
+    $('#cc-all-desc').innerHTML = missing.length ? 'Adds a separate session for ' + missing.map(t => '<code>' + esc(t.rel_path) + '</code>').join(' ') + '.'
+      : 'Every top-level folder is already linked.';
+    $('#cc-link-all').disabled = !a.installed || !missing.length;
+    $('#cc-startall').style.display = r.links.some(l => !l.alive) ? '' : 'none';
+    $('#cc-stopall').style.display = r.links.some(l => l.alive) ? '' : 'none';
+    $('#cc-example').textContent = NAME + ' · ' + (($('#cc-target').value || 'resources').split('/').pop());
+  }
+  function paintSteps(r) {
+    const a = r.account, links = r.links;
+    const live = links.find(l => l.status === 'running');
+    const waiting = links.find(l => l.status === 'waiting');
+    const stopped = links.find(l => l.status !== 'running');
+    const steps = [
+      { done: a.loggedIn, t: 'Connect your Claude account', d: a.loggedIn ? 'Using ' + esc(a.email || 'your account') + '.' : 'Needs a Claude Pro, Max, Team or Enterprise plan.',
+        btn: '<button class="tx-btn tx-btn-primary tx-btn-sm" data-step="login">Log in</button>' },
+      { done: r.root_trusted, t: 'Allow Claude to work in this server\'s files', d: r.root_trusted ? 'The resources folder is allowed.' : 'A one-time safety check by Claude Code. You only do this once per server.',
+        btn: '<button class="tx-btn tx-btn-primary tx-btn-sm" data-step="trust">Allow</button>' },
+      { done: links.length > 0, t: 'Pick a folder to share', d: links.length ? links.length + ' folder' + (links.length === 1 ? '' : 's') + ' linked.' : 'Use “Link a folder” below. “Whole resources folder” is easiest.',
+        btn: '<button class="tx-btn tx-btn-primary tx-btn-sm" data-step="link">Link a folder</button>' },
+      { done: !!live, t: 'Make sure it\'s live', d: live ? '“' + esc(live.name) + '” is connected.' : waiting ? 'Claude Code is asking a question. Answer it to finish.' : 'Press Start on a linked folder.',
+        btn: waiting ? '<button class="tx-btn tx-btn-primary tx-btn-sm" data-ccview="rc-' + waiting.id + '" data-cctitle="' + esc(waiting.name) + '">Answer</button>'
+          : stopped ? '<button class="tx-btn tx-btn-primary tx-btn-sm" data-ccact="start" data-cc="' + stopped.id + '">Start</button>' : '' },
+      { done: false, open: !!live, t: 'Open claude.ai/code and start chatting', d: live ? 'Pick <b>' + esc(live.name) + '</b> in the session list, then type what you want changed.' : 'Your session will be listed there once it\'s live.',
+        btn: live ? '<a class="tx-btn tx-btn-primary tx-btn-sm" href="' + esc(live.url || 'https://claude.ai/code') + '" target="_blank" rel="noopener">' + ico('ext') + 'Open claude.ai/code</a>' : '' },
+    ];
+    const now = steps.findIndex(x => !x.done && (x.open !== false));
+    $('#cc-steps').innerHTML = steps.map((st, i) =>
+      '<li class="txcc-step ' + (st.done ? 'done' : i === now ? 'now' : '') + '"><div class="num">' + (st.done ? ico('check') : i + 1) + '</div>' +
+      '<div class="body"><div class="t">' + st.t + '</div><div class="d">' + st.d + '</div></div>' + (!st.done && (i === now) ? st.btn : '') + '</li>').join('');
+    const doneN = steps.filter(x => x.done).length;
+    $('#cc-steps-sub').textContent = live ? 'All set. You\'re ready to use Claude.' : doneN + ' of 4 done';
+    // big CTA when live
+    const cta = $('#cc-cta');
+    if (live) {
+      cta.style.display = '';
+      cta.innerHTML = '<div class="grow"><strong>You\'re connected ✓</strong>Open claude.ai/code and pick <code>' + esc(live.name) + '</code> from your sessions.</div>' +
+        '<a class="tx-btn tx-btn-primary" href="' + esc(live.url || 'https://claude.ai/code') + '" target="_blank" rel="noopener">' + ico('ext') + 'Open claude.ai/code</a>';
+    } else cta.style.display = 'none';
+  }
+  $('#cc-steps').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-step]');
+    if (b) {
+      if (b.dataset.step === 'login') return ccLogin();
+      if (b.dataset.step === 'trust') return ccTrust();
+      if (b.dataset.step === 'link') { $('#cc-target').scrollIntoView({ behavior: 'smooth', block: 'center' }); return $('#cc-target').focus(); }
+    }
+    const v = e.target.closest('[data-ccview]'); if (v) return openCcView(v.dataset.ccview, v.dataset.cctitle);
+    const a = e.target.closest('[data-ccact]');
+    if (a) post('/tx/api/claude/links/' + a.dataset.cc + '/start', {}).then(r => { report(r, 'Starting…'); setTimeout(loadClaude, 2000); });
+  });
+  const CC_EXAMPLES = [
+    ['Config', 'In esx_garage, change the impound fee to 500 and explain what else I can configure.'],
+    ['Fix', 'rps_bossmenu shows "unable to execute a query" errors. Find the cause and fix it.'],
+    ['Create', 'Create a new resource in [standalone] called welcome_msg that shows players a welcome message when they join, and tell me what to add to server.cfg.'],
+    ['Explain', 'Give me a quick overview of what each resource in [core] does.'],
+    ['Review', 'Check all config.lua files for prices or settings that look unbalanced for a roleplay server.'],
+  ];
+  $('#cc-examples').innerHTML = CC_EXAMPLES.map(([t, q]) => '<div class="txcc-ex"><span class="tag">' + t + '</span><span class="q">' + esc(q) + '</span>' + copyBtn(q) + '</div>').join('');
+
+  $('#cc-target').addEventListener('change', () => { $('#cc-example').textContent = NAME + ' · ' + (($('#cc-target').value || 'resources').split('/').pop()); });
+  $('#cc-refresh').addEventListener('click', loadClaude);
+  $('#cc-link-all').addEventListener('click', async () => {
+    const tops = ccData.targets.filter(t => t.kind === 'folder' && !t.rel_path.includes('/') && !ccData.links.some(l => l.rel_path === t.rel_path));
+    const v = await prompt({ title: 'Link ' + tops.length + ' folder' + (tops.length === 1 ? '' : 's') + '?', ok: 'Link all', icon: 'box',
+      text: 'Each of these gets its own session in claude.ai/code: ' + tops.map(t => '<code>' + esc(t.rel_path) + '</code>').join(' ') +
+        '<div class="txp-note">Each live session uses roughly 100–350 MB of memory on the server. Linking every resource one by one isn\'t offered, because it would run the server out of memory. Folders already cover everything inside them.</div>',
+      fields: [{ name: 'mode', label: 'When Claude wants to edit files', type: 'select', value: $('#cc-mode').value,
+        options: [['default', 'Ask me in claude.ai first (safest)'], ['acceptEdits', 'Edit files without asking, ask before commands'], ['plan', 'Plan only, no edits'], ['auto', 'Auto']] }] });
+    if (!v) return;
+    const b = $('#cc-link-all'); b.disabled = true;
+    const r = await post('/tx/api/instance/' + SID + '/claude/link-all', { permission_mode: v.mode });
+    if (!r.ok) { b.disabled = false; return toast(r.error, 'error'); }
+    toast(r.created.length ? 'Linked ' + r.created.join(', ') + (r.started ? '. Starting…' : '') : 'Nothing new to link');
+    setTimeout(loadClaude, 2500);
+  });
+  ['start', 'stop'].forEach(a => $('#cc-' + a + 'all').addEventListener('click', async () => {
+    if (a === 'stop') { const v = await prompt({ title: 'Stop every linked folder?', ok: 'Stop all', danger: true, text: 'They disappear from claude.ai/code until you start them again. Links are kept.' }); if (!v) return; }
+    const r = await post('/tx/api/instance/' + SID + '/claude/' + a + '-all', {});
+    if (!r.ok) return toast(r.error, 'error');
+    toast((a === 'start' ? 'Started ' : 'Stopped ') + r.done.length + ' session' + (r.done.length === 1 ? '' : 's'));
+    setTimeout(loadClaude, a === 'start' ? 2500 : 300);
+  }));
+  $('#cc-link-btn').addEventListener('click', async () => {
+    const b = $('#cc-link-btn'); b.disabled = true;
+    const r = await post('/tx/api/instance/' + SID + '/claude/link', { rel_path: $('#cc-target').value, permission_mode: $('#cc-mode').value });
+    b.disabled = false;
+    if (!r.ok) return toast(r.error, 'error');
+    toast(r.started ? 'Linked. Starting the session…' : 'Linked. Finish the steps above to start it.');
+    await loadClaude();
+    if (r.started) setTimeout(async () => { await loadClaude(); const l = ccData.links.find(x => x.id === r.link.id); if (l && l.status === 'waiting') openCcView('rc-' + l.id, l.name); }, 2500);
+  });
+  $('#cc-links').addEventListener('click', async (e) => {
+    const v = e.target.closest('[data-ccview]'); if (v) return openCcView(v.dataset.ccview, v.dataset.cctitle);
+    const a = e.target.closest('[data-ccact]'); if (!a) return;
+    if (a.dataset.ccact === 'remove') {
+      const ok = await prompt({ title: 'Unlink ' + a.dataset.ccname + '?', ok: 'Unlink', danger: true, text: 'The session stops and disappears from claude.ai/code. Files on the server aren\'t touched.' });
+      if (!ok) return;
+    }
+    a.disabled = true;
+    const r = await post('/tx/api/claude/links/' + a.dataset.cc + '/' + a.dataset.ccact, {});
+    if (!r.ok) { a.disabled = false; return toast(r.error, 'error'); }
+    toast({ start: 'Starting…', stop: 'Stopped', remove: 'Unlinked' }[a.dataset.ccact]);
+    setTimeout(loadClaude, a.dataset.ccact === 'start' ? 2000 : 300);
+  });
+  async function ccLogin() {
+    const r = await post('/tx/api/claude/login', {}); if (!r.ok) return toast(r.error, 'error');
+    openCcView('login', 'Log in to Claude Code');
+  }
+  async function ccLogout() {
+    const ok = await prompt({ title: 'Log out of Claude Code?', ok: 'Log out', danger: true, text: 'Linked folders stop working until someone logs in again. This logs out the Claude Code CLI for the whole server (root).' });
+    if (!ok) return;
+    const r = await post('/tx/api/claude/logout', {}); report(r, 'Logged out'); loadClaude();
+  }
+  async function ccTrust() {
+    const r = await post('/tx/api/instance/' + SID + '/claude/trust', {}); if (!r.ok) return toast(r.error, 'error');
+    openCcView(r.session, 'Allow Claude to work in ' + NAME + '\'s files');
+  }
+
+  // session viewer
+  function openCcView(key, title) {
+    ccView = key; $('#cc-m-title').textContent = title || 'Claude Code'; $('#cc-m-term').textContent = key === 'login' ? 'claude auth login' : key.startsWith('trust') ? 'claude (trust check)' : 'claude remote-control';
+    $('#cc-m-sub').textContent = 'This is the live Claude Code screen on the server. Answer its questions below.';
+    $('#cc-m-screen').textContent = ''; $('#cc-m-ask').innerHTML = ''; $('#cc-m-input').value = '';
+    openModal('cc-modal'); pollCcView();
+    clearInterval(ccView && ccView._t);
+    const t = setInterval(() => { if (!$('#cc-modal').classList.contains('open') || ccView !== key) { clearInterval(t); if (!$('#cc-modal').classList.contains('open')) { ccView = null; if (activeTab === 'claude') loadClaude(); } return; } pollCcView(); }, 1200);
+  }
+  async function pollCcView() {
+    const key = ccView; if (!key) return;
+    const r = await get('/tx/api/claude/session/' + key);
+    if (!r.ok || ccView !== key) return;
+    const el = $('#cc-m-screen'); const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 30;
+    el.textContent = r.alive ? (r.screen || '') : '(session ended)';
+    if (atBottom) el.scrollTop = el.scrollHeight;
+    const ask = $('#cc-m-ask'), st = $('#cc-m-status');
+    let html = '';
+    if (r.prompt === 'consent') html = '<div class="txcc-ask">' + ico('alert') + '<strong>Claude Code asks: “Enable Remote Control?” This lets this session be controlled from claude.ai/code with your account.</strong><button class="tx-btn tx-btn-ghost tx-btn-sm" data-ccans="n">No</button><button class="tx-btn tx-btn-primary tx-btn-sm" data-ccans="y">Yes, enable</button></div>';
+    else if (r.prompt === 'trust') html = '<div class="txcc-ask">' + ico('shield') + '<strong>Claude Code asks whether you trust the files in this folder. Read the screen below, then choose.</strong><button class="tx-btn tx-btn-ghost tx-btn-sm" data-ccans="Escape">No</button><button class="tx-btn tx-btn-primary tx-btn-sm" data-ccans="trust">Yes, trust it</button></div>';
+    else if (r.prompt === 'code') html = '<div class="txcc-ask">' + ico('key') + '<strong>Open the login link shown below, approve it, then paste the code you get into the box under the screen.</strong>' + (r.url ? '<a class="tx-btn tx-btn-primary tx-btn-sm" href="' + esc(r.url) + '" target="_blank" rel="noopener">Open login page</a>' : '') + '</div>';
+    else if (r.prompt === 'yn') html = '<div class="txcc-ask">' + ico('alert') + '<strong>' + esc(r.question) + '</strong><button class="tx-btn tx-btn-ghost tx-btn-sm" data-ccans="n">No</button><button class="tx-btn tx-btn-primary tx-btn-sm" data-ccans="y">Yes</button></div>';
+    else if (r.state === 'running' && key.startsWith('rc-')) html = '<div class="tx-callout ok">' + ico('check') + '<div style="flex:1"><strong>Live.</strong> Open claude.ai/code and pick this session from the list.</div><a class="tx-btn tx-btn-primary tx-btn-sm" href="' + esc(r.url || 'https://claude.ai/code') + '" target="_blank" rel="noopener">Open claude.ai/code</a></div>';
+    else if (r.state === 'untrusted') html = '<div class="tx-callout warn">' + ico('shield') + '<div>This folder isn\'t trusted yet. Close this, then use <strong>Review &amp; trust</strong> on the Claude Code tab.</div></div>';
+    else if (!r.alive) html = '<div class="tx-callout">' + ico('info') + '<div>The session has ended.</div></div>';
+    if (ask.dataset.last !== html) { ask.innerHTML = html; ask.dataset.last = html; }
+    st.textContent = r.alive ? (r.state === 'waiting' ? 'Waiting for your answer' : r.state === 'exited' ? 'Exited (code ' + r.code + ')' : 'Running') : 'Ended';
+    if (key === 'login' && r.state === 'exited' && r.code === 0) { st.innerHTML = '<span style="color:var(--ok)">Logged in.</span> You can close this.'; }
+    if (key.startsWith('trust') && /how can i help|try "|\? for shortcuts|bypass permissions|welcome to claude/i.test(r.screen || '')) {
+      // trust accepted and the REPL is up: close it, we only needed the dialog
+      await post('/tx/api/claude/session/' + key + '/stop', {});
+      ask.innerHTML = '<div class="tx-callout ok">' + ico('check') + '<div><strong>Folder trusted.</strong> You can start linked folders now.</div></div>'; ask.dataset.last = '';
+      st.textContent = 'Done'; ccView = null; setTimeout(() => { closeModal('cc-modal'); loadClaude(); }, 1400);
+    }
+  }
+  $('#cc-m-ask').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-ccans]'); if (!b || !ccView) return;
+    const a = b.dataset.ccans;
+    const body = a === 'trust' ? { keys: ['Enter'] } : a === 'Escape' ? { keys: ['Escape'] } : { text: a, enter: true };
+    b.disabled = true;
+    const r = await post('/tx/api/claude/session/' + ccView + '/send', body);
+    if (!r.ok) toast(r.error, 'error');
+    setTimeout(pollCcView, 500);
+  });
+  $('#cc-m-form').addEventListener('submit', async (e) => {
+    e.preventDefault(); if (!ccView) return;
+    const text = $('#cc-m-input').value; if (!text) return;
+    const r = await post('/tx/api/claude/session/' + ccView + '/send', { text, enter: true });
+    if (!r.ok) return toast(r.error, 'error');
+    $('#cc-m-input').value = ''; setTimeout(pollCcView, 400);
+  });
+  $('#cc-m-keys').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-k]'); if (!b || !ccView) return;
+    const r = await post('/tx/api/claude/session/' + ccView + '/send', { keys: [b.dataset.k] });
+    if (!r.ok) toast(r.error, 'error'); setTimeout(pollCcView, 400);
+  });
+
+  // ---------------------------------------------------------------- API & tokens
+  const ENDPOINTS = [
+    ['GET', '/servers', '', 'List servers this token can access'],
+    ['GET', '/servers/{id}', '', 'Status, scheduler, online players'],
+    ['POST', '/servers/{id}/control', '{"action":"start|stop|restart"}', 'Control the game server'],
+    ['GET', '/servers/{id}/console', '?offset=N', 'Read live console (incremental)'],
+    ['POST', '/servers/{id}/console', '{"command":"say hi"}', 'Run a console command'],
+    ['POST', '/servers/{id}/announce', '{"message":"…"}', 'Server-wide announcement'],
+    ['POST', '/servers/{id}/kick-all', '{"reason":"…"}', 'Kick every player'],
+    ['POST', '/servers/{id}/schedule', '{"time":"+15"} | {"time":"04:30"} | {"skip":true}', 'Schedule / skip a restart'],
+    ['GET', '/servers/{id}/resources', '', 'Running resources'],
+    ['POST', '/servers/{id}/resources/{action}', '{"name":"res"} · start|stop|restart|ensure|refresh', 'Resource control'],
+    ['GET', '/servers/{id}/players', '', 'Online players'],
+    ['GET', '/servers/{id}/players/search', '?q=&type=playerName|playerIds|playerNotes&filters=isOnline&sort=', 'Search the player database'],
+    ['GET', '/servers/{id}/player', '?netid=N or ?license=…', 'Player details + history'],
+    ['POST', '/servers/{id}/player/{action}?netid=N', 'kick {reason} · warn {reason} · ban {reason,duration} · message {message} · save_note {note} · whitelist {status}', 'Act on a player'],
+    ['GET', '/servers/{id}/history', '?q=&type=identifiers|reason|actionId&filter_type=ban|warn', 'Bans & warnings'],
+    ['POST', '/servers/{id}/history/revoke', '{"action_id":"XXXX-XXXX"}', 'Revoke a ban/warning'],
+    ['POST', '/servers/{id}/ban-ids', '{"identifiers":["license:…"],"reason":"…","duration":"permanent"}', 'Ban identifiers (offline)'],
+  ];
+  const origin = location.origin;
+  $('#api-base').textContent = origin + API;
+  $('#api-endpoints').innerHTML = ENDPOINTS.map(([m, p, b, d]) => '<tr><td><span class="txp-method ' + m.toLowerCase() + '">' + m + '</span></td><td>' + esc(p.replace('{id}', SID)) + '</td><td>' + esc(b) + '</td><td>' + esc(d) + '</td></tr>').join('');
+  const example =
+    'TOKEN=txp_…\n\n# status + online players\ncurl -s -H "Authorization: Bearer $TOKEN" \\\n  ' + origin + BASE + '\n\n' +
+    '# announcement\ncurl -s -X POST -H "Authorization: Bearer $TOKEN" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"message":"Restart in 5 minutes"}\' \\\n  ' + origin + BASE + '/announce\n\n' +
+    '# console command\ncurl -s -X POST -H "Authorization: Bearer $TOKEN" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"command":"ensure myresource"}\' \\\n  ' + origin + BASE + '/console';
+  $('#api-example').textContent = example;
+  $('#api-copy').addEventListener('click', (e) => copy(example, e.currentTarget));
+
+  async function loadTokens() {
+    const r = await get(API + '/tokens');
+    if (!r.ok) { $('#token-list').innerHTML = '<div class="tx-panel-body"><div class="tx-callout warn">' + ico('alert') + '<div>' + esc(r.error) + '</div></div></div>'; return; }
+    $('#token-list').innerHTML = r.tokens.length ? '<div style="overflow-x:auto"><table class="tx-table"><thead><tr><th>Token</th><th>Access</th><th>Last used</th><th></th></tr></thead><tbody>' +
+      r.tokens.map(t => '<tr><td><div class="txp-pname" style="cursor:default">' + esc(t.name) + '</div><div class="txp-psub">' + esc(t.prefix) + '…</div></td><td>' + (t.scope === '*' ? '<span class="tx-badge accent">all servers</span>' : '<span class="tx-badge muted">server ' + esc(t.scope) + '</span>') + '</td>' +
+        '<td>' + (t.last_used_at ? rel(Date.parse(t.last_used_at + 'Z')) : 'never') + '</td>' +
+        '<td><div class="txp-acts"><button class="tx-btn tx-btn-soft-danger tx-btn-sm" data-tdel="' + t.id + '" data-tname="' + esc(t.name) + '">Revoke</button></div></td></tr>').join('') + '</tbody></table></div>'
+      : empty('key', 'No tokens yet. Create one to control servers from a bot or script.');
+    $('#token-list').querySelectorAll('[data-tdel]').forEach(b => b.addEventListener('click', async () => {
+      const v = await prompt({ title: 'Revoke token?', ok: 'Revoke', danger: true, icon: 'key', text: 'Anything using <strong>' + esc(b.dataset.tname) + '</strong> stops working immediately.' });
+      if (!v) return;
+      if (report(await call('DELETE', API + '/tokens/' + b.dataset.tdel), 'Token revoked')) loadTokens();
+    }));
+  }
+  $('#token-new').addEventListener('click', async () => {
+    const v = await prompt({ title: 'New API token', icon: 'key', ok: 'Create token', fields: [
+      { name: 'name', label: 'Name', placeholder: 'e.g. Discord bot' },
+      { name: 'scope', label: 'Access', type: 'select', value: String(SID), options: [[String(SID), 'Only this server (' + NAME + ')'], ['*', 'All txAdmin servers']] },
+    ] });
+    if (!v) return;
+    const r = await post(API + '/tokens', { name: v.name, scope: v.scope });
+    if (!r.ok) return toast(r.error, 'error');
+    const box = $('#token-created');
+    box.style.display = '';
+    box.innerHTML = '<div class="tx-callout ok" style="margin-bottom:10px">' + ico('check') + '<div><strong>Token created.</strong> Copy it now, because it won\'t be shown again.</div></div>' +
+      '<div class="txp-token"><span>' + esc(r.token) + '</span>' + copyBtn(r.token) + '</div>' +
+      '<div class="txp-row" style="margin-top:10px"><span class="spacer"></span><button class="tx-btn tx-btn-ghost tx-btn-sm" id="token-hide">Done</button></div>';
+    $('#token-hide').addEventListener('click', () => { box.style.display = 'none'; box.innerHTML = ''; });
+    loadTokens();
+  });
+
+  // ---------------------------------------------------------------- boot
+  const initial = (location.hash || '').slice(1);
+  showTab(TABS.includes(initial) ? initial : 'dashboard');
+  pollOverview();
+  setInterval(() => { if (!document.hidden) pollOverview(); }, 4000);
+  setInterval(() => { if (!document.hidden && activeTab === 'console') pollConsole(); }, 1200);
+})();
+</script>
+{% endblock %}

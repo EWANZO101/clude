@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{{ url_for('items.index') }}" style="color:#6b7280;font-size:13px;text-decoration:none;
+     display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;">
+    <i class="fas fa-arrow-left"></i> Items
+  </a>
+  <div class="page-header-row">
+    <div>
+      <h1 class="page-title">{{ item.name }}</h1>
+      {% if item.sku %}<p class="page-subtitle">SKU: {{ item.sku }}</p>{% endif %}
+    </div>
+    {% if current_user.is_admin %}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="{{ url_for('items.edit', item_id=item.id) }}" class="btn btn-secondary btn-sm">
+        <i class="fas fa-pen"></i> Edit
+      </a>
+      <form id="del-{{ item.id }}" method="POST" action="{{ url_for('items.delete', item_id=item.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="button" class="btn btn-danger btn-sm"
+                onclick="confirmDelete('del-{{ item.id }}','{{ item.name }}')">
+          <i class="fas fa-trash"></i> Remove
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Stock status — big number, always on top on mobile -->
+<div class="card" style="padding:20px;margin-bottom:14px;text-align:center;">
+  <div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;
+              letter-spacing:.05em;margin-bottom:6px;">Current Stock</div>
+  <div style="font-size:52px;font-weight:800;color:#f9fafb;line-height:1;">{{ item.quantity }}</div>
+  {% if item.unit %}
+  <div style="font-size:14px;color:#6b7280;margin-top:2px;">{{ item.unit }}</div>
+  {% endif %}
+  <div style="margin-top:12px;">
+    {% if item.quantity == 0 %}
+      <span class="badge" style="background:#450a0a;color:#fca5a5;font-size:13px;padding:5px 16px;">Out of Stock</span>
+    {% elif item.is_low_stock %}
+      <span class="badge" style="background:#451a03;color:#fcd34d;font-size:13px;padding:5px 16px;">Low Stock</span>
+    {% else %}
+      <span class="badge" style="background:#064e3b;color:#6ee7b7;font-size:13px;padding:5px 16px;">In Stock</span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Stock adjust -->
+<div class="card" style="padding:18px;margin-bottom:14px;">
+  <div style="font-size:14px;font-weight:600;color:#f9fafb;margin-bottom:14px;">
+    <i class="fas fa-sliders" style="color:#60a5fa;"></i> Adjust Stock
+  </div>
+  <form method="POST" action="{{ url_for('items.adjust_stock', item_id=item.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <label class="form-label" style="margin-bottom:4px;">Adjustment</label>
+        <input type="number" name="delta" class="form-input"
+               placeholder="e.g. 10 or -5" required inputmode="numeric" />
+      </div>
+      <div>
+        <label class="form-label" style="margin-bottom:4px;">Notes</label>
+        <input type="text" name="notes" class="form-input" placeholder="Optional reason" />
+      </div>
+    </div>
+    <!-- Quick buttons -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      {% for delta in [1,5,10,25,-1,-5,-10] %}
+      <button type="button" class="btn btn-secondary btn-sm"
+              onclick="setDelta({{ delta }})">
+        {% if delta > 0 %}+{{ delta }}{% else %}{{ delta }}{% endif %}
+      </button>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">
+      <i class="fas fa-check"></i> Apply Adjustment
+    </button>
+  </form>
+</div>
+
+<!-- Details -->
+<div class="card" style="padding:18px;margin-bottom:14px;">
+  <div style="font-size:14px;font-weight:600;color:#f9fafb;margin-bottom:14px;">Details</div>
+  <div class="detail-grid">
+    <div class="detail-item">
+      <div class="detail-label">Category</div>
+      <div class="detail-value">{{ item.category or '—' }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Location</div>
+      <div class="detail-value">{{ item.location or '—' }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Unit</div>
+      <div class="detail-value">{{ item.unit or '—' }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Low Stock At</div>
+      <div class="detail-value">{{ item.low_stock_threshold }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Added</div>
+      <div class="detail-value">{{ item.created_at.strftime('%d %b %Y') if item.created_at else '—' }}</div>
+    </div>
+    {% if item.description %}
+    <div class="detail-item detail-span2">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">{{ item.description }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Barcode -->
+{% if item.barcode %}
+<div class="card" style="padding:18px;text-align:center;">
+  <div style="font-size:13px;font-weight:600;color:#9ca3af;margin-bottom:12px;">Barcode</div>
+  <img src="{{ url_for('static', filename=item.barcode.image_path) }}"
+       alt="Barcode" style="max-width:220px;width:100%;border-radius:8px;background:#fff;padding:8px;" />
+  <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+    <a href="{{ url_for('barcode.view', code=item.barcode.code) }}" class="btn btn-secondary btn-sm">
+      <i class="fas fa-barcode"></i> View Barcode
+    </a>
+    <a href="{{ url_for('static', filename=item.barcode.image_path) }}" download
+       class="btn btn-secondary btn-sm">
+      <i class="fas fa-download"></i> Download
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+function setDelta(val) {
+  document.querySelector('input[name="delta"]').value = val;
+}
+</script>
+{% endblock %}

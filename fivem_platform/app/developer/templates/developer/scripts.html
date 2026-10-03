@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Scripts — {{ product.name }} — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold text-white mb-1">Scripts</h1>
+  <p class="text-sm text-gray-500 mb-6">
+    {{ product.name }} · {{ product.product_id }} ·
+    <a href="{{ url_for('developer.modules', product_id=product.product_id) }}" class="text-brand hover:text-brand-hover">view published modules →</a>
+  </p>
+
+  <form method="POST" action="{{ url_for('developer.upload_script', product_id=product.product_id) }}"
+        enctype="multipart/form-data"
+        class="bg-surface-card border border-surface-border rounded-lg p-5 mb-8">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="block text-sm text-gray-400 mb-2">Upload script.zip</label>
+    <p class="text-xs text-gray-500 mb-3">
+      Must contain a valid fxmanifest.lua. Every script it references gets
+      published as a Module automatically — licensed customers get it
+      through CloudLoader with nothing to install beyond CloudLoader
+      itself. A traditional installable zip is also generated below, only
+      needed if you specifically want a manually-distributed resource.
+    </p>
+    <div class="flex items-center gap-3">
+      <input type="file" name="script_zip" accept=".zip" required
+        class="flex-1 text-sm text-gray-400 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-surface file:text-gray-300 file:text-sm hover:file:bg-surface-border">
+      <button type="submit" class="bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition whitespace-nowrap">
+        Upload &amp; protect
+      </button>
+    </div>
+  </form>
+
+  {% if uploads %}
+    <div class="space-y-2">
+      {% for u in uploads %}
+        <div class="bg-surface-card border border-surface-border rounded-lg px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+          <div class="min-w-0 flex-1">
+            <div class="text-white text-sm font-medium truncate">{{ u.original_filename }}</div>
+            <div class="text-gray-500 text-xs truncate">
+              {{ u.created_at.strftime('%Y-%m-%d %H:%M') }}
+              {% if u.status == 'ready' %} · {{ (u.file_size_bytes / 1024) | round(1) }} KB · resource: {{ u.resource_name }}{% endif %}
+            </div>
+            {% if u.status == 'failed' %}
+              <div class="text-red-400 text-xs mt-1">{{ u.error_message }}</div>
+            {% endif %}
+          </div>
+          <div class="flex items-center gap-3 flex-shrink-0">
+            <span class="text-xs px-2 py-0.5 rounded-full
+              {% if u.status == 'ready' %} bg-emerald-950 text-emerald-400
+              {% elif u.status == 'failed' %} bg-red-950 text-red-400
+              {% else %} bg-amber-950 text-amber-400 {% endif %}">
+              {{ u.status }}
+            </span>
+            {% if u.status == 'ready' %}
+              <a href="{{ url_for('developer.download_script', upload_id=u.id) }}" class="text-xs text-brand hover:text-brand-hover">
+                Download (manual install)
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500">No uploads yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

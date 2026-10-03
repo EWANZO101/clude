@@ -1,0 +1,1675 @@
+{% extends "base.html" %}
+{% import "_icons.html" as icons %}
+{% block title %}{{ instance.display_name() }} — {{ company.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('instances.list_instances', company_id=company.public_id) }}" class="crumb">← Instances</a>
+    <h1>{{ instance.display_name() }}</h1>
+    <div class="page-sub">
+      <span id="header-connection-pill">
+        {% if instance.connection_status == 'online' %}
+          <span class="pill pill-green">Online</span>
+        {% else %}
+          <span class="pill pill-muted">Offline</span>
+        {% endif %}
+      </span>
+      {% set license_status = instance.license_display_status() %}
+      {% if license_status == 'suspended' %}
+        <span class="pill pill-red">Suspended</span>
+      {% elif license_status == 'expired' %}
+        <span class="pill pill-red">License expired</span>
+      {% endif %}
+      <span>{{ instance.os }}{% if instance.os_version %} {{ instance.os_version }}{% endif %}</span>
+    </div>
+  </div>
+</div>
+
+<div class="page-tabbed" data-default-tab="overview">
+<div class="page-tabs" role="tablist">
+  <button type="button" class="page-tab-btn" data-tab="overview">Overview</button>
+  <button type="button" class="page-tab-btn" data-tab="inventory">Inventory</button>
+  <button type="button" class="page-tab-btn" data-tab="kiosk">Kiosk &amp; Updates</button>
+  <button type="button" class="page-tab-btn" data-tab="diagnostics">Diagnostics</button>
+  <button type="button" class="page-tab-btn" data-tab="settings">Settings</button>
+</div>
+
+<div class="page-tab-panel" data-tab-panel="overview">
+
+<div class="panel">
+  <h2>General</h2>
+  <table class="kv-table">
+    <tr><th>Instance ID</th><td><code style="font-size:11.5px;">{{ instance.public_id }}</code></td></tr>
+    <tr><th>Hostname</th><td>{{ instance.hostname or '—' }}</td></tr>
+    <tr><th>Operating system</th><td>{{ instance.os }} {{ instance.os_version or '' }}</td></tr>
+    <tr><th>Agent version</th><td class="mono">{{ instance.agent_version or '—' }}</td></tr>
+    <tr><th>Application version</th><td class="mono">{{ instance.app_version or '—' }}</td></tr>
+    <tr><th>Registered</th><td>{{ instance.created_at | friendly_dt }}</td></tr>
+  </table>
+</div>
+
+{% if can_manage_config %}
+<div class="panel">
+  <h2>Login screen</h2>
+  <p class="muted" style="font-size:12px; margin-top:0; margin-bottom:14px;">
+    The company name shown on this kiosk's login screen. Takes effect the next time the instance
+    checks in for config and the kiosk restarts — not immediate.
+  </p>
+  <form method="post" action="{{ url_for('instances.set_tenant_name', company_id=company.public_id, instance_id=instance.public_id) }}"
+        style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:220px;">
+      <label>Name on login screen</label>
+      <input type="text" name="tenant_name" value="{{ current_config_dict.tenant_name if current_config_dict and current_config_dict.tenant_name else company.name }}" style="width:100%;">
+    </div>
+    <button type="submit" class="btn btn-secondary btn-sm">Save</button>
+  </form>
+  {% if pending_config %}
+    <p class="muted" style="font-size:12px; margin-top:10px; margin-bottom:0;">
+      Version {{ pending_config.version }} is queued, waiting for the instance to acknowledge it.
+    </p>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if can_manage_config %}
+<div class="panel">
+  <h2>Local Client Portal</h2>
+  <p class="muted" style="font-size:12px; margin-top:0; margin-bottom:14px;">
+    A LAN-reachable management portal (local users, roles, sidebar, inventory) at
+    <code>/client/login</code> on this instance's own network — for a "customer runs it
+    fully on their own network" deployment, separate from this instance's own loopback-only
+    kiosk login. Requires a local account with an admin-capable role and a real password set.
+    Leave blank to disable. Takes effect the next time the instance checks in for config and
+    the kiosk restarts — not immediate.
+  </p>
+  <form method="post" action="{{ url_for('instances.set_client_portal_port', company_id=company.public_id, instance_id=instance.public_id) }}"
+        style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:160px;">
+      <label>Port</label>
+      <input type="number" name="client_portal_port" min="1" max="65535"
+             value="{{ current_config_dict.client_portal_port if current_config_dict and current_config_dict.client_portal_port else '' }}"
+             placeholder="e.g. 8422" style="width:100%;">
+    </div>
+    <button type="submit" class="btn btn-secondary btn-sm">Save</button>
+  </form>
+  {% if pending_config %}
+    <p class="muted" style="font-size:12px; margin-top:10px; margin-bottom:0;">
+      Version {{ pending_config.version }} is queued, waiting for the instance to acknowledge it.
+    </p>
+  {% endif %}
+  <p class="muted" style="font-size:12px; margin-top:10px; margin-bottom:0;">
+    Who can log in here is managed under the <a href="{{ url_for('instances.detail', company_id=company.public_id, instance_id=instance.public_id) }}#inventory">Inventory tab → Local Kiosk Users</a> —
+    give someone the <code>admin</code> role and set a PIN there; that PIN becomes their
+    Local Client Portal password (same field kiosk_app stores it in — see
+    <code>sync_api.py::_apply_local_user</code>). An admin-role account with no PIN set
+    can't log in here, only at the kiosk's own on-machine login screen.
+  </p>
+</div>
+{% endif %}
+
+{% if can_manage_instances %}
+<div class="panel">
+  <h2>License</h2>
+  <table class="kv-table">
+    <tr><th>Status</th>
+      <td>
+        {% if license_status == 'suspended' %}
+          <span class="pill pill-red">Suspended</span>
+        {% elif license_status == 'expired' %}
+          <span class="pill pill-red">Expired</span>
+        {% else %}
+          <span class="pill pill-green">Active</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr><th>Expires</th>
+      <td>
+        {% if instance.license_expires_at %}
+          {{ instance.license_expires_at | friendly_dt }}
+        {% else %}
+          <span class="muted">Never expires</span>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+  <p class="muted" style="font-size:12px; margin-top:10px; margin-bottom:14px;">
+    Suspended or expired blocks every call this instance's Agent makes to the Admin Panel (heartbeat,
+    commands, config, updates, inventory sync) — the Agent stops the kiosk process itself on its next
+    heartbeat once it sees that rejection. Reactivating or extending the expiry lifts it again on the
+    Agent's next successful heartbeat.
+  </p>
+
+  <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;">
+    <form method="post" action="{{ url_for('instances.extend_license', company_id=company.public_id, instance_id=instance.public_id) }}"
+          style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+      <div>
+        <label>Extend by</label>
+        <input type="text" name="amount" value="1" style="width:70px;">
+      </div>
+      <div>
+        <label>Unit</label>
+        <select name="unit">
+          <option value="days">Days</option>
+          <option value="months" selected>Months</option>
+          <option value="years">Years</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-secondary btn-sm">Extend</button>
+    </form>
+
+    {% if instance.license_expires_at %}
+      <form method="post" action="{{ url_for('instances.clear_license_expiry', company_id=company.public_id, instance_id=instance.public_id) }}">
+        <button type="submit" class="btn btn-secondary btn-sm">Clear expiry</button>
+      </form>
+    {% endif %}
+
+    {% if instance.license_status == 'suspended' %}
+      <form method="post" action="{{ url_for('instances.reactivate_license', company_id=company.public_id, instance_id=instance.public_id) }}">
+        <button type="submit" class="btn btn-sm">Reactivate</button>
+      </form>
+    {% else %}
+      <form method="post" action="{{ url_for('instances.suspend_license', company_id=company.public_id, instance_id=instance.public_id) }}"
+            onsubmit="return confirm('Suspend {{ instance.display_name()|e }}? Its Agent will stop the kiosk process on its next heartbeat.');">
+        <button type="submit" class="btn btn-danger btn-sm">Suspend</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="panel">
+  <h2>Connection</h2>
+  <table class="kv-table">
+    <tr><th>Status</th><td>{{ instance.connection_status }}</td></tr>
+    <tr><th>Last seen</th><td>{{ instance.last_seen_at | friendly_dt if instance.last_seen_at else 'never' }}</td></tr>
+    <tr><th>Local IP</th><td class="mono">{{ instance.local_ip or '—' }}</td></tr>
+    <tr><th>Public IP</th><td class="mono">{{ instance.public_ip or '—' }}</td></tr>
+    <tr><th>Port</th><td class="mono">{{ instance.port or '—' }}</td></tr>
+    <tr><th>Remote tunnel</th>
+      <td>
+        {{ 'Connected' if instance.tunnel_connected else 'Not connected' }}
+        {% if latest_remote_access %}
+          <br>
+          <span class="muted" style="font-size:12.5px;">
+            Last request: {{ latest_remote_access.created_at | friendly_dtstr }} by {{ latest_remote_access.requested_by.full_name }} —
+            {% if latest_remote_access.status == 'pending' %}
+              <span class="pill pill-amber">Waiting for agent</span>
+            {% elif latest_remote_access.status == 'connected' %}
+              <span class="pill pill-green">Connected</span>
+            {% elif latest_remote_access.status == 'unsupported' %}
+              <span class="pill pill-muted">Unsupported (no tunnel broker yet)</span>
+            {% else %}
+              <span class="pill pill-red">Failed</span>
+            {% endif %}
+            {% if latest_remote_access.status_message %}<br>{{ latest_remote_access.status_message }}{% endif %}
+          </span>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Change requests</h2>
+    <span class="page-actions"><a href="{{ url_for('platform.list_change_requests') }}" class="btn btn-secondary btn-sm">All instances →</a></span>
+  </div>
+  <p class="muted" style="margin-top:0;">Update or change requests the client(s) assigned to this instance have submitted through the Client Portal.</p>
+  {% if change_requests %}
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Title</th><th>Client</th><th>Status</th><th>Submitted</th><th></th></tr></thead>
+      <tbody>
+        {% for r in change_requests %}
+          <tr>
+            <td style="max-width:220px; white-space:normal; font-weight:600;">{{ r.title }}</td>
+            <td class="muted">{{ r.client_user.email }}</td>
+            <td>
+              {% if r.status == 'completed' %}<span class="pill pill-green">Completed</span>
+              {% elif r.status == 'declined' %}<span class="pill pill-red">Declined</span>
+              {% elif r.status == 'in_progress' %}<span class="pill pill-blue">In progress</span>
+              {% else %}<span class="pill pill-amber">Open</span>{% endif %}
+            </td>
+            <td>{{ r.created_at | friendly_dt }}</td>
+            <td>
+              {% if can_manage_instances %}
+                <button type="button" class="btn btn-secondary btn-sm" data-open-modal="ovr-cr-{{ r.public_id }}">Respond</button>
+                <dialog id="ovr-cr-{{ r.public_id }}" class="modal">
+                  <div class="modal-body">
+                    <div class="modal-head">
+                      <h3>{{ r.title }}</h3>
+                      <button type="button" class="modal-close-x" data-close-modal aria-label="Close">&times;</button>
+                    </div>
+                    <p class="muted" style="font-size:12.5px;">requested by {{ r.client_user.email }} · {{ r.created_at | friendly_dtstr }}</p>
+                    <p style="white-space:pre-wrap;">{{ r.description }}</p>
+                    <form method="post" action="{{ url_for('instances.respond_change_request', company_id=company.public_id, instance_id=instance.public_id, request_id=r.public_id) }}">
+                      <label>Status</label>
+                      <select name="status">
+                        {% for s in ['open', 'in_progress', 'completed', 'declined'] %}
+                          <option value="{{ s }}" {% if s == r.status %}selected{% endif %}>{{ s.replace('_',' ')|capitalize }}</option>
+                        {% endfor %}
+                      </select>
+                      <label>Response (optional — visible to the client)</label>
+                      <textarea name="admin_response" rows="3">{{ r.admin_response or '' }}</textarea>
+                      <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Cancel</button>
+                        <button type="submit" class="btn btn-sm">Save</button>
+                      </div>
+                    </form>
+                  </div>
+                </dialog>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted" style="margin:0;">No requests submitted for this instance yet.</p>
+  {% endif %}
+</div>
+
+</div><!-- /tab: overview -->
+
+<div class="page-tab-panel" data-tab-panel="inventory" hidden>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Items &amp; Tools</h2>
+    {% if can_operate_kiosk %}
+      <div class="page-actions">
+        <a href="{{ url_for('instances.export_equipment_csv', company_id=company.public_id, instance_id=instance.public_id) }}" class="btn btn-secondary btn-sm">Export CSV</a>
+        <a href="{{ url_for('instances.backup_equipment', company_id=company.public_id, instance_id=instance.public_id) }}" class="btn btn-secondary btn-sm">Backup (JSON)</a>
+      </div>
+    {% endif %}
+  </div>
+  <p class="muted" style="margin-top:0;">
+    Equipment this kiosk uses — scanners, printers, card readers, and similar. Two-way synced with the real
+    Kiosk App's own Items/Tools inventory once one is installed (see the Instance Agent) — a barcode below
+    means this row has a synced counterpart there.
+  </p>
+
+  <datalist id="equipment-category-options">
+    {% for c in equipment_categories %}<option value="{{ c }}">{% endfor %}
+  </datalist>
+
+  <div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+    <div style="flex:1; min-width:320px;">
+      <h3 style="margin-top:0;">Items <span class="mono muted" style="font-weight:400;">({{ items_count }})</span></h3>
+      {% if items_by_category %}
+        {% for category_label, rows in items_by_category %}
+          <details class="toggle-card" style="margin-top:10px;">
+            <summary>
+              <span>{{ category_label }}</span>
+              <span class="ug-count">{{ rows|length }}</span>
+              <span class="chevron">{{ icons.icon('chevron', 14) }}</span>
+            </summary>
+            <div class="toggle-card-body" style="padding:0 14px 14px;">
+            <div class="table-scroll">
+            <table>
+              <thead><tr><th>Name</th><th>Status</th><th>SKU</th><th>Qty</th><th>Cost</th><th>Barcode</th><th>Description</th><th></th></tr></thead>
+              <tbody>
+                {% for eq in rows %}
+                  <tr>
+                    <td>{{ eq.name }}</td>
+                    <td>
+                      {% if eq.status == 'active' %}<span class="pill pill-green">Active</span>
+                      {% else %}<span class="pill pill-muted">Inactive</span>{% endif %}
+                    </td>
+                    <td class="mono muted">{{ eq.sku or '—' }}</td>
+                    <td class="muted">{{ eq.quantity if eq.quantity is not none else '—' }}{{ ' ' + eq.unit if eq.unit }}</td>
+                    <td class="muted">{{ '$%.2f'|format(eq.unit_cost) if eq.unit_cost else '—' }}</td>
+                    <td class="mono muted">{{ eq.barcode_code or '—' }}</td>
+                    <td class="muted" style="max-width:200px;">{{ eq.description or '—' }}</td>
+                    <td class="row-actions">
+                      {% if can_operate_kiosk %}
+                        <button type="button" class="btn btn-secondary btn-sm" data-open-modal="item-edit-{{ eq.public_id }}">Edit</button>
+                        <dialog id="item-edit-{{ eq.public_id }}" class="modal">
+                          <div class="modal-body">
+                            <div class="modal-head">
+                              <h3>Edit {{ eq.name }}</h3>
+                              <button type="button" class="modal-close-x" data-close-modal aria-label="Close">&times;</button>
+                            </div>
+                            <form method="post" action="{{ url_for('instances.edit_equipment', company_id=company.public_id, instance_id=instance.public_id, equipment_id=eq.public_id) }}">
+                              <input type="hidden" name="kind" value="item">
+                              <label>Name</label>
+                              <input type="text" name="name" value="{{ eq.name }}" required>
+                              <label>Status</label>
+                              <select name="status">
+                                {% for s in equipment_statuses %}<option value="{{ s }}" {% if s == eq.status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                              </select>
+                              <label>SKU</label>
+                              <input type="text" name="sku" value="{{ eq.sku or '' }}">
+                              <label>Quantity</label>
+                              <input type="text" name="quantity" value="{{ eq.quantity if eq.quantity is not none else '' }}">
+                              <label>Unit</label>
+                              <input type="text" name="unit" value="{{ eq.unit or '' }}" placeholder="e.g. ea, pair">
+                              <label>Type / category</label>
+                              <input type="text" name="category" value="{{ eq.category or '' }}" list="equipment-category-options" placeholder="e.g. Contact Tips">
+                              <label>Unit cost</label>
+                              <input type="text" name="unit_cost" value="{{ eq.unit_cost if eq.unit_cost is not none else '' }}">
+                              <label>Serial number</label>
+                              <input type="text" name="serial_number" value="{{ eq.serial_number or '' }}">
+                              <label>Description</label>
+                              <input type="text" name="description" value="{{ eq.description or '' }}">
+                              <div class="modal-actions">
+                                <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Cancel</button>
+                                <button type="submit" class="btn btn-sm">Save</button>
+                              </div>
+                            </form>
+                          </div>
+                        </dialog>
+                        <form method="post" action="{{ url_for('instances.delete_equipment', company_id=company.public_id, instance_id=instance.public_id, equipment_id=eq.public_id) }}"
+                              onsubmit="return confirm('Remove {{ eq.name|e }}?');" style="display:inline;">
+                          <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                        </form>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            </div>
+            </div>
+          </details>
+        {% endfor %}
+      {% else %}
+        <p class="muted">Nothing added yet.</p>
+      {% endif %}
+
+      <h3 style="margin-top:28px;">Tools <span class="mono muted" style="font-weight:400;">({{ tools_count }})</span></h3>
+      {% if tools_by_category %}
+        {% for category_label, rows in tools_by_category %}
+          <details class="toggle-card" style="margin-top:10px;">
+            <summary>
+              <span>{{ category_label }}</span>
+              <span class="ug-count">{{ rows|length }}</span>
+              <span class="chevron">{{ icons.icon('chevron', 14) }}</span>
+            </summary>
+            <div class="toggle-card-body" style="padding:0 14px 14px;">
+            <div class="table-scroll">
+            <table>
+              <thead><tr><th>Name</th><th>Status</th><th>Checked out to</th><th>Project</th><th>Price</th><th>Barcode</th><th>Description</th><th></th></tr></thead>
+              <tbody>
+                {% for eq in rows %}
+                  <tr>
+                    <td>{{ eq.name }}</td>
+                    <td>
+                      {% if eq.tool_status == 'available' %}<span class="pill pill-green">Available</span>
+                      {% elif eq.tool_status == 'checked_out' %}<span class="pill pill-amber">Checked out</span>
+                      {% elif eq.tool_status == 'maintenance' %}<span class="pill pill-red">Maintenance</span>
+                      {% else %}<span class="pill pill-muted">Unknown</span>{% endif %}
+                    </td>
+                    <td class="muted">{{ eq.checked_out_by_name or '—' }}</td>
+                    <td class="muted">{{ eq.current_project or '—' }}</td>
+                    <td class="muted">{{ '$%.2f'|format(eq.purchase_price) if eq.purchase_price else '—' }}</td>
+                    <td class="mono muted">{{ eq.barcode_code or '—' }}</td>
+                    <td class="muted" style="max-width:200px;">{{ eq.description or '—' }}</td>
+                    <td class="row-actions">
+                      {% if can_operate_kiosk %}
+                        <button type="button" class="btn btn-secondary btn-sm" data-open-modal="tool-edit-{{ eq.public_id }}">Edit</button>
+                        <dialog id="tool-edit-{{ eq.public_id }}" class="modal">
+                          <div class="modal-body">
+                            <div class="modal-head">
+                              <h3>Edit {{ eq.name }}</h3>
+                              <button type="button" class="modal-close-x" data-close-modal aria-label="Close">&times;</button>
+                            </div>
+                            <form method="post" action="{{ url_for('instances.edit_equipment', company_id=company.public_id, instance_id=instance.public_id, equipment_id=eq.public_id) }}">
+                              <input type="hidden" name="kind" value="tool">
+                              <label>Name</label>
+                              <input type="text" name="name" value="{{ eq.name }}" required>
+                              <label>Status</label>
+                              <select name="status">
+                                {% for s in equipment_statuses %}<option value="{{ s }}" {% if s == eq.status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                              </select>
+                              <label>Tool status</label>
+                              <select name="tool_status">
+                                <option value="">—</option>
+                                {% for s in tool_statuses %}<option value="{{ s }}" {% if s == eq.tool_status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                              </select>
+                              <label>Type / category</label>
+                              <input type="text" name="category" value="{{ eq.category or '' }}" list="equipment-category-options" placeholder="e.g. Power tools">
+                              <label>Current project</label>
+                              <input type="text" name="current_project" value="{{ eq.current_project or '' }}">
+                              <label>Purchase price</label>
+                              <input type="text" name="purchase_price" value="{{ eq.purchase_price if eq.purchase_price is not none else '' }}">
+                              <label>Serial number</label>
+                              <input type="text" name="serial_number" value="{{ eq.serial_number or '' }}">
+                              <label>Description</label>
+                              <input type="text" name="description" value="{{ eq.description or '' }}">
+                              <div class="modal-actions">
+                                <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Cancel</button>
+                                <button type="submit" class="btn btn-sm">Save</button>
+                              </div>
+                            </form>
+                          </div>
+                        </dialog>
+                        <form method="post" action="{{ url_for('instances.delete_equipment', company_id=company.public_id, instance_id=instance.public_id, equipment_id=eq.public_id) }}"
+                              onsubmit="return confirm('Remove {{ eq.name|e }}?');" style="display:inline;">
+                          <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                        </form>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            </div>
+            </div>
+          </details>
+        {% endfor %}
+      {% else %}
+        <p class="muted">Nothing added yet.</p>
+      {% endif %}
+    </div>
+
+    {% if can_operate_kiosk %}
+    <div style="width:240px; flex-shrink:0;">
+      <h3 style="margin-top:0;">Manage</h3>
+      <details class="toggle-card" style="margin-top:0;">
+        <summary>
+          <span>Add an item</span>
+          <span class="chevron">{{ icons.icon('chevron', 14) }}</span>
+        </summary>
+        <div class="toggle-card-body">
+          <form method="post" action="{{ url_for('instances.add_equipment', company_id=company.public_id, instance_id=instance.public_id) }}">
+            <input type="hidden" name="kind" value="item">
+            <label>Name</label>
+            <input type="text" name="name" placeholder="e.g. Nitrile gloves" required>
+            <label>SKU</label>
+            <input type="text" name="sku">
+            <label>Quantity</label>
+            <input type="text" name="quantity">
+            <label>Unit</label>
+            <input type="text" name="unit" placeholder="e.g. ea, pair">
+            <label>Type / category</label>
+            <input type="text" name="category" list="equipment-category-options" placeholder="e.g. Contact Tips">
+            <label>Unit cost</label>
+            <input type="text" name="unit_cost">
+            <label>Serial number (optional)</label>
+            <input type="text" name="serial_number">
+            <label>Description (optional)</label>
+            <input type="text" name="description">
+            <button type="submit" class="btn btn-sm" style="margin-top:12px;">Add item</button>
+          </form>
+        </div>
+      </details>
+
+      <details class="toggle-card" style="margin-top:12px;">
+        <summary>
+          <span>Add a tool</span>
+          <span class="chevron">{{ icons.icon('chevron', 14) }}</span>
+        </summary>
+        <div class="toggle-card-body">
+          <form method="post" action="{{ url_for('instances.add_equipment', company_id=company.public_id, instance_id=instance.public_id) }}">
+            <input type="hidden" name="kind" value="tool">
+            <label>Name</label>
+            <input type="text" name="name" placeholder="e.g. Zebra DS2208 barcode scanner" required>
+            <label>Type / category</label>
+            <input type="text" name="category" list="equipment-category-options" placeholder="e.g. Power tools">
+            <label>Current project</label>
+            <input type="text" name="current_project">
+            <label>Purchase price</label>
+            <input type="text" name="purchase_price">
+            <label>Serial number (optional)</label>
+            <input type="text" name="serial_number">
+            <label>Description (optional)</label>
+            <input type="text" name="description">
+            <button type="submit" class="btn btn-sm" style="margin-top:12px;">Add tool</button>
+          </form>
+        </div>
+      </details>
+
+      <details class="toggle-card" style="margin-top:12px;">
+        <summary>
+          <span>Import from CSV</span>
+          <span class="chevron">{{ icons.icon('chevron', 14) }}</span>
+        </summary>
+        <div class="toggle-card-body">
+          <form method="post" action="{{ url_for('instances.import_equipment_csv', company_id=company.public_id, instance_id=instance.public_id) }}"
+                enctype="multipart/form-data">
+            <input type="file" name="file" accept=".csv" required>
+            <button type="submit" class="btn btn-sm" style="margin-top:12px;">Import</button>
+          </form>
+          <p class="muted" style="font-size:12px; margin-top:8px; margin-bottom:0;">
+            Columns: <span class="mono">kind,name,description,serial_number,status,category</span>. <span class="mono">category</span> is optional
+            and freeform — it's what groups rows into the sections above.
+          </p>
+        </div>
+      </details>
+
+      <details class="toggle-card" style="margin-top:12px;">
+        <summary>
+          <span>Restore from backup</span>
+          <span class="chevron">{{ icons.icon('chevron', 14) }}</span>
+        </summary>
+        <div class="toggle-card-body">
+          <form method="post" action="{{ url_for('instances.restore_equipment', company_id=company.public_id, instance_id=instance.public_id) }}"
+                enctype="multipart/form-data">
+            <input type="file" name="file" accept=".json" required>
+            <button type="submit" class="btn btn-sm" style="margin-top:12px;">Restore</button>
+          </form>
+          <p class="muted" style="font-size:12px; margin-top:8px; margin-bottom:0;">
+            Restores from a JSON file exported via "Backup" above.
+          </p>
+        </div>
+      </details>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Local Kiosk Users</h2>
+  </div>
+  <p class="muted" style="margin-top:0;">
+    The people who operate this specific kiosk terminal day-to-day — distinct from company Users,
+    who log into this dashboard. Two-way synced with the real Kiosk App's own login accounts once
+    one is installed — a username/role below means this row has a synced counterpart there, and a
+    PIN set here becomes a real login password at the terminal (on top of its own badge/username
+    login, never a replacement for it).
+  </p>
+
+  {% if local_users %}
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Badge</th><th>Status</th><th>PIN</th><th></th></tr></thead>
+      <tbody>
+        {% for lu in local_users %}
+          <tr>
+            <td>{{ lu.name }}</td>
+            <td class="mono muted">{{ lu.username or '—' }}</td>
+            <td class="muted">{{ lu.role or '—' }}</td>
+            <td class="mono muted">{{ lu.badge_code or '—' }}</td>
+            <td>
+              {% if lu.status == 'active' %}
+                <span class="pill pill-green">Active</span>
+              {% else %}
+                <span class="pill pill-muted">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if lu.pin_hash is none %}
+                <span class="pill pill-muted">Not set</span>
+              {% elif lu.pin_is_expired() %}
+                <span class="pill pill-red">Expired</span>
+              {% else %}
+                <span class="pill pill-green">Set</span>
+                <span class="muted" style="font-size:11.5px; display:block; margin-top:3px;">since {{ lu.pin_set_at | friendly_date }}</span>
+              {% endif %}
+            </td>
+            <td class="row-actions">
+              {% if can_operate_kiosk %}
+                <button type="button" class="btn btn-secondary btn-sm" data-open-modal="lu-edit-{{ lu.public_id }}">Edit</button>
+                <dialog id="lu-edit-{{ lu.public_id }}" class="modal">
+                  <div class="modal-body">
+                    <div class="modal-head">
+                      <h3>Edit {{ lu.name }}</h3>
+                      <button type="button" class="modal-close-x" data-close-modal aria-label="Close">&times;</button>
+                    </div>
+                    <form method="post" action="{{ url_for('instances.edit_local_user', company_id=company.public_id, instance_id=instance.public_id, local_user_id=lu.public_id) }}">
+                      <label>Name</label>
+                      <input type="text" name="name" value="{{ lu.name }}" required>
+                      <label>Status</label>
+                      <select name="status">
+                        {% for s in local_user_statuses %}<option value="{{ s }}" {% if s == lu.status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                      </select>
+                      <label>Username</label>
+                      <input type="text" name="username" value="{{ lu.username or '' }}" placeholder="e.g. jamie">
+                      <label>Role</label>
+                      <select name="role">
+                        {% for r in local_user_roles %}<option value="{{ r }}" {% if r == lu.role %}selected{% endif %}>{{ r }}</option>{% endfor %}
+                      </select>
+                      <label>New PIN (leave blank to keep current)</label>
+                      <input type="password" name="pin" inputmode="numeric" minlength="{{ pin_min_length }}" maxlength="{{ pin_max_length }}" autocomplete="off">
+                      <label>Confirm new PIN</label>
+                      <input type="password" name="pin_confirm" inputmode="numeric" minlength="{{ pin_min_length }}" maxlength="{{ pin_max_length }}" autocomplete="off">
+                      <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Cancel</button>
+                        <button type="submit" class="btn btn-sm">Save</button>
+                      </div>
+                    </form>
+                  </div>
+                </dialog>
+                <form method="post" action="{{ url_for('instances.delete_local_user', company_id=company.public_id, instance_id=instance.public_id, local_user_id=lu.public_id) }}"
+                      onsubmit="return confirm('Remove {{ lu.name|e }}?');" style="display:inline;">
+                  <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted">Nothing added yet.</p>
+  {% endif %}
+
+  {% if can_operate_kiosk %}
+    <details class="toggle-card" style="margin-top:16px;">
+      <summary>
+        <span>Add a local user</span>
+        <span class="chevron">{{ icons.icon('chevron', 14) }}</span>
+      </summary>
+      <div class="toggle-card-body">
+        <form method="post" action="{{ url_for('instances.add_local_user', company_id=company.public_id, instance_id=instance.public_id) }}">
+          <label>Name</label>
+          <input type="text" name="name" placeholder="e.g. Jamie (till 2)" required>
+          <label>Username (optional — for the real Kiosk App login; auto-derived if left blank)</label>
+          <input type="text" name="username" placeholder="e.g. jamie">
+          <label>Role</label>
+          <select name="role">
+            {% for r in local_user_roles %}<option value="{{ r }}" {% if r == 'stock_user' %}selected{% endif %}>{{ r }}</option>{% endfor %}
+          </select>
+          <label>PIN (optional — {{ pin_min_length }}–{{ pin_max_length }} digits)</label>
+          <input type="password" name="pin" inputmode="numeric" minlength="{{ pin_min_length }}" maxlength="{{ pin_max_length }}" autocomplete="off">
+          <label>Confirm PIN</label>
+          <input type="password" name="pin_confirm" inputmode="numeric" minlength="{{ pin_min_length }}" maxlength="{{ pin_max_length }}" autocomplete="off">
+          <button type="submit" class="btn btn-sm" style="margin-top:12px;">Add</button>
+        </form>
+      </div>
+    </details>
+  {% endif %}
+</div>
+
+{% if can_operate_kiosk %}
+<div class="panel">
+  <h2>Roles</h2>
+  <p class="muted" style="margin-top:0;">
+    Custom roles for this kiosk's Local Users, editable remotely — mirrors kiosk_app's own /admin panel.
+    Changes are queued to the Agent and take effect on its next poll (roles below reflect the last sync pass,
+    so a just-made change may take a few seconds to show up here).
+  </p>
+  {% if roles %}
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Role</th><th>Users</th><th>Login</th><th></th></tr></thead>
+      <tbody>
+        {% for r in roles %}
+          <tr>
+            <td>{{ r.name }}{% if r.is_builtin %}<span class="muted" style="font-weight:400;"> (built-in)</span>{% endif %}</td>
+            <td class="mono muted">{{ r.user_count }}</td>
+            <td>
+              {% if r.login_enabled %}<span class="pill pill-green">Enabled</span>
+              {% else %}<span class="pill pill-red">Disabled</span>{% endif %}
+            </td>
+            <td class="row-actions">
+              <button type="button" class="btn btn-secondary btn-sm" data-open-modal="role-login-{{ loop.index }}">Login</button>
+              <dialog id="role-login-{{ loop.index }}" class="modal">
+                <div class="modal-body">
+                  <div class="modal-head">
+                    <h3>Login — {{ r.name }}</h3>
+                    <button type="button" class="modal-close-x" data-close-modal aria-label="Close">&times;</button>
+                  </div>
+                  <form method="post" action="{{ url_for('instances.set_role_login', company_id=company.public_id, instance_id=instance.public_id, role_name=r.name) }}">
+                    <label class="checkline"><input type="checkbox" name="login_enabled" {% if r.login_enabled %}checked{% endif %}> Login enabled</label>
+                    <div class="modal-actions">
+                      <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Cancel</button>
+                      <button type="submit" class="btn btn-sm">Save</button>
+                    </div>
+                  </form>
+                </div>
+              </dialog>
+              <button type="button" class="btn btn-secondary btn-sm" data-open-modal="role-sidebar-{{ loop.index }}">Sidebar</button>
+              <dialog id="role-sidebar-{{ loop.index }}" class="modal">
+                <div class="modal-body">
+                  <div class="modal-head">
+                    <h3>Sidebar — {{ r.name }}</h3>
+                    <button type="button" class="modal-close-x" data-close-modal aria-label="Close">&times;</button>
+                  </div>
+                  <form method="post" action="{{ url_for('instances.set_role_sidebar', company_id=company.public_id, instance_id=instance.public_id, role_name=r.name) }}">
+                    {% set sidebar = r.sidebar() %}
+                    {% for key in sidebar_item_keys %}
+                      <label class="checkline"><input type="checkbox" name="item_{{ key }}" {% if sidebar.get(key, True) %}checked{% endif %}> {{ key }}</label>
+                    {% endfor %}
+                    <div class="modal-actions">
+                      <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Cancel</button>
+                      <button type="submit" class="btn btn-sm">Save</button>
+                    </div>
+                  </form>
+                </div>
+              </dialog>
+              {% if not r.is_builtin %}
+                <form method="post" action="{{ url_for('instances.delete_role', company_id=company.public_id, instance_id=instance.public_id, role_name=r.name) }}"
+                      onsubmit="return confirm('Delete role {{ r.name|e }}? Blocked if any local user still has it.');" style="display:inline;">
+                  <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted">No roles synced yet — the Agent picks these up once <code>kiosk_inventory_sync_url</code> is configured and has run at least once.</p>
+  {% endif %}
+
+  <details class="toggle-card" style="margin-top:12px;">
+    <summary>
+      <span>Add a role</span>
+      <span class="chevron">{{ icons.icon('chevron', 14) }}</span>
+    </summary>
+    <div class="toggle-card-body">
+      <form method="post" action="{{ url_for('instances.create_role', company_id=company.public_id, instance_id=instance.public_id) }}">
+        <label>Name</label>
+        <input type="text" name="name" placeholder="e.g. Welding Lead" required>
+        <label>Description (optional)</label>
+        <input type="text" name="description">
+        <button type="submit" class="btn btn-sm" style="margin-top:12px;">Add role</button>
+      </form>
+    </div>
+  </details>
+</div>
+{% endif %}
+
+{% if can_manage_instances %}
+<div class="panel">
+  <div class="panel-head">
+    <h2>Scan Links</h2>
+  </div>
+  <p class="muted" style="margin-top:0;">
+    A no-login link for a phone camera or a USB/Bluetooth barcode scanner to look up an Item or
+    Tool on this instance by its barcode — nothing here can create, edit, or delete anything.
+    Share the link, or let someone scan the QR code to open it straight on their phone.
+  </p>
+
+  {% if scan_tokens %}
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Label</th><th>Created</th><th>Uses</th><th>Last used</th><th class="wrap-cell">Link</th><th></th></tr></thead>
+      <tbody>
+        {% for t in scan_tokens %}
+          <tr>
+            <td>{{ t.label or '—' }}</td>
+            <td class="muted">{{ t.created_at | friendly_date }}</td>
+            <td class="mono muted">{{ t.use_count }}</td>
+            <td class="muted">{{ t.last_used_at | friendly_dt if t.last_used_at else 'never' }}</td>
+            <td class="wrap-cell"><code style="font-size:11px; word-break:break-all;">{{ config.BASE_URL }}{{ url_for('scan_portal.scan_app', token=t.token) }}</code></td>
+            <td class="row-actions" style="white-space:nowrap;">
+              <button type="button" class="btn btn-secondary btn-sm" data-open-modal="scan-qr-{{ t.id }}">QR code</button>
+              <dialog id="scan-qr-{{ t.id }}" class="modal">
+                <div class="modal-body" style="text-align:center;">
+                  <div class="modal-head">
+                    <h3>{{ t.label or 'Scan link' }}</h3>
+                    <button type="button" class="modal-close-x" data-close-modal aria-label="Close">&times;</button>
+                  </div>
+                  <img src="{{ url_for('instances.scan_token_qr', company_id=company.public_id, instance_id=instance.public_id, token_id=t.id) }}"
+                       alt="QR code for this scan link" style="width:220px; height:220px; background:#fff; border-radius:8px; padding:10px;">
+                  <p class="muted" style="font-size:12px; margin-top:10px; word-break:break-all;">
+                    {{ config.BASE_URL }}{{ url_for('scan_portal.scan_app', token=t.token) }}
+                  </p>
+                </div>
+              </dialog>
+              <form method="post" action="{{ url_for('instances.revoke_scan_token', company_id=company.public_id, instance_id=instance.public_id, token_id=t.id) }}"
+                    onsubmit="return confirm('Revoke this scan link? Anyone still holding it loses access immediately.');" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-sm">Revoke</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted">No scan links yet.</p>
+  {% endif %}
+
+  <details class="toggle-card" style="margin-top:12px;">
+    <summary>
+      <span>Create a scan link</span>
+      <span class="chevron">{{ icons.icon('chevron', 14) }}</span>
+    </summary>
+    <div class="toggle-card-body">
+      <form method="post" action="{{ url_for('instances.create_scan_token', company_id=company.public_id, instance_id=instance.public_id) }}">
+        <label>Label (optional)</label>
+        <input type="text" name="label" placeholder="e.g. Warehouse floor phone">
+        <button type="submit" class="btn btn-sm" style="margin-top:12px;">Create link</button>
+      </form>
+    </div>
+  </details>
+</div>
+{% endif %}
+
+</div><!-- /tab: inventory -->
+
+<div class="page-tab-panel" data-tab-panel="kiosk" hidden>
+
+<div class="panel" id="kiosk-panel"
+     data-status-url="{{ url_for('instances.kiosk_status', company_id=company.public_id, instance_id=instance.public_id) }}"
+     data-start-url="{{ url_for('instances.kiosk_start', company_id=company.public_id, instance_id=instance.public_id) }}"
+     data-stop-url="{{ url_for('instances.kiosk_stop', company_id=company.public_id, instance_id=instance.public_id) }}"
+     data-restart-url="{{ url_for('instances.kiosk_restart', company_id=company.public_id, instance_id=instance.public_id) }}">
+  <h2>Kiosk Process</h2>
+  <table class="kv-table">
+    <tr><th>Status</th>
+      <td id="kiosk-status-cell">
+        {% if instance.kiosk_process_status == 'suspended' %}
+          <span class="pill pill-red">Suspended</span>
+        {% elif instance.kiosk_process_status == 'running' %}
+          <span class="pill pill-green">Running</span>
+        {% elif instance.kiosk_process_status == 'stopped' %}
+          <span class="pill pill-red">Stopped</span>
+        {% elif instance.kiosk_process_status == 'giving_up' %}
+          <span class="pill pill-red">Crash-looping — Agent gave up restarting it</span>
+        {% elif instance.kiosk_process_status == 'not_configured' %}
+          <span class="pill pill-muted">Not configured</span>
+        {% else %}
+          <span class="pill pill-muted">Unknown (no heartbeat yet)</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr><th>Start command</th><td class="mono">{{ instance.kiosk_process_status and '(reported via heartbeat only — set below)' or '—' }}</td></tr>
+  </table>
+
+  {% if license_status == 'suspended' %}
+    <div class="flash flash-danger" style="margin-top:12px;">{{ suspended_message }}</div>
+  {% endif %}
+
+  <div id="kiosk-pending-banner">
+    {% if pending_kiosk_command and license_status != 'suspended' %}
+      <div class="flash flash-warning" style="margin-top:12px;">
+        A "{{ pending_kiosk_command.command_type }}" command is queued — waiting for the Agent's next poll.
+      </div>
+    {% endif %}
+  </div>
+
+  {% if can_operate_kiosk %}
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <form method="post" action="{{ url_for('instances.kiosk_start', company_id=company.public_id, instance_id=instance.public_id) }}" class="kiosk-cmd-form" data-command="start">
+        <button type="submit" class="btn btn-secondary btn-sm" {{ 'disabled title="Instance is suspended"' | safe if license_status == 'suspended' }}>Start</button>
+      </form>
+      <form method="post" action="{{ url_for('instances.kiosk_stop', company_id=company.public_id, instance_id=instance.public_id) }}" class="kiosk-cmd-form" data-command="stop">
+        <button type="submit" class="btn btn-secondary btn-sm">Stop</button>
+      </form>
+      <form method="post" action="{{ url_for('instances.kiosk_restart', company_id=company.public_id, instance_id=instance.public_id) }}" class="kiosk-cmd-form" data-command="restart">
+        <button type="submit" class="btn btn-secondary btn-sm" {{ 'disabled title="Instance is suspended"' | safe if license_status == 'suspended' }}>Restart</button>
+      </form>
+      {% if instance.last_kiosk_inventory_sync_url %}
+        <a href="{{ instance.last_kiosk_inventory_sync_url }}" target="_blank" rel="noopener noreferrer"
+           class="btn btn-secondary btn-sm" title="Opens the kiosk's own screen — only works from a browser on this kiosk PC itself">
+          {{ icons.icon('external', 14) }}Open kiosk
+        </a>
+      {% endif %}
+    </div>
+    {% if instance.last_kiosk_inventory_sync_url %}
+      <p class="muted" style="font-size:12px; margin-top:6px;">
+        "Open kiosk" only works from a browser running on this kiosk's own machine — it's a local address
+        ({{ instance.last_kiosk_inventory_sync_url }}), not reachable from anywhere else.
+      </p>
+    {% endif %}
+  {% endif %}
+
+  {% if can_manage_instances %}
+    <details class="toggle-card" style="margin-top:16px;">
+      <summary>
+        <span>Configure what starts the kiosk process</span>
+        <span class="chevron">{{ icons.icon('chevron', 14) }}</span>
+      </summary>
+      <div class="toggle-card-body">
+        <form method="post" action="{{ url_for('instances.kiosk_configure', company_id=company.public_id, instance_id=instance.public_id) }}" id="kiosk-configure-form">
+          {% if not instance.last_kiosk_start_command %}
+            <p class="muted" style="font-size:12px; color:var(--red, #c0392b);">
+              The Admin Panel has never sent this instance a configure command, so it has no record
+              of what's currently running there (if anything — the Agent may have auto-defaulted its
+              own start command locally after install). The fields below are blank, not "empty" —
+              check the Agent's settings.json on the machine itself for the real current values
+              before saving, or you'll stop the kiosk process without meaning to.
+            </p>
+          {% endif %}
+          <label>Start command</label>
+          <input type="text" name="kiosk_start_command" id="kiosk_start_command" value="{{ instance.last_kiosk_start_command or '' }}" placeholder="e.g. C:\OpsLabAgent\python\python.exe C:\OpsLabKiosk\run.py">
+          <label>Working directory (optional)</label>
+          <input type="text" name="kiosk_working_dir" value="{{ instance.last_kiosk_working_dir or '' }}">
+          <label>Health check URL (optional — e.g. http://127.0.0.1:8420/health)</label>
+          <input type="text" name="kiosk_health_check_url" value="{{ instance.last_kiosk_health_check_url or '' }}">
+          <label>Health check command (optional, alternative to a URL)</label>
+          <input type="text" name="kiosk_health_check_command" value="{{ instance.last_kiosk_health_check_command or '' }}">
+          <label>Kiosk App base URL — e.g. http://127.0.0.1:8421 (optional, but also required for Backups and Database reset below to work, not just inventory sync — leave blank only if you use none of those)</label>
+          <input type="text" name="kiosk_inventory_sync_url" value="{{ instance.last_kiosk_inventory_sync_url or '' }}" placeholder="http://127.0.0.1:8421">
+          <label id="confirm-clear-label" style="display:none; margin-top:10px; color:var(--red, #c0392b);">
+            <input type="checkbox" name="confirm_clear" value="1" style="width:auto;">
+            Yes, stop the kiosk process and clear this configuration
+          </label>
+          <button type="submit" class="btn btn-sm" style="margin-top:12px;">Save &amp; apply</button>
+        </form>
+        <script>
+          (function () {
+            var form = document.getElementById('kiosk-configure-form');
+            var cmd = document.getElementById('kiosk_start_command');
+            var label = document.getElementById('confirm-clear-label');
+            function sync() { label.style.display = cmd.value.trim() ? 'none' : 'block'; }
+            cmd.addEventListener('input', sync);
+            sync();
+          })();
+        </script>
+        <p class="muted" style="font-size:12px; margin-top:8px;">
+          Leaving the start command blank stops the kiosk process and clears supervision entirely —
+          saving with it blank now requires ticking the confirmation checkbox above, so this can't
+          happen by accident. Applying a non-blank command restarts the kiosk process using it.
+          The sync URL is the real Kiosk App's own base address on this machine — set it to turn on
+          two-way sync for Items &amp; Tools and Local Kiosk Users; leave it blank if no Kiosk App is
+          installed here yet. Every save of this form resets all fields above to what's submitted
+          this time (pre-filled with what the Admin Panel last sent, above) — re-enter anything you
+          want to keep that isn't already filled in.
+        </p>
+      </div>
+    </details>
+
+    <details class="toggle-card" style="margin-top:16px; border-color:rgba(240,96,92,.35);">
+      <summary style="color:var(--red);">
+        <span>Advanced: run a command on this kiosk</span>
+        <span class="chevron">{{ icons.icon('chevron', 14) }}</span>
+      </summary>
+      <div class="toggle-card-body">
+        <form method="post" action="{{ url_for('instances.run_command', company_id=company.public_id, instance_id=instance.public_id) }}">
+          <label>Command</label>
+          <input type="text" name="command" class="mono" placeholder="e.g. msiexec /i C:\Downloads\driver.msi /qn">
+          <button type="submit" class="btn btn-danger btn-sm" style="margin-top:12px;">Run</button>
+        </form>
+        <p class="muted" style="font-size:12px; margin-top:8px;">
+          Runs on the kiosk exactly as typed (its own shell — cmd.exe on Windows, sh on Linux), with no
+          restrictions and no sandbox. Output (or the exit code) shows up below in Recent commands once
+          the Agent picks it up. There's no live remote-desktop session yet — this is one-shot execution,
+          not an interactive shell. Avoid anything that stops or restarts the Agent's own service from
+          within this command — it can't finish stopping itself while still running it.
+        </p>
+      </div>
+    </details>
+
+    <details class="toggle-card" style="margin-top:16px; border-color:rgba(240,96,92,.35);">
+      <summary style="color:var(--red);">
+        <span>Danger zone: reset kiosk database</span>
+        <span class="chevron">{{ icons.icon('chevron', 14) }}</span>
+      </summary>
+      <div class="toggle-card-body">
+        <p class="muted" style="font-size:12px;">
+          Wipes every item, tool, local user, project, wire spool, and audit out of this kiosk's
+          local database — everything, not just inventory. The Agent takes a full backup and
+          uploads it here (source "pre_reset", visible in this instance's backup history) before
+          wiping anything, so it's recoverable via restore, but the reset itself cannot be undone
+          once the Agent has run it.
+        </p>
+        <form method="post" action="{{ url_for('instances.kiosk_reset_db', company_id=company.public_id, instance_id=instance.public_id) }}"
+              onsubmit="return confirm('Permanently wipe the ENTIRE kiosk database on {{ instance.display_name()|e }}? A backup will be taken first and uploaded here, but the wipe itself cannot be undone.');">
+          <button type="submit" class="btn btn-danger btn-sm">Reset database</button>
+        </form>
+      </div>
+    </details>
+
+    <details class="toggle-card" style="margin-top:16px; border-color:rgba(240,96,92,.35);">
+      <summary style="color:var(--red);">
+        <span>Danger zone: update Agent (agent_version {{ instance.agent_version or '?' }})</span>
+        <span class="chevron">{{ icons.icon('chevron', 14) }}</span>
+      </summary>
+      <div class="toggle-card-body">
+        <p class="muted" style="font-size:12px;">
+          Pushes the Agent code currently on this server (agent/, rebuilt fresh from disk first)
+          onto this one instance's live Agent service. A detached helper process on the machine
+          stops the service, swaps just the agent/ folder, and restarts it — the service is
+          briefly unreachable during that restart, and this Agent has no auto-update or automatic
+          rollback, so a failed swap needs manual fixing on the machine (see
+          downloads/agent_update_log.txt in its install folder).
+        </p>
+        <form method="post" action="{{ url_for('instances.agent_self_update', company_id=company.public_id, instance_id=instance.public_id) }}"
+              onsubmit="return confirm('Push the current Agent code to {{ instance.display_name()|e }} now? Its Agent service will restart during this, and there is no automatic rollback if the swap fails.');">
+          <button type="submit" class="btn btn-danger btn-sm">Update Agent</button>
+        </form>
+      </div>
+    </details>
+  {% endif %}
+
+  {% if can_operate_kiosk %}
+    <div id="kiosk-recent-commands">
+      {% if recent_kiosk_commands %}
+        <h3 style="font-size:13px; margin-top:20px; color:var(--muted);">Recent commands</h3>
+        <table class="kv-table" style="font-size:12.5px;">
+          <tbody id="kiosk-recent-commands-body">
+          {% for cmd in recent_kiosk_commands %}
+            <tr>
+              <td class="mono">{{ cmd.command_type }}</td>
+              <td>
+                {% if cmd.status == 'pending' %}<span class="pill pill-amber">Pending</span>
+                {% elif cmd.status == 'in_progress' %}<span class="pill pill-accent">In progress</span>
+                {% elif cmd.status == 'success' %}<span class="pill pill-green">Success</span>
+                {% else %}<span class="pill pill-red">Failed</span>{% endif %}
+              </td>
+              <td class="muted" style="max-width:420px;">
+                {% set msg = cmd.result_message or '' %}
+                {% if msg %}
+                  {% set lines = msg.split('\n') %}
+                  <div class="mono cmd-output-preview" style="font-size:11.5px;">{{ lines[0] }}</div>
+                  {% if lines|length > 1 %}
+                    <details class="cmd-output-toggle">
+                      <summary>{{ lines|length - 1 }} more line{{ 's' if lines|length - 1 != 1 else '' }}</summary>
+                      <pre class="cmd-output-pre mono">{{ lines[1:] | join('\n') }}</pre>
+                    </details>
+                  {% endif %}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>{{ cmd.created_at | friendly_dt }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2>Configuration</h2>
+  <p class="muted">
+    Sent to the instance next time it checks in (<code>GET /api/v1/instances/config</code>);
+    it applies and reports back via <code>POST /api/v1/instances/config/ack</code>.
+  </p>
+
+  {% if pending_config %}
+    <div class="flash flash-warning">
+      Version {{ pending_config.version }} is queued, waiting for the instance to acknowledge it.
+    </div>
+  {% endif %}
+
+  <table class="kv-table" style="margin-bottom:16px;">
+    <tr><th>Current applied version</th><td>{{ current_config.version if current_config else '— (none applied yet)' }}</td></tr>
+  </table>
+
+  <label>Current config (read-only)</label>
+  <textarea readonly rows="6">{{ current_config_pretty }}</textarea>
+
+  {% if can_manage_config %}
+  <form method="post" action="{{ url_for('instances.set_auto_logout', company_id=company.public_id, instance_id=instance.public_id) }}" style="display:flex; align-items:flex-end; gap:12px; margin-top:16px;">
+    <div>
+      <label>Kiosk auto-logout (minutes)</label>
+      <input type="text" name="minutes" value="{{ current_config_dict.auto_logout_minutes if current_config_dict and current_config_dict.auto_logout_minutes else 2 }}" style="width:90px;">
+    </div>
+    <button type="submit" class="btn-secondary btn-sm">Set</button>
+    <span class="muted" style="font-size:12.5px;">How long an idle session stays logged in on the kiosk terminal before it signs itself out.</span>
+  </form>
+
+  <form method="post" action="{{ url_for('instances.push_config', company_id=company.public_id, instance_id=instance.public_id) }}" style="margin-top:20px;">
+    <label>Push new configuration (JSON object)</label>
+    <textarea name="config_json" rows="6" placeholder='{{ '{' }}"kiosk_name": "Reception", "auto_logout_minutes": 2{{ '}' }}'>{{ current_config_pretty if current_config else '' }}</textarea>
+    <button type="submit" style="margin-top:12px;">Push configuration</button>
+  </form>
+  {% endif %}
+
+  {% if config_history %}
+  <h2 style="margin-top:24px;">Configuration history</h2>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Version</th><th>Status</th><th>Pushed by</th><th>Pushed</th><th>Acknowledged</th><th class="wrap-cell">Message</th><th></th></tr></thead>
+    <tbody>
+      {% for c in config_history %}
+        <tr>
+          <td class="mono">v{{ c.version }}</td>
+          <td>
+            {% if c.status == 'applied' %}
+              <span class="pill pill-green">Applied</span>
+            {% elif c.status == 'pending' %}
+              <span class="pill pill-amber">Pending</span>
+            {% else %}
+              <span class="pill pill-red">{{ c.status|capitalize }}</span>
+            {% endif %}
+          </td>
+          <td>{{ c.pushed_by.full_name }}</td>
+          <td>{{ c.pushed_at | friendly_dt }}</td>
+          <td>{{ c.acknowledged_at | friendly_dt if c.acknowledged_at else '—' }}</td>
+          <td class="muted wrap-cell">{{ c.agent_message or '—' }}</td>
+          <td>
+            {% if can_manage_config and c.status == 'applied' %}
+              <form method="post" action="{{ url_for('instances.restore_config', company_id=company.public_id, instance_id=instance.public_id, version=c.version) }}">
+                <button type="submit" class="btn btn-secondary btn-sm">Restore</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2>Updates</h2>
+
+  <table class="kv-table" style="margin-bottom:14px;">
+    <tr><th>Current version</th><td class="mono">{{ instance.app_version or '—' }}</td></tr>
+    <tr><th>Last Known Good</th><td class="mono">{{ instance.last_known_good_version or '— (no successful update yet)' }}</td></tr>
+  </table>
+
+  {% if active_deployment %}
+    {% set d = active_deployment %}
+    <div class="flash {{ 'flash-danger' if d.status in ['failed','rolling_back'] else 'flash-warning' }}">
+      <strong>v{{ d.package.version }}</strong> — status: <strong>{{ d.status.replace('_',' ')|capitalize }}</strong>
+      {% if d.status in ['scheduled','waiting'] %}
+        (target: {{ d.target_time_utc | friendly_dtstr }}, source: {{ d.schedule_source }})
+      {% endif %}
+      {% if d.health_check_message %}<br><span class="muted">Health check: {{ d.health_check_message }}</span>{% endif %}
+      {% if d.rollback_reason %}<br><span class="muted">Rollback reason: {{ d.rollback_reason }}</span>{% endif %}
+      {% if can_manage_updates and d.status in ["scheduled", "waiting"] %}
+        <form method="post" action="{{ url_for('instances.cancel_update', company_id=company.public_id, instance_id=instance.public_id, deployment_id=d.public_id) }}" style="display:inline; margin-left:10px;">
+          <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
+        </form>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if can_manage_updates %}
+    {% if usable_packages %}
+      <form method="post" action="{{ url_for('instances.schedule_update', company_id=company.public_id, instance_id=instance.public_id) }}" style="margin-top:10px;">
+        <label>Package</label>
+        <select name="package_id">
+          {% for month_label, month_packages in usable_package_groups %}
+            <optgroup label="{{ month_label }}">
+              {% for p in month_packages %}
+                <option value="{{ p.public_id }}" title="{{ p.release_notes or '' }}">
+                  v{{ p.version }} — {{ p.uploaded_at.strftime('%d %b') }}{{ ' (latest)' if p.public_id == usable_packages[0].public_id else '' }}
+                </option>
+              {% endfor %}
+            </optgroup>
+          {% endfor %}
+        </select>
+        <label>When</label>
+        <select name="mode" onchange="document.getElementById('custom-dt').style.display = this.value === 'custom' ? 'block' : 'none';">
+          <option value="now">Update now</option>
+          <option value="schedule" selected>Use configured schedule (kiosk / company / 9PM UK default)</option>
+          <option value="custom">Custom date &amp; time</option>
+        </select>
+        <div id="custom-dt" style="display:none;">
+          <label>Custom date &amp; time (UTC)</label>
+          <input type="datetime-local" name="custom_datetime">
+        </div>
+        <button type="submit" style="margin-top:14px;">Push update</button>
+      </form>
+    {% else %}
+      <p class="muted">No validated packages support {{ instance.os }} yet.</p>
+    {% endif %}
+  {% endif %}
+
+  {% if deployment_history %}
+  <h2 style="margin-top:24px;">Update history</h2>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Version</th><th>Status</th><th>Target time</th><th>Started</th><th>Completed</th><th>Health check</th><th>Requested by</th></tr></thead>
+    <tbody>
+      {% for d in deployment_history %}
+        <tr>
+          <td class="mono">v{{ d.package.version }}</td>
+          <td>
+            {% if d.status == 'successful' %}
+              <span class="pill pill-green">Successful</span>
+            {% elif d.status in ['failed','rolled_back'] %}
+              <span class="pill pill-red">{{ d.status.replace('_',' ')|capitalize }}</span>
+            {% elif d.status in ['cancelled','superseded'] %}
+              <span class="pill pill-muted">{{ d.status|capitalize }}</span>
+            {% else %}
+              <span class="pill pill-amber">{{ d.status.replace('_',' ')|capitalize }}</span>
+            {% endif %}
+          </td>
+          <td>{{ d.target_time_utc | friendly_dt }}</td>
+          <td>{{ d.started_at | friendly_dt if d.started_at else '—' }}</td>
+          <td>{{ d.completed_at | friendly_dt if d.completed_at else '—' }}</td>
+          <td class="muted">
+            {% if d.health_check_passed is none %}—
+            {% elif d.health_check_passed %}<span style="color:var(--green);">Passed</span>
+            {% else %}<span style="color:var(--red);">Failed</span>
+            {% endif %}
+          </td>
+          <td class="muted">{{ d.requested_by.full_name }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+
+  <p class="muted" style="margin-top:16px; margin-bottom:0;">Instance-level history above; fleet-wide stats are on the <a href="{{ url_for('instances.list_instances', company_id=company.public_id) }}">fleet overview</a>.</p>
+</div>
+
+</div><!-- /tab: kiosk -->
+
+<div class="page-tab-panel" data-tab-panel="diagnostics" hidden>
+
+<div class="panel">
+  <h2>Diagnostics</h2>
+  <table class="kv-table" style="margin-bottom:14px;">
+    <tr><th>Health status</th>
+      <td>
+        {% if instance.connection_status == 'online' %}
+          <span style="color:var(--green);">Healthy — checking in normally</span>
+        {% else %}
+          <span class="muted">Offline — no recent heartbeat</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr><th>Remote tunnel</th><td>{{ 'Connected' if instance.tunnel_connected else 'Not connected' }}</td></tr>
+  </table>
+
+  {% if active_deployment and active_deployment.status_log %}
+    <h3>Current update event log</h3>
+    <textarea readonly rows="6">{{ active_deployment.status_log }}</textarea>
+  {% elif deployment_history and deployment_history[0].status_log %}
+    <h3>Most recent update event log</h3>
+    <textarea readonly rows="6">{{ deployment_history[0].status_log }}</textarea>
+  {% else %}
+    <p class="muted" style="margin:0;">No update events logged yet.</p>
+  {% endif %}
+
+  {% if recent_error_reports %}
+    <h3 style="margin-top:20px;">Recent agent errors</h3>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>When</th><th>Level</th><th>Logger</th><th class="wrap-cell">Message</th></tr></thead>
+      <tbody>
+        {% for e in recent_error_reports %}
+          <tr>
+            <td>{{ e.created_at | friendly_dt }}</td>
+            <td>
+              {% if e.level == 'CRITICAL' %}
+                <span class="pill pill-red">Critical</span>
+              {% else %}
+                <span class="pill pill-amber">Error</span>
+              {% endif %}
+            </td>
+            <td class="muted mono" style="font-size:12px;">{{ e.logger_name or '—' }}</td>
+            <td class="wrap-cell">
+              {{ e.message }}
+              {% if e.suppressed_since_last %}<span class="muted"> (+{{ e.suppressed_since_last }} suppressed since last report)</span>{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <p class="muted" style="margin-top:10px; margin-bottom:0; font-size:12px;">
+      Best-effort delivery from the Agent's error reporter — a network blip while reporting isn't retried, so this is what the Agent managed to tell us, not a complete log.
+    </p>
+  {% endif %}
+
+  <p class="muted" style="margin-top:12px; margin-bottom:0; font-size:12px;">
+    Full agent-side log retrieval (spec Section 35) requires more than error-level events — this shows what's been reported through the
+    update lifecycle, heartbeat, and error reporter so far.
+  </p>
+</div>
+
+</div><!-- /tab: diagnostics -->
+
+<div class="page-tab-panel" data-tab-panel="settings" hidden>
+
+{% if can_manage_instances %}
+<div class="panel">
+  <h2>Instance settings</h2>
+  <form method="post" action="{{ url_for('instances.rename', company_id=company.public_id, instance_id=instance.public_id) }}">
+    <label>Display name</label>
+    <input type="text" name="name" value="{{ instance.name or '' }}" placeholder="{{ instance.hostname or 'e.g. Reception' }}">
+    <label>Kiosk-specific update time (UK local, HH:MM) — overrides the company/system default</label>
+    <input type="text" name="scheduled_update_time" placeholder="21:00"
+           value="{{ instance.scheduled_update_time.strftime('%H:%M') if instance.scheduled_update_time else '' }}">
+    <label class="checkline">
+      <input type="checkbox" name="clear_update_time">
+      Clear override (inherit company/system default)
+    </label>
+    <button type="submit" style="margin-top:16px;">Save</button>
+  </form>
+</div>
+{% endif %}
+
+{% if role in ["owner", "administrator"] %}
+<div class="panel">
+  <h2>Danger zone</h2>
+  <p class="muted">Permanently removes this instance and its config, update, and command history from the Admin Panel. Does not uninstall the Agent itself — if it's still running with valid credentials, it will re-register as a new instance on its next heartbeat.</p>
+  <form method="post" action="{{ url_for('instances.delete_instance', company_id=company.public_id, instance_id=instance.public_id) }}" onsubmit="return confirm('Permanently delete {{ instance.display_name()|e }}? This cannot be undone.');">
+    <button type="submit" class="btn btn-danger">Delete this instance</button>
+  </form>
+</div>
+{% endif %}
+
+</div><!-- /tab: settings -->
+</div><!-- /page-tabbed -->
+
+<style>
+  /* Indeterminate sweep for the "queued, not yet picked up by the Agent"
+     phase — genuinely unbounded (the Agent long-polls its own command
+     channel up to 20s at a time, or could be offline), so this is
+     deliberately NOT a percentage, just motion indicating "still waiting". */
+  .kiosk-indeterminate-bar {
+    animation: kiosk-indeterminate-sweep 1.2s ease-in-out infinite;
+  }
+  @keyframes kiosk-indeterminate-sweep {
+    0%   { margin-left: 0%;   width: 25%; }
+    50%  { margin-left: 70%;  width: 30%; }
+    100% { margin-left: 0%;   width: 25%; }
+  }
+</style>
+<script>
+(function () {
+  var panel = document.getElementById('kiosk-panel');
+  if (!panel) return;
+
+  var statusUrl = panel.dataset.statusUrl;
+  var currentSig = null;   // last known state signature from the server
+  var pollingEnabled = true;
+  var LONG_POLL_WAIT = 25; // seconds the server will hold the connection open
+
+  var STATUS_PILL = {
+    suspended:      ['pill-red', 'Suspended'],
+    running:        ['pill-green', 'Running'],
+    stopped:        ['pill-red', 'Stopped'],
+    giving_up:      ['pill-red', "Crash-looping — Agent gave up restarting it"],
+    not_configured: ['pill-muted', 'Not configured']
+  };
+
+  // Labels + a rough expected duration for the IN_PROGRESS phase only
+  // (once the Agent has confirmed it actually started — see
+  // pending.started_at). This used to be estimated from the moment the
+  // admin clicked, which silently assumed the Agent picked the command up
+  // instantly — if it was offline or just mid poll-cycle, the bar would
+  // already be most of the way to "done" before any real work had
+  // started. Anchoring to started_at instead means these estimates only
+  // need to cover the command's own real execution time, which is far
+  // more predictable: stop/restart/configure all go through
+  // ProcessSupervisor.stop(), which sends a graceful SIGTERM and waits up
+  // to 10 real seconds before force-killing (agent/process_supervisor.py)
+  // — intentional, so the kiosk app gets a fair chance to shut down
+  // cleanly, not something to shorten just to make the UI feel snappier.
+  var COMMAND_INFO = {
+    start:     { label: 'Starting',    estimateMs: 3000,
+                 hint: 'launching the process' },
+    stop:      { label: 'Stopping',    estimateMs: 10500,
+                 hint: 'up to 10s — giving the process a chance to shut down cleanly before forcing it' },
+    restart:   { label: 'Restarting',  estimateMs: 12000,
+                 hint: 'stops first (up to 10s for a clean shutdown), then starts again' },
+    configure: { label: 'Configuring', estimateMs: 12000,
+                 hint: 'applies the new settings, then restarts (up to 10s for a clean shutdown)' }
+  };
+  var PROGRESS_CAP_PCT = 92;   // never claim "done" until confirmed
+  var TICK_MS = 150;           // how often the UI ticks locally between server updates
+
+  var activePending = null;    // last-known pending_command object while something's in flight
+  var progressTicker = null;
+
+  function commandInfo(type) {
+    return COMMAND_INFO[type] || { label: 'Working', estimateMs: 8000, hint: null };
+  }
+
+  function renderStatus(status, pending) {
+    var cell = document.getElementById('kiosk-status-cell');
+    if (!cell) return;
+    // "suspended" always wins over a pending command's "Queued..." — a
+    // suspended instance's Agent can never actually poll for that command
+    // (every /api/v1/instances/* call 403s until reactivated), so showing
+    // "Queued..." forever would be misleading, not just uninformative.
+    if (pending && status !== 'suspended') {
+      var info = commandInfo(pending.command_type);
+      var label = pending.status === 'in_progress' ? (info.label + '…') : 'Queued…';
+      cell.innerHTML = '<span class="pill pill-accent">' + escapeHtml(label) + '</span>';
+      return;
+    }
+    var entry = STATUS_PILL[status] || ['pill-muted', 'Unknown (no heartbeat yet)'];
+    cell.innerHTML = '<span class="pill ' + entry[0] + '">' + entry[1] + '</span>';
+  }
+
+  // Two distinct, honestly-labeled phases instead of one guessed bar:
+  //   "pending"     — queued, the Agent hasn't confirmed picking it up
+  //                   yet. This is genuinely unbounded (the Agent
+  //                   long-polls its own command channel up to 20s at a
+  //                   time, or could simply be offline) — so this phase
+  //                   shows an indeterminate sweep and a real elapsed-
+  //                   seconds counter, NOT a fake percentage.
+  //   "in_progress" — the Agent has confirmed it's actually executing
+  //                   this (a real signal — see started_at). Only here do
+  //                   we show a determinate percentage, and it's anchored
+  //                   to when execution truly began.
+  function pendingBannerHtml(pending) {
+    var info = commandInfo(pending.command_type);
+    if (pending.status !== 'in_progress') {
+      return (
+        '<div class="flash flash-warning" style="margin-top:12px;">' +
+          '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:12px;">' +
+            '<span id="kiosk-progress-label">Queued — waiting for the Agent to pick it up</span>' +
+            '<span id="kiosk-progress-elapsed" class="mono" style="font-size:12px; flex-shrink:0;">0s</span>' +
+          '</div>' +
+          '<div style="height:5px; background:var(--border); border-radius:3px; overflow:hidden;">' +
+            '<div id="kiosk-progress-indeterminate" class="kiosk-indeterminate-bar" style="height:100%; width:35%; background:var(--accent);"></div>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+    var labelText = info.label + (info.hint ? '… (' + info.hint + ')' : '…');
+    return (
+      '<div class="flash flash-warning" style="margin-top:12px;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:12px;">' +
+          '<span id="kiosk-progress-label">' + escapeHtml(labelText) + '</span>' +
+          '<span id="kiosk-progress-pct" class="mono" style="font-size:12px; flex-shrink:0;">0%</span>' +
+        '</div>' +
+        '<div style="height:5px; background:var(--border); border-radius:3px; overflow:hidden;">' +
+          '<div id="kiosk-progress-bar" style="height:100%; width:0%; background:var(--accent); transition:width ' + (TICK_MS / 1000) + 's linear;"></div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function updateProgressUI() {
+    if (!activePending) return;
+    if (activePending.status !== 'in_progress') {
+      var elapsedEl = document.getElementById('kiosk-progress-elapsed');
+      if (elapsedEl) {
+        var secs = Math.max(0, Math.round((Date.now() - activePending.queued_at) / 1000));
+        elapsedEl.textContent = secs + 's';
+      }
+      return;
+    }
+    var bar = document.getElementById('kiosk-progress-bar');
+    var pct = document.getElementById('kiosk-progress-pct');
+    if (!bar || !pct) return;
+    var info = commandInfo(activePending.command_type);
+    var elapsed = Date.now() - activePending.started_at;
+    var pctVal = Math.max(0, Math.min(PROGRESS_CAP_PCT, Math.round((elapsed / info.estimateMs) * 100)));
+    bar.style.width = pctVal + '%';
+    pct.textContent = pctVal + '%';
+  }
+
+  function startProgressTicker() {
+    if (progressTicker) return;
+    updateProgressUI();
+    progressTicker = setInterval(updateProgressUI, TICK_MS);
+  }
+
+  function stopProgressTicker() {
+    if (progressTicker) { clearInterval(progressTicker); progressTicker = null; }
+  }
+
+  function renderPendingBanner(pending) {
+    var box = document.getElementById('kiosk-pending-banner');
+    if (!box) return;
+
+    if (pending) {
+      var isNewCommand = !activePending ||
+        activePending.command_type !== pending.command_type ||
+        activePending.queued_at !== pending.queued_at;
+      var phaseChanged = activePending && activePending.status !== pending.status;
+      activePending = pending;
+      if (isNewCommand || phaseChanged) {
+        box.innerHTML = pendingBannerHtml(pending);
+      }
+      startProgressTicker();
+      return;
+    }
+
+    stopProgressTicker();
+    if (activePending) {
+      // Just resolved (this long-poll response is the one that noticed).
+      // Snap to a clear "done" state briefly instead of yanking the
+      // banner away, so it reads as "finished" rather than vanishing
+      // mid-animation. Handles both phases: if we were still in the
+      // indeterminate "queued" phase when it resolved (a fast command can
+      // complete between two long-poll checks, so "in_progress" is
+      // sometimes never observed at all), show a quick 100% rather than
+      // leaving the indeterminate sweep looking unfinished.
+      var bar = document.getElementById('kiosk-progress-bar');
+      var pct = document.getElementById('kiosk-progress-pct');
+      var indeterminate = document.getElementById('kiosk-progress-indeterminate');
+      var label = document.getElementById('kiosk-progress-label');
+      if (indeterminate) {
+        indeterminate.className = '';
+        indeterminate.style.width = '100%';
+      }
+      if (bar) bar.style.width = '100%';
+      if (pct) pct.textContent = '100%';
+      if (label) label.textContent = 'Done';
+      setTimeout(function () { box.innerHTML = ''; }, 500);
+    } else {
+      box.innerHTML = '';
+    }
+    activePending = null;
+  }
+
+  var CMD_STATUS_PILL = {
+    pending:     ['pill-amber', 'Pending'],
+    in_progress: ['pill-accent', 'In progress'],
+    success:     ['pill-green', 'Success']
+  };
+
+  function renderRecentCommands(commands) {
+    var wrap = document.getElementById('kiosk-recent-commands');
+    if (!wrap) return;
+    if (!commands || !commands.length) {
+      wrap.innerHTML = '';
+      return;
+    }
+    var rows = commands.map(function (cmd) {
+      var pill = CMD_STATUS_PILL[cmd.status] || ['pill-red', 'Failed'];
+      return (
+        '<tr>' +
+        '<td class="mono">' + escapeHtml(cmd.command_type) + '</td>' +
+        '<td><span class="pill ' + pill[0] + '">' + pill[1] + '</span></td>' +
+        '<td class="muted" style="max-width:420px;">' + renderCmdOutputCell(cmd.result_message) + '</td>' +
+        '<td class="muted">' + escapeHtml(cmd.created_at) + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+    wrap.innerHTML =
+      '<h3 style="font-size:13px; margin-top:20px; color:var(--muted);">Recent commands</h3>' +
+      '<table class="kv-table" style="font-size:12.5px;"><tbody id="kiosk-recent-commands-body">' + rows + '</tbody></table>';
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // Mirrors the server-rendered cell in the Jinja template below — only
+  // the first line shows by default, with the rest behind a collapsible
+  // toggle, so a huge raw command dump (PowerShell/CLIXML noise, full file
+  // listings) doesn't blow out the whole Recent commands table.
+  function renderCmdOutputCell(msg) {
+    msg = msg || '';
+    if (!msg) return '—';
+    var lines = msg.split('\n');
+    var html = '<div class="mono cmd-output-preview" style="font-size:11.5px;">' + escapeHtml(lines[0]) + '</div>';
+    if (lines.length > 1) {
+      var rest = lines.slice(1).join('\n');
+      var n = lines.length - 1;
+      html += '<details class="cmd-output-toggle"><summary>' + n + ' more line' + (n !== 1 ? 's' : '') + '</summary>' +
+              '<pre class="cmd-output-pre mono">' + escapeHtml(rest) + '</pre></details>';
+    }
+    return html;
+  }
+
+  function renderConnectionStatus(status) {
+    var el = document.getElementById('header-connection-pill');
+    if (!el) return;
+    el.innerHTML = status === 'online'
+      ? '<span class="pill pill-green">Online</span>'
+      : '<span class="pill pill-muted">Offline</span>';
+  }
+
+  function applyState(data) {
+    renderStatus(data.kiosk_process_status, data.pending_command);
+    renderConnectionStatus(data.connection_status);
+    // Same "suspended always wins" reasoning as renderStatus above.
+    renderPendingBanner(data.kiosk_process_status === 'suspended' ? null : data.pending_command);
+    renderRecentCommands(data.recent_commands);
+    if (data.sig) currentSig = data.sig;
+  }
+
+  // True long-polling instead of a flat interval: each request tells the
+  // server the signature of the state we already have, and the server
+  // (see kiosk_status in instances.py) holds the connection open — re-
+  // checking every ~0.5s server-side — until something actually changes,
+  // then answers immediately. As soon as one request resolves we fire the
+  // next, so a change anywhere (this tab, another admin's tab, or the
+  // Agent's own heartbeat/ack) reaches the page within about half a
+  // second, instead of waiting out a fixed interval.
+  function longPoll() {
+    if (!pollingEnabled) return;
+    var url = statusUrl + '?wait=' + LONG_POLL_WAIT +
+      (currentSig ? '&sig=' + encodeURIComponent(currentSig) : '');
+    fetch(url, { headers: { 'X-Requested-With': 'fetch' } })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (data) {
+        if (data) applyState(data);
+      })
+      .catch(function () {
+        // Network hiccup — brief pause so a persistent failure (offline,
+        // server restart) doesn't hot-loop the tab.
+        return new Promise(function (resolve) { setTimeout(resolve, 2000); });
+      })
+      .then(function () {
+        if (pollingEnabled) longPoll();
+      });
+  }
+
+  // Live-update on Start/Stop/Restart: submit via fetch instead of a full
+  // page POST, then refresh the panel immediately from the response.
+  document.querySelectorAll('.kiosk-cmd-form').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var button = form.querySelector('button');
+      if (button) button.disabled = true;
+      fetch(form.action, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'fetch' }
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          applyState(data);
+        })
+        .catch(function () {
+          // Fall back to a normal navigation if the AJAX call itself failed.
+          // (Calling the native submit directly does not re-fire this
+          // listener, so no risk of an infinite loop here.)
+          HTMLFormElement.prototype.submit.call(form);
+        })
+        .finally(function () {
+          if (button) button.disabled = false;
+        });
+    });
+  });
+
+  // Long-poll requests that are in flight when the tab is hidden are left
+  // to finish on their own (the server-side wait is capped at 25s either
+  // way); we just stop chaining new ones, then kick off a fresh one the
+  // moment the tab becomes visible again.
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      pollingEnabled = false;
+    } else if (!pollingEnabled) {
+      pollingEnabled = true;
+      longPoll();
+    }
+  });
+
+  longPoll();
+})();
+</script>
+{% endblock %}
+

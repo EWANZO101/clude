@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Register — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div style="max-width:500px;margin:1.5rem auto">
+  <div style="text-align:center;margin-bottom:1.5rem">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:600;color:var(--accent);margin-bottom:.35rem">Clear<span style="color:var(--muted)">Voice</span></div>
+    <h1 style="font-size:1.35rem;font-weight:700;margin:0 0 .3rem">Create Account</h1>
+    <p style="color:var(--muted);font-size:.87rem">{{ get_text('register','intro','Create your account to share your story.') }}</p>
+  </div>
+
+  <div style="padding:.75rem 1rem;background:rgba(88,166,255,.07);border:1px solid rgba(88,166,255,.2);border-radius:8px;margin-bottom:1.2rem;font-size:.83rem;color:#cce0ff">
+    ℹ When posting, never use full real legal names. Use initials (e.g. J.S.) or pseudonyms to protect yourself and others.
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <label class="form-label">Username <span style="color:var(--danger)">*</span></label>
+          <input type="text" name="username" class="form-input" required minlength="3" maxlength="80" placeholder="Choose a username (not your real name)" autocomplete="username">
+          <p class="form-hint">Do not use your real name as your username.</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address <span style="color:var(--danger)">*</span></label>
+          <input type="email" name="email" class="form-input" required placeholder="your@email.com" autocomplete="email">
+          <p class="form-hint">Private — never shown publicly.</p>
+        </div>
+        <div class="g2">
+          <div class="form-group">
+            <label class="form-label">Password <span style="color:var(--danger)">*</span></label>
+            <input type="password" name="password" class="form-input" required minlength="6" placeholder="Min. 6 characters" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password <span style="color:var(--danger)">*</span></label>
+            <input type="password" name="confirm" class="form-input" required placeholder="Repeat password" autocomplete="new-password">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Support PIN <span style="color:var(--danger)">*</span></label>
+          <input type="text" name="pin" class="form-input" required pattern="[0-9]{4,10}" placeholder="4–10 digit number" inputmode="numeric" maxlength="10">
+          <p class="form-hint">Used to verify your identity when contacting support. Keep this private.</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Proof of Innocence (optional)</label>
+          <div style="padding:.6rem .82rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:.45rem;font-size:.8rem;color:var(--muted);line-height:1.55">
+            Optionally upload court documents, dismissal letters, or any evidence of innocence. Displayed on your profile. Accepted: JPG, PNG, PDF, DOC.
+          </div>
+          <input type="file" name="proof_file" class="form-input" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.doc,.docx">
+        </div>
+        <div style="padding:.72rem .9rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:1rem">
+          <div style="display:flex;align-items:flex-start;gap:.6rem">
+            <input type="checkbox" id="terms-check" required style="margin-top:.18rem;accent-color:var(--accent);width:16px;height:16px;flex-shrink:0">
+            <label for="terms-check" style="font-size:.83rem;color:var(--muted);cursor:pointer;line-height:1.55">I agree to the community rules. I understand that using full real legal names is strictly prohibited and may result in a permanent ban.</label>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" style="padding:.6rem">Create Account</button>
+      </form>
+    </div>
+  </div>
+  <p style="text-align:center;margin-top:.9rem;font-size:.875rem;color:var(--muted)">
+    Already have an account? <a href="{{ url_for('login') }}" style="color:var(--accent)">Log in</a>
+  </p>
+</div>
+{% endblock %}

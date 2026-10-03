@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Chart of accounts{% endblock %}
+{% block content %}
+<h1 class="page-title mb-6">Chart of accounts</h1>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row">
+      <tr>
+        <th class="p-3">Code</th>
+        <th class="p-3">Name</th>
+        <th class="p-3">Type</th>
+        <th class="p-3 text-right">Balance</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for account in accounts %}
+      <tr class="row-border">
+        <td class="p-3">{{ account.code }}</td>
+        <td class="p-3">{{ account.name }}</td>
+        <td class="p-3 capitalize">{{ account.account_type }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(account.balance()) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

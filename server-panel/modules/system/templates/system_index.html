@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}System — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+      os administration
+    </p>
+    <h1 class="page-title">System</h1>
+    <p class="page-sub">Package updates, root credentials, and Linux (OS) user accounts on this host</p>
+  </div>
+</div>
+
+<div class="flash flash-error" style="border-color: var(--warn); background: var(--warn-dim); color: var(--warn);">
+  <strong>These are real OS-level actions</strong> — package upgrades, the root password, and Linux
+  user accounts here are separate from this panel's own login accounts under Administration → Users.
+  Mistakes here (a bad upgrade, a locked-out root account) can affect the whole server.
+</div>
+
+<!-- Package updates -->
+<div class="card" style="margin-top:16px;">
+  <div class="card-header">
+    <div class="card-label" style="margin:0; display:flex; align-items:center; gap:8px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a9 9 0 10-2.6 6.3L21 12"/><path d="M21 3v5h-5"/></svg>
+      Package Updates (apt)
+    </div>
+    {% if upgradable is not none %}
+    <span class="badge {{ 'badge-ok' if upgradable == 0 else 'badge-warn' }}">
+      {{ upgradable }} package{{ 's' if upgradable != 1 }} upgradable
+    </span>
+    {% endif %}
+  </div>
+  <p class="page-sub" style="margin:6px 0 14px;">
+    Runs as a background job with a live log, same as the Installers page. Upgrades use
+    <span class="mono">DEBIAN_FRONTEND=noninteractive</span> so nothing hangs waiting for a prompt —
+    but a kernel or major-version upgrade can still require a manual reboot or config review afterward.
+  </p>
+  <div class="btn-row">
+    <form method="POST" action="{{ url_for('system.apt_update') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-secondary" type="submit">Check for updates (apt update)</button>
+    </form>
+    <form method="POST" action="{{ url_for('system.apt_upgrade') }}" onsubmit="return confirm('Upgrade all packages now? This runs apt-get upgrade and may take several minutes.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-primary" type="submit">Upgrade all packages</button>
+    </form>
+  </div>
+
+  {% if recent_jobs %}
+  <div class="table-wrap" style="margin-top:16px;">
+    <table class="data-table">
+      <thead><tr><th>Job</th><th>Status</th><th>Started</th><th></th></tr></thead>
+      <tbody>
+        {% for job in recent_jobs %}
+        <tr>
+          <td class="mono primary">{{ job.name }}</td>
+          <td>
+            <span class="badge {{ 'badge-ok' if job.status == 'success' else ('badge-danger' if job.status == 'failed' else 'badge-warn') }}">{{ job.status }}</span>
+          </td>
+          <td class="mono">{{ job.started_at.strftime('%Y-%m-%d %H:%M') if job.started_at else '—' }}</td>
+          <td><a class="btn btn-secondary btn-sm" href="{{ url_for('system.job_page', job_id=job.id) }}">View log</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Root password -->
+<div class="card tight danger-outline" style="margin-top:16px;">
+  <div class="card-header">
+    <div class="card-label" style="margin:0; display:flex; align-items:center; gap:8px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="1.5"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+      Reset Root Password
+    </div>
+  </div>
+  <p class="page-sub" style="margin:6px 0 14px;">
+    Sets the password for the <span class="mono">root</span> Linux account directly via
+    <span class="mono">chpasswd</span>. This is recorded in the server's auth log (viewable
+    under Monitoring → Logs). Make sure you have another way in (SSH key, console access)
+    before changing this.
+  </p>
+  <form method="POST" action="{{ url_for('system.reset_root_password') }}" class="field-row"
+        onsubmit="return confirm('Reset the root password now? Make sure you have another way to access this server first.');">
+    {{ root_form.hidden_tag() }}
+    <div class="field" style="margin:0; min-width:200px;">{{ root_form.password.label }} {{ root_form.password(placeholder="••••••••") }}</div>
+    <div class="field" style="margin:0; min-width:200px;">{{ root_form.confirm_password.label }} {{ root_form.confirm_password(placeholder="••••••••") }}</div>
+    <button class="btn btn-danger" type="submit">Reset root password</button>
+  </form>
+</div>
+
+<!-- Linux users -->
+<div class="card flush tight" style="margin-top:16px;">
+  <div class="card-header" style="padding:16px 18px 0;">
+    <div class="card-label" style="margin:0; display:flex; align-items:center; gap:8px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--data)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16.5 6.2a3.2 3.2 0 010 6.1M21 20c0-2.8-1.9-5.1-4.5-5.8"/></svg>
+      Linux Users
+    </div>
+  </div>
+  <p class="page-sub" style="padding:0 18px; margin:6px 0 14px;">
+    Real OS-level accounts (<span class="mono">useradd</span>/<span class="mono">userdel</span>) —
+    not this panel's own login accounts.
+  </p>
+
+  {% if users_error %}
+  <div class="flash flash-error" style="margin:0 18px 14px;">{{ users_error }}</div>
+  {% endif %}
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>User</th><th>UID</th><th>Shell</th><th>Sudo</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td class="mono primary">{{ u.username }}{% if u.is_root %} <span class="badge badge-muted">root</span>{% endif %}</td>
+          <td class="mono">{{ u.uid }}</td>
+          <td class="mono">{{ u.shell }}</td>
+          <td>{% if u.is_sudo %}<span class="badge badge-warn">Sudo</span>{% else %}<span class="badge badge-muted">No sudo</span>{% endif %}</td>
+          <td>
+            {% if u.status == 'active' %}<span class="badge badge-ok">Active</span>
+            {% elif u.status == 'locked' %}<span class="badge badge-danger">Locked</span>
+            {% elif u.status == 'no-password' %}<span class="badge badge-warn">No password</span>
+            {% else %}<span class="badge badge-muted">Unknown</span>{% endif %}
+          </td>
+          <td class="table-actions">
+            {% if not u.protected %}
+            <button type="button" class="btn btn-ghost btn-sm" onclick="var r=document.getElementById('reset-pw-{{ loop.index0 }}'); r.style.display = r.style.display==='none' ? 'flex' : 'none';">Reset password</button>
+            {% if not u.is_root %}
+            <form method="POST" action="{{ url_for('system.toggle_sudo', username=u.username) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="enabled" value="{{ '0' if u.is_sudo else '1' }}">
+              <button type="submit" class="btn btn-secondary btn-sm">{{ 'Remove sudo' if u.is_sudo else 'Grant sudo' }}</button>
+            </form>
+            <form method="POST" action="{{ url_for('system.delete_user', username=u.username) }}" style="display:inline;"
+                  onsubmit="return confirm('Delete Linux user {{ u.username }} and their home directory? This cannot be undone.');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+            {% endif %}
+            <form method="POST" action="{{ url_for('system.reset_user_password', username=u.username) }}" id="reset-pw-{{ loop.index0 }}" style="display:none; gap:6px; align-items:center; margin-top:6px; width:100%;">
+              {{ reset_pw_form.hidden_tag() }}
+              <input type="password" name="password" placeholder="New password" style="flex:1; background:var(--bg-void); border:1px solid var(--border-strong); border-radius:var(--radius); padding:6px 9px; color:var(--text-primary); font-size:12.5px;">
+              <button type="submit" class="btn btn-primary btn-sm">Set</button>
+            </form>
+            {% else %}
+            <span class="badge badge-muted">System account</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6"><div class="empty-state">No human user accounts found.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="padding:16px 18px 18px; border-top:1px solid var(--border-subtle); margin-top:8px;">
+    <div class="card-label" style="margin-bottom:10px;">Create a new Linux user</div>
+    <form method="POST" action="{{ url_for('system.create_user') }}">
+      {{ create_user_form.hidden_tag() }}
+      <div class="field-row">
+        <div class="field" style="min-width:160px;">{{ create_user_form.username.label }} {{ create_user_form.username(placeholder="deploy") }}</div>
+        <div class="field" style="min-width:160px;">{{ create_user_form.password.label }} {{ create_user_form.password(placeholder="••••••••") }}</div>
+        <div class="field" style="min-width:180px;">{{ create_user_form.shell.label }} {{ create_user_form.shell() }}</div>
+        <div class="field field-inline" style="align-self:center;">{{ create_user_form.sudo() }} {{ create_user_form.sudo.label }}</div>
+      </div>
+      <div class="field">
+        {{ create_user_form.ssh_public_key.label }}
+        {{ create_user_form.ssh_public_key(placeholder="ssh-ed25519 AAAA... (optional, added to ~/.ssh/authorized_keys)", rows=2) }}
+      </div>
+      <button class="btn btn-primary" type="submit">Create user</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

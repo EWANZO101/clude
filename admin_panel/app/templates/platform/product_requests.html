@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Product access requests — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('products.list_products') }}" class="crumb">← Products</a>
+    <h1>Product access requests</h1>
+    <div class="page-sub muted">Every company's relationship to every product — requested, granted directly, or turned down.</div>
+  </div>
+</div>
+
+<div class="panel" style="padding:8px 22px 20px;">
+  {% if request_counts.all %}
+    <div class="page-tabbed filter-tabs" data-default-tab="pending">
+      <div class="page-tabs" role="tablist">
+        <button type="button" class="page-tab-btn" data-tab="all">All<span class="tab-count">{{ request_counts.all }}</span></button>
+        <button type="button" class="page-tab-btn" data-tab="pending">Pending<span class="tab-count">{{ request_counts.pending }}</span></button>
+        <button type="button" class="page-tab-btn" data-tab="approved">Approved<span class="tab-count">{{ request_counts.approved }}</span></button>
+        <button type="button" class="page-tab-btn" data-tab="rejected">Rejected<span class="tab-count">{{ request_counts.rejected }}</span></button>
+      </div>
+
+      {% for key in ['all', 'pending', 'approved', 'rejected'] %}
+        <div class="page-tab-panel" data-tab-panel="{{ key }}" {{ 'hidden' if key != 'pending' }}>
+          {% if request_groups[key] %}
+            <div class="table-scroll">
+            <table>
+              <thead><tr><th>Company</th><th>Product</th><th>Status</th><th>Requested</th><th></th></tr></thead>
+              <tbody>
+                {% for a in request_groups[key] %}
+                  <tr>
+                    <td style="font-weight:600;">{{ a.company.name }}</td>
+                    <td>{{ a.product.name }}</td>
+                    <td>
+                      {% if a.status == 'approved' %}<span class="pill pill-green">Approved</span>
+                      {% elif a.status == 'rejected' %}<span class="pill pill-red">Rejected</span>
+                      {% else %}<span class="pill pill-amber">Pending</span>{% endif %}
+                    </td>
+                    <td class="muted">
+                      {{ a.requested_at | friendly_dt }}
+                      {% if a.requested_by %}<div style="font-size:11.5px;">by {{ a.requested_by.full_name }}</div>
+                      {% else %}<div style="font-size:11.5px;">admin-initiated</div>{% endif %}
+                    </td>
+                    <td style="white-space:nowrap;">
+                      <button type="button" class="btn btn-secondary btn-sm" data-open-modal="pr-{{ key }}-{{ a.id }}">
+                        {{ 'Review' if a.status == 'pending' else 'Change' }}
+                      </button>
+                      <dialog id="pr-{{ key }}-{{ a.id }}" class="modal">
+                        <div class="modal-body">
+                          <div class="modal-head">
+                            <h3>{{ a.company.name }} — {{ a.product.name }}</h3>
+                            <button type="button" class="modal-close-x" data-close-modal aria-label="Close">&times;</button>
+                          </div>
+                          {% if a.note %}<p class="muted" style="font-size:12.5px;">Company note: "{{ a.note }}"</p>{% endif %}
+                          {% if a.decision_note %}<p class="muted" style="font-size:12.5px;">Last decision note: "{{ a.decision_note }}"</p>{% endif %}
+                          <form method="post" action="{{ url_for('products.decide_request', access_id=a.id) }}">
+                            <label>Decision note (optional)</label>
+                            <textarea name="decision_note" rows="2"></textarea>
+                            <div class="modal-actions">
+                              <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Cancel</button>
+                              <button type="submit" name="decision" value="rejected" class="btn btn-danger btn-sm">Reject</button>
+                              <button type="submit" name="decision" value="approved" class="btn btn-sm">Approve</button>
+                            </div>
+                          </form>
+                        </div>
+                      </dialog>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            </div>
+          {% else %}
+            <div class="empty">Nothing in this category.</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">No product access requests yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

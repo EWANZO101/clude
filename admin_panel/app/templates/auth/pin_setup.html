@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Set your PIN' if is_first_time else 'Update your PIN' }} — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <h1>{{ 'Set your PIN' if is_first_time else 'Update your PIN' }}</h1>
+  </div>
+</div>
+
+<div class="panel" style="max-width:420px;">
+  {% if is_first_time %}
+    <p class="muted" style="margin-top:0;">
+      Before you can continue, set up a PIN for your account. You'll use this
+      alongside your password for quicker verification.
+    </p>
+  {% elif is_forced_reset %}
+    <div class="flash flash-warning" style="margin-bottom:16px;">
+      An administrator has reset your PIN. Choose a new one to continue.
+    </div>
+  {% elif is_expired %}
+    <div class="flash flash-warning" style="margin-bottom:16px;">
+      Your PIN has expired and needs to be renewed before you can continue.
+    </div>
+  {% endif %}
+
+  <form method="post">
+    <label>New PIN</label>
+    <input type="password" name="pin" inputmode="numeric" pattern="\d{{ '{' }}{{ pin_min_length }},{{ pin_max_length }}{{ '}' }}"
+           minlength="{{ pin_min_length }}" maxlength="{{ pin_max_length }}" required autofocus autocomplete="off">
+    <label>Confirm new PIN</label>
+    <input type="password" name="pin_confirm" inputmode="numeric" pattern="\d{{ '{' }}{{ pin_min_length }},{{ pin_max_length }}{{ '}' }}"
+           minlength="{{ pin_min_length }}" maxlength="{{ pin_max_length }}" required autocomplete="off">
+    <p class="muted" style="font-size:12.5px; margin-top:10px; margin-bottom:0;">
+      {{ pin_min_length }}–{{ pin_max_length }} digits, numbers only. Can't be the same as a PIN you've used before.
+    </p>
+    <button type="submit" class="btn-block" style="margin-top:20px;">Save PIN</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Log in — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="panel">
+  <h1 style="margin-bottom:2px;">Staff &amp; Company login</h1>
+  <p class="muted" style="margin-bottom:18px;">For OpsLab staff and company users managing a fleet of instances.</p>
+  <form method="post">
+    <label>Email</label>
+    <input type="email" name="email" value="{{ email or '' }}" required autofocus>
+    <label>Password</label>
+    <input type="password" name="password" required>
+    <label class="checkline">
+      <input type="checkbox" name="remember"> Stay logged in
+    </label>
+    <button type="submit" class="btn-block" style="margin-top:20px;">Log in</button>
+  </form>
+  <p class="muted" style="margin-top:18px; font-size:13px;">
+    <a href="{{ url_for('auth.forgot_password') }}">Forgot password?</a>
+    &nbsp;·&nbsp;
+    <a href="{{ url_for('auth.signup') }}">Create an account</a>
+  </p>
+</div>
+
+<div class="panel" style="margin-top:16px; text-align:center;">
+  <p class="muted" style="margin-bottom:10px; font-size:13px;">
+    Are you a client operating a specific kiosk instance rather than a whole fleet?
+  </p>
+  <a href="{{ url_for('client_portal.login') }}" class="btn btn-secondary btn-block">Go to Client Portal login →</a>
+</div>
+{% endblock %}

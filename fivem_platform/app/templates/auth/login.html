@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Log in — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-6">Log in</h1>
+
+  <form method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Email</label>
+      <input type="email" name="email" required value="{{ email or '' }}"
+        class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+    </div>
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Password</label>
+      <input type="password" name="password" required
+        class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+    </div>
+    <div class="flex items-center justify-between text-sm">
+      <label class="flex items-center gap-2 text-gray-400">
+        <input type="checkbox" name="remember" class="rounded border-surface-border bg-surface-card">
+        Remember me
+      </label>
+      <a href="{{ url_for('auth.forgot_password') }}" class="text-brand hover:text-brand-hover">Forgot password?</a>
+    </div>
+    <button type="submit" class="w-full bg-brand hover:bg-brand-hover text-white rounded-md py-2 text-sm font-medium transition">
+      Log in
+    </button>
+  </form>
+
+  <p class="text-sm text-gray-500 mt-6">
+    Don't have an account? <a href="{{ url_for('auth.register') }}" class="text-brand hover:text-brand-hover">Sign up</a>
+  </p>
+</div>
+{% endblock %}

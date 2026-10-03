@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ calendar.name }} · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center px-4 py-12">
+
+  <div class="mb-8 text-center">
+    <span class="status-pill border-accent/30 bg-accent-muted text-accent mb-4">
+      <span class="status-dot bg-accent"></span>
+      {{ calendar.name }}
+    </span>
+    <h1 class="font-display text-2xl font-semibold text-ink">Set up your access</h1>
+    <p class="mt-1.5 max-w-xs text-sm text-ink-muted">
+      Enter your email and choose a PIN. You'll use this PIN to get back in next time.
+    </p>
+  </div>
+
+  {% include "partials/flash.html" %}
+
+  <div class="card w-full p-6 sm:p-7">
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="mb-4">
+        <label class="field-label" for="{{ form.email.id }}">Email</label>
+        {{ form.email(class_="field-input", placeholder="you@example.com", autocomplete="email", autofocus=true) }}
+        {% for error in form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        <p class="mt-1.5 text-xs text-ink-faint">Used only to recover access if you lose this link.</p>
+      </div>
+
+      <div class="mb-4 grid grid-cols-2 gap-3">
+        <div>
+          <label class="field-label" for="{{ form.pin.id }}">Choose a PIN</label>
+          {{ form.pin(class_="field-input", inputmode="numeric", pattern="[0-9]*", maxlength=6, placeholder="1234") }}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.confirm_pin.id }}">Confirm PIN</label>
+          {{ form.confirm_pin(class_="field-input", inputmode="numeric", pattern="[0-9]*", maxlength=6, placeholder="1234") }}
+        </div>
+      </div>
+      {% for error in form.pin.errors + form.confirm_pin.errors %}
+        <p class="field-error -mt-2 mb-3">{{ error }}</p>
+      {% endfor %}
+      <p class="mb-5 text-xs text-ink-faint">4-6 digits. If you've used this calendar before, enter your existing email and PIN here instead.</p>
+
+      <button type="submit" class="btn-primary w-full">Continue</button>
+    </form>
+  </div>
+
+  <a href="{{ url_for('calendarmaker.recover') }}" class="mt-6 text-sm text-ink-muted hover:text-ink">Lost access before? Recover by email</a>
+</div>
+{% endblock %}

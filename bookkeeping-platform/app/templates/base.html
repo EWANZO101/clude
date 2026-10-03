@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Bookkeeping{% endblock %}</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0B6E4F">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <link rel="icon" href="/static/icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script>
+    tailwind.config = { darkMode: 'class' };
+    (function () {
+      const stored = localStorage.getItem('theme');
+      // Dark is the default first-visit theme; light is opt-in via the
+      // toggle (and still remembered afterwards either way).
+      if (stored !== 'light') {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+</head>
+<body class="h-full">
+{% from "_icons.html" import icon %}
+{% macro nav_link(endpoint, label, icon_name, kwargs={}) %}
+  <a href="{{ url_for(endpoint, **kwargs) }}" class="sidebar-link {{ 'active' if request.endpoint == endpoint else '' }}">
+    {{ icon(icon_name, 'w-4 h-4') }}<span>{{ label }}</span>
+  </a>
+{% endmacro %}
+
+<div class="app-shell">
+  {% if current_user.is_authenticated %}
+  <div id="sidebar-overlay" class="sidebar-overlay md:hidden" onclick="toggleSidebar()"></div>
+  <aside id="sidebar" class="sidebar">
+    <a href="{{ url_for('dashboard.index') }}" class="sidebar-brand"><span class="mark">{{ icon('layers', 'w-4 h-4') }}</span> Bookkeeping</a>
+
+    <nav class="pb-6">
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Overview</div>
+        {{ nav_link('dashboard.index', 'Dashboard', 'dashboard') }}
+        {{ nav_link('notifications.list_notifications', 'Notifications', 'bell') }}
+        {{ nav_link('recurring.list_recurring_expenses', 'Recurring', 'refresh') }}
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Sales</div>
+        {{ nav_link('customers.list_customers', 'Customers', 'users') }}
+        {{ nav_link('invoices.list_invoices', 'Invoices', 'invoice') }}
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Purchases</div>
+        {{ nav_link('suppliers.list_suppliers', 'Suppliers', 'truck') }}
+        {{ nav_link('bills.list_bills', 'Bills', 'receipt') }}
+        {{ nav_link('expenses.list_expenses', 'Expenses', 'wallet') }}
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Accounting</div>
+        {{ nav_link('accounting.chart_of_accounts', 'Chart of accounts', 'book') }}
+        {{ nav_link('accounting.new_journal_entry', 'New journal entry', 'plus-circle') }}
+        {{ nav_link('accounting.report_trial_balance', 'Trial balance', 'scale-balance') }}
+        {{ nav_link('accounting.report_profit_and_loss', 'Profit & loss', 'pie-chart') }}
+        {{ nav_link('accounting.report_balance_sheet', 'Balance sheet', 'scale') }}
+        {{ nav_link('accounting.report_aged_receivables', 'Aged receivables', 'clock') }}
+        {{ nav_link('accounting.report_aged_payables', 'Aged payables', 'clock') }}
+        {{ nav_link('accounting.report_cash_flow_forecast', 'Cash flow forecast', 'trending-up') }}
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Records</div>
+        {{ nav_link('documents.list_documents', 'Documents', 'folder') }}
+        {{ nav_link('export.export_home', 'Export data', 'download') }}
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Reliability</div>
+        {{ nav_link('audit.audit_log', 'Audit log', 'shield-check') }}
+        {{ nav_link('audit.integrity_history', 'Self-audit', 'activity') }}
+        {{ nav_link('backups.list_backups', 'Backups', 'database') }}
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Connections</div>
+        {{ nav_link('integrations.list_integrations', 'Integrations', 'plug') }}
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Team</div>
+        {{ nav_link('businesses.list_businesses', 'Businesses', 'building') }}
+        {% if current_user.is_platform_admin %}
+        {{ nav_link('admin.dashboard', 'Platform admin', 'layers') }}
+        {% endif %}
+      </div>
+    </nav>
+  </aside>
+  {% endif %}
+
+  <div class="main-col">
+    <div class="topbar">
+      <div class="flex items-center gap-3">
+        {% if current_user.is_authenticated %}
+        <button class="md:hidden btn btn-secondary btn-icon" onclick="toggleSidebar()" aria-label="Toggle menu">{{ icon('menu') }}</button>
+        {% if current_business %}
+        <details class="relative">
+          <summary class="badge badge-accent cursor-pointer select-none list-none">{{ current_business.name }} {{ icon('chevron-down', 'w-3.5 h-3.5 inline') }}</summary>
+          <div class="card card-padded absolute mt-2 left-0 w-56 z-50">
+            {% for biz in user_businesses %}
+            <form method="POST" action="{{ url_for('businesses.switch_business', business_id=biz.id) }}" class="mb-1">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="sidebar-link w-full text-left {{ 'active' if biz.id == current_business.id else '' }}">{{ biz.name }}</button>
+            </form>
+            {% endfor %}
+            <a href="{{ url_for('businesses.list_businesses') }}" class="link text-xs block mt-2">Manage businesses →</a>
+          </div>
+        </details>
+        {% endif %}
+        {% else %}
+        <a href="{{ url_for('dashboard.index') }}" class="sidebar-brand" style="border:none; padding-left:0;"><span class="mark">{{ icon('layers', 'w-4 h-4') }}</span> Bookkeeping</a>
+        {% endif %}
+      </div>
+
+      <div class="flex items-center gap-3">
+        {% if current_user.is_authenticated %}
+        <form method="GET" action="{{ url_for('search.search') }}" class="topbar-search hidden sm:block">
+          {{ icon('search', 'w-4 h-4') }}
+          <input name="q" placeholder="Search…">
+        </form>
+        <a href="{{ url_for('notifications.list_notifications') }}" class="btn btn-secondary btn-icon relative" aria-label="Notifications">
+          {{ icon('bell') }}{% if unread_notification_count and unread_notification_count > 0 %}<span class="notif-dot" style="position:absolute; top:-2px; right:-2px;">{{ unread_notification_count }}</span>{% endif %}
+        </a>
+        <button onclick="toggleTheme()" class="btn btn-secondary btn-icon" aria-label="Toggle theme">
+          <span class="theme-icon-dark">{{ icon('moon') }}</span><span class="theme-icon-light hidden">{{ icon('sun') }}</span>
+        </button>
+        <details class="relative">
+          <summary class="cursor-pointer select-none list-none">
+            <span class="avatar">{{ current_user.full_name[:1]|upper }}</span>
+          </summary>
+          <div class="dropdown-menu absolute right-0 mt-2 w-48 z-50">
+            <div class="px-2 py-1.5 text-sm font-medium">{{ current_user.full_name }}</div>
+            <div class="px-2 pb-1.5 text-xs text-muted" style="word-break:break-all;">{{ current_user.email }}</div>
+            <a href="{{ url_for('notifications.preferences') }}" class="sidebar-link">{{ icon('bell') }}<span>Notification settings</span></a>
+            <a href="{{ url_for('auth.logout') }}" class="sidebar-link">{{ icon('logout') }}<span>Logout</span></a>
+          </div>
+        </details>
+        {% else %}
+        <button onclick="toggleTheme()" class="btn btn-secondary btn-icon" aria-label="Toggle theme">
+          <span class="theme-icon-dark">{{ icon('moon') }}</span><span class="theme-icon-light hidden">{{ icon('sun') }}</span>
+        </button>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-secondary btn-sm">Login</a>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Sign up</a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if current_user.is_authenticated %}
+    <div id="network-status" class="hidden bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-sm text-center py-1"></div>
+    {% endif %}
+
+    <main class="content">
+      {% if current_user.is_authenticated %}
+      <span id="offline-pending-badge" class="hidden badge badge-warning mb-4"></span>
+      {% endif %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="mb-6 space-y-2">
+          {% for category, message in messages %}
+            <div class="px-4 py-2 rounded-lg text-sm border
+              {% if category == 'error' %} bg-red-50 border-red-200 text-red-800 dark:bg-red-900/40 dark:border-red-800 dark:text-red-200
+              {% elif category == 'success' %} bg-green-50 border-green-200 text-green-800 dark:bg-green-900/40 dark:border-green-800 dark:text-green-200
+              {% else %} bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/40 dark:border-blue-800 dark:text-blue-200 {% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+  <script src="/static/js/offline.js" defer></script>
+  <script>
+    function syncThemeIcons() {
+      const isDark = document.documentElement.classList.contains('dark');
+      document.querySelectorAll('.theme-icon-dark').forEach(el => el.classList.toggle('hidden', !isDark));
+      document.querySelectorAll('.theme-icon-light').forEach(el => el.classList.toggle('hidden', isDark));
+    }
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+      syncThemeIcons();
+    }
+    syncThemeIcons();
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebar-overlay').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

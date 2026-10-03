@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Log in — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto bg-panel border border-border rounded-lg p-6">
+  <h1 class="text-lg font-semibold text-gray-100 mb-4">Log in</h1>
+  <form method="POST" novalidate class="space-y-4">
+    {{ form.hidden_tag() }}
+
+    <div>
+      {{ form.email.label(class="block text-sm text-gray-400 mb-1") }}
+      {{ form.email(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+    </div>
+
+    <div>
+      {{ form.password.label(class="block text-sm text-gray-400 mb-1") }}
+      {{ form.password(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+    </div>
+
+    <div>
+      {{ form.totp_code.label(class="block text-sm text-gray-400 mb-1") }}
+      {{ form.totp_code(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200", placeholder="Only if 2FA is enabled") }}
+    </div>
+
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        {{ form.remember(class="rounded border-border bg-surface") }}
+        {{ form.remember.label(class="text-sm text-gray-400") }}
+      </div>
+      <a href="{{ url_for('auth.request_reset') }}" class="text-xs text-blue-400 hover:text-blue-300">Forgot password?</a>
+    </div>
+
+    {{ form.submit(class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md py-2 mt-2") }}
+  </form>
+  <p class="text-xs text-gray-500 mt-4">
+    No account?
+    <a href="{{ url_for('auth.register') }}" class="text-blue-400 hover:text-blue-300">Register</a>
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+{% block title %}DNS — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">DNS</p>
+    <h1 class="page-title">DNS</h1>
+    <p class="page-sub">Manage DNS records across providers, without leaving the panel</p>
+  </div>
+  {% if configured and zones %}
+  <div class="topbar-actions">
+    <form method="POST" action="{{ url_for('dns.select_zone') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="provider" value="{{ provider_key }}">
+      <select name="zone_id" onchange="this.form.submit()" style="min-width:220px;">
+        {% for zone in zones %}
+        <option value="{{ zone.id }}" {{ 'selected' if zone.id == zone_id }}>{{ zone.name }} ({{ zone.status }})</option>
+        {% endfor %}
+      </select>
+      <noscript><button type="submit" class="btn btn-secondary">Switch</button></noscript>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Provider picker — the only thing that changes page-to-page is which
+     provider is active; everything below reads generalized context
+     (records/zones/provider) so this tab strip is the whole integration
+     point for a new provider's UI. -->
+<div class="pill" style="display:flex; gap:2px; padding:4px; margin-bottom:20px; width:fit-content;">
+  {% for p in providers %}
+  <a class="btn {{ 'btn-primary' if p.key == provider_key else 'btn-ghost' }} btn-sm"
+     href="{{ url_for('dns.index', provider=p.key) }}" style="border:none;">{{ p.label }}</a>
+  {% endfor %}
+  <span class="btn btn-ghost btn-sm" style="opacity:0.5; cursor:default; border:none;" title="Route 53, Porkbun, DigitalOcean DNS, and others can be added here later">+ More soon</span>
+</div>
+
+{% if not configured %}
+
+  {% if provider_key == 'namecheap' %}
+  <div class="card" style="max-width:560px;">
+    <div class="card-label">Connect Namecheap</div>
+    <p class="page-sub" style="margin:6px 0 16px;">
+      Create an API key at <span class="mono">Namecheap → Profile → Tools → Namecheap API Access</span> and enable
+      API access on the account. Namecheap also requires the exact IP address making these calls (this server's
+      public IP) to be added to that same whitelist — the credentials will be rejected until it is, even if the
+      API user/key are correct. Stored the same way this panel stores its other secrets: plaintext in its private
+      data directory, never in the code folder.
+    </p>
+    <form method="POST" action="{{ url_for('dns.save_namecheap_credentials') }}">
+      {{ namecheap_form.hidden_tag() }}
+      <div class="field">
+        {{ namecheap_form.api_user.label }}
+        {{ namecheap_form.api_user(placeholder="Namecheap API username", autocomplete="off") }}
+      </div>
+      <div class="field">
+        {{ namecheap_form.api_key.label }}
+        {{ namecheap_form.api_key(placeholder="Namecheap API key", type="password", autocomplete="off") }}
+      </div>
+      <div class="field">
+        {{ namecheap_form.username.label }}
+        {{ namecheap_form.username(placeholder="Leave blank to reuse the API user") }}
+      </div>
+      <div class="field">
+        {{ namecheap_form.client_ip.label }}
+        {{ namecheap_form.client_ip(placeholder="This server's public IP, e.g. 203.0.113.4") }}
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Verify &amp; connect</button>
+    </form>
+  </div>
+  {% elif provider_key == 'godaddy' %}
+  <div class="card" style="max-width:560px;">
+    <div class="card-label">Connect GoDaddy</div>
+    <p class="page-sub" style="margin:6px 0 16px;">
+      Create a Personal Access Token at <span class="mono">GoDaddy Developer → My Account → API Keys</span>,
+      then enter it here along with the domain you want to manage. GoDaddy's v3 API has no way to list every
+      domain on an account, so this panel can only manage the one domain you name — enter it exactly as it's
+      registered (e.g. <span class="mono">example.com</span>). The token is verified against GoDaddy before
+      it's saved, and stored the same way this panel already stores its own secret key — plaintext in its
+      private data directory, never in the code folder.
+    </p>
+    <form method="POST" action="{{ url_for('dns.save_godaddy_credentials') }}">
+      {{ godaddy_form.hidden_tag() }}
+      <div class="field">
+        {{ godaddy_form.token.label }}
+        {{ godaddy_form.token(placeholder="GoDaddy API token", type="password", autocomplete="off") }}
+      </div>
+      <div class="field">
+        {{ godaddy_form.domain.label }}
+        {{ godaddy_form.domain(placeholder="example.com") }}
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Verify &amp; connect</button>
+    </form>
+  </div>
+  {% else %}
+  <div class="card" style="max-width:520px;">
+    <div class="card-label">Connect Cloudflare</div>
+    <p class="page-sub" style="margin:6px 0 16px;">
+      Create an API token at <span class="mono">Cloudflare dashboard → My Profile → API Tokens</span> using the
+      <strong>Edit zone DNS</strong> template, scoped to the zone(s) you want this panel to manage. The token is
+      verified against Cloudflare before it's saved, and stored the same way this panel already stores its own
+      secret key — plaintext in its private data directory, never in the code folder.
+    </p>
+    <form method="POST" action="{{ url_for('dns.save_token') }}">
+      {{ token_form.hidden_tag() }}
+      <div class="field">
+        {{ token_form.token.label }}
+        {{ token_form.token(placeholder="Cloudflare API token", type="password", autocomplete="off") }}
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Verify &amp; connect</button>
+    </form>
+  </div>
+  {% endif %}
+
+{% else %}
+
+  {% if error %}
+  <div class="flash flash-error">{{ error }}</div>
+  {% endif %}
+
+  {% if zones %}
+  <div class="grid">
+    <div class="card stat">
+      <div class="card-label">{{ 'Domain' if provider_key in ('namecheap', 'godaddy') else 'Zone' }}</div>
+      <div class="card-value line">
+        <span class="status-dot {{ 'ok live' if active_zone and active_zone.status == 'active' else '' }}"></span>
+        {{ active_zone.name if active_zone else '—' }}
+      </div>
+      <div class="card-meta">{{ active_zone.status | capitalize if active_zone else 'unknown' }} · via {{ provider.label }}</div>
+    </div>
+    <div class="card stat">
+      <div class="card-label">Total Records</div>
+      <div class="card-value">{{ records | length }}</div>
+      <div class="card-meta">across all types</div>
+    </div>
+    <div class="card stat">
+      <div class="card-label">Proxied</div>
+      <div class="card-value">{{ records | selectattr('proxied') | list | length }}</div>
+      <div class="card-meta">routed through Cloudflare's edge</div>
+    </div>
+    <div class="card stat">
+      <div class="card-label">DNS Only</div>
+      <div class="card-value">{{ records | rejectattr('proxied') | list | length }}</div>
+      <div class="card-meta">resolves directly, no proxying</div>
+    </div>
+  </div>
+
+  {% if provider.supports_nameserver_switch and nameserver_mode is not none %}
+  <div class="card tight" style="margin-top:16px;">
+    <div class="card-header">
+      <div class="card-label" style="margin:0;">Nameservers</div>
+      {% if nameserver_mode.using_provider_dns %}
+        <span class="badge badge-ok">Using {{ provider.label }} DNS</span>
+      {% else %}
+        <span class="badge badge-warn">Custom nameservers — records here won't resolve</span>
+      {% endif %}
+    </div>
+    <p class="page-sub" style="margin:6px 0 14px;">
+      {% if nameserver_mode.nameservers %}Currently: <span class="mono">{{ nameserver_mode.nameservers | join(', ') }}</span>{% else %}No nameservers reported.{% endif %}
+    </p>
+    <div class="btn-row">
+      {% if not nameserver_mode.using_provider_dns %}
+      <form method="POST" action="{{ url_for('dns.switch_namecheap_nameservers') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="default">
+        <button type="submit" class="btn btn-primary btn-sm">Switch to {{ provider.label }} DNS</button>
+      </form>
+      {% endif %}
+      <form method="POST" action="{{ url_for('dns.switch_namecheap_nameservers') }}" style="display:flex; gap:6px; align-items:center;"
+            onsubmit="return confirm('Switching to custom nameservers means records managed here will stop resolving until you switch back. Continue?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="custom">
+        <input type="text" name="nameservers" placeholder="ns1.example.com, ns2.example.com" style="min-width:280px; background:var(--bg-void); border:1px solid var(--border-strong); border-radius:var(--radius); padding:7px 11px; color:var(--text-primary); font-size:13px;">
+        <button type="submit" class="btn btn-ghost btn-sm">Use custom nameservers</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card flush tight" style="margin-top:16px;">
+    <div class="card-header" style="padding:16px 18px 0; flex-wrap:wrap; gap:10px;">
+      <div class="card-label" style="margin:0;" id="dns-records-count">
+        {{ active_zone.name if active_zone else 'Zone' }} — {{ records | length }} record{{ 's' if records | length != 1 }}
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; margin-left:auto;">
+        <input type="text" id="dns-search" placeholder="Search name, type, or content…" autocomplete="off"
+               style="min-width:240px; background:var(--bg-void); border:1px solid var(--border-strong); border-radius:var(--radius); padding:7px 11px; color:var(--text-primary); font-size:13px;">
+        <button type="button" class="btn btn-primary btn-sm" onclick="openRecordModal()">+ Add record</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table" id="dns-records-table" style="margin-top:8px;">
+        <thead><tr><th>Type</th><th>Name</th><th>Content</th><th>TTL</th><th>Proxy</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for r in records %}
+          <tr data-search="{{ (r.type ~ ' ' ~ r.name ~ ' ' ~ r.content) | lower }}">
+            <td><span class="badge badge-muted mono">{{ r.type }}</span></td>
+            <td class="mono primary">{{ r.name }}</td>
+            <td class="mono">{{ r.content }}{% if r.type == 'MX' and r.priority is not none %} <span class="page-sub">(pri {{ r.priority }})</span>{% endif %}</td>
+            <td class="mono">{{ 'Auto' if r.ttl == 1 else r.ttl }}</td>
+            <td>
+              {% if r.type in proxyable_types %}
+                {% if r.proxied %}<span class="badge badge-ok">Proxied</span>{% else %}<span class="badge badge-muted">DNS only</span>{% endif %}
+              {% else %}
+                <span class="badge badge-muted">—</span>
+              {% endif %}
+            </td>
+            <td class="table-actions">
+              <button type="button" class="btn btn-secondary btn-sm"
+                      onclick='openRecordModal({{ r | tojson }})'>Edit</button>
+              <form method="POST" action="{{ url_for('dns.delete_record', record_id=r.id) }}"
+                    onsubmit="return confirm('Delete the {{ r.type }} record for {{ r.name }}?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="provider" value="{{ provider_key }}">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6"><div class="empty-state"><strong>No DNS records on this {{ 'domain' if provider_key in ('namecheap', 'godaddy') else 'zone' }} yet.</strong>Click "+ Add record" above to create your first one.</div></td></tr>
+          {% endfor %}
+          <tr id="dns-no-matches" style="display:none;"><td colspan="6"><div class="empty-state"><strong>No records match your search.</strong>Try a different name, type, or content.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="empty-state">
+      <strong>No {{ 'domains' if provider_key in ('namecheap', 'godaddy') else 'zones' }} visible to these credentials</strong>
+      Double check the {{ 'account and domain spelling' if provider_key in ('namecheap', 'godaddy') else "API token's zone scope" }} in the {{ provider.label }} dashboard, then reload this page.
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="modal-overlay" id="record-modal">
+    <div class="modal-box modal-browse">
+      <div class="modal-header">
+        <h3 id="record-modal-title">Add record</h3>
+        <button class="modal-close" type="button" id="record-close">&times;</button>
+      </div>
+      <form method="POST" id="record-form" style="padding:18px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="provider" value="{{ provider_key }}">
+        <div class="field">
+          <label for="record-type">Type</label>
+          <select name="type" id="record-type" onchange="toggleRecordFields()">
+            {% for t in record_form.type.choices %}
+            <option value="{{ t[0] }}">{{ t[1] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field"><label for="record-name">Name</label><input type="text" name="name" id="record-name" placeholder="www or @ for root"></div>
+        <div class="field"><label for="record-content">Content</label><input type="text" name="content" id="record-content" placeholder="192.0.2.1 or target host"></div>
+        <div class="field"><label for="record-ttl">TTL (seconds, 1 = Auto)</label><input type="number" name="ttl" id="record-ttl" min="1" max="86400" value="1"></div>
+        <div class="field field-inline" id="record-proxied-field">
+          <input type="checkbox" name="proxied" id="record-proxied" value="y"> <label for="record-proxied" style="margin:0;">Proxied (orange cloud)</label>
+        </div>
+        <div class="field" id="record-priority-field">
+          <label for="record-priority">Priority (MX only)</label>
+          <input type="number" name="priority" id="record-priority" min="0" max="65535" placeholder="10">
+        </div>
+        <div class="editor-footer" style="padding:0; border:none;">
+          <button type="button" class="btn btn-ghost" id="record-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="record-submit">Add record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card tight" style="margin-top:16px; max-width:520px;">
+    <div class="card-label">Disconnect {{ provider.label }}</div>
+    <p class="page-sub" style="margin:6px 0 14px;">Removes the saved credentials for {{ provider.label }} from this panel. Records already published stay as they are.</p>
+    <form method="POST" action="{{ url_for('dns.remove_namecheap_credentials') if provider_key == 'namecheap' else (url_for('dns.remove_godaddy_credentials') if provider_key == 'godaddy' else url_for('dns.remove_token')) }}"
+          onsubmit="return confirm('Disconnect {{ provider.label }}? This removes the saved credentials from the panel.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-ghost">Disconnect {{ provider.label }}</button>
+    </form>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const PROXYABLE_TYPES = {{ (proxyable_types | list) | tojson if proxyable_types else '[]' }};
+  const ADD_URL = {{ url_for('dns.add_record') | tojson if configured else '""' }};
+
+  function toggleRecordFields() {
+    const type = document.getElementById('record-type').value;
+    const proxiedField = document.getElementById('record-proxied-field');
+    const priorityField = document.getElementById('record-priority-field');
+    proxiedField.style.display = PROXYABLE_TYPES.includes(type) ? '' : 'none';
+    priorityField.style.display = type === 'MX' ? '' : 'none';
+  }
+
+  const recordModal = document.getElementById('record-modal');
+
+  // Called with no args to add a new record, or with a record object
+  // (from the row's Edit button) to pre-fill and edit that one in place.
+  function openRecordModal(record) {
+    const form = document.getElementById('record-form');
+    const title = document.getElementById('record-modal-title');
+    const submitBtn = document.getElementById('record-submit');
+
+    if (record) {
+      title.textContent = 'Edit record';
+      submitBtn.textContent = 'Save changes';
+      form.action = '/dns/record/' + record.id + '/edit';
+      document.getElementById('record-type').value = record.type;
+      document.getElementById('record-name').value = record.name;
+      document.getElementById('record-content').value = record.content;
+      document.getElementById('record-ttl').value = record.ttl;
+      document.getElementById('record-proxied').checked = !!record.proxied;
+      document.getElementById('record-priority').value = record.priority ?? '';
+    } else {
+      title.textContent = 'Add record';
+      submitBtn.textContent = 'Add record';
+      form.action = ADD_URL;
+      form.reset();
+      document.getElementById('record-ttl').value = 1;
+    }
+    toggleRecordFields();
+    recordModal.classList.add('open');
+  }
+
+  if (recordModal) {
+    document.getElementById('record-close').addEventListener('click', () => recordModal.classList.remove('open'));
+    document.getElementById('record-cancel').addEventListener('click', () => recordModal.classList.remove('open'));
+    recordModal.addEventListener('click', (e) => { if (e.target === recordModal) recordModal.classList.remove('open'); });
+  }
+
+  const dnsSearch = document.getElementById('dns-search');
+  if (dnsSearch) {
+    const table = document.getElementById('dns-records-table');
+    const rows = Array.from(table.querySelectorAll('tbody tr[data-search]'));
+    const noMatches = document.getElementById('dns-no-matches');
+    const countLabel = document.getElementById('dns-records-count');
+    const baseLabel = countLabel.textContent.trim();
+
+    dnsSearch.addEventListener('input', () => {
+      const q = dnsSearch.value.trim().toLowerCase();
+      let visible = 0;
+      rows.forEach(row => {
+        const match = !q || row.dataset.search.includes(q);
+        row.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+      noMatches.style.display = (q && visible === 0) ? '' : 'none';
+      countLabel.textContent = q ? `${baseLabel} (${visible} matching)` : baseLabel;
+    });
+  }
+</script>
+{% endblock %}
+

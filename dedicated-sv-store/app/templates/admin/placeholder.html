@@ -1,0 +1,7 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_coming_soon.html" import coming_soon with context %}
+{% block title %}{{ section_title }} — Admin{% endblock %}
+{% block page_title %}{{ section_title }}{% endblock %}
+{% block content %}
+{{ coming_soon(section_title) }}
+{% endblock %}

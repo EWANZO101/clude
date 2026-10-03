@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="eyebrow mb-1">Search</p>
+<h1 class="font-display font-800 text-2xl text-chalk mb-5">Results for "{{ q }}"</h1>
+<div class="space-y-2">
+{% for p in posts %}
+  <a href="{{ url_for('forum.post', post_id=p.id) }}" class="card card-hover p-4">
+    <div class="font-display font-600 text-chalk">{{ p.title }}</div><div class="text-mute text-sm mt-1">{{ (p.body or '')[:120] }}</div>
+  </a>
+{% else %}<div class="card p-10 text-center text-mute text-sm">No matches.</div>{% endfor %}
+</div>
+{% endblock %}

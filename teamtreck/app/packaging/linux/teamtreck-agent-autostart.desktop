@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=TeamTreck Agent
+Comment=Time tracking agent (starts in the background)
+Exec=/usr/bin/teamtreck-agent run
+Icon=teamtreck-agent
+Terminal=false
+X-GNOME-Autostart-enabled=true
+Categories=Utility;
+
+; Not installed automatically. The postinst script below copies this to
+; ~/.config/autostart/ only if the user opts in during setup - same "off
+; by default, opt in" approach as the Windows/macOS autostart pieces.

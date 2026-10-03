@@ -1,0 +1,17 @@
+{% extends "layouts/seller_dashboard.html" %}
+{% from "components/_stat_card.html" import stat_card with context %}
+{% block title %}Dashboard — Seller Portal{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+  {{ stat_card("Active Servers", stats.active_servers) }}
+  {{ stat_card("Available Servers", stats.available_servers) }}
+  {{ stat_card("Sold Servers", stats.sold_servers) }}
+  {{ stat_card("Orders", stats.orders) }}
+  {{ stat_card("Revenue", "£" ~ stats.revenue) }}
+  {{ stat_card("Pending Orders", stats.pending_orders) }}
+</div>
+<div class="card p-8 text-center text-text-secondary">
+  Welcome, {{ profile.business_name }}. Add your first server to start selling.
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% macro server_card(server, is_favourited=False, comparable=False) %}
+<div class="card overflow-hidden flex flex-col relative">
+  {% if comparable %}
+  <label class="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-surface-900/80 backdrop-blur rounded-md px-2 py-1 text-xs text-text-secondary cursor-pointer">
+    <input type="checkbox" value="{{ server.id }}" x-model="compareIds" class="rounded border-border bg-surface-800 text-brand-600">
+    Compare
+  </label>
+  {% endif %}
+  <a href="{{ url_for('marketplace.server_detail', slug=server.slug) }}" class="block bg-surface-800 h-40 flex items-center justify-center overflow-hidden">
+    {% if server.images and server.images|length > 0 %}
+    <img src="{{ url_for('static', filename=server.images[0].image_path) }}" class="w-full h-full object-cover" alt="{{ server.title }}">
+    {% else %}
+    <span class="text-text-muted text-sm">No image</span>
+    {% endif %}
+  </a>
+  <div class="p-4 flex-1 flex flex-col">
+    <div class="flex items-start justify-between gap-2 mb-2">
+      <a href="{{ url_for('marketplace.server_detail', slug=server.slug) }}" class="font-semibold text-text-primary hover:text-brand-400 line-clamp-2">{{ server.title }}</a>
+      {% if current_user.is_authenticated %}
+      <form method="POST" action="{{ url_for('marketplace.toggle_favourite', server_id=server.id) }}">
+        {% include "components/_csrf.html" %}
+        <button type="submit" class="text-lg leading-none {{ 'text-brand-400' if is_favourited else 'text-text-muted hover:text-text-primary' }}" title="Favourite">&#9733;</button>
+      </form>
+      {% endif %}
+    </div>
+    <ul class="text-xs text-text-secondary space-y-1 mb-4">
+      <li>{{ server.cpu_summary }}</li>
+      <li>{{ server.ram_summary }}</li>
+      <li>{{ server.storage_summary }}</li>
+      {% if server.location and server.location.city %}<li>{{ server.location.city }}, {{ server.location.country }}</li>{% endif %}
+    </ul>
+    <div class="mt-auto flex items-center justify-between">
+      <span class="text-lg font-semibold text-text-primary">£{{ server.monthly_price }}<span class="text-xs text-text-muted font-normal">/mo</span></span>
+      <a href="{{ url_for('marketplace.server_detail', slug=server.slug) }}" class="btn-secondary !px-3 !py-1.5 text-sm">View</a>
+    </div>
+  </div>
+</div>
+{% endmacro %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Exports — Admin — {{ app_name }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+
+<div class="flex items-center justify-between mb-4">
+  <div class="flex gap-2 text-xs">
+    <a href="{{ url_for('admin.exports') }}"
+       class="px-2 py-1 rounded {{ 'bg-blue-600 text-white' if not status_filter else 'bg-panel border border-border text-gray-400' }}">All</a>
+    {% for s in statuses %}
+      <a href="{{ url_for('admin.exports', status=s) }}"
+         class="px-2 py-1 rounded {{ 'bg-blue-600 text-white' if status_filter == s else 'bg-panel border border-border text-gray-400' }}">{{ s }}</a>
+    {% endfor %}
+  </div>
+  <form method="POST" action="{{ url_for('admin.cleanup_expired_exports') }}"
+        onsubmit="return confirm('Mark exports past the retention window as expired and delete their files?');">
+    <button type="submit" class="text-xs px-3 py-1.5 rounded-md bg-border text-gray-200 hover:bg-yellow-900/40 hover:text-yellow-300">
+      Clean up expired
+    </button>
+  </form>
+</div>
+
+<div class="bg-panel border border-border rounded-lg p-4">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-gray-500 border-b border-border">
+        <th class="py-2">Created</th>
+        <th class="py-2">Owner</th>
+        <th class="py-2">Status</th>
+        <th class="py-2">Size</th>
+        <th class="py-2"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for export in exports %}
+      <tr class="border-b border-border/50">
+        <td class="py-2 text-gray-300">{{ export.created_at }}</td>
+        <td class="py-2 text-gray-300">{{ export.owner.email if export.owner else "—" }}</td>
+        <td class="py-2 text-gray-400">{{ export.status }}</td>
+        <td class="py-2 text-gray-400">
+          {{ "%.2f MB"|format(export.file_size_bytes / 1048576) if export.file_size_bytes else "—" }}
+        </td>
+        <td class="py-2 text-right space-x-3">
+          <a href="{{ url_for('exports.detail', export_id=export.id) }}"
+             class="text-blue-400 hover:text-blue-300 text-xs">View</a>
+          <form method="POST" action="{{ url_for('admin.delete_export', export_id=export.id) }}"
+                class="inline" onsubmit="return confirm('Delete this export?');">
+            <button type="submit" class="text-red-400 hover:text-red-300 text-xs">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="py-4 text-center text-gray-500">No exports found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Logs — Admin — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold text-white mb-6">Logs</h1>
+
+  <h2 class="text-sm font-medium text-gray-400 mb-3">Admin actions</h2>
+  <div class="space-y-2 mb-8">
+    {% for e in admin_entries %}
+      <div class="bg-surface-card border border-surface-border rounded-lg px-4 py-3 text-sm flex items-center justify-between gap-3 flex-wrap">
+        <div class="min-w-0 flex-1 truncate">
+          <span class="text-white">{{ e.admin_user.username }}</span>
+          <span class="text-gray-400"> {{ e.action.replace('_', ' ') }}</span>
+          {% if e.target_label %}<span class="text-gray-300 font-mono"> {{ e.target_label }}</span>{% endif %}
+        </div>
+        <span class="text-gray-500 text-xs flex-shrink-0">{{ e.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+      </div>
+    {% endfor %}
+    {% if not admin_entries %}
+      <p class="text-sm text-gray-500">No admin actions recorded yet.</p>
+    {% endif %}
+  </div>
+
+  <h2 class="text-sm font-medium text-gray-400 mb-3">Support activity</h2>
+  <div class="space-y-2">
+    {% for e in entries %}
+      <div class="bg-surface-card border border-surface-border rounded-lg px-4 py-3 text-sm flex items-center justify-between gap-3 flex-wrap">
+        <div class="min-w-0 flex-1 truncate">
+          <span class="text-white">{{ e.action }}</span>
+          <span class="text-gray-500"> — {{ e.support_user.username }} → {{ e.target_user.username }}</span>
+        </div>
+        <span class="text-gray-500 text-xs flex-shrink-0">{{ e.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+      </div>
+    {% endfor %}
+    {% if not entries %}
+      <p class="text-sm text-gray-500">No support activity yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

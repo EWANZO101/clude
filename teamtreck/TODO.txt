@@ -1,0 +1,50 @@
+TEAMTRECK - BUILD STATUS
+=========================
+
+PHASES 1-13: DONE (server-side complete, see prior TODOs for full breakdown)
+PHASE 14: DONE (desktop agent core - see separate teamtreck-agent zip)
+
+THIS UPDATE - DARK THEME ON AUTH PAGES + UPDATE SCRIPT:
+- Fixed: /auth/login and /auth/register previously ALWAYS rendered light mode
+  with no way to toggle, because the theme toggle button only existed inside
+  the logged-in nav bar, and the <html> class was only set from the DB
+  (current_user.theme_pref), which doesn't exist before you're logged in.
+- Now: a small inline script runs before paint and picks the theme in this
+  order: logged-in server preference > localStorage > dark (default).
+  Guests get a floating toggle button (top-right) on login/register: clicking
+  it flips the theme instantly and remembers it in localStorage, so it
+  persists across guest page loads even before an account exists.
+  Once you log in, the preference syncs to the DB as before and follows you
+  across devices.
+- app/static/js/theme.js updated to handle both cases (guest vs logged-in)
+  via a data-logged-in flag on <body>.
+- Tested: login and register pages both render the toggle; logged-in nav
+  toggle still works and still syncs to the server.
+
+NEW: update.sh
+- Single script to redeploy TeamTreck after pulling new code or unzipping a
+  newer phase over an existing install. From the project root:
+    ./update.sh                 (normal update + restart)
+    ./update.sh --no-restart    (just update deps/files, don't restart)
+- What it does:
+  1. Backs up teamtreck.db to backups/ with a timestamp (keeps last 10)
+  2. Creates/reuses a venv, installs requirements.txt + gunicorn
+  3. Restarts: if a systemd service named "teamtreck" exists, restarts that;
+     otherwise starts/replaces a background gunicorn process on port 5050
+     (override with TEAMTRECK_PORT=xxxx ./update.sh) and prints a sample
+     systemd unit file you can install for a proper production setup
+     (matches your usual systemd/gunicorn/nginx pattern for other services)
+- Safe to run repeatedly - re-run any time after updating files.
+
+HOW TO RUN (fresh install):
+1. cd teamtreck
+2. ./update.sh          <- sets up venv, installs deps, starts the app
+   OR manually: pip install -r requirements.txt && python run.py
+3. open http://localhost:5050
+   (register a new account - first registered user becomes admin)
+
+REMAINING PHASES (separate desktop agent project):
+- Phase 15: Screenshot Capture (agent side)
+- Phase 16: Activity Monitoring (agent side - keyboard/mouse hooks, idle detection)
+- Phase 17: URL Tracking (agent side - browser extension or OS-level scraping)
+- Phase 18: Packaging & Distribution (Windows/Mac/Linux installers, auto-update, permissions)

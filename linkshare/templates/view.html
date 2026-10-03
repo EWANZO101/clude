@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Shared {{ upload.kind }} — LinkShare{% endblock %}
+{% block content %}
+<section class="viewer">
+  <div class="media-frame">
+    {% if upload.kind == 'image' %}
+      <img src="{{ url_for('raw_file', code=upload.code) }}" alt="{{ upload.original_name }}">
+    {% else %}
+      <video src="{{ url_for('raw_file', code=upload.code) }}" controls autoplay muted playsinline></video>
+    {% endif %}
+  </div>
+
+  <div class="viewer-bar">
+    <div class="viewer-info">
+      <span class="fname">{{ upload.original_name }}</span>
+      <span class="fsize">{{ (upload.filesize / 1024 / 1024) | round(2) }} MB</span>
+    </div>
+    <div class="viewer-actions">
+      <span class="countdown" id="countdown" data-remaining="{{ remaining }}">expires in --:--:--</span>
+      <a href="{{ url_for('download_file', code=upload.code) }}" class="btn-primary">Download</a>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  const el = document.getElementById('countdown');
+  let remaining = parseInt(el.dataset.remaining, 10);
+  function fmt(s){
+    if (s <= 0) return "expired";
+    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+    return `expires in ${h}h ${m}m ${sec}s`;
+  }
+  function tick(){
+    el.textContent = fmt(remaining);
+    if (remaining <= 0) { location.reload(); return; }
+    remaining -= 1;
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+{% endblock %}

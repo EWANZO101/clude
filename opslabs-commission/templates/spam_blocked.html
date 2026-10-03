@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Too Many Requests — Cioda's Commissions{% endblock %}
+{% block body %}
+<nav class="nav-bar">
+  <a class="nav-logo" href="/">Cioda's <span>Commissions</span></a>
+</nav>
+<main style="max-width:500px;margin:0 auto;padding:5rem 1.5rem;text-align:center;" class="fade-in">
+  <div style="font-size:4rem;margin-bottom:1rem;">🛑</div>
+  <h1 class="font-display" style="font-size:1.9rem;margin-bottom:0.75rem;color:var(--danger);">
+    Slow Down!
+  </h1>
+  <p style="color:var(--text-secondary);font-size:1.05rem;margin-bottom:2rem;">
+    We detected too many requests from your connection.
+    Please wait a few minutes before trying again.
+  </p>
+  <div style="background:var(--bg-elevated);border-radius:10px;padding:1rem 1.5rem;
+              font-size:0.88rem;color:var(--text-muted);margin-bottom:2rem;">
+    If you think this is a mistake, contact Cioda on Discord:
+    <strong style="color:var(--text-primary);">totallynotcioda</strong>
+  </div>
+  <a href="/" class="btn btn-ghost">← Back to Home</a>
+</main>
+{% endblock %}

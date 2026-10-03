@@ -1,0 +1,28 @@
+{
+  "ticket_id": "TICK-0021",
+  "ticket_type": "whitelist",
+  "opened_by": "Alex Bento | Pierre jordaan",
+  "opened_at": "2026-04-02 10:03:56",
+  "closed_by": "Alex Bento | Pierre jordaan",
+  "closed_at": "2026-04-02 10:04 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-02T10:03:56.313000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1460361220329574521> <@842719474405998612>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:03:56.771000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

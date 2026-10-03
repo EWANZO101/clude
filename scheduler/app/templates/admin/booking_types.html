@@ -1,0 +1,104 @@
+{% extends "layouts/admin.html" %}
+{% block title %}Booking Types · {{ app_name }}{% endblock %}
+{% block page_content %}
+
+<div class="mb-8">
+  <h1 class="font-display text-2xl font-semibold text-ink">Booking types</h1>
+  <p class="mt-1 text-sm text-ink-muted">The kinds of meetings people can book with you.</p>
+</div>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <div class="lg:col-span-2 card divide-y divide-border">
+    {% if types %}
+      {% for bt in types %}
+      <div class="flex items-center justify-between gap-4 p-5">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <p class="font-medium text-ink">{{ bt.name }}</p>
+            {% if not bt.enabled %}
+              <span class="text-[10px] font-medium uppercase tracking-wide text-ink-faint border border-border rounded px-1.5 py-0.5">Disabled</span>
+            {% endif %}
+          </div>
+          <p class="mt-0.5 text-sm text-ink-muted">
+            {{ bt.duration }} min
+            {% if bt.buffer_before or bt.buffer_after %}
+              · {{ bt.buffer_before }}m before / {{ bt.buffer_after }}m after
+            {% endif %}
+            {% if bt.description %} · {{ bt.description }}{% endif %}
+          </p>
+        </div>
+        <div class="flex shrink-0 items-center gap-1.5">
+          <a href="{{ url_for('admin.edit_booking_type', type_id=bt.id) }}" class="btn-ghost !px-2" aria-label="Edit">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </a>
+          <form method="POST" action="{{ url_for('admin.toggle_booking_type', type_id=bt.id) }}">
+            {{ form.hidden_tag() }}
+            <button type="submit" class="btn-ghost !px-2" aria-label="{{ 'Disable' if bt.enabled else 'Enable' }}">
+              {% if bt.enabled %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/></svg>
+              {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              {% endif %}
+            </button>
+          </form>
+          <form method="POST" action="{{ url_for('admin.delete_booking_type', type_id=bt.id) }}"
+                onsubmit="return confirm('Delete {{ bt.name }}? This can\'t be undone.');">
+            {{ form.hidden_tag() }}
+            <button type="submit" class="btn-ghost !px-2 hover:text-status-busy" aria-label="Delete">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="p-8 text-center">
+        <p class="text-sm text-ink-muted">No booking types yet. Create one to start taking bookings.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card p-6">
+    <h2 class="font-display text-base font-semibold text-ink mb-4">New booking type</h2>
+    <form method="POST" action="{{ url_for('admin.booking_types') }}" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="mb-4">
+        <label class="field-label" for="{{ form.name.id }}">Name</label>
+        {{ form.name(class_="field-input", placeholder="Quick Chat") }}
+        {% for error in form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="mb-4">
+        <label class="field-label" for="{{ form.description.id }}">Description (optional)</label>
+        {{ form.description(class_="field-input", rows=2, placeholder="A short intro call") }}
+      </div>
+
+      <div class="mb-4">
+        <label class="field-label" for="{{ form.duration.id }}">Duration (minutes)</label>
+        {{ form.duration(class_="field-input", placeholder="15") }}
+        {% for error in form.duration.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="mb-4 grid grid-cols-2 gap-3">
+        <div>
+          <label class="field-label" for="{{ form.buffer_before.id }}">Buffer before</label>
+          {{ form.buffer_before(class_="field-input", placeholder="0") }}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.buffer_after.id }}">Buffer after</label>
+          {{ form.buffer_after(class_="field-input", placeholder="0") }}
+        </div>
+      </div>
+
+      <label class="mb-5 flex items-center gap-2 text-sm text-ink-muted">
+        {{ form.enabled(class_="rounded border-border bg-surface-raised text-accent focus:ring-accent focus:ring-offset-base") }}
+        Enabled
+      </label>
+
+      <button type="submit" class="btn-primary w-full">Create booking type</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

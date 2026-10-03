@@ -1,0 +1,172 @@
+{
+  "ticket_id": "TICK-0067",
+  "ticket_type": "whitelist",
+  "opened_by": "kxngswagger",
+  "opened_at": "2026-04-27 13:26:31",
+  "closed_by": "Alex Bento | Pierre jordaan",
+  "closed_at": "2026-04-28 18:37 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-27T13:26:32.459000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T13:29:05.070000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T13:33:01.559000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "<@1037097150670196887> good afternoon please complete the whitelist application",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T13:33:22.644000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "you wont be able to join",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T13:34:19.865000+00:00",
+      "author": "kxngswagger",
+      "author_id": "1037097150670196887",
+      "role": "",
+      "content": "i dont see the app",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T13:35:09.682000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "https://web.cfrp.co.za/applications/apply/whitelist",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T13:38:03.120000+00:00",
+      "author": "kxngswagger",
+      "author_id": "1037097150670196887",
+      "role": "",
+      "content": "shows page not found",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T13:38:53.742000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "https://web.cfrp.co.za/applications/whitelist-application/apply",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T13:40:01.074000+00:00",
+      "author": "kxngswagger",
+      "author_id": "1037097150670196887",
+      "role": "",
+      "content": "i am signed in and connected",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T13:40:58.572000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "apply for whitelist\\",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T13:41:08.594000+00:00",
+      "author": "kxngswagger",
+      "author_id": "1037097150670196887",
+      "role": "",
+      "content": "i did",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T13:43:32.121000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "please fill in the whitelist application",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T16:08:41.682000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "",
+      "content": "<@1037097150670196887> go to https://web.cfrp.co.za/auth/register/discord and signup then go to apply https://web.cfrp.co.za/applications/",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T19:01:48.771000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@1037097150670196887>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-27T20:36:44.380000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "staff",
+      "content": "<@1037097150670196887>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-28T06:53:23.218000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "",
+      "content": "<@1037097150670196887>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-28T06:53:38.071000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "",
+      "content": "look at above",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-28T17:47:32.731000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "",
+      "content": "<@1037097150670196887> this is going to be your finel reminder",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

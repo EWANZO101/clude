@@ -1,0 +1,28 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Sellers — Admin{% endblock %}
+{% block page_title %}Sellers{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Business</th><th>Status</th><th>Applied</th><th></th></tr></thead>
+    <tbody>
+      {% for seller in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ seller.business_name }}</td>
+        <td>
+          {% if seller.status.value in ("approved", "active") %}<span class="badge-success">{{ seller.status|hwval }}</span>
+          {% elif seller.status.value in ("rejected", "suspended") %}<span class="badge-danger">{{ seller.status|hwval }}</span>
+          {% else %}<span class="badge-warning">{{ seller.status|hwval }}</span>{% endif %}
+        </td>
+        <td class="text-text-muted">{{ seller.created_at.strftime("%d %b %Y") }}</td>
+        <td><a href="{{ url_for('admin.seller_detail', seller_id=seller.id) }}" class="text-brand-400 hover:text-brand-300">Review</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="text-center text-text-muted py-8">No sellers yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.seller_applications") }}
+</div>
+{% endblock %}

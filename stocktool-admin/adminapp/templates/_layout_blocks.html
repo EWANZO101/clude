@@ -1,0 +1,239 @@
+{# _layout_blocks.html — shared macros that turn a saved Builder Mode
+   layout (list of components) into the actual Items/Tools/Projects page.
+   One macro per component type; a per-entity sub-macro handles the one
+   part that genuinely differs between entities (which columns exist and
+   how each cell renders). Categories and Barcode Scan don't use this —
+   their real interactive UI (drag-reorder, scanner input) stays
+   hard-coded; only their header is customisable, via render_page_header
+   below, called directly from their own templates. #}
+
+{% macro render_page_header(comp, default_title, default_subtitle, default_icon, add_url, count_label) %}
+  {% set s = comp.settings %}
+  <div class="page-header">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">
+          <i class="{{ s.icon or default_icon }}" style="color:#60a5fa;"></i>
+          {{ s.title or default_title }}
+        </h1>
+        <p class="page-subtitle">{{ s.subtitle or default_subtitle or count_label }}</p>
+      </div>
+      {% if s.show_add_button != false and add_url and current_user.is_admin %}
+      <a href="{{ add_url }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> {{ s.add_button_label or 'Add' }}
+      </a>
+      {% endif %}
+    </div>
+  </div>
+{% endmacro %}
+
+
+{% macro render_stat_cards(comp, stats) %}
+  {% set wanted = comp.settings.stats or [] %}
+  {% if wanted %}
+  <div class="card" style="padding:16px;margin-bottom:16px;display:flex;gap:24px;flex-wrap:wrap;">
+    {% for key in wanted %}
+      {% if key in stats %}
+      <div>
+        <div style="font-size:22px;font-weight:700;color:#f9fafb;">{{ stats[key].value }}</div>
+        <div style="font-size:12px;color:#6b7280;">{{ stats[key].label }}</div>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endmacro %}
+
+
+{% macro render_filter_bar(comp, entity, search, category, categories, status_filter, ToolStatus, clear_url) %}
+  {% set s = comp.settings %}
+  <div class="card" style="padding:14px;margin-bottom:16px;">
+    <form method="GET">
+      <div class="filter-bar">
+        {% if s.show_search != false %}
+        <div class="filter-field">
+          <label class="form-label" style="margin-bottom:4px;">Search</label>
+          <input type="text" name="q" class="form-input" placeholder="Search…" value="{{ search }}" />
+        </div>
+        {% endif %}
+        {% if s.show_category_filter != false and categories is defined %}
+        <div class="filter-field" style="min-width:140px;max-width:200px;">
+          <label class="form-label" style="margin-bottom:4px;">Category</label>
+          <select name="category" class="form-select">
+            <option value="">All</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}" {% if cat == category %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+        {% if s.show_status_filter != false and entity == 'items' %}
+        <div class="filter-field" style="min-width:120px;max-width:160px;">
+          <label class="form-label" style="margin-bottom:4px;">Stock</label>
+          <select name="stock" class="form-select">
+            <option value="">All</option>
+            <option value="low" {% if status_filter=='low' %}selected{% endif %}>Low</option>
+            <option value="out" {% if status_filter=='out' %}selected{% endif %}>Out</option>
+          </select>
+        </div>
+        {% elif s.show_status_filter != false and entity == 'tools' and ToolStatus is defined %}
+        <div class="filter-field" style="min-width:140px;max-width:180px;">
+          <label class="form-label" style="margin-bottom:4px;">Status</label>
+          <select name="status" class="form-select">
+            <option value="">All</option>
+            {% for st in ToolStatus.ALL %}
+            <option value="{{ st }}" {% if st == status_filter %}selected{% endif %}>{{ ToolStatus.LABELS[st] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
+          <a href="{{ clear_url }}" class="btn btn-secondary">Clear</a>
+        </div>
+      </div>
+    </form>
+  </div>
+{% endmacro %}
+
+
+{# ── Per-entity column definitions live in Python — see
+   adminapp/utils/layout_columns.py's COLUMN_META. Routes pass
+   column_meta=COLUMN_META[entity] into the template context; a Jinja
+   macro can't return a real dict object (its output is always
+   rendered text), so building this table in Jinja itself isn't an
+   option. #}
+
+
+{% macro render_data_table(comp, entity, rows, view_endpoint, column_meta, ToolStatus) %}
+  {% set meta = column_meta %}
+  {% set columns = comp.settings.columns or [] %}
+  <div class="card desktop-table">
+    <div class="table-wrap">
+      <table style="width:100%;border-collapse:collapse;min-width:480px;">
+        <thead>
+          <tr class="table-header">
+            {% for col in columns %}
+              {% if col in meta %}
+              <th style="padding:11px 16px;text-align:{{ meta[col].align }};"
+                  class="{{ 'hide-tablet' if meta[col].hide_tablet }}">{{ meta[col].label }}</th>
+              {% endif %}
+            {% endfor %}
+            <th style="padding:11px 16px;text-align:center;">View</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if rows %}
+            {% for row in rows %}
+            <tr class="table-row">
+              {% for col in columns %}
+                {% if col in meta %}
+                <td style="padding:11px 16px;text-align:{{ meta[col].align }};{% if meta[col].align == 'left' %}color:#9ca3af;font-size:13px;{% endif %}"
+                    class="{{ 'hide-tablet' if meta[col].hide_tablet }}">
+                {% if col == 'name' %}
+                  <a href="{{ url_for(view_endpoint, **{entity[:-1] + '_id': row.id}) }}"
+                     style="font-weight:500;color:#60a5fa;text-decoration:none;">{{ row.name }}</a>
+                {% elif col == 'sku' %}{{ row.sku or '—' }}
+                {% elif col == 'category' %}{{ row.category or '—' }}
+                {% elif col == 'location' %}{{ row.location or '—' }}
+                {% elif col == 'quantity' %}
+                  <span style="font-weight:600;color:#f3f4f6;">{{ row.quantity }}{% if row.unit %} <span style="color:#6b7280;font-size:12px;">{{ row.unit }}</span>{% endif %}</span>
+                {% elif col == 'status' and entity == 'items' %}
+                  {% if row.quantity == 0 %}<span class="badge" style="background:#450a0a;color:#fca5a5;">Out</span>
+                  {% elif row.is_low_stock %}<span class="badge" style="background:#451a03;color:#fcd34d;">Low</span>
+                  {% else %}<span class="badge" style="background:#064e3b;color:#6ee7b7;">OK</span>{% endif %}
+                {% elif col == 'status' and entity == 'tools' %}
+                  <span class="badge {{ row.status_badge }}">{{ row.status_label }}</span>
+                  {% if row.is_overdue %}<span class="badge bg-red-900 text-red-300"><i class="fas fa-triangle-exclamation"></i> Overdue</span>{% endif %}
+                {% elif col == 'brand_model' %}
+                  {{ row.brand or '' }}{% if row.brand and row.model %} · {% endif %}{{ row.model or '' }}{% if not row.brand and not row.model %}—{% endif %}
+                {% elif col == 'checked_out_by' %}
+                  {% if row.checked_out_by %}{{ row.checked_out_by }}{% else %}—{% endif %}
+                {% elif col == 'code' %}{{ row.code or '—' }}
+                {% elif col == 'description' %}
+                  {{ (row.description[:60] + '…') if row.description and row.description|length > 60 else (row.description or '—') }}
+                {% endif %}
+                </td>
+                {% endif %}
+              {% endfor %}
+              <td style="padding:11px 16px;text-align:center;">
+                <a href="{{ url_for(view_endpoint, **{entity[:-1] + '_id': row.id}) }}" class="btn btn-secondary btn-sm">
+                  <i class="fas fa-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="{{ columns|length + 1 }}" style="padding:40px;text-align:center;color:#4b5563;">
+              No {{ entity }} found.
+            </td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {# Mobile card list — same data, compact layout #}
+  <div class="mobile-card-list">
+    {% if rows %}
+      {% for row in rows %}
+      <a href="{{ url_for(view_endpoint, **{entity[:-1] + '_id': row.id}) }}" style="text-decoration:none;display:block;">
+        <div class="m-card">
+          <div class="m-card-row">
+            <div style="min-width:0;">
+              <div style="font-size:15px;font-weight:600;color:#60a5fa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ row.name }}</div>
+              {% if entity == 'tools' and row.tool_number %}<div style="font-size:12px;color:#4b5563;">#{{ row.tool_number }}</div>{% endif %}
+              {% if entity == 'items' and row.sku %}<div style="font-size:12px;color:#4b5563;">{{ row.sku }}</div>{% endif %}
+              {% if entity == 'projects' and row.code %}<div style="font-size:12px;color:#6b7280;">{{ row.code }}</div>{% endif %}
+            </div>
+            {% if entity == 'items' %}
+              {% if row.quantity == 0 %}<span class="badge" style="background:#450a0a;color:#fca5a5;">Out</span>
+              {% elif row.is_low_stock %}<span class="badge" style="background:#451a03;color:#fcd34d;">Low</span>
+              {% else %}<span class="badge" style="background:#064e3b;color:#6ee7b7;">OK</span>{% endif %}
+            {% elif entity == 'tools' %}
+              <span class="badge {{ row.status_badge }}" style="flex-shrink:0;">{{ row.status_label }}</span>
+            {% endif %}
+          </div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;">
+            {% if row.category %}<span style="font-size:12px;color:#6b7280;">{{ row.category }}</span>{% endif %}
+            {% if row.location %}<span style="font-size:12px;color:#6b7280;"><i class="fas fa-location-dot"></i> {{ row.location }}</span>{% endif %}
+            {% if entity == 'items' and row.quantity is defined %}
+            <span style="font-size:15px;font-weight:700;color:#f9fafb;margin-left:auto;">{{ row.quantity }}{% if row.unit %} <span style="font-size:12px;color:#6b7280;">{{ row.unit }}</span>{% endif %}</span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    {% else %}
+      <div style="text-align:center;padding:40px;color:#4b5563;">No {{ entity }} found.</div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+
+{% macro render_button_row(comp) %}
+  {% if comp.settings.buttons %}
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+    {% for btn in comp.settings.buttons %}
+      <a href="{{ btn.url or '#' }}" class="btn btn-secondary">{{ btn.label or 'Button' }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endmacro %}
+
+
+{% macro render_text_block(comp) %}
+  {% set s = comp.settings %}
+  {% if s.heading or s.body %}
+  <div style="margin-bottom:16px;">
+    {% if s.heading %}<div style="font-size:16px;font-weight:700;color:#f3f4f6;margin-bottom:4px;">{{ s.heading }}</div>{% endif %}
+    {% if s.body %}<div style="font-size:14px;color:#9ca3af;line-height:1.5;">{{ s.body|replace('\n', '<br>')|safe }}</div>{% endif %}
+  </div>
+  {% endif %}
+{% endmacro %}
+
+
+{% macro render_spacer(comp) %}
+  {% set h = {'sm': '12px', 'md': '28px', 'lg': '56px'}[comp.settings.height or 'md'] %}
+  <div style="height:{{ h }};"></div>
+{% endmacro %}

@@ -1,0 +1,236 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <?ifndef ProductVersion?>
+    <?error ProductVersion must be passed with -d ProductVersion=X.Y.Z ?>
+  <?endif?>
+
+  <?ifndef NssmSrc?>
+    <?error NssmSrc must be passed with -d NssmSrc=path\to\nssm.exe ?>
+  <?endif?>
+
+  <Package
+      Name="StockTool Kiosk"
+      Version="$(var.ProductVersion)"
+      Manufacturer="OpsLab Systems"
+      UpgradeCode="1915E8F3-4602-4CF8-8038-BA346FAD23CA"
+      InstallerVersion="500"
+      Compressed="yes"
+      Scope="perMachine">
+
+    <SummaryInformation
+        Description="StockTool Kiosk $(var.ProductVersion) Setup"
+        Manufacturer="OpsLab Systems" />
+
+    <MajorUpgrade
+        DowngradeErrorMessage="A newer version of StockTool Kiosk is already installed."
+        Schedule="afterInstallInitialize" />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- ========================================================
+         Properties
+         ======================================================== -->
+
+    <Property Id="PROVISION_TOKEN" Secure="yes" />
+    <Property Id="PROVISION_USERNAME" Secure="yes" />
+    <Property Id="PROVISION_BADGECODE" Secure="yes" />
+    <Property Id="PROVISION_ROLE" Value="admin" Secure="yes" />
+
+    <Property Id="ARPPRODUCTICON" Value="StockToolIcon.exe" />
+
+    <Icon
+        Id="StockToolIcon.exe"
+        SourceFile="icon.ico" />
+
+    <!-- ========================================================
+         Directories
+         ======================================================== -->
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory
+          Id="INSTALLFOLDER"
+          Name="StockTool Kiosk" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory
+          Id="AppProgramMenuFolder"
+          Name="StockTool Kiosk" />
+    </StandardDirectory>
+
+    <!-- ========================================================
+         Application files
+         ======================================================== -->
+
+    <ComponentGroup
+        Id="AppFiles"
+        Directory="INSTALLFOLDER">
+
+      <Component
+          Id="MainExe"
+          Guid="B9046755-9CBC-4273-9849-C963B8D85CA2">
+
+        <File
+            Id="StockToolKioskExe"
+            Source="..\dist\StockToolKiosk.exe"
+            KeyPath="yes" />
+
+      </Component>
+
+      <Component
+          Id="SetupWizardScript"
+          Guid="CCC71C7B-7EB2-4D1A-AEC6-752B1405DC39">
+
+        <File
+            Id="SetupWizardPs1"
+            Source="SetupWizard.ps1"
+            KeyPath="yes" />
+
+      </Component>
+
+      <Component
+          Id="NssmExe"
+          Guid="B6758B3D-2D3E-4930-B2AD-3E453BACEBBD">
+
+        <File
+            Id="NssmExeFile"
+            Source="$(var.NssmSrc)"
+            KeyPath="yes" />
+
+      </Component>
+
+      <Component
+          Id="LicenseTxt"
+          Guid="*">
+
+        <File
+            Source="..\license.txt"
+            KeyPath="yes" />
+
+      </Component>
+
+    </ComponentGroup>
+
+    <!-- ========================================================
+         Start Menu
+         ======================================================== -->
+
+    <Component
+        Id="StartMenuShortcuts"
+        Directory="AppProgramMenuFolder"
+        Guid="*">
+
+      <Shortcut
+          Id="OpenShortcut"
+          Name="StockTool Kiosk"
+          Target="[INSTALLFOLDER]StockToolKiosk.exe"
+          WorkingDirectory="INSTALLFOLDER" />
+
+      <Shortcut
+          Id="SetupShortcut"
+          Name="StockTool Kiosk Setup"
+          Target="[SystemFolder]WindowsPowerShell\v1.0\powershell.exe"
+          Arguments="-NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]SetupWizard.ps1&quot;"
+          WorkingDirectory="INSTALLFOLDER" />
+
+      <Shortcut
+          Id="UninstallShortcut"
+          Name="Uninstall StockTool Kiosk"
+          Target="[System64Folder]msiexec.exe"
+          Arguments="/x [ProductCode]" />
+
+      <RemoveFolder
+          Id="RemoveAppProgramMenuFolder"
+          On="uninstall" />
+
+      <RegistryValue
+          Root="HKCU"
+          Key="Software\OpsLabSystems\StockToolKiosk"
+          Name="installed"
+          Type="integer"
+          Value="1"
+          KeyPath="yes" />
+
+    </Component>
+
+    <!-- ========================================================
+         Feature
+         ======================================================== -->
+
+    <Feature
+        Id="MainFeature"
+        Title="StockTool Kiosk"
+        Level="1">
+
+      <ComponentGroupRef
+          Id="AppFiles" />
+
+      <ComponentRef
+          Id="StartMenuShortcuts" />
+
+    </Feature>
+
+    <!-- ========================================================
+         Silent provisioning
+         ======================================================== -->
+
+    <CustomAction
+        Id="SilentProvision"
+        Directory="INSTALLFOLDER"
+        Impersonate="no"
+        Execute="deferred"
+        Return="check"
+        ExeCommand="cmd.exe /c &quot;[INSTALLFOLDER]StockToolKiosk.exe&quot; --provision --installation-token &quot;[PROVISION_TOKEN]&quot; --username &quot;[PROVISION_USERNAME]&quot; --badge-code &quot;[PROVISION_BADGECODE]&quot; --role &quot;[PROVISION_ROLE]&quot; &amp;&amp; powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]SetupWizard.ps1&quot; -Silent" />
+
+    <InstallExecuteSequence>
+
+      <Custom
+          Action="SilentProvision"
+          After="InstallFiles"
+          Condition="PROVISION_TOKEN AND NOT Installed" />
+
+    </InstallExecuteSequence>
+
+    <!-- ========================================================
+         UI
+         ======================================================== -->
+
+    <UIRef Id="WixUI_InstallDir" />
+
+    <UIRef Id="WixUI_ErrorProgressText" />
+
+    <Property
+        Id="WIXUI_INSTALLDIR"
+        Value="INSTALLFOLDER" />
+
+    <CustomAction
+        Id="LaunchPairing"
+        Directory="INSTALLFOLDER"
+        Return="asyncNoWait"
+        ExeCommand="&quot;[INSTALLFOLDER]StockToolKiosk.exe&quot; --pair" />
+
+    <UI>
+
+      <Publish
+          Dialog="ExitDialog"
+          Control="Finish"
+          Event="DoAction"
+          Value="LaunchPairing"
+          Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT PROVISION_TOKEN" />
+
+    </UI>
+
+    <Property
+        Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"
+        Value="Set up StockTool Kiosk now (pair account / configure access)" />
+
+    <WixVariable
+        Id="WixUIExitDialogOptionalCheckBox"
+        Value="1" />
+
+  </Package>
+
+</Wix>
+

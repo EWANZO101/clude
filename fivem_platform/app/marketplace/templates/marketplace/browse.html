@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Marketplace — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold text-white mb-1">Marketplace</h1>
+  <p class="text-sm text-gray-500 mb-6">Scripts from every developer on {{ config.SITE_NAME }}.</p>
+
+  <form method="GET" class="mb-6">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search products..."
+      class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+  </form>
+
+  {% if products %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {% for p in products %}
+        <a href="{{ url_for('marketplace.product_page', product_id=p.product_id) }}"
+           class="bg-surface-card border border-surface-border rounded-lg p-5 hover:border-brand transition">
+          <div class="text-white font-medium mb-1">{{ p.name }}</div>
+          <div class="text-gray-500 text-xs font-mono mb-3">v{{ p.version }} · {{ p.product_type }}</div>
+          {% if p.description %}
+            <p class="text-sm text-gray-400 line-clamp-2">{{ p.description[:140] }}{{ '…' if p.description|length > 140 }}</p>
+          {% endif %}
+          <div class="text-xs text-gray-500 mt-3">by {{ p.developer.username }}</div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500">
+      {% if q %}No products match "{{ q }}".{% else %}No products listed yet.{% endif %}
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

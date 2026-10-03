@@ -1,0 +1,32 @@
+{% extends "layouts/seller_dashboard.html" %}
+{% block title %}Inventory — Seller Portal{% endblock %}
+{% block page_title %}Inventory{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Server</th><th>Current status</th><th>Change to</th></tr></thead>
+    <tbody>
+      {% for server in servers %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ server.title }}</td>
+        <td><span class="badge-info">{{ server.inventory_status|hwval }}</span></td>
+        <td>
+          <form method="POST" class="flex gap-2">
+            {% include "components/_csrf.html" %}
+            <input type="hidden" name="server_id" value="{{ server.id }}">
+            <select name="inventory_status" class="input-field max-w-xs">
+              {% for status in statuses %}
+              <option value="{{ status.value }}" {{ "selected" if status == server.inventory_status }}>{{ status|hwval }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn-secondary">Update</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="text-center text-text-muted py-8">No servers yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ item.name }} — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('items.list_items') }}">← Items</a></p>
+<div class="panel" style="max-width:480px;">
+  <h1>Edit Item</h1>
+  <form method="post">
+    <label>Name</label>
+    <input type="text" name="name" value="{{ item.name }}" required>
+    <label>SKU</label>
+    <input type="text" name="sku" value="{{ item.sku or '' }}">
+    <label>Unit</label>
+    <input type="text" name="unit" value="{{ item.unit or '' }}">
+    <label>Type / category</label>
+    <input type="text" name="category" value="{{ item.category or '' }}" list="category-options" placeholder="e.g. Fasteners">
+    <datalist id="category-options">
+      {% for c in category_suggestions %}<option value="{{ c }}">{% endfor %}
+    </datalist>
+    <label>Unit cost</label>
+    <input type="text" name="unit_cost" value="{{ item.unit_cost or '' }}">
+    <label>Description</label>
+    <textarea name="description" rows="3" style="width:100%; padding:10px 12px; border-radius:7px; border:1px solid var(--panel-border); background:var(--bg); color:var(--text);">{{ item.description or '' }}</textarea>
+    <p class="muted" style="font-size:12.5px;">Current stock: {{ item.quantity }} {{ item.unit or '' }} — adjust from the Items list.</p>
+    <button type="submit" style="margin-top:10px;">Save changes</button>
+  </form>
+</div>
+{% endblock %}

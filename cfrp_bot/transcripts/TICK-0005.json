@@ -1,0 +1,28 @@
+{
+  "ticket_id": "TICK-0005",
+  "ticket_type": "whitelist",
+  "opened_by": "Alex Bento",
+  "opened_at": "2026-05-07 16:16:12",
+  "closed_by": "Alex Bento",
+  "closed_at": "2026-05-07 16:16 UTC",
+  "messages": [
+    {
+      "ts": "2026-05-07T16:16:13.117000+00:00",
+      "author": "GSRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1501614137984155790> <@369853340055502852>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-07T16:16:14.165000+00:00",
+      "author": "GSRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

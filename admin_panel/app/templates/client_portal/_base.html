@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Client Portal — OpsLab{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0d17; --surface:#0e1220; --surface-2:#141828; --surface-3:#191e33;
+    --border:#242a3d; --border-soft:#1b2032; --text:#e9ebf3; --muted:#8a91a8; --muted-2:#5e6479;
+    --accent:#7c6cf6; --accent-hover:#8f81f8; --accent-dim:rgba(124,108,246,.14);
+    --green:#34c98a; --green-dim:rgba(52,201,138,.14);
+    --amber:#e3a83f; --amber-dim:rgba(227,168,63,.14);
+    --red:#f0605c; --red-dim:rgba(240,96,92,.14);
+    --blue:#4f8ef7; --blue-dim:rgba(79,142,247,.14);
+    --radius:8px;
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent); text-decoration:none;}
+  a:hover{color:var(--accent-hover);}
+  code, .mono{font-family:'JetBrains Mono',ui-monospace,monospace;}
+  h1{font-size:20px; font-weight:600; margin:0; letter-spacing:-.01em;}
+  h2{font-size:14.5px; font-weight:600; margin:0 0 14px; color:var(--text);}
+  h3{font-size:13px; font-weight:600; margin:0 0 8px; color:var(--muted);}
+  .muted{color:var(--muted);}
+  p{margin:0 0 10px;}
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 28px; border-bottom:1px solid var(--border-soft); background:var(--surface);
+  }
+  .brand{display:flex; align-items:center; gap:9px; font-weight:700; font-size:14.5px; letter-spacing:-.01em; color:var(--text);}
+  .brand .mark{
+    width:26px; height:26px; border-radius:7px; flex-shrink:0;
+    background:linear-gradient(155deg, var(--accent), #4d3fc4);
+    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff;
+  }
+  .brand .accent{color:var(--accent);}
+  .topbar-right{display:flex; align-items:center; gap:16px; font-size:13px; color:var(--muted); flex-wrap:wrap; justify-content:flex-end;}
+  .topbar-right a{color:var(--muted);}
+  .topbar-right a:hover{color:var(--text);}
+
+  .main{padding:32px 32px 60px;}
+  .wrap{max-width:1280px; margin:0 auto;}
+
+  /* No breakpoints existed anywhere in this shell before — every Client
+     Portal page (not just this one) was relying on there always being
+     enough width for the topbar's brand + right-side links, and .main's
+     own generous side padding, to fit on one line/comfortably. Narrower
+     than a phone in portrait, neither held up. */
+  @media (max-width: 640px){
+    .topbar{flex-wrap:wrap; gap:10px; padding:14px 16px;}
+    .topbar-right{gap:10px 14px; font-size:12.5px;}
+    .main{padding:18px 16px 40px;}
+  }
+
+  .page-header{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:22px;}
+  .crumb{display:inline-flex; align-items:center; gap:5px; font-size:12.5px; color:var(--muted); margin-bottom:8px;}
+  .crumb:hover{color:var(--text);}
+  .page-sub{margin-top:5px; font-size:13px; color:var(--muted); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .page-actions{display:flex; gap:8px; flex-shrink:0;}
+
+  .panel{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:22px; margin-bottom:16px;}
+  .panel-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .panel-head h2{margin:0;}
+
+  label{display:block; margin:14px 0 6px; color:var(--muted); font-size:12.5px; font-weight:500;}
+  label:first-child{margin-top:0;}
+  input[type=text], input[type=email], input[type=password], input[type=datetime-local],
+  input[type=time], input[type=date], input[type=number], input[type=tel], textarea, select{
+    width:100%; padding:9px 12px; border-radius:7px; border:1px solid var(--border);
+    background:var(--surface); color:var(--text); font-size:13.5px; font-family:inherit;
+  }
+  /* Without this, native browser chrome on inputs like type=time/date (the
+     little clock/calendar icon, its popup, the <select> dropdown arrow)
+     renders in the browser's light-mode default regardless of the dark
+     background set above — the literal "raw unstyled control" look. */
+  select option{background:var(--surface); color:var(--text);}
+  textarea{font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12.5px;}
+  input:focus, textarea:focus, select:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim);}
+  .field-hint{font-size:12px; color:var(--muted-2); margin-top:4px;}
+  .checkline{display:flex; align-items:center; gap:8px; margin-top:10px; font-size:13px; color:var(--muted);}
+  .checkline input{width:auto;}
+
+  /* Backup schedule — time+timezone side by side, options as a proper
+     settings-style card list rather than bare checkboxes floating below. */
+  .backup-time-row{display:flex; gap:16px; flex-wrap:wrap;}
+  .backup-time-row input[type=time]{width:auto; min-width:140px;}
+  .backup-tz-field{flex:1; min-width:220px;}
+  .backup-option-list{
+    margin-top:18px; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;
+  }
+  .backup-option{
+    display:flex; align-items:flex-start; gap:12px; padding:14px 16px; cursor:pointer;
+    background:var(--surface);
+  }
+  .backup-option + .backup-option{border-top:1px solid var(--border-soft);}
+  .backup-option:hover{background:var(--surface-3);}
+  .backup-option input[type=checkbox]{width:18px; height:18px; margin-top:1px; flex-shrink:0; accent-color:var(--accent);}
+  .backup-option-body{display:flex; flex-direction:column; gap:2px;}
+  .backup-option-title{font-size:13.5px; font-weight:600; color:var(--text);}
+  .backup-option-desc{font-size:12px; color:var(--muted);}
+
+  .backup-progress-steps{display:flex; gap:6px; margin-bottom:8px;}
+  .backup-progress-step{
+    flex:1; text-align:center; font-size:11.5px; font-weight:600; letter-spacing:.02em;
+    color:var(--muted); padding-bottom:6px; border-bottom:2px solid var(--border);
+  }
+  .backup-progress-step.active{color:var(--accent); border-bottom-color:var(--accent);}
+  .backup-progress-bar{
+    height:6px; border-radius:4px; background:var(--surface-3); overflow:hidden;
+  }
+  .backup-progress-fill{
+    height:100%; width:0%; background:var(--accent); border-radius:4px;
+    transition:width .5s ease;
+  }
+
+  button, .btn{
+    display:inline-flex; align-items:center; gap:6px; background:var(--accent); color:#fff; border:none;
+    padding:9px 15px; border-radius:7px; font-size:13.5px; cursor:pointer; font-weight:600;
+    font-family:inherit; transition:background-color .12s ease;
+  }
+  button:hover, .btn:hover{background:var(--accent-hover); text-decoration:none;}
+  .btn-secondary{background:var(--surface-3); border:1px solid var(--border); color:var(--text);}
+  .btn-secondary:hover{background:var(--surface-2); border-color:var(--muted-2);}
+  .btn-danger{background:var(--red-dim); color:var(--red); border:1px solid rgba(240,96,92,.3);}
+  .btn-danger:hover{background:rgba(240,96,92,.22);}
+  .btn-sm{padding:6px 11px; font-size:12.5px;}
+  .btn-block{width:100%; justify-content:center;}
+
+  .flash{padding:11px 14px; border-radius:7px; margin-bottom:14px; font-size:13.5px; border:1px solid transparent;}
+  .flash-success{background:var(--green-dim); border-color:rgba(52,201,138,.3); color:var(--green);}
+  .flash-danger{background:var(--red-dim); border-color:rgba(240,96,92,.3); color:var(--red);}
+  .flash-warning{background:var(--amber-dim); border-color:rgba(227,168,63,.3); color:var(--amber);}
+  .flash-info{background:var(--blue-dim); border-color:rgba(79,142,247,.3); color:var(--blue);}
+
+  .table-scroll{overflow-x:auto; margin:-4px -4px 0;}
+  table{width:100%; border-collapse:collapse;}
+  th, td{text-align:left; padding:11px 10px; border-bottom:1px solid var(--border-soft); font-size:13.5px; white-space:nowrap;}
+  td.wrap-cell, th.wrap-cell{white-space:normal;}
+  th{color:var(--muted-2); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.05em;}
+  tbody tr:last-child td{border-bottom:none;}
+  .kv-table th{width:190px; text-transform:none; font-size:12.5px; letter-spacing:0; color:var(--muted); font-weight:500; vertical-align:top; padding-top:12px;}
+  .kv-table td{vertical-align:top; padding-top:12px;}
+
+  .pill{display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:600; white-space:nowrap;}
+  .pill::before{content:''; width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0;}
+  .pill-green{background:var(--green-dim); color:var(--green);}
+  .pill-red{background:var(--red-dim); color:var(--red);}
+  .pill-amber{background:var(--amber-dim); color:var(--amber);}
+  .pill-muted{background:rgba(138,145,168,.14); color:var(--muted);}
+  .pill-accent{background:var(--accent-dim); color:var(--accent);}
+  .pill-blue{background:var(--blue-dim); color:var(--blue);}
+
+  .row-list{list-style:none; margin:0; padding:0;}
+  .row-list li{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:14px 16px; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:8px; background:var(--surface-2);
+  }
+  .row-actions form{display:inline;}
+  .empty{text-align:center; padding:36px 20px; color:var(--muted); font-size:13.5px;}
+  code{font-family:'JetBrains Mono',ui-monospace,monospace; background:var(--surface); padding:2px 6px; border-radius:4px; font-size:12px; color:var(--text); border:1px solid var(--border-soft);}
+
+  .auth-main{min-height:calc(100vh - 65px); display:flex; align-items:center; justify-content:center; padding:40px 20px;}
+  .auth-card{width:100%; max-width:400px;}
+  .auth-card .panel{margin:0;}
+
+  /* ---------- Client Portal component library ---------- */
+  .section-icon{
+    display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px;
+    border-radius:8px; background:var(--surface-3); color:var(--muted); flex-shrink:0;
+  }
+  .panel-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:12px;}
+  .panel-head-title{display:flex; align-items:center; gap:10px;}
+  .panel-head-title h2{margin:0;}
+
+  .btn-warning{background:var(--amber-dim); color:var(--amber); border:1px solid rgba(227,168,63,.35);}
+  .btn-warning:hover{background:rgba(227,168,63,.24);}
+
+  /* Status hero — the big "what's this kiosk doing right now" card */
+  .status-hero{
+    display:flex; align-items:center; gap:18px; padding:20px 22px; margin-bottom:16px;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius);
+    border-left:4px solid var(--muted-2);
+  }
+  .status-hero.is-running{border-left-color:var(--green);}
+  .status-hero.is-stopped{border-left-color:var(--red);}
+  .status-hero.is-crashlooping{border-left-color:var(--red);}
+  .status-hero.is-suspended{border-left-color:var(--red);}
+  .status-hero.is-unknown{border-left-color:var(--muted-2);}
+  .status-hero-icon{
+    width:48px; height:48px; border-radius:12px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface-3); color:var(--muted);
+  }
+  .status-hero.is-running .status-hero-icon{background:var(--green-dim); color:var(--green);}
+  .status-hero.is-stopped .status-hero-icon{background:var(--red-dim); color:var(--red);}
+  .status-hero.is-crashlooping .status-hero-icon{background:var(--red-dim); color:var(--red);}
+  .status-hero.is-suspended .status-hero-icon{background:var(--red-dim); color:var(--red);}
+  .status-hero-body{flex:1; min-width:0;}
+  .status-hero-label{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted-2); margin-bottom:3px;}
+  .status-hero-value{font-size:17px; font-weight:700; letter-spacing:-.01em;}
+  .status-hero-actions{display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap;}
+
+  /* Toggle cards — replaces bare <details>/<summary> for "Add / Import / Restore" */
+  .toggle-card{
+    border:1px solid var(--border); border-radius:var(--radius); margin-top:10px; overflow:hidden;
+    background:var(--surface);
+  }
+  .toggle-card summary{
+    list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px;
+    padding:12px 16px; font-size:13.5px; font-weight:500; color:var(--text);
+  }
+  .toggle-card summary::-webkit-details-marker{display:none;}
+  .toggle-card summary:hover{background:var(--surface-2);}
+  .toggle-card summary .toggle-icon{color:var(--muted); flex-shrink:0;}
+  .toggle-card summary .chevron{margin-left:auto; color:var(--muted-2); transition:transform .15s ease; flex-shrink:0;}
+  .toggle-card[open] summary .chevron{transform:rotate(90deg);}
+  .toggle-card[open] summary{border-bottom:1px solid var(--border-soft);}
+  .toggle-card-body{padding:18px;}
+
+  /* Modal dialogs — replaces the old pattern of a <details style="display:
+     inline-block"> "Edit" popover crammed inside a table cell (row-actions),
+     which broke against the table's scrolling/nowrap layout and couldn't be
+     closed by clicking outside it. A native <dialog> opened via showModal()
+     renders in the browser's top layer regardless of DOM nesting, so it
+     always centers correctly over the page. */
+  dialog.modal{
+    border:none; padding:0; background:transparent; color:var(--text);
+    max-width:460px; width:calc(100vw - 32px); max-height:calc(100vh - 64px);
+    border-radius:var(--radius);
+  }
+  dialog.modal::backdrop{background:rgba(4,6,14,.6); backdrop-filter:blur(1px);}
+  dialog.modal .modal-body{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px; max-height:calc(100vh - 64px); overflow-y:auto;
+  }
+  dialog.modal .modal-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:2px;}
+  dialog.modal .modal-head h3{margin:0; font-size:15px;}
+  dialog.modal .modal-close-x{
+    background:transparent; border:none; color:var(--muted); font-size:20px; line-height:1;
+    cursor:pointer; padding:2px 4px; border-radius:6px; flex-shrink:0;
+  }
+  dialog.modal .modal-close-x:hover{color:var(--text); background:var(--surface-3);}
+  dialog.modal .modal-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:16px;}
+  dialog.modal form{margin:0;}
+
+  /* Friendlier empty state than a single muted line */
+  .empty-state{
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding:28px 20px; color:var(--muted); gap:8px;
+  }
+  .empty-state .section-icon{width:38px; height:38px; margin-bottom:2px;}
+  .empty-state p{margin:0; font-size:13px;}
+
+  /* Section tabs — one instance page used to stack Activity/Items & Tools/
+     Local Users/Updates as separate always-expanded panels, so seeing
+     Updates meant scrolling past the other three first. This keeps every
+     section in the same on-screen area; switching tabs never scrolls. */
+  .section-tabs{margin-bottom:16px;}
+  .section-tab-bar{
+    display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px;
+    overflow-x:auto;
+  }
+  .section-tab-btn{
+    background:transparent; border:none; color:var(--muted); padding:10px 16px;
+    font-size:13.5px; font-weight:600; cursor:pointer; border-bottom:2px solid transparent;
+    border-radius:0; white-space:nowrap; flex-shrink:0;
+  }
+  .section-tab-btn:hover{color:var(--text); background:transparent;}
+  .section-tab-btn.active{color:var(--accent); border-bottom-color:var(--accent);}
+  .section-tab-panel{display:none;}
+  .section-tab-panel.active{display:block;}
+
+  /* Idle-logout bar — floats above the bottom of the viewport, docked
+     center. Invisible most of the session and only turns into a visible
+     countdown once time is actually running out — a proper little card
+     rather than a bare full-width line, so it reads as a deliberate
+     warning rather than a stray rule at the bottom of the page. */
+  #idle-logout-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:999;
+    display:flex; justify-content:center; padding:0 16px 16px;
+    transition:opacity .2s ease, transform .2s ease;
+    opacity:0; transform:translateY(6px); pointer-events:none;
+  }
+  #idle-logout-bar.is-visible{opacity:1; transform:translateY(0);}
+  #idle-logout-card{
+    display:flex; align-items:center; gap:11px; max-width:480px; width:100%;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:12px;
+    padding:11px 16px; box-shadow:0 10px 28px rgba(0,0,0,.4);
+  }
+  #idle-logout-icon{flex-shrink:0; color:var(--amber); transition:color .2s ease;}
+  #idle-logout-bar.is-critical #idle-logout-icon{color:var(--red);}
+  #idle-logout-body{flex:1; min-width:0;}
+  #idle-logout-track{height:4px; background:var(--border-soft); border-radius:2px; overflow:hidden;}
+  #idle-logout-fill{height:100%; width:100%; background:var(--amber); border-radius:2px; transition:width .4s linear, background-color .4s ease;}
+  #idle-logout-bar.is-critical #idle-logout-fill{background:var(--red);}
+  #idle-logout-label{
+    font-size:12.5px; font-weight:600; color:var(--text); margin-bottom:7px;
+  }
+  #idle-logout-bar.is-critical #idle-logout-label{color:var(--red);}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="{{ url_for('client_portal.dashboard') if current_user.is_authenticated else url_for('client_portal.login') }}" class="brand">
+    <span class="mark">O</span>OpsLab <span class="accent">Client Portal</span>
+  </a>
+  <div class="topbar-right">
+    <a href="{{ url_for('client_portal.legal') }}">Legal &amp; Privacy</a>
+    {% if current_user.is_authenticated %}
+      <span>{{ current_user.full_name }}</span>
+      <a href="{{ url_for('client_portal.logout') }}">Log out</a>
+    {% else %}
+      <a href="{{ url_for('client_portal.login') }}">Log in</a>
+      <a href="{{ url_for('client_portal.signup') }}" class="btn btn-sm">Sign up</a>
+    {% endif %}
+  </div>
+</div>
+<div class="main">
+  <div class="wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+<script>
+// Generic long-poll helper — same pattern as the Admin Panel's own (see
+// app/long_poll.py and base.html). Call from inside a DOMContentLoaded
+// listener so this script tag has already run and defined it.
+function opslabLongPoll(url, onUpdate) {
+  var sig = null;
+  var stopped = false;
+  function tick() {
+    if (stopped) return;
+    var sep = url.indexOf('?') === -1 ? '?' : '&';
+    var u = url + sep + 'wait=25' + (sig ? '&sig=' + encodeURIComponent(sig) : '');
+    fetch(u).then(function (r) {
+      if (!r.ok) throw new Error('bad status ' + r.status);
+      return r.json();
+    }).then(function (data) {
+      sig = data.sig;
+      onUpdate(data);
+      tick();
+    }).catch(function () {
+      if (!stopped) setTimeout(tick, 4000);
+    });
+  }
+  tick();
+  return function stop() { stopped = true; };
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.section-tabs').forEach(function (wrap) {
+    var buttons = wrap.querySelectorAll('.section-tab-btn');
+    var panels = wrap.querySelectorAll('.section-tab-panel');
+    function activate(name) {
+      buttons.forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
+      panels.forEach(function (p) { p.classList.toggle('active', p.dataset.tabPanel === name); });
+    }
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function () { activate(btn.dataset.tab); });
+    });
+  });
+
+  document.addEventListener('click', function (e) {
+    var opener = e.target.closest('[data-open-modal]');
+    if (opener) {
+      var dlg = document.getElementById(opener.dataset.openModal);
+      if (dlg) dlg.showModal();
+      return;
+    }
+    var closer = e.target.closest('[data-close-modal]');
+    if (closer) {
+      var owner = closer.closest('dialog');
+      if (owner) owner.close();
+    }
+  });
+  document.querySelectorAll('dialog.modal').forEach(function (dlg) {
+    dlg.addEventListener('click', function (e) {
+      if (e.target === dlg) dlg.close();
+    });
+  });
+});
+</script>
+{% if current_user.is_authenticated %}
+<div id="idle-logout-bar">
+  <div id="idle-logout-card">
+    <svg id="idle-logout-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+    <div id="idle-logout-body">
+      <div id="idle-logout-label"></div>
+      <div id="idle-logout-track"><div id="idle-logout-fill"></div></div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var DURATION_MS = {{ (client_portal_auto_logout_minutes or 2) * 60 * 1000 }};
+  var LOGOUT_URL = {{ url_for('client_portal.logout')|tojson }};
+  var WARN_AT_PCT = 20;  // show the bar once 20% of the time remains
+  var bar = document.getElementById('idle-logout-bar');
+  var fill = document.getElementById('idle-logout-fill');
+  var label = document.getElementById('idle-logout-label');
+  var lastActivity = Date.now();
+  var loggedOut = false;
+
+  function reset() { lastActivity = Date.now(); }
+  ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(function (evt) {
+    window.addEventListener(evt, reset, { passive: true });
+  });
+
+  function tick() {
+    if (loggedOut) return;
+    var remaining = DURATION_MS - (Date.now() - lastActivity);
+    var pct = Math.max(0, Math.min(100, (remaining / DURATION_MS) * 100));
+
+    if (remaining <= 0) {
+      loggedOut = true;
+      window.location.href = LOGOUT_URL;
+      return;
+    }
+
+    var showing = pct <= WARN_AT_PCT;
+    bar.classList.toggle('is-visible', showing);
+    if (showing) {
+      fill.style.width = pct + '%';
+      bar.classList.toggle('is-critical', pct <= 8);
+      bar.classList.toggle('is-warning', pct > 8);
+      label.textContent = 'Signing out in ' + Math.ceil(remaining / 1000) + 's — move the mouse or press a key to stay logged in';
+    }
+    setTimeout(tick, showing ? 250 : 2000);
+  }
+  tick();
+})();
+</script>
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="relative min-h-[calc(100vh-4rem)] flex items-center justify-center py-16 px-4 overflow-hidden">
+  <div class="absolute inset-0 grid-overlay pointer-events-none opacity-40"></div>
+  <div class="absolute top-1/4 -right-32 w-[500px] h-[500px] bg-ops-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+  <div class="relative w-full max-w-md animate-fade-up">
+    <div class="relative">
+      <div class="absolute -inset-2 bg-gradient-to-tr from-ops-700/30 to-ops-400/20 rounded-3xl blur-2xl opacity-50"></div>
+      <div class="relative bg-ink-800/80 backdrop-blur-xl border border-ink-600 rounded-2xl p-8 shadow-2xl">
+
+        <div class="flex justify-center mb-6">
+          <div class="w-12 h-12 rounded-2xl bg-ops-500/15 border border-ops-500/30 flex items-center justify-center text-ops-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          </div>
+        </div>
+
+        <h1 class="text-3xl font-extrabold text-center tracking-tight">Set a new password</h1>
+        <p class="text-center text-sm text-gray-400 mt-2">Choose a strong password you'll remember.</p>
+
+        <form method="post" class="mt-8 space-y-5">
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">New password</label>
+            <input type="password" name="password" required autofocus
+              class="form-input w-full px-4 py-2.5 text-sm" placeholder="••••••••">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">Confirm password</label>
+            <input type="password" name="confirm" required
+              class="form-input w-full px-4 py-2.5 text-sm" placeholder="••••••••">
+          </div>
+
+          <button type="submit" class="w-full inline-flex justify-center items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow hover:scale-[1.01] transition">
+            Update password
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

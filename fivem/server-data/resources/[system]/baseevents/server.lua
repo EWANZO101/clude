@@ -1,0 +1,7 @@
+RegisterNetEvent('baseevents:onPlayerWasted')
+RegisterNetEvent('baseevents:enteringVehicle')
+RegisterNetEvent('baseevents:enteringAborted')
+RegisterNetEvent('baseevents:enteredVehicle')
+RegisterNetEvent('baseevents:leftVehicle')
+RegisterNetEvent('baseevents:onPlayerKilled')
+RegisterNetEvent('baseevents:onPlayerDied')

@@ -1,0 +1,24 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Chats — Admin{% endblock %}
+{% block page_title %}Chats{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Subject</th><th>Context</th><th>Updated</th><th></th></tr></thead>
+    <tbody>
+      {% for c in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ c.subject }}</td>
+        <td class="text-text-secondary">{{ c.context_type.value|title }}</td>
+        <td class="text-text-muted">{{ c.updated_at.strftime("%d %b %Y") }}</td>
+        <td><a href="{{ url_for('admin.conversation_detail', conversation_id=c.id) }}" class="text-brand-400 hover:text-brand-300">Open</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="text-center text-text-muted py-8">No conversations yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.chats") }}
+</div>
+{% endblock %}

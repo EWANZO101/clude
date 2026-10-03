@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Welcome, {{ kiosk_user.username }}{% endblock %}
+{% block content %}
+<div class="kiosk-screen dashboard-screen" id="dashboardScreen">
+  <div class="dash-header">
+    <div>
+      <div class="dash-welcome">Welcome, {{ kiosk_user.username }}</div>
+      <div class="dash-hint">Scan an item to remove stock</div>
+    </div>
+    <button class="btn-done" id="doneBtn"><i class="fas fa-check"></i> Done</button>
+  </div>
+
+  <div class="dash-center">
+    <i class="fas fa-barcode dash-icon"></i>
+    <input type="text" id="scanInput" class="scan-input" autocomplete="off"
+           autocapitalize="off" spellcheck="false" placeholder="Waiting for scan…" />
+    <div id="dashMessage" class="scan-message" style="display:none;"></div>
+  </div>
+
+  <div class="idle-progress-wrap">
+    <div class="idle-progress-bar" id="idleProgressBar"></div>
+  </div>
+</div>
+
+<!-- Quantity prompt modal for item quick-remove -->
+<div class="kiosk-modal" id="quantityModal">
+  <div class="kiosk-modal-card">
+    <div class="qty-item-name" id="qtyItemName">—</div>
+    <div class="qty-item-stock" id="qtyItemStock">—</div>
+    <div class="qty-display" id="qtyDisplay">0</div>
+    <div class="qty-keypad">
+      <button class="qty-key" data-key="1">1</button>
+      <button class="qty-key" data-key="2">2</button>
+      <button class="qty-key" data-key="3">3</button>
+      <button class="qty-key" data-key="4">4</button>
+      <button class="qty-key" data-key="5">5</button>
+      <button class="qty-key" data-key="6">6</button>
+      <button class="qty-key" data-key="7">7</button>
+      <button class="qty-key" data-key="8">8</button>
+      <button class="qty-key" data-key="9">9</button>
+      <button class="qty-key qty-key-clear" data-key="clear">Clear</button>
+      <button class="qty-key" data-key="0">0</button>
+      <button class="qty-key qty-key-back" data-key="back"><i class="fas fa-delete-left"></i></button>
+    </div>
+    <div class="qty-actions">
+      <button class="btn-cancel" id="qtyCancelBtn">Cancel</button>
+      <button class="btn-remove" id="qtyRemoveBtn"><i class="fas fa-minus"></i> Remove Stock</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  Kiosk.initDashboard({{ idle_timeout }});
+</script>
+{% endblock %}

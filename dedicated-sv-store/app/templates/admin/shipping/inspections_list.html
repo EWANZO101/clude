@@ -1,0 +1,29 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Inspections — Admin{% endblock %}
+{% block page_title %}Inspections{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Equipment</th><th>Result</th><th>Inspector</th><th>Date</th><th></th></tr></thead>
+    <tbody>
+      {% for record in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ record.item.manufacturer }} {{ record.item.model }}</td>
+        <td>
+          {% if record.result.value == "passed" %}<span class="badge-success">Passed</span>
+          {% elif record.result.value == "failed" %}<span class="badge-danger">Failed</span>
+          {% else %}<span class="badge-warning">Passed with issues</span>{% endif %}
+        </td>
+        <td class="text-text-secondary">{{ record.inspector.email if record.inspector else "—" }}</td>
+        <td class="text-text-muted">{{ record.inspected_at.strftime("%d %b %Y") }}</td>
+        <td><a href="{{ url_for('admin.request_detail', request_id=record.item.request_id) }}" class="text-brand-400 hover:text-brand-300">View request</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-center text-text-muted py-8">No inspections yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.inspections") }}
+</div>
+{% endblock %}

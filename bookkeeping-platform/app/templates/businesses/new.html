@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}New business{% endblock %}
+{% block content %}
+<div class="card card-padded max-w-sm mx-auto">
+  <h1 class="page-title mb-4">Create a business</h1>
+  <form method="POST" class="space-y-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label class="label-field">Business name</label>
+      <input name="name" required class="input-field w-full">
+    </div>
+    <div>
+      <label class="label-field">Base currency (3-letter code)</label>
+      <input name="base_currency" value="USD" maxlength="3" class="input-field w-full">
+    </div>
+    <button class="btn btn-primary btn-block">Create business</button>
+  </form>
+</div>
+{% endblock %}

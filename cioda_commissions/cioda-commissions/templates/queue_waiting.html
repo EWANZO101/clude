@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+{% block title %}Waiting Room — Cioda's Commissions{% endblock %}
+{% block head %}
+<style>
+  .queue-wrap {
+    min-height: calc(100vh - 60px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.25rem;
+  }
+  .queue-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: clamp(1.5rem, 5vw, 2.5rem);
+    width: 100%; max-width: 460px;
+    box-shadow: 0 0 60px rgba(192,132,252,.07);
+    animation: fadeUp .5s ease both;
+    transition: border-color .4s, box-shadow .4s;
+  }
+  .queue-card.ready {
+    border-color: var(--success);
+    box-shadow: 0 0 40px rgba(34,197,94,.2);
+  }
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(18px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  /* Icon */
+  .q-icon {
+    font-size: clamp(2.8rem,8vw,4rem);
+    text-align: center; margin-bottom: .9rem;
+    animation: float 2.8s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)}
+  }
+
+  /* Title */
+  .q-title {
+    font-family:'Cinzel',serif;
+    font-size: clamp(1.3rem,4vw,1.8rem);
+    font-weight:700; text-align:center; margin-bottom:.3rem;
+  }
+  .q-sub {
+    text-align:center; color:var(--text-muted);
+    font-style:italic; font-size:.9rem; margin-bottom:1.5rem;
+  }
+
+  /* Countdown ring */
+  .ring-wrap {
+    display:flex; justify-content:center; margin-bottom:1.4rem;
+  }
+  .ring-svg { transform:rotate(-90deg); }
+  .ring-bg   { fill:none; stroke:var(--bg-elevated); stroke-width:6; }
+  .ring-fill {
+    fill:none; stroke:var(--accent); stroke-width:6;
+    stroke-linecap:round;
+    stroke-dasharray:301.6;
+    transition: stroke-dashoffset .5s linear, stroke .4s;
+  }
+  .ring-fill.done { stroke: var(--success); }
+  .ring-center {
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    font-family:'Cinzel',serif; pointer-events:none;
+  }
+  .ring-num  { font-size:1.75rem; font-weight:700; color:var(--accent); line-height:1; transition:color .4s; }
+  .ring-num.done { color: var(--success); }
+  .ring-lbl  { font-size:.6rem; color:var(--text-muted); letter-spacing:.08em; text-transform:uppercase; margin-top:.15rem; }
+
+  /* Stats grid */
+  .stats {
+    display:grid; grid-template-columns:1fr 1fr 1fr;
+    gap:.65rem; margin-bottom:1.4rem;
+  }
+  .stat {
+    background:var(--bg-elevated); border:1px solid var(--border);
+    border-radius:12px; padding:.75rem .5rem; text-align:center;
+  }
+  .stat-n {
+    font-family:'Cinzel',serif; font-size:1.5rem; font-weight:700;
+    line-height:1; margin-bottom:.2rem;
+  }
+  .stat-l {
+    font-size:.6rem; color:var(--text-muted);
+    letter-spacing:.07em; text-transform:uppercase; font-family:'Cinzel',serif;
+  }
+
+  /* Progress */
+  .prog-track {
+    background:var(--bg-elevated); border-radius:999px;
+    height:7px; overflow:hidden; margin-bottom:.5rem;
+  }
+  .prog-fill {
+    height:100%; border-radius:999px;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    transition: width .6s ease;
+  }
+  .prog-labels {
+    display:flex; justify-content:space-between;
+    font-size:.7rem; color:var(--text-muted); margin-bottom:1.4rem;
+  }
+
+  /* Pulse dot */
+  .live-dot {
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    background:var(--success); margin-right:.35rem;
+    animation: pulse-dot 2s ease-in-out infinite;
+    vertical-align:middle;
+  }
+  @keyframes pulse-dot {
+    0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)}
+  }
+
+  /* Status */
+  .status-msg {
+    text-align:center; font-size:.85rem; color:var(--text-secondary);
+    font-style:italic; margin-bottom:1.4rem; min-height:1.2em;
+  }
+
+  /* Notice */
+  .notice {
+    background:var(--bg-elevated); border:1px solid var(--border);
+    border-radius:10px; padding:.8rem 1rem;
+    font-size:.8rem; color:var(--text-muted); text-align:center; line-height:1.6;
+  }
+
+  /* Preview badge */
+  .preview-badge {
+    background:var(--gold-dim); color:#fff; font-size:.68rem;
+    font-family:'Cinzel',serif; letter-spacing:.07em;
+    padding:.15rem .65rem; border-radius:999px;
+    display:block; text-align:center; margin-bottom:1rem;
+  }
+
+  @media(max-width:380px) {
+    .stats { grid-template-columns:1fr 1fr; }
+    .stat:last-child { grid-column: 1/-1; }
+    .stat-n { font-size:1.2rem; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<nav class="nav-bar">
+  <a class="nav-logo" href="/">Cioda's <span>Commissions</span></a>
+</nav>
+
+<div class="queue-wrap">
+  <div class="queue-card" id="qCard">
+
+    {% if preview %}
+    <span class="preview-badge">✦ PREVIEW MODE — not a real queue</span>
+    {% endif %}
+
+    <div class="q-icon" id="qIcon">⏳</div>
+    <div class="q-title" id="qTitle">You're in the Queue</div>
+    <div class="q-sub" id="qSub">Hang tight — you'll be let through shortly.</div>
+
+    <!-- Countdown ring -->
+    <div class="ring-wrap">
+      <div style="position:relative;width:100px;height:100px;">
+        <svg class="ring-svg" width="100" height="100" viewBox="0 0 100 100">
+          <circle class="ring-bg" cx="50" cy="50" r="44"/>
+          <circle class="ring-fill" id="ringFill" cx="50" cy="50" r="44"
+                  stroke-dasharray="276.5"
+                  stroke-dashoffset="{{ ((wait_remaining|default(7)) / 7 * 276.5)|int if not preview else 160 }}"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-num" id="ringNum">{{ (wait_remaining|default(7))|int if not preview else 4 }}</div>
+          <div class="ring-lbl" id="ringLbl">secs</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats: position / active / free slots -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-n" id="sPos" style="color:var(--accent);">
+          {{ position|default(1) if not preview else 3 }}
+        </div>
+        <div class="stat-l">Your Place</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="sActive" style="color:var(--text-secondary);">
+          {{ active_users|default(total|default(1)) if not preview else 8 }}
+        </div>
+        <div class="stat-l">On Site</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="sSlots" style="color:var(--success);">
+          {{ free_slots|default(5) if not preview else 2 }}
+        </div>
+        <div class="stat-l">Free Slots</div>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="prog-track">
+      <div class="prog-fill" id="progFill"
+           style="width:{{ [((on_form|default(0)) / 5 * 100)|int, 100]|min if not preview else 60 }}%">
+      </div>
+    </div>
+    <div class="prog-labels">
+      <span>{{ on_form|default(0) if not preview else 3 }} on form</span>
+      <span>5 max slots</span>
+    </div>
+
+    <!-- Live status -->
+    <div class="status-msg" id="statusMsg">
+      <span class="live-dot"></span>
+      <span id="statusTxt">Checking every 10 seconds…</span>
+    </div>
+
+    <!-- Notice -->
+    <div class="notice">
+      🔒 <strong>Keep this tab open</strong> — closing it loses your spot.<br>
+      You'll be redirected automatically when it's your turn.
+    </div>
+
+  </div>
+</div>
+
+<script>
+const PREVIEW    = {{ 'true' if preview else 'false' }};
+const CIRCUMF    = 276.5;
+const MIN_WAIT   = 7;
+const POLL_MS    = 10000;  // 10 seconds
+
+let waitLeft     = {{ (wait_remaining|default(7))|float if not preview else 4.0 }};
+let canProceed   = {{ 'true' if (not preview and can_proceed|default(false)) else 'false' }};
+let pollTimer, cdTimer;
+
+// ── Countdown (100ms ticks) ──────────────────────────────────────────────────
+function tickCD() {
+  if (waitLeft <= 0) return;
+  waitLeft = Math.max(0, waitLeft - 0.1);
+  const frac   = waitLeft / MIN_WAIT;
+  const offset = frac * CIRCUMF;
+  document.getElementById('ringFill').style.strokeDashoffset = offset;
+  const disp = Math.ceil(waitLeft);
+  document.getElementById('ringNum').textContent = disp > 0 ? disp : '✓';
+  if (waitLeft === 0) {
+    document.getElementById('ringFill').classList.add('done');
+    document.getElementById('ringNum').classList.add('done');
+    document.getElementById('ringLbl').textContent = 'ready';
+  }
+}
+
+// ── Poll server every 10s ───────────────────────────────────────────────────
+async function poll() {
+  if (PREVIEW) return;
+  try {
+    const res  = await fetch('/queue/status');
+    const d    = await res.json();
+
+    // Overflow — too many in queue, redirect away
+    if (d.redirect || d.overflow) {
+      document.getElementById('qIcon').textContent  = '🌊';
+      document.getElementById('qTitle').textContent = 'Queue Full';
+      document.getElementById('qSub').textContent   = 'Redirecting you to our overflow page…';
+      document.getElementById('statusTxt').textContent = 'Too many visitors right now. Sending you to overflow…';
+      setTimeout(() => { window.location.href = d.redirect || 'https://overflow.ciodrawz.space/'; }, 1500);
+      clearInterval(cdTimer);
+      clearInterval(pollTimer);
+      return;
+    }
+
+    waitLeft   = d.wait_remaining;
+    canProceed = d.can_proceed;
+
+    document.getElementById('sPos').textContent    = d.position || '✓';
+    document.getElementById('sActive').textContent = d.active_users;
+    document.getElementById('sSlots').textContent  = d.free_slots;
+
+    // Progress = slots in use / max
+    const pct = Math.round((d.on_form / 5) * 100);
+    document.getElementById('progFill').style.width = Math.min(pct, 100) + '%';
+    document.querySelector('.prog-labels span').textContent = d.on_form + ' on form';
+
+    if (d.can_proceed) {
+      admit();
+      return;
+    }
+
+    const txt = d.wait_remaining > 0
+      ? `Place #${d.position} · ${d.active_users} on site · ${d.free_slots} slots free · ${Math.ceil(d.wait_remaining)}s left`
+      : `Place #${d.position} · ${d.active_users} on site · ${d.free_slots} slots free · waiting for slot…`;
+    document.getElementById('statusTxt').textContent = txt;
+
+  } catch(e) {
+    document.getElementById('statusTxt').textContent = 'Reconnecting…';
+  }
+}
+
+// ── Admit user ───────────────────────────────────────────────────────────────
+function admit() {
+  clearInterval(cdTimer);
+  clearInterval(pollTimer);
+
+  document.getElementById('qCard').classList.add('ready');
+  document.getElementById('qIcon').textContent   = '✨';
+  document.getElementById('qTitle').textContent  = "You're In!";
+  document.getElementById('qSub').textContent    = 'Taking you to the commission form…';
+  document.getElementById('ringNum').textContent = '✓';
+  document.getElementById('ringNum').classList.add('done');
+  document.getElementById('ringFill').classList.add('done');
+  document.getElementById('ringFill').style.strokeDashoffset = '0';
+  document.getElementById('progFill').style.width = '100%';
+  document.getElementById('statusTxt').textContent = 'Redirecting now…';
+
+  setTimeout(() => { window.location.href = '/request'; }, 900);
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+if (!PREVIEW) {
+  if (canProceed && waitLeft === 0) {
+    admit();
+  } else {
+    // Countdown ticks every 100ms
+    cdTimer = setInterval(tickCD, 100);
+    // Poll immediately, then every 10s
+    poll();
+    pollTimer = setInterval(poll, POLL_MS);
+  }
+} else {
+  // Preview: animate countdown then stop
+  cdTimer = setInterval(() => {
+    tickCD();
+    if (waitLeft <= 0) clearInterval(cdTimer);
+  }, 100);
+  document.getElementById('statusTxt').textContent =
+    'Preview · Place 3 of 8 · 2 free slots · 4s remaining';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Developer Panel — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-semibold text-white">Developer Panel</h1>
+    <div class="flex items-center gap-3">
+      {% if is_team_member %}
+        <span class="text-xs px-2 py-1 rounded-full bg-blue-950 text-blue-400">team member</span>
+      {% endif %}
+      <a href="{{ url_for('developer.new_product') }}" class="bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition">
+        New product
+      </a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8 text-sm">
+    <a href="{{ url_for('developer.products') }}" class="bg-surface-card border border-surface-border rounded-lg p-4 hover:border-brand transition">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Products</div>
+      <div class="text-white text-lg font-semibold">{{ products|length }}</div>
+    </a>
+    <a href="{{ url_for('developer.customers') }}" class="bg-surface-card border border-surface-border rounded-lg p-4 hover:border-brand transition">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Customers</div>
+      <div class="text-white text-sm">View</div>
+    </a>
+    <a href="{{ url_for('developer.api_keys') }}" class="bg-surface-card border border-surface-border rounded-lg p-4 hover:border-brand transition">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">API Keys</div>
+      <div class="text-white text-sm">Manage</div>
+    </a>
+    {% if is_team_member %}
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4 opacity-60">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Team</div>
+      <div class="text-gray-500 text-sm">Owner only</div>
+    </div>
+    {% else %}
+    <a href="{{ url_for('developer.team') }}" class="bg-surface-card border border-surface-border rounded-lg p-4 hover:border-brand transition">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Team</div>
+      <div class="text-white text-sm">Manage</div>
+    </a>
+    <a href="{{ url_for('developer.custom_domain') }}" class="bg-surface-card border border-surface-border rounded-lg p-4 hover:border-brand transition">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Custom Domain</div>
+      <div class="text-white text-sm">Manage</div>
+    </a>
+    <a href="{{ url_for('developer.activity_log') }}" class="bg-surface-card border border-surface-border rounded-lg p-4 hover:border-brand transition">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Activity</div>
+      <div class="text-white text-sm">View log</div>
+    </a>
+    {% endif %}
+  </div>
+
+  <p class="text-xs text-gray-500 mb-8">Tebex, Scripts, Modules, and Analytics are configured per-product — open a product below to find them.</p>
+
+  <h2 class="text-sm font-medium text-gray-400 mb-3">Recent products</h2>
+  {% if products %}
+    <div class="space-y-2">
+      {% for p in products[:5] %}
+        <a href="{{ url_for('developer.product_detail', product_id=p.product_id) }}"
+           class="flex items-center justify-between gap-3 bg-surface-card border border-surface-border rounded-lg px-4 py-3 hover:border-brand transition">
+          <div class="min-w-0 flex-1">
+            <div class="text-white text-sm font-medium truncate">{{ p.name }}</div>
+            <div class="text-gray-500 text-xs font-mono truncate">{{ p.product_id }} · v{{ p.version }}</div>
+          </div>
+          <span class="text-xs px-2 py-1 rounded-full flex-shrink-0 {{ 'bg-emerald-950 text-emerald-400' if p.is_active else 'bg-gray-800 text-gray-500' }}">
+            {{ 'active' if p.is_active else 'disabled' }}
+          </span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500">No products yet. <a href="{{ url_for('developer.new_product') }}" class="text-brand hover:text-brand-hover">Create your first one</a>.</p>
+  {% endif %}
+</div>
+{% endblock %}

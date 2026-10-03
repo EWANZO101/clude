@@ -1,0 +1,13 @@
+{% macro pagination(p, endpoint) %}
+{% if p.pages > 1 %}
+<div class="flex items-center justify-between px-5 py-3 border-t border-border text-sm text-text-secondary">
+  <p>Page {{ p.page }} of {{ p.pages }} &middot; {{ p.total }} total</p>
+  <div class="flex gap-2">
+    <a href="{{ url_for(endpoint, page=p.prev_num, **kwargs) if p.has_prev else '#' }}"
+       class="btn-secondary !px-3 !py-1.5 {{ 'opacity-40 pointer-events-none' if not p.has_prev }}">Previous</a>
+    <a href="{{ url_for(endpoint, page=p.next_num, **kwargs) if p.has_next else '#' }}"
+       class="btn-secondary !px-3 !py-1.5 {{ 'opacity-40 pointer-events-none' if not p.has_next }}">Next</a>
+  </div>
+</div>
+{% endif %}
+{% endmacro %}

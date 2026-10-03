@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <script>
+    // Apply any saved display-mode choice before first paint, so there's
+    // no flash of the wrong layout. Falls through to normal responsive
+    // behavior if nothing has been chosen yet.
+    (function () {
+      try {
+        var v = localStorage.getItem("schedulerViewMode");
+        if (v && v !== "auto") {
+          document.documentElement.setAttribute("data-view", v);
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body class="h-full bg-base text-ink">
+  {% block body %}{% endblock %}
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

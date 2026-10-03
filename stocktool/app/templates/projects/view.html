@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ project.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{{ url_for('projects.index') }}" style="color:#6b7280;font-size:13px;text-decoration:none;
+     display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;">
+    <i class="fas fa-arrow-left"></i> Projects
+  </a>
+  <div class="page-header-row">
+    <div>
+      <h1 class="page-title">{{ project.name }}</h1>
+      {% if project.code %}<p class="page-subtitle">Code: {{ project.code }}</p>{% endif %}
+    </div>
+    {% if current_user.is_admin %}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="{{ url_for('projects.edit', project_id=project.id) }}" class="btn btn-secondary btn-sm">
+        <i class="fas fa-pen"></i> Edit
+      </a>
+      <form id="del-{{ project.id }}" method="POST" action="{{ url_for('projects.delete', project_id=project.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="button" class="btn btn-danger btn-sm"
+                onclick="confirmDelete('del-{{ project.id }}','{{ project.name }}')">
+          <i class="fas fa-trash"></i> Remove
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if project.description %}
+<div class="card" style="padding:18px;margin-bottom:14px;">
+  <div style="font-size:14px;font-weight:600;color:#f9fafb;margin-bottom:8px;">
+    <i class="fas fa-align-left" style="color:#a78bfa;"></i> Description
+  </div>
+  <div style="color:#9ca3af;font-size:14px;white-space:pre-wrap;">{{ project.description }}</div>
+</div>
+{% endif %}
+
+{% if project.barcode %}
+<div class="card" style="padding:20px;text-align:center;max-width:340px;">
+  {% if project.barcode.image_path %}
+  <img src="{{ url_for('static', filename=project.barcode.image_path) }}"
+       alt="Barcode" style="max-width:240px;width:100%;border-radius:8px;background:#fff;padding:10px;margin:0 auto;display:block;" />
+  {% endif %}
+  <div style="margin-top:14px;">
+    <a href="{{ url_for('barcode.view', code=project.barcode.code) }}" class="btn btn-secondary btn-sm">
+      <i class="fas fa-barcode"></i> View Barcode Page
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,44 @@
+# OpsLab Instance Agent — systemd unit
+#
+# Installed by Part 5's install script to /etc/systemd/system/opslab-agent.service.
+#
+# This supervises the AGENT process itself (spec Section 52: "Instance Agent
+# crashes -> Operating system service manager restarts it") — the Agent, in
+# turn, supervises the Kiosk Application as its own subprocess via
+# agent/process_supervisor.py. Two independent layers of restart, matching
+# the spec's recovery hierarchy (Admin Panel -> Instance Agent -> Rescue ->
+# Kiosk Application): if the Kiosk Application crashes, the Agent's watchdog
+# handles it; if the Agent itself crashes, systemd handles that.
+
+[Unit]
+Description=OpsLab Instance Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust to wherever Part 5's installer actually places the venv/checkout.
+WorkingDirectory=/opt/opslab-agent
+ExecStart=/opt/opslab-agent/venv/bin/python -m agent.main
+Restart=always
+RestartSec=5
+
+# Settings/identity live under /etc/opslab-agent by default (see
+# agent/config.py::default_data_dir) — no environment variables needed here
+# once the machine has been registered once.
+Environment=PYTHONUNBUFFERED=1
+
+# Run as a dedicated low-privilege user in production rather than root —
+# Part 5's installer is responsible for creating it and ensuring it can
+# write to /etc/opslab-agent and the configured app_install_dir/recovery_dir.
+User=opslab-agent
+Group=opslab-agent
+
+# Structural hardening — loosen only if a specific integration genuinely
+# needs it (e.g. the Kiosk Application binding privileged ports).
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/etc/opslab-agent
+
+[Install]
+WantedBy=multi-user.target

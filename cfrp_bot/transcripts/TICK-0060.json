@@ -1,0 +1,82 @@
+{
+  "ticket_id": "TICK-0060",
+  "ticket_type": "whitelist",
+  "opened_by": "Jackson Rockwell",
+  "opened_at": "2026-04-26 06:04:17",
+  "closed_by": "IMPI CHAPLIN",
+  "closed_at": "2026-04-26 07:38 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-26T06:04:17.422000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1451691985730539592> <@1159006502707798056>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T06:04:18.055000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T06:16:49.645000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "<@1159006502707798056> good morning",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T06:23:04.682000+00:00",
+      "author": "Jackson Rockwell",
+      "author_id": "1159006502707798056",
+      "role": "",
+      "content": "Good morning",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T07:10:58.756000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "If you are ready you may join interview",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T07:22:14.448000+00:00",
+      "author": "Jackson Rockwell",
+      "author_id": "1159006502707798056",
+      "role": "",
+      "content": "Ok I\u2019m in",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T07:25:26.801000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "join interview 1 please",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T07:26:17.839000+00:00",
+      "author": "Jackson Rockwell",
+      "author_id": "1159006502707798056",
+      "role": "",
+      "content": "I don\u2019t see it I\u2019m in waiting for interviews",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

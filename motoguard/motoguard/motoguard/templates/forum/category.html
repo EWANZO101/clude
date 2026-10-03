@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex items-end justify-between mb-6">
+  <div><p class="eyebrow mb-1"><a href="{{ url_for('forum.index') }}" class="hover:text-chalk">Forum</a></p><h1 class="font-display font-800 text-2xl text-chalk">{{ cat.name }}</h1></div>
+  {% if current_user.is_authenticated %}<a href="{{ url_for('forum.new_post') }}" class="btn btn-primary btn-sm">+ New post</a>{% endif %}
+</div>
+<div class="space-y-2">
+{% for p in posts %}
+  <a href="{{ url_for('forum.post', post_id=p.id) }}" class="card card-hover p-4 flex justify-between items-center">
+    <div><div class="font-display font-600 text-chalk">{{ p.title }}</div><div class="eyebrow mt-1">{{ p.author.username }} · ♥ {{ p.like_count }} · {{ p.comments.count() }} replies</div></div>
+    <span class="eyebrow">{{ p.created_at|ago }}</span>
+  </a>
+{% else %}<div class="card p-10 text-center text-mute text-sm">No posts here yet. Be the first.</div>{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "emails/_layout.html" %}
+{% block email_content %}
+<p style="margin-top:0;">Hi {{ user.first_name or user.email }},</p>
+<p>Please confirm your email address to activate your account.</p>
+<p style="text-align:center;margin:28px 0;">
+  <a href="{{ link }}" style="background-color:#0aa4f2;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;display:inline-block;">Verify email address</a>
+</p>
+<p style="color:#9aa4b2;">This link expires in 48 hours. If you didn't create this account, you can ignore this email.</p>
+{% endblock %}

@@ -1,0 +1,1027 @@
+openapi: 3.0.3
+info:
+  title: StockTool Cloud API
+  description: |
+    Inventory, tools, projects, and barcode management, plus the
+    installation/sync/config/update surface used by the StockTool Kiosk
+    (v2) desktop client.
+
+    ## Authentication
+    Two separate credential types are used depending on the caller:
+
+    - **User JWT** (`Authorization: Bearer <jwt>`) — obtained from
+      `POST /api/auth/login` or `POST /api/auth/kiosk-login`. Used by the
+      admin frontend and any endpoint acting on behalf of a specific
+      person. Admin-only endpoints additionally require the JWT's user to
+      have `role: admin`.
+    - **Installation token** (`Authorization: Bearer <token>`) — obtained
+      once from `POST /api/installations/register`. Used by the kiosk-v2
+      desktop client for `/api/config`, `/api/updates/latest`, and
+      `/api/sync/*`. Represents a trusted *device* relaying many local
+      users' actions, not one person's session — a different credential
+      type from the user JWT on purpose.
+  version: "1.0.0"
+servers:
+  - url: https://api-stocktool.opslabsystems.cloud
+    description: Production
+
+tags:
+  - name: Auth
+  - name: Users
+  - name: Items
+  - name: Tools
+  - name: Projects
+  - name: Barcodes
+  - name: Settings
+  - name: Audit & Reports
+  - name: Installations
+  - name: Config
+  - name: Updates
+  - name: Sync
+
+security:
+  - userJwt: []
+
+paths:
+  # ── Auth ────────────────────────────────────────────────────────────
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Username/password login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string }
+                device: { type: string, description: "Free-text label for the audit log, e.g. 'admin-web'" }
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  token_type: { type: string, example: Bearer }
+                  user: { $ref: "#/components/schemas/User" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/auth/kiosk-login:
+    post:
+      tags: [Auth]
+      summary: Badge-scan login (no password) — issues a shorter-lived token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, description: "Scanned badge barcode" }
+                device: { type: string }
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  token_type: { type: string }
+                  expires_in_seconds: { type: integer }
+                  user: { $ref: "#/components/schemas/User" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Change your own password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: { type: string }
+                new_password: { type: string, minLength: 6 }
+      responses:
+        "200": { description: Password updated }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Log the event (JWTs are stateless — client discards the token)
+      responses:
+        "200": { description: Logged out }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ── Users ───────────────────────────────────────────────────────────
+  /api/users/:
+    get:
+      tags: [Users]
+      summary: List users (admin only)
+      parameters:
+        - { name: q, in: query, schema: { type: string }, description: "Search by username/email" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/User" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [Users]
+      summary: Create a user (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username]
+              properties:
+                username: { type: string }
+                email: { type: string, description: "Required unless badge_only is true" }
+                password: { type: string, minLength: 6, description: "Required unless badge_only is true" }
+                role: { type: string, enum: [admin, stock_user] }
+                force_password_change: { type: boolean }
+                badge_only:
+                  type: boolean
+                  description: >
+                    Badge-only accounts have no password/email and can only log
+                    in via kiosk badge scan; role is forced to stock_user.
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /api/users/{user_id}:
+    get:
+      tags: [Users]
+      summary: Get a user (admin only)
+      parameters: [{ $ref: "#/components/parameters/UserId" }]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Users]
+      summary: Update a user (admin only)
+      parameters: [{ $ref: "#/components/parameters/UserId" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string }
+                role: { type: string, enum: [admin, stock_user] }
+                is_active: { type: boolean }
+                force_password_change: { type: boolean }
+                new_password: { type: string, minLength: 6 }
+                badge_only: { type: boolean, description: "Set true to convert to badge-only (clears password); set false + new_password to convert back" }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { description: "Would remove the last active admin" }
+    delete:
+      tags: [Users]
+      summary: Delete a user (admin only; disabled instead if they have history)
+      parameters: [{ $ref: "#/components/parameters/UserId" }]
+      responses:
+        "200": { description: Deleted or disabled }
+        "400": { description: "Cannot delete your own account" }
+        "409": { description: "Cannot delete the last admin, or user has tools checked out" }
+
+  # ── Items ───────────────────────────────────────────────────────────
+  /api/items/:
+    get:
+      tags: [Items]
+      summary: List items
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: category, in: query, schema: { type: string } }
+        - { name: stock, in: query, schema: { type: string, enum: [low, out] } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Item" } } } } }
+    post:
+      tags: [Items]
+      summary: Create an item (admin only)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                sku: { type: string }
+                description: { type: string }
+                category: { type: string }
+                location: { type: string }
+                quantity: { type: integer, default: 0 }
+                unit: { type: string }
+                low_stock_threshold: { type: integer, default: 5 }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Item" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /api/items/categories:
+    get:
+      tags: [Items]
+      summary: Distinct item categories in use
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: array, items: { type: string } } } } }
+
+  /api/items/{item_id}:
+    get:
+      tags: [Items]
+      summary: Get an item
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Item" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Items]
+      summary: Update an item (admin only)
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                sku: { type: string }
+                description: { type: string }
+                category: { type: string }
+                location: { type: string }
+                unit: { type: string }
+                low_stock_threshold: { type: integer }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Item" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+    delete:
+      tags: [Items]
+      summary: Soft-delete an item (admin only)
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      responses:
+        "200": { description: Deleted }
+
+  /api/items/{item_id}/adjust:
+    post:
+      tags: [Items]
+      summary: Adjust stock by a signed delta
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [delta]
+              properties:
+                delta: { type: integer, description: "Positive to add, negative to remove; cannot be 0" }
+                notes: { type: string }
+                device: { type: string }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Item" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /api/items/{item_id}/quick-remove:
+    post:
+      tags: [Items]
+      summary: One-directional quick stock removal (kiosk flow)
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quantity]
+              properties:
+                quantity: { type: integer, minimum: 1 }
+                device: { type: string }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Item" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  # ── Tools ───────────────────────────────────────────────────────────
+  /api/tools/:
+    get:
+      tags: [Tools]
+      summary: List tools
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [available, checked_out, broken, under_repair, stolen, lost] } }
+        - { name: category, in: query, schema: { type: string } }
+        - { name: q, in: query, schema: { type: string } }
+        - { name: overdue, in: query, schema: { type: string, enum: ["true", "false"] } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Tool" } } } } }
+    post:
+      tags: [Tools]
+      summary: Create a tool (admin only)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                tool_number: { type: string }
+                brand: { type: string }
+                model: { type: string }
+                serial_number: { type: string }
+                description: { type: string }
+                category: { type: string }
+                location: { type: string }
+                purchase_date: { type: string, format: date }
+                purchase_price: { type: number }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Tool" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /api/tools/categories:
+    get:
+      tags: [Tools]
+      summary: Distinct tool categories in use
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: array, items: { type: string } } } } }
+
+  /api/tools/{tool_id}:
+    get:
+      tags: [Tools]
+      summary: Get a tool
+      parameters: [{ $ref: "#/components/parameters/ToolId" }]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Tool" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Tools]
+      summary: Update a tool (admin only)
+      parameters: [{ $ref: "#/components/parameters/ToolId" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                tool_number: { type: string }
+                brand: { type: string }
+                model: { type: string }
+                serial_number: { type: string }
+                description: { type: string }
+                category: { type: string }
+                location: { type: string }
+                condition_notes: { type: string }
+                purchase_date: { type: string, format: date }
+                purchase_price: { type: number }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Tool" } } } }
+    delete:
+      tags: [Tools]
+      summary: Soft-delete a tool (admin only)
+      parameters: [{ $ref: "#/components/parameters/ToolId" }]
+      responses:
+        "200": { description: Deleted }
+
+  /api/tools/{tool_id}/status:
+    post:
+      tags: [Tools]
+      summary: Change tool status directly (admin only — e.g. mark broken)
+      parameters: [{ $ref: "#/components/parameters/ToolId" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [available, checked_out, broken, under_repair, stolen, lost] }
+                notes: { type: string }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Tool" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /api/tools/{tool_id}/checkout:
+    post:
+      tags: [Tools]
+      summary: Check out a tool to the current user
+      parameters: [{ $ref: "#/components/parameters/ToolId" }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { notes: { type: string } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Tool" } } } }
+        "409": { description: "Tool not available" }
+
+  /api/tools/{tool_id}/checkin:
+    post:
+      tags: [Tools]
+      summary: Check in a checked-out tool
+      parameters: [{ $ref: "#/components/parameters/ToolId" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes: { type: string }
+                condition: { type: string, enum: [available, broken, under_repair, stolen, lost], default: available }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Tool" } } } }
+        "409": { description: "Tool is not checked out" }
+
+  /api/tools/{tool_id}/history:
+    get:
+      tags: [Tools]
+      summary: Checkout/status history for one tool
+      parameters:
+        - { $ref: "#/components/parameters/ToolId" }
+        - { name: limit, in: query, schema: { type: integer, default: 50 } }
+      responses:
+        "200": { description: OK }
+
+  # ── Projects ────────────────────────────────────────────────────────
+  /api/projects/:
+    get:
+      tags: [Projects]
+      summary: List active projects
+      parameters: [{ name: q, in: query, schema: { type: string } }]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Project" } } } } }
+    post:
+      tags: [Projects]
+      summary: Create a project (admin only)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                code: { type: string }
+                description: { type: string }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } } }
+
+  /api/projects/{project_id}:
+    get:
+      tags: [Projects]
+      summary: Get a project
+      parameters: [{ $ref: "#/components/parameters/ProjectId" }]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } } }
+    put:
+      tags: [Projects]
+      summary: Update a project (admin only)
+      parameters: [{ $ref: "#/components/parameters/ProjectId" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { name: { type: string }, code: { type: string }, description: { type: string } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } } }
+    delete:
+      tags: [Projects]
+      summary: Soft-delete a project (admin only)
+      parameters: [{ $ref: "#/components/parameters/ProjectId" }]
+      responses:
+        "200": { description: Deleted }
+
+  # ── Barcodes ────────────────────────────────────────────────────────
+  /api/barcodes/lookup:
+    post:
+      tags: [Barcodes]
+      summary: Look up any scanned code
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, required: [code], properties: { code: { type: string } } }
+      responses:
+        "200":
+          description: Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entity_type: { type: string, enum: [item, tool, project, user] }
+                  code: { type: string }
+                  entity: { type: object, description: "The matched item/tool/project's to_dict()" }
+        "400":
+          description: "The scanned code is a phone-pairing/scan-relay URL, not a barcode"
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/barcodes/{code}:
+    get:
+      tags: [Barcodes]
+      summary: Get barcode metadata
+      parameters: [{ name: code, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200": { description: OK }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/barcodes/image/{code}:
+    get:
+      tags: [Barcodes]
+      summary: Barcode PNG image (not JWT-protected — see docs)
+      security: []
+      parameters: [{ name: code, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200": { description: PNG image, content: { image/png: { schema: { type: string, format: binary } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/barcodes/{entity_type}/{entity_id}/regenerate:
+    post:
+      tags: [Barcodes]
+      summary: Regenerate an entity's barcode image (admin only)
+      parameters:
+        - { name: entity_type, in: path, required: true, schema: { type: string, enum: [item, tool, user, project] } }
+        - { name: entity_id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: OK }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  # ── Settings ────────────────────────────────────────────────────────
+  /api/settings/:
+    get:
+      tags: [Settings]
+      summary: Get system settings
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Settings" } } } }
+    put:
+      tags: [Settings]
+      summary: Update system settings (admin only)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                app_name: { type: string }
+                default_low_stock_threshold: { type: integer }
+                kiosk_idle_timeout_seconds: { type: integer }
+                kiosk_token_expires_minutes: { type: integer }
+                max_checkout_hours: { type: integer }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Settings" } } } }
+
+  # ── Audit & Reports ─────────────────────────────────────────────────
+  /api/audit-logs:
+    get:
+      tags: [Audit & Reports]
+      summary: Filterable, paginated audit log
+      parameters:
+        - { name: user_id, in: query, schema: { type: integer } }
+        - { name: user, in: query, schema: { type: string }, description: username }
+        - { name: entity_type, in: query, schema: { type: string } }
+        - { name: entity_id, in: query, schema: { type: integer } }
+        - { name: device, in: query, schema: { type: string } }
+        - { name: action, in: query, schema: { type: string } }
+        - { name: date_from, in: query, schema: { type: string, format: date-time } }
+        - { name: date_to, in: query, schema: { type: string, format: date-time } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: per_page, in: query, schema: { type: integer, default: 50, maximum: 200 } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Page" } } } }
+
+  /api/tool-history:
+    get:
+      tags: [Audit & Reports]
+      summary: Global tool checkout/status history, paginated
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: per_page, in: query, schema: { type: integer, default: 50, maximum: 200 } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Page" } } } }
+
+  /api/reports/summary:
+    get:
+      tags: [Audit & Reports]
+      summary: Dashboard aggregate numbers
+      responses:
+        "200": { description: OK }
+
+  # ── Installations (Part 2) ──────────────────────────────────────────
+  /api/installations/register:
+    post:
+      tags: [Installations]
+      summary: Register a new kiosk-v2 desktop installation
+      security: []
+      description: >
+        No auth required — an install has no credentials yet. Returns a
+        plaintext token shown exactly once; the client stores it locally
+        and sends it as a Bearer token on every subsequent
+        sync/config/update-check call.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_name: { type: string }
+                app_version: { type: string }
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  installation_id: { type: string, format: uuid }
+                  token: { type: string }
+                  message: { type: string }
+
+  /api/installations/heartbeat:
+    post:
+      tags: [Installations]
+      summary: Kiosk check-in
+      security: [{ installToken: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { app_version: { type: string } } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: object, properties: { ok: { type: boolean }, server_time: { type: string, format: date-time } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/installations:
+    get:
+      tags: [Installations]
+      summary: List all registered kiosks (admin only)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Installation" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /api/installations/{installation_id}:
+    delete:
+      tags: [Installations]
+      summary: Revoke a kiosk's access (admin only)
+      parameters:
+        - { name: installation_id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Deactivated }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ── Config (Part 2) ─────────────────────────────────────────────────
+  /api/config:
+    get:
+      tags: [Config]
+      summary: Kiosk-relevant configuration
+      security: [{ installToken: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_name: { type: string }
+                  default_low_stock_threshold: { type: integer }
+                  sync_interval_seconds: { type: integer }
+                  update_check_interval_seconds: { type: integer }
+                  heartbeat_interval_seconds: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ── Updates (Part 2) ────────────────────────────────────────────────
+  /api/updates/latest:
+    get:
+      tags: [Updates]
+      summary: Latest release on a channel
+      security: [{ installToken: [] }]
+      parameters:
+        - { name: channel, in: query, schema: { type: string, default: stable, enum: [stable, beta] } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReleaseVersion" }
+        "404": { description: "No active release on that channel" }
+
+  /api/updates:
+    post:
+      tags: [Updates]
+      summary: Publish a new release (admin only)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version, download_url, checksum_sha256]
+              properties:
+                version: { type: string, example: "2.1.0" }
+                channel: { type: string, default: stable }
+                download_url: { type: string, format: uri }
+                checksum_sha256: { type: string, minLength: 64, maxLength: 64 }
+                release_notes: { type: string }
+                min_supported_version: { type: string }
+      responses:
+        "201":
+          description: Published
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReleaseVersion" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  # ── Sync (Part 2) ───────────────────────────────────────────────────
+  /api/sync/pull:
+    get:
+      tags: [Sync]
+      summary: Incremental pull of changed rows
+      security: [{ installToken: [] }]
+      parameters:
+        - { name: since, in: query, schema: { type: string, format: date-time }, description: "Omit for a full first sync; use the previous response's server_time on subsequent calls" }
+        - { name: types, in: query, schema: { type: string }, description: "Comma-separated: items,tools,projects,barcodes,users (default: all)" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  server_time: { type: string, format: date-time, description: "Store this as the `since` value for your NEXT pull" }
+                  data:
+                    type: object
+                    properties:
+                      items: { type: array, items: { $ref: "#/components/schemas/Item" } }
+                      tools: { type: array, items: { $ref: "#/components/schemas/Tool" } }
+                      projects: { type: array, items: { $ref: "#/components/schemas/Project" } }
+                      barcodes: { type: array, items: { type: object } }
+                      users: { type: array, items: { type: object } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/sync/push:
+    post:
+      tags: [Sync]
+      summary: Upload offline changes
+      security: [{ installToken: [] }]
+      description: >
+        Last-write-wins conflict rule: if the server row's own updated_at
+        is newer than the pushed local_updated_at, the change is rejected
+        as a conflict rather than applied — see the Sync Workflow section
+        in API_REFERENCE.md for the full explanation and worked examples.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [server_id, delta, local_updated_at]
+                    properties:
+                      server_id: { type: integer }
+                      delta: { type: integer }
+                      local_updated_at: { type: string, format: date-time }
+                tools:
+                  type: array
+                  items:
+                    type: object
+                    required: [server_id, action, local_updated_at]
+                    properties:
+                      server_id: { type: integer }
+                      action: { type: string, enum: [checkout, checkin] }
+                      local_updated_at: { type: string, format: date-time }
+                barcodes:
+                  type: array
+                  items:
+                    type: object
+                    required: [code, entity_type, server_id]
+                    properties:
+                      code: { type: string }
+                      entity_type: { type: string, enum: [item, tool, project] }
+                      server_id: { type: integer }
+      responses:
+        "200":
+          description: OK — check each entry's own `status`, this endpoint never fails as a whole for individual row conflicts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  server_time: { type: string, format: date-time }
+                  results:
+                    type: object
+                    properties:
+                      items: { type: array, items: { $ref: "#/components/schemas/PushResult" } }
+                      tools: { type: array, items: { $ref: "#/components/schemas/PushResult" } }
+                      barcodes: { type: array, items: { $ref: "#/components/schemas/PushResult" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+components:
+  securitySchemes:
+    userJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    installToken:
+      type: http
+      scheme: bearer
+      description: Per-installation token from POST /api/installations/register
+
+  parameters:
+    UserId: { name: user_id, in: path, required: true, schema: { type: integer } }
+    ItemId: { name: item_id, in: path, required: true, schema: { type: integer } }
+    ToolId: { name: tool_id, in: path, required: true, schema: { type: integer } }
+    ProjectId: { name: project_id, in: path, required: true, schema: { type: integer } }
+
+  responses:
+    BadRequest:
+      description: Validation error
+      content:
+        application/json:
+          schema: { type: object, properties: { error: { type: string } } }
+    Unauthorized:
+      description: Missing/invalid credentials
+      content:
+        application/json:
+          schema: { type: object, properties: { error: { type: string } } }
+    Forbidden:
+      description: Authenticated but not permitted (e.g. non-admin calling an admin-only endpoint)
+      content:
+        application/json:
+          schema: { type: object, properties: { error: { type: string } } }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { type: object, properties: { error: { type: string } } }
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        email: { type: string, nullable: true }
+        role: { type: string, enum: [admin, stock_user] }
+        is_admin: { type: boolean }
+        is_active: { type: boolean }
+        force_password_change: { type: boolean }
+        has_password: { type: boolean }
+        badge_code: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        last_login: { type: string, format: date-time, nullable: true }
+
+    Item:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        sku: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        category: { type: string, nullable: true }
+        location: { type: string, nullable: true }
+        quantity: { type: integer }
+        unit: { type: string, nullable: true }
+        low_stock_threshold: { type: integer }
+        stock_status: { type: string, enum: [in_stock, low_stock, out_of_stock] }
+        is_low_stock: { type: boolean }
+        is_active: { type: boolean }
+        barcode_code: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    Tool:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        tool_number: { type: string, nullable: true }
+        brand: { type: string, nullable: true }
+        model: { type: string, nullable: true }
+        serial_number: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        category: { type: string, nullable: true }
+        location: { type: string, nullable: true }
+        status: { type: string, enum: [available, checked_out, broken, under_repair, stolen, lost] }
+        status_label: { type: string }
+        is_available: { type: boolean }
+        hours_checked_out: { type: number, nullable: true }
+        is_overdue: { type: boolean }
+        condition_notes: { type: string, nullable: true }
+        checked_out_by: { type: string, nullable: true }
+        checked_out_at: { type: string, format: date-time, nullable: true }
+        purchase_date: { type: string, format: date, nullable: true }
+        purchase_price: { type: number, nullable: true }
+        is_active: { type: boolean }
+        barcode_code: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    Project:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        code: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        is_active: { type: boolean }
+        barcode_code: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    Settings:
+      type: object
+      properties:
+        app_name: { type: string }
+        default_low_stock_threshold: { type: integer }
+        kiosk_idle_timeout_seconds: { type: integer }
+        kiosk_token_expires_minutes: { type: integer }
+        max_checkout_hours: { type: integer }
+
+    Installation:
+      type: object
+      properties:
+        id: { type: integer }
+        installation_id: { type: string, format: uuid }
+        device_name: { type: string, nullable: true }
+        app_version: { type: string, nullable: true }
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time, nullable: true }
+        last_sync_at: { type: string, format: date-time, nullable: true }
+
+    ReleaseVersion:
+      type: object
+      properties:
+        version: { type: string }
+        channel: { type: string }
+        download_url: { type: string, format: uri }
+        checksum_sha256: { type: string }
+        release_notes: { type: string, nullable: true }
+        min_supported_version: { type: string, nullable: true }
+        published_at: { type: string, format: date-time }
+
+    PushResult:
+      type: object
+      properties:
+        server_id: { type: integer, nullable: true }
+        code: { type: string, nullable: true }
+        status: { type: string, enum: [applied, conflict, not_found, error] }
+        current: { type: object, nullable: true, description: "The row's authoritative post-resolution state" }
+        message: { type: string, nullable: true }
+
+    Page:
+      type: object
+      properties:
+        results: { type: array, items: { type: object } }
+        page: { type: integer }
+        pages: { type: integer }
+        total: { type: integer }
+        has_next: { type: boolean }
+        has_prev: { type: boolean }
+        next_num: { type: integer, nullable: true }
+        prev_num: { type: integer, nullable: true }

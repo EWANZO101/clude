@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Aged payables{% endblock %}
+{% block content %}
+<h1 class="page-title mb-6">Aged payables</h1>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">Bucket</th><th class="p-3">Bills</th><th class="p-3 text-right">Total</th></tr></thead>
+    <tbody>
+      {% for bucket in ['current', '1-30', '31-60', '61-90', '90+'] %}
+      <tr class="row-border">
+        <td class="p-3 font-medium">{{ bucket }}{{ ' days' if bucket != 'current' else '' }}</td>
+        <td class="p-3">{% for b in buckets[bucket] %}<a class="link text-sm mr-2" href="{{ url_for('bills.view_bill', bill_id=b.id) }}">{{ b.bill_number or b.id[:8] }}</a>{% endfor %}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(totals[bucket]) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot><tr class="table-foot-total"><td class="p-3" colspan="2">Total owed</td><td class="p-3 text-right">{{ "%.2f"|format(grand_total) }}</td></tr></tfoot>
+  </table>
+</div>
+{% endblock %}

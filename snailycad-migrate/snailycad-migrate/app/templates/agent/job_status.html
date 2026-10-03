@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Agent job — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+  <h1 class="text-lg font-semibold text-gray-100 mb-6">
+    Agent {{ "export" if job.kind == "export" else "import" }} — {{ job.id[:8] }}
+  </h1>
+
+  <div id="status-banner" class="border rounded-lg p-4 mb-3 text-sm"></div>
+
+  <div id="progress-wrap" class="mb-6 hidden">
+    <div class="w-full bg-surface border border-border rounded-full h-2.5 overflow-hidden">
+      <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+    </div>
+  </div>
+
+  <div id="waiting-instructions" class="bg-panel border border-border rounded-lg p-6 space-y-5">
+    <p class="text-sm text-gray-300">
+      On the machine with the SnailyCAD install{{ " (or the restore target)" if job.kind == "import" else "" }},
+      download and run — no typing, no command line:
+    </p>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+      <a href="{{ url_for('agent.download_windows', job_id=job.id) }}"
+         class="block border border-border rounded-lg p-4 hover:border-blue-600 transition-colors">
+        <p class="text-sm font-semibold text-gray-100 mb-1">🪟 Windows</p>
+        <p class="text-xs text-gray-500 mb-3">Download, unzip, double-click "Start Agent.bat"</p>
+        <span class="inline-block px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs">Download for Windows</span>
+      </a>
+      <a href="{{ url_for('agent.download_linux', job_id=job.id) }}"
+         class="block border border-border rounded-lg p-4 hover:border-blue-600 transition-colors">
+        <p class="text-sm font-semibold text-gray-100 mb-1">🐧 Linux</p>
+        <p class="text-xs text-gray-500 mb-3">Download, unzip, run start-agent.sh</p>
+        <span class="inline-block px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs">Download for Linux</span>
+      </a>
+    </div>
+
+    <p class="text-xs text-gray-600">
+      Windows needs Python 3 installed — if it's missing, the launcher tells you
+      and links the installer. Nothing else to install either way.
+    </p>
+    <p class="text-xs text-gray-600">
+      This page updates automatically once it connects. The download is
+      single-use and expires in 2 hours if unused.
+    </p>
+  </div>
+
+  <div id="live-log-wrap" class="mt-6 hidden">
+    <p class="text-sm font-semibold text-gray-300 mb-2">What's happening</p>
+    <div id="live-log" class="bg-panel border border-border rounded-lg p-4 text-sm text-gray-300 space-y-1.5 max-h-80 overflow-y-auto font-normal"></div>
+  </div>
+
+  <div id="result-links" class="mt-6"></div>
+</div>
+
+<script>
+  const jobId = {{ job.id | tojson }};
+  const statusUrl = {{ url_for('agent.job_status_json', job_id=job.id) | tojson }};
+  const kind = {{ job.kind | tojson }};
+
+  const banner = document.getElementById('status-banner');
+  const waitingBlock = document.getElementById('waiting-instructions');
+  const resultLinks = document.getElementById('result-links');
+  const progressWrap = document.getElementById('progress-wrap');
+  const progressBar = document.getElementById('progress-bar');
+  const liveLogWrap = document.getElementById('live-log-wrap');
+  const liveLog = document.getElementById('live-log');
+
+  const styles = {
+    waiting:    ['bg-yellow-900/40 border-yellow-700 text-yellow-300', 'Waiting for the other computer to connect...'],
+    connected:  ['bg-blue-900/40 border-blue-700 text-blue-300', 'Connected — working on it now...'],
+    finalizing: ['bg-blue-900/40 border-blue-700 text-blue-300', 'Almost done — double-checking everything...'],
+    complete:   ['bg-green-900/40 border-green-700 text-green-300', 'All done!'],
+    failed:     ['bg-red-900/40 border-red-700 text-red-300', 'Something went wrong.'],
+  };
+
+  let lastLineCount = 0;
+
+  function render(data) {
+    const [cls, label] = styles[data.status] || styles.waiting;
+    banner.className = 'border rounded-lg p-4 mb-3 text-sm ' + cls;
+    let text = label;
+    if (data.agent_hostname) text += ` (on ${data.agent_hostname})`;
+    if (data.status === 'failed' && data.error_message) text += ` — ${data.error_message}`;
+    banner.textContent = text;
+
+    if (data.status !== 'waiting') {
+      waitingBlock.classList.add('opacity-40');
+    }
+
+    // progress bar
+    if (typeof data.progress_percent === 'number') {
+      progressWrap.classList.remove('hidden');
+      progressBar.style.width = data.progress_percent + '%';
+    }
+
+    // live log
+    if (data.log_lines && data.log_lines.length > 0) {
+      liveLogWrap.classList.remove('hidden');
+      if (data.log_lines.length !== lastLineCount) {
+        liveLog.innerHTML = data.log_lines.map(line => `<p>${escapeHtml(line)}</p>`).join('');
+        liveLog.scrollTop = liveLog.scrollHeight;
+        lastLineCount = data.log_lines.length;
+      }
+    }
+
+    if (data.status === 'complete') {
+      progressBar.style.width = '100%';
+      if (kind === 'export' && data.export_id) {
+        resultLinks.innerHTML = `<a href="/exports/${data.export_id}" class="text-blue-400 hover:text-blue-300 text-sm">View export →</a>`;
+      } else if (kind === 'import' && data.import_job_id) {
+        resultLinks.innerHTML = `<a href="/imports/${data.import_job_id}" class="text-blue-400 hover:text-blue-300 text-sm">View import →</a>`;
+      }
+    }
+
+    if (data.status === 'complete' || data.status === 'failed') {
+      clearInterval(poller);
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function poll() {
+    try {
+      const resp = await fetch(statusUrl);
+      const data = await resp.json();
+      render(data);
+    } catch (e) { /* keep trying */ }
+  }
+
+  poll();
+  const poller = setInterval(poll, 1500);
+</script>
+{% endblock %}

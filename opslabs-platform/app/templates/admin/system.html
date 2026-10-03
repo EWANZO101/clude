@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}System — Admin{% endblock %}
+{% block content %}
+<h1>System Settings</h1>
+<p style="font-size:0.85rem;color:#9aa3af;">
+  Read-only status. Actual secrets (Stripe keys, Cloudflare token, DB credentials, the
+  platform-admin password) live in this server's <code>.env</code> file — never here,
+  never in the database. Everything that isn't a bootstrap secret lives in Products,
+  Plans, and per-company settings elsewhere in this admin area instead of a generic
+  settings page.
+</p>
+
+<div class="card">
+  <h2>Integrations</h2>
+  <table>
+    <tr><th>Integration</th><th>Status</th></tr>
+    <tr><td>Stripe billing</td><td><span class="badge {{ 'active' if stripe_ready else 'suspended' }}">{{ 'configured' if stripe_ready else 'not configured' }}</span></td></tr>
+    <tr><td>Cloudflare / custom domains</td><td><span class="badge {{ 'active' if domains_ready else 'suspended' }}">{{ 'configured' if domains_ready else 'not configured' }}</span></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Platform</h2>
+  <table>
+    <tr><td>Platform admin</td><td>{{ platform_admin_email }}</td></tr>
+    <tr><td>Database</td><td style="font-family:monospace;font-size:0.85rem;">{{ db_display }}</td></tr>
+    <tr><td>Users</td><td>{{ user_count }}</td></tr>
+    <tr><td>Companies</td><td>{{ company_count }}</td></tr>
+    <tr><td>Products</td><td>{{ product_count }}</td></tr>
+    <tr><td>Plans</td><td>{{ plan_count }}</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Scheduled jobs</h2>
+  <p style="font-size:0.85rem;color:#9aa3af;">
+    Two systemd timers run outside this app: <code>opslabs-platform-reconcile.timer</code>
+    (hourly — catches missed Stripe renewal webhooks) and
+    <code>opslabs-platform-verify-domains.timer</code> (every 5 minutes — polls
+    pending custom domains). Check with <code>systemctl list-timers</code> on the server.
+  </p>
+</div>
+{% endblock %}

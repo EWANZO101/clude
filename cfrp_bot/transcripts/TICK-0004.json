@@ -1,0 +1,19 @@
+{
+  "ticket_id": "TICK-0004",
+  "ticket_type": "1of1",
+  "opened_by": "e",
+  "opened_at": "2026-05-06 17:38:54",
+  "closed_by": "e",
+  "closed_at": "2026-05-06 17:40 UTC",
+  "messages": [
+    {
+      "ts": "2026-05-06T17:38:54.689000+00:00",
+      "author": "GSRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1501614137984155790> <@344560012997165057>",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

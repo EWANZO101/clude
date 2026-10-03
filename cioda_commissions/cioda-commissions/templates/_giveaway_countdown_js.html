@@ -1,0 +1,16 @@
+<script>
+// Live "2d 4h 10m" countdowns for [data-countdown="<UTC ISO>"] elements.
+(function () {
+  const els = document.querySelectorAll('[data-countdown]');
+  function fmt(ms) {
+    if (ms <= 0) return 'ending…';
+    const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600),
+          m = Math.floor(s % 3600 / 60), sec = s % 60;
+    return d ? `${d}d ${h}h ${m}m` : h ? `${h}h ${m}m` : `${m}m ${sec}s`;
+  }
+  function tick() {
+    els.forEach(el => { el.textContent = fmt(new Date(el.dataset.countdown) - Date.now()); });
+  }
+  if (els.length) { tick(); setInterval(tick, 1000); }
+})();
+</script>

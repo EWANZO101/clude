@@ -1,0 +1,910 @@
+{% extends "base.html" %}
+{% block title %}#{{ '%04d' % ticket.id }} · {{ ticket.subject }} · OpsLab Systems{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* Conversation pane */
+  #conversation {
+    scroll-behavior: smooth;
+    background: transparent;
+  }
+
+  .avi {
+    width: 30px; height: 30px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px; flex-shrink: 0;
+    background: #27272a; color: #e4e4e7; border: 1px solid rgba(255,255,255,.08);
+  }
+  .avi-me      { background: #1e3a8a; color: #bfdbfe; }
+  .avi-staff   { background: #3b0764; color: #e9d5ff; }
+  .avi-admin   { background: #1e3a8a; color: #bfdbfe; }
+  .avi-discord { background: #312e81; color: #c7d2fe; }
+
+  .msg-row { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-start; }
+  .msg-row.me { flex-direction: row-reverse; }
+  .msg-row .msg { margin-bottom: 0; max-width: 78%; }
+
+  .day-divider {
+    display: flex; align-items: center; gap: 12px; margin: 24px 0 14px;
+    color: #71717a; font-size: 12px; font-weight: 500;
+  }
+  .day-divider::before, .day-divider::after {
+    content: ''; flex: 1; height: 1px;
+    background: rgba(255,255,255,.07);
+  }
+
+  .composer {
+    position: relative;
+    background: #0c0c0e;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+  }
+  .composer textarea {
+    background: transparent !important;
+    border: none !important;
+    resize: none;
+    min-height: 50px; max-height: 240px;
+  }
+  .composer textarea:focus { box-shadow: none !important; }
+
+  .side-field {
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(39,39,42,.4);
+  }
+  .side-field:last-child { border-bottom: 0; }
+  .side-label {
+    font-size: 12px; font-weight: 500; color: #71717a; margin-bottom: 3px;
+  }
+  .side-value { font-size: 13px; color: #ededef; }
+
+  /* ─── Progress bar (the new status track) ─────────────────────────── */
+  .progress-track {
+    position: relative;
+    margin: 16px 0 10px;
+  }
+  .progress-bg {
+    position: absolute; top: 18px; left: 6%; right: 6%;
+    height: 2px; border-radius: 2px;
+    background: rgba(255,255,255,.08);
+    z-index: 0;
+  }
+  .progress-fill {
+    position: absolute; top: 18px; left: 6%;
+    height: 2px; border-radius: 2px;
+    background: #3b82f6;
+    transition: width .8s cubic-bezier(.22,1,.36,1),
+                background .4s ease;
+    z-index: 1;
+  }
+  .progress-fill.denied {
+    background: #ef4444;
+  }
+  .progress-fill.resolved {
+    background: #22c55e;
+  }
+
+  .stages { display: flex; justify-content: space-between; position: relative; z-index: 2; }
+  .stage {
+    display: flex; flex-direction: column; align-items: center;
+    flex: 1; min-width: 0;
+  }
+  .stage .dot {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #0c0c0e;
+    border: 1px solid rgba(255,255,255,.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    transition: all .4s ease;
+    position: relative;
+    z-index: 3;
+  }
+  .stage .dot.done {
+    border-color: #3b82f6;
+    background: #3b82f6;
+    color: white;
+  }
+  .stage .dot.active {
+    border-color: #3b82f6;
+    background: #0c0c0e;
+    color: #93c5fd;
+    box-shadow: 0 0 0 4px rgba(59,130,246,.15);
+  }
+  .stage .dot.denied {
+    border-color: #ef4444;
+    background: rgba(239,68,68,.12);
+    color: #fca5a5;
+  }
+  .stage .dot.resolved {
+    border-color: #22c55e;
+    background: rgba(34,197,94,.12);
+    color: #86efac;
+  }
+  @keyframes pulse-stage {
+    0%, 100% { box-shadow: 0 0 0 6px rgba(59,130,246,.25); }
+    50%      { box-shadow: 0 0 0 10px rgba(59,130,246,.1); }
+  }
+  .stage .label {
+    font-size: 12px; font-weight: 500;
+    color: #71717a;
+    margin-top: 8px;
+    transition: color .2s;
+  }
+  .stage.active .label { color: #93c5fd; }
+  .stage.done .label   { color: #d4d4d8; }
+  .stage.resolved .label { color: #86efac; }
+  .stage.denied .label   { color: #fca5a5; }
+
+  /* Status action buttons */
+  .status-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 11px;
+    border-radius: 7px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.12);
+    color: #d4d4d8;
+    font-size: 12.5px; font-weight: 500;
+    transition: all .15s;
+    cursor: pointer;
+  }
+  .status-btn:hover {
+    background: rgba(255,255,255,.06);
+    color: white;
+    border-color: rgba(255,255,255,.2);
+  }
+  .status-btn.danger:hover {
+    background: rgba(239,68,68,.1);
+    color: #fca5a5;
+    border-color: rgba(239,68,68,.3);
+  }
+  .status-btn.success:hover {
+    background: rgba(34,197,94,.1);
+    color: #86efac;
+    border-color: rgba(34,197,94,.3);
+  }
+
+  .kbd {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+    border-bottom-width: 2px; padding: 1px 5px; border-radius: 4px;
+    color: #a1a1aa;
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(9,9,11,.7);
+    backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal-box {
+    background: #111113;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    padding: 24px;
+    width: min(440px, 90vw);
+    box-shadow: 0 24px 60px -10px rgba(0,0,0,.6);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-xs text-gray-500 mb-5">
+    <a href="{{ url_for('tickets.index') }}" class="hover:text-ops-400">Tickets</a>
+    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    <span class="text-gray-300 font-mono">#{{ '%04d' % ticket.id }}</span>
+  </nav>
+
+  <div class="grid lg:grid-cols-[1fr_320px] gap-6">
+
+    <!-- LEFT: header + progress + conversation + composer -->
+    <div>
+
+      <!-- Header card -->
+      <div class="relative mb-5">
+        <div class="absolute -inset-2 hidden rounded-3xl blur-2xl opacity-50 pointer-events-none"></div>
+        <div class="relative bg-ink-800/70 backdrop-blur-xl border border-ink-600 rounded-2xl p-6 shadow-2xl">
+
+          <div class="flex items-start gap-3 mb-2">
+            <span class="font-mono text-sm text-ops-400 mt-1">#{{ '%04d' % ticket.id }}</span>
+            <span class="pill pill-{{ ticket.priority }}">
+              {% if ticket.priority == 'urgent' %}🔴{% elif ticket.priority == 'high' %}🟠{% elif ticket.priority == 'normal' %}🔵{% else %}⚪{% endif %}
+              {{ ticket.priority }}
+            </span>
+          </div>
+
+          <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight break-words leading-tight">{{ ticket.subject }}</h1>
+
+          <!-- ═══ Progress bar ═══════════════════════════════════════════ -->
+          <div id="progress-section">
+            <div class="progress-track">
+              <div class="progress-bg"></div>
+              <div id="progress-fill" class="progress-fill"
+                   style="width: {{ ticket.progress_percent * 0.88 / 100 * 100 }}%"></div>
+
+              <div class="stages">
+                {% set stages = [
+                  ('seen', '👀', 'Seen', 1),
+                  ('pending', '⏳', 'Pending', 2),
+                  ('in_progress', '🛠️', 'In Progress', 3),
+                  ('done', '✅', 'Done', 4),
+                ] %}
+                {% set current_step = ticket.status_meta.step %}
+                {% set is_denied = ticket.status == 'denied' %}
+                {% set is_resolved = ticket.status == 'resolved' %}
+                {% for key, emoji, label, step in stages %}
+                  {% set state = 'pending' %}
+                  {% if step < current_step %}{% set state = 'done' %}
+                  {% elif step == current_step and is_denied %}{% set state = 'denied' %}
+                  {% elif step == current_step and is_resolved %}{% set state = 'resolved' %}
+                  {% elif step == current_step %}{% set state = 'active' %}
+                  {% endif %}
+                  <div class="stage {{ state }}" data-step="{{ step }}">
+                    <div class="dot {{ state }}">
+                      {% if state == 'denied' %}🚫{% elif state == 'resolved' %}✓{% elif state == 'done' %}✓{% else %}{{ emoji }}{% endif %}
+                    </div>
+                    <div class="label">
+                      {% if step == 4 and is_denied %}Denied
+                      {% elif step == 4 and is_resolved %}Resolved
+                      {% else %}{{ label }}{% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Current status text + live indicator -->
+            <div class="flex items-center justify-between text-xs text-gray-400 mt-3 pt-3 border-t border-ink-600/40">
+              <div class="flex items-center gap-2">
+                <span id="status-emoji">{{ ticket.status_meta.emoji }}</span>
+                <span class="font-semibold text-white" id="status-label">{{ ticket.status_meta.label }}</span>
+                <span class="opacity-30">·</span>
+                <span class="flex items-center gap-1.5">
+                  <span id="live-dot" class="live-dot" style="width:7px;height:7px"></span>
+                  <span id="live-text" class="text-green-300">Live</span>
+                </span>
+              </div>
+              <div class="text-[11px] text-gray-500">
+                Updated {{ ticket.updated_at.strftime('%b %d · %H:%M') }}
+              </div>
+            </div>
+
+            {% if ticket.resolution_note and ticket.is_terminal %}
+            <div class="mt-3 px-4 py-3 rounded-lg bg-ink-900/50 border-l-2 border-ops-500/50">
+              <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">
+                {% if ticket.status == 'denied' %}Reason for denial{% else %}Resolution{% endif %}
+              </div>
+              <div class="text-sm text-gray-300">{{ ticket.resolution_note }}</div>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Owner / meta line -->
+          <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-ink-600/40 text-xs text-gray-400">
+            <span class="avi" style="width:22px;height:22px;font-size:10px">{{ ticket.owner.username[0]|upper }}</span>
+            <span>Opened by <b class="text-white">{{ ticket.owner.username }}</b></span>
+            <span class="opacity-30">·</span>
+            <span>{{ ticket.created_at.strftime('%b %d, %Y · %H:%M') }}</span>
+            {% if ticket.discord_channel_id %}
+              <span class="opacity-30">·</span>
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#5865f2]/15 border border-[#5865f2]/30 text-[#a5b4fc]">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028 14.09 14.09 0 001.226-1.994.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                Synced to Discord
+              </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Conversation card -->
+      <div class="bg-ink-800/40 border border-ink-600 rounded-2xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-ink-600/60 bg-ink-900/40 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="text-xs font-bold uppercase tracking-widest text-gray-400">Conversation</div>
+            <span id="msg-count" class="text-[10px] text-gray-500 font-mono">{{ ticket.messages|length }} messages</span>
+          </div>
+          <div class="flex items-center gap-2 text-[10px] text-gray-500">
+            <span class="live-dot" style="width:6px;height:6px"></span>
+            <span>refreshes every 5s</span>
+          </div>
+        </div>
+
+        <div id="conversation" class="px-5 py-6 max-h-[55vh] overflow-y-auto">
+          {% set ns = namespace(last_day=None) %}
+          {% for m in ticket.messages %}
+            {% if not m.is_internal or current_user.is_staff %}
+              {% set day = m.created_at.strftime('%b %d, %Y') %}
+              {% if day != ns.last_day %}
+                <div class="day-divider"><span>{{ day }}</span></div>
+                {% set ns.last_day = day %}
+              {% endif %}
+
+              {% set is_mine = (m.user_id == current_user.id) and m.source != 'discord' and m.source != 'system' %}
+              {% set author_name = (m.author.username if m.author else m.discord_author) or 'system' %}
+              {% set author_role = (m.author.role if m.author else 'discord') %}
+
+              {% if m.source == 'system' %}
+                <div class="msg from-system" data-id="{{ m.id }}">
+                  <div class="text-xs">{{ m.body }}</div>
+                </div>
+              {% else %}
+                <div class="msg-row {% if is_mine %}me{% endif %}" data-id="{{ m.id }}">
+                  <div class="avi
+                    {% if is_mine %}avi-me
+                    {% elif m.source == 'discord' %}avi-discord
+                    {% elif author_role == 'admin' %}avi-admin
+                    {% elif author_role == 'staff' %}avi-staff{% endif %}">
+                    {{ author_name[0]|upper }}
+                  </div>
+                  <div class="msg
+                    {% if is_mine %}from-me
+                    {% elif m.source == 'discord' %}from-discord
+                    {% else %}from-them{% endif %}
+                    {% if m.is_internal %}internal{% endif %}">
+                    <div class="meta flex flex-wrap items-center gap-2 text-[11px] text-gray-400 mb-1.5">
+                      <b class="text-gray-200">{{ author_name }}</b>
+                      {% if m.author %}<span class="pill pill-{{ m.author.role }}">{{ m.author.role }}</span>{% endif %}
+                      {% if m.source == 'discord' %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#5865f2]/15 border border-[#5865f2]/30 text-[#a5b4fc] text-[10px] font-semibold uppercase tracking-wider">discord</span>
+                      {% endif %}
+                      {% if m.is_internal %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-yellow-500/15 border border-yellow-500/30 text-yellow-300 text-[10px] font-semibold uppercase tracking-wider">internal</span>
+                      {% endif %}
+                      <span class="text-gray-500 ml-auto">{{ m.created_at.strftime('%H:%M') }}</span>
+                    </div>
+                    <div class="text-sm whitespace-pre-wrap break-words">{{ m.body }}</div>
+                    {% set _atts = m.to_dict()['attachments'] %}
+                    {% if _atts %}<div class="att-slot" data-att='{{ _atts|tojson }}'></div>{% endif %}
+                  </div>
+                </div>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Composer -->
+      {% if not ticket.is_terminal %}
+      <div class="composer mt-4 p-4">
+        <form id="reply-form" class="space-y-3">
+          <div class="flex items-start gap-3">
+            <div class="avi avi-me" style="margin-top:6px">{{ (current_user.username or current_user.name or current_user.email or '?')[0]|upper }}</div>
+            <div class="flex-1">
+              <textarea name="body" id="reply-body" rows="2"
+                        class="form-textarea w-full px-3 py-2.5 text-sm"
+                        placeholder="Write a reply… (also forwarded to Discord)"></textarea>
+              <div id="reply-tray" class="hidden mt-2 grid sm:grid-cols-2 gap-2"></div>
+              <input type="file" id="reply-files" class="hidden" multiple
+                     accept="image/*,video/*,.heic,.heif,.mkv,.avi">
+              <div class="flex items-center justify-between mt-2">
+                <div class="flex items-center gap-3 text-[11px] text-gray-500">
+                  <button type="button" id="attach-btn" title="Attach images or videos (videos up to 5 min, up to 2 GB)"
+                          class="inline-flex items-center gap-1.5 hover:text-gray-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                    <span>Attach</span>
+                  </button>
+                  <span class="opacity-30">·</span>
+                  {% if current_user.is_staff %}
+                    <label class="inline-flex items-center gap-2 cursor-pointer hover:text-gray-300">
+                      <input type="checkbox" name="is_internal" class="w-3.5 h-3.5 rounded bg-ink-900 border-ink-600 text-yellow-500 focus:ring-yellow-500 focus:ring-1">
+                      <span>Internal note</span>
+                    </label>
+                    <span class="opacity-30">·</span>
+                  {% endif %}
+                  <span>Press <span class="kbd">⌘</span> + <span class="kbd">↵</span> to send</span>
+                </div>
+                <button type="submit"
+                        class="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        id="send-btn">
+                  <span id="send-label">Send</span>
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      {% else %}
+      <div class="mt-4 text-center py-7 bg-ink-800/40 border border-ink-600 border-dashed rounded-2xl">
+        <p class="text-sm text-gray-400">
+          {{ ticket.status_meta.emoji }} This ticket is <b>{{ ticket.status_meta.label }}</b>.
+          {% if current_user.is_staff %}
+            <button onclick="changeStatus('seen')" class="text-ops-400 hover:text-ops-300 font-semibold underline underline-offset-2 ml-2">Reopen</button>
+          {% endif %}
+        </p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT: sidebar -->
+    <aside class="space-y-4">
+
+      <!-- Status controls (staff only) -->
+      {% if current_user.is_staff and not ticket.is_terminal %}
+      <div class="bg-ink-800/40 border border-ink-600 rounded-2xl p-5">
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Status</div>
+        <div class="flex flex-wrap gap-2">
+          {% for s_key, s_meta in status_meta.items() if s_key in status_flow %}
+            {% if s_key not in ('resolved', 'denied') %}
+            <button onclick="changeStatus('{{ s_key }}')"
+                    class="status-btn {% if ticket.status == s_key %}!bg-ops-500/15 !border-ops-500/40 !text-white{% endif %}">
+              {{ s_meta.emoji }} {{ s_meta.label }}
+            </button>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <div class="mt-3 pt-3 border-t border-ink-600/40 flex flex-wrap gap-2">
+          <button onclick="askResolution('resolved')" class="status-btn success">
+            ✅ Mark Resolved
+          </button>
+          <button onclick="askResolution('denied')" class="status-btn danger">
+            🚫 Deny
+          </button>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Reply channel -->
+      {% set _rv = ticket.reply_via or 'web' %}
+      <div class="bg-ink-800/40 border border-ink-600 rounded-2xl p-5">
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Replies via</div>
+        {% if ticket.user_id == current_user.id and not ticket.is_terminal %}
+          <select id="reply-via-select" class="form-select w-full px-3 py-2 text-sm">
+            <option value="web" {% if _rv == 'web' %}selected{% endif %}>🌐 Website only</option>
+            <option value="discord" {% if _rv == 'discord' %}selected{% endif %}>💬 Discord DMs</option>
+            <option value="both" {% if _rv == 'both' %}selected{% endif %}>🔁 Website + Discord DMs</option>
+          </select>
+          <p id="reply-via-msg" class="text-[11px] text-gray-500 mt-2">
+            {% if current_user.discord_id %}Linked to Discord as <b>{{ current_user.discord_username or 'your account' }}</b>.
+            {% else %}To use Discord, <a href="{{ url_for('tickets.new') }}" class="text-ops-400 hover:text-ops-300">link your account</a> first (under “How should we reply?”).{% endif %}
+          </p>
+        {% else %}
+          <div class="text-sm text-gray-200">
+            {% if _rv == 'discord' %}💬 Discord DMs{% elif _rv == 'both' %}🔁 Website + Discord DMs{% else %}🌐 Website only{% endif %}
+          </div>
+          {% if current_user.is_staff and _rv != 'web' %}
+            <p class="text-[11px] text-gray-500 mt-1">Your replies here are also DM'd to the customer.</p>
+          {% endif %}
+        {% endif %}
+      </div>
+
+      <!-- Close my ticket (customer) -->
+      {% if not current_user.is_staff and ticket.user_id == current_user.id and not ticket.is_terminal %}
+      <div class="bg-ink-800/40 border border-ink-600 rounded-2xl p-5">
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">All sorted?</div>
+        <p class="text-[11px] text-gray-500 mb-3">If your issue is fixed you can close this ticket yourself.</p>
+        <button onclick="askResolution('resolved')" class="status-btn success" id="customer-close-btn">✅ Close ticket</button>
+      </div>
+      {% endif %}
+
+      <!-- Details -->
+      <div class="bg-ink-800/40 border border-ink-600 rounded-2xl p-5">
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Details</div>
+
+        <div class="side-field">
+          <div class="side-label">Ticket ID</div>
+          <div class="side-value font-mono text-ops-300">#{{ '%04d' % ticket.id }}</div>
+        </div>
+
+        <div class="side-field">
+          <div class="side-label">Service</div>
+          <div class="side-value">{{ ticket.company.name if ticket.company else '—' }}</div>
+        </div>
+
+        {% if ticket.category %}
+        <div class="side-field">
+          <div class="side-label">Category</div>
+          <div class="side-value">{{ ticket.category.name }}</div>
+        </div>
+        {% endif %}
+
+        <div class="side-field">
+          <div class="side-label">Owner</div>
+          <div class="side-value flex items-center gap-2">
+            <span class="avi" style="width:24px;height:24px;font-size:10px">{{ ticket.owner.username[0]|upper }}</span>
+            <span>{{ ticket.owner.username }}</span>
+          </div>
+        </div>
+
+        {% if ticket.assigned_to %}
+        <div class="side-field">
+          <div class="side-label">Assigned to</div>
+          <div class="side-value flex items-center gap-2">
+            <span class="avi avi-me" style="width:24px;height:24px;font-size:10px">{{ ticket.assigned_to.username[0]|upper }}</span>
+            <span>{{ ticket.assigned_to.username }}</span>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="side-field">
+          <div class="side-label">Opened</div>
+          <div class="side-value text-gray-400 text-xs">{{ ticket.created_at.strftime('%b %d, %Y · %H:%M') }}</div>
+        </div>
+
+        {% if ticket.closed_at %}
+        <div class="side-field">
+          <div class="side-label">Closed</div>
+          <div class="side-value text-gray-400 text-xs">{{ ticket.closed_at.strftime('%b %d, %Y · %H:%M') }}</div>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if ticket.discord_channel_id %}
+      <div class="bg-[#5865f2]/5 border border-[#5865f2]/30 rounded-2xl p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#a5b4fc"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028 14.09 14.09 0 001.226-1.994.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+          <div class="text-xs font-bold uppercase tracking-widest text-[#a5b4fc]">Discord</div>
+        </div>
+        <p class="text-xs text-gray-400 mb-3">Mirrored to a private Discord channel. Replies appear here within ~5s.</p>
+        <div class="font-mono text-[11px] text-[#a5b4fc] px-3 py-2 bg-[#5865f2]/10 rounded-lg border border-[#5865f2]/20">
+          #ticket-{{ '%04d' % ticket.id }}
+        </div>
+      </div>
+      {% endif %}
+    </aside>
+  </div>
+</section>
+
+<!-- Resolution modal -->
+<div id="resolution-modal" class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2" id="modal-eyebrow">Resolution</div>
+    <h3 class="text-lg font-bold mb-3" id="modal-title">Mark as resolved</h3>
+    <p class="text-xs text-gray-400 mb-3" id="modal-help">
+      Write a short note explaining the outcome. The client will see this on the ticket page.
+    </p>
+    <textarea id="resolution-note" rows="4" maxlength="1000"
+              class="form-textarea w-full px-3 py-2 text-sm" placeholder="Brief summary…"></textarea>
+    <div class="flex justify-end gap-2 mt-4">
+      <button onclick="closeModal()" class="status-btn">Cancel</button>
+      <button id="modal-confirm" class="status-btn success">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/ticket-uploads.js') }}"></script>
+<script>
+const TICKET_ID = {{ ticket.id }};
+const IS_STAFF = {{ 'true' if current_user.is_staff else 'false' }};
+const HAS_UPLOADS = !!window.TicketUploads;   // page still works if the script didn't load
+{% if request.args.get('created') %}
+// Ticket was just created from the "new ticket" form — its draft is no longer needed.
+try { localStorage.removeItem('opslab.draft.new-ticket'); } catch (e) {}
+{% endif %}
+const POLL_INTERVAL_MS = 5000;
+const CURRENT_USERNAME = "{{ current_user.username|e }}";
+const STATUS_META = {{ status_meta | tojson }};
+const STATUS_FLOW = {{ status_flow | tojson }};
+
+const conv       = document.getElementById('conversation');
+const liveText   = document.getElementById('live-text');
+const liveDot    = document.getElementById('live-dot');
+const msgCount   = document.getElementById('msg-count');
+const progressFill = document.getElementById('progress-fill');
+const statusEmoji  = document.getElementById('status-emoji');
+const statusLabel  = document.getElementById('status-label');
+
+conv.scrollTop = conv.scrollHeight;
+
+let lastDay = null;
+{
+  const days = conv.querySelectorAll('.day-divider span');
+  if (days.length) lastDay = days[days.length - 1].textContent;
+}
+
+function lastId() {
+  const items = conv.querySelectorAll('[data-id]');
+  if (!items.length) return 0;
+  return parseInt(items[items.length - 1].dataset.id || '0', 10);
+}
+
+function escape(s) {
+  const d = document.createElement('div');
+  d.textContent = s ?? '';
+  return d.innerHTML;
+}
+
+function ensureDayDivider(date) {
+  const day = date.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
+  if (day === lastDay) return;
+  lastDay = day;
+  const div = document.createElement('div');
+  div.className = 'day-divider';
+  div.innerHTML = `<span>${escape(day)}</span>`;
+  conv.appendChild(div);
+}
+
+function aviClass(role, isMine, isDiscord) {
+  if (isMine)    return 'avi avi-me';
+  if (isDiscord) return 'avi avi-discord';
+  if (role === 'admin') return 'avi avi-admin';
+  if (role === 'staff') return 'avi avi-staff';
+  return 'avi';
+}
+
+function renderMessage(m) {
+  if (document.querySelector(`[data-id="${m.id}"]`)) return;
+  const created = new Date(m.created_at);
+  ensureDayDivider(created);
+
+  if (m.source === 'system') {
+    const el = document.createElement('div');
+    el.className = 'msg from-system';
+    el.dataset.id = m.id;
+    el.innerHTML = `<div class="text-xs"></div>`;
+    el.querySelector('div').textContent = m.body;
+    conv.appendChild(el);
+    return;
+  }
+
+  const isMine    = m.source !== 'discord' && m.author === CURRENT_USERNAME;
+  const isDiscord = m.source === 'discord';
+  const role      = m.author_role || 'user';
+  const authorInitial = (m.author || '?')[0].toUpperCase();
+  const time = created.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+
+  const row = document.createElement('div');
+  row.className = 'msg-row' + (isMine ? ' me' : '');
+  row.dataset.id = m.id;
+
+  const avi = document.createElement('div');
+  avi.className = aviClass(role, isMine, isDiscord);
+  avi.textContent = authorInitial;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg ' + (isMine ? 'from-me' : (isDiscord ? 'from-discord' : 'from-them')) + (m.is_internal ? ' internal' : '');
+  bubble.innerHTML = `
+    <div class="meta flex flex-wrap items-center gap-2 text-[11px] text-gray-400 mb-1.5">
+      <b class="text-gray-200">${escape(m.author)}</b>
+      ${role ? `<span class="pill pill-${role}">${role}</span>` : ''}
+      ${isDiscord ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#5865f2]/15 border border-[#5865f2]/30 text-[#a5b4fc] text-[10px] font-semibold uppercase tracking-wider">discord</span>' : ''}
+      ${m.is_internal ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-yellow-500/15 border border-yellow-500/30 text-yellow-300 text-[10px] font-semibold uppercase tracking-wider">internal</span>' : ''}
+      <span class="text-gray-500 ml-auto">${time}</span>
+    </div>
+    <div class="text-sm whitespace-pre-wrap break-words"></div>`;
+  bubble.querySelector('div:last-child').textContent = m.body;
+  if (HAS_UPLOADS && m.attachments && m.attachments.length) bubble.appendChild(TicketUploads.renderAttachments(m.attachments));
+
+  row.appendChild(avi);
+  row.appendChild(bubble);
+  conv.appendChild(row);
+
+  const nearBottom = conv.scrollTop + conv.clientHeight > conv.scrollHeight - 120;
+  if (nearBottom || isMine) conv.scrollTop = conv.scrollHeight;
+
+  const total = conv.querySelectorAll('[data-id]').length;
+  msgCount.textContent = `${total} message${total === 1 ? '' : 's'}`;
+}
+
+// ─── Status update (live UI sync) ──────────────────────────────────
+let currentStatus = '{{ ticket.status }}';
+function applyStatusToUI(status) {
+  if (status === currentStatus) return;
+  currentStatus = status;
+  const meta = STATUS_META[status] || STATUS_META['seen'];
+
+  statusEmoji.textContent = meta.emoji;
+  statusLabel.textContent = meta.label;
+
+  // Progress fill
+  const pct = (status === 'denied' ? 100 : Math.min(100, meta.step * 25));
+  progressFill.style.width = (pct * 0.88) + '%';   // 88 = (100 - 6 - 6) for left/right margin
+  progressFill.classList.remove('denied','resolved');
+  if (status === 'denied')   progressFill.classList.add('denied');
+  if (status === 'resolved') progressFill.classList.add('resolved');
+
+  // Stage dots
+  document.querySelectorAll('.stage').forEach(el => {
+    const step = parseInt(el.dataset.step, 10);
+    const dot = el.querySelector('.dot');
+    const label = el.querySelector('.label');
+    el.classList.remove('done','active','denied','resolved','pending');
+    dot.classList.remove('done','active','denied','resolved');
+
+    let state = 'pending';
+    if (step < meta.step) state = 'done';
+    else if (step === meta.step && status === 'denied') state = 'denied';
+    else if (step === meta.step && status === 'resolved') state = 'resolved';
+    else if (step === meta.step) state = 'active';
+
+    if (state !== 'pending') {
+      el.classList.add(state);
+      dot.classList.add(state);
+    }
+    if (step === 4) {
+      if (status === 'denied')   label.textContent = 'Denied';
+      else if (status === 'resolved') label.textContent = 'Resolved';
+      else label.textContent = 'Done';
+    }
+    if (state === 'done')     dot.textContent = '✓';
+    else if (state === 'resolved') dot.textContent = '✓';
+    else if (state === 'denied')   dot.textContent = '🚫';
+    // active and pending: leave existing emoji
+  });
+
+  // If terminal — disable composer-ish things by reload (simpler & rare)
+  if (status === 'resolved' || status === 'denied') {
+    setTimeout(() => location.reload(), 2500);
+  }
+}
+
+// ─── Polling ──────────────────────────────────────────────────────
+let pollFailures = 0;
+async function poll() {
+  try {
+    const r = await fetch(`/tickets/${TICKET_ID}/poll?since_id=${lastId()}`);
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    data.messages.forEach(renderMessage);
+
+    applyStatusToUI(data.ticket.status);
+
+    pollFailures = 0;
+    liveText.textContent = 'Live';
+    liveText.className = 'text-green-300';
+    liveDot.style.background = '#22c55e';
+  } catch (e) {
+    pollFailures++;
+    liveText.textContent = pollFailures > 3 ? 'Offline' : 'Reconnecting…';
+    liveText.className = pollFailures > 3 ? 'text-red-300' : 'text-yellow-300';
+    liveDot.style.background = pollFailures > 3 ? '#ef4444' : '#f59e0b';
+  }
+}
+setInterval(poll, POLL_INTERVAL_MS);
+
+// ─── Reply ────────────────────────────────────────────────────────
+const replyForm = document.getElementById('reply-form');
+const replyBody = document.getElementById('reply-body');
+const sendBtn   = document.getElementById('send-btn');
+
+// ─── Reply channel preference ─────────────────────────────────────
+const replyViaSel = document.getElementById('reply-via-select');
+if (replyViaSel) {
+  let prev = replyViaSel.value;
+  replyViaSel.addEventListener('change', async () => {
+    const msg = document.getElementById('reply-via-msg');
+    try {
+      const r = await fetch(`/tickets/${TICKET_ID}/reply-via`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reply_via: replyViaSel.value }),
+      });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error);
+      prev = replyViaSel.value;
+      msg.textContent = prev === 'web' ? 'Replies will only appear here.' : 'Saved — we\'ll DM you on Discord too.';
+      msg.className = 'text-[11px] text-green-300 mt-2';
+    } catch (e) {
+      replyViaSel.value = prev;
+      msg.textContent = e.message || 'Could not save.';
+      msg.className = 'text-[11px] text-red-300 mt-2';
+    }
+  });
+}
+
+// ─── Attachments ──────────────────────────────────────────────────
+document.querySelectorAll('.att-slot').forEach(slot => {
+  try { if (HAS_UPLOADS) slot.replaceWith(TicketUploads.renderAttachments(JSON.parse(slot.dataset.att))); } catch (e) {}
+});
+const uploader = replyForm && HAS_UPLOADS && new TicketUploads.Uploader({
+  ticketId: TICKET_ID,
+  input: document.getElementById('reply-files'),
+  tray: document.getElementById('reply-tray'),
+  onChange: () => { sendBtn.disabled = uploader && uploader.busy(); },
+});
+if (replyForm && !uploader) document.getElementById('attach-btn').classList.add('hidden');
+if (uploader) {
+  document.getElementById('attach-btn').addEventListener('click', () => document.getElementById('reply-files').click());
+  replyBody.addEventListener('paste', (e) => {
+    const files = Array.from((e.clipboardData || {}).files || []);
+    if (files.length) { e.preventDefault(); uploader.add(files); }
+  });
+  replyForm.addEventListener('dragover', (e) => { e.preventDefault(); });
+  replyForm.addEventListener('drop', (e) => {
+    const files = Array.from((e.dataTransfer || {}).files || []);
+    if (files.length) { e.preventDefault(); uploader.add(files); }
+  });
+}
+
+if (replyForm) {
+  replyBody.addEventListener('input', () => {
+    replyBody.style.height = 'auto';
+    replyBody.style.height = Math.min(replyBody.scrollHeight, 240) + 'px';
+  });
+  replyBody.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault(); replyForm.requestSubmit();
+    }
+  });
+  replyForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (uploader && uploader.busy()) { alert('Please wait for uploads to finish.'); return; }
+    if (uploader && uploader.hasErrors()) { alert('Remove the attachments that failed before sending.'); return; }
+    if (!replyBody.value.trim() && !(uploader && uploader.readyIds().length)) return;
+    sendBtn.disabled = true;
+    try {
+      const fd = new FormData(replyForm);
+      if (uploader) uploader.readyIds().forEach(id => fd.append('attachment_ids', id));
+      const r = await fetch(`/tickets/${TICKET_ID}/reply`, {method:'POST', body: fd});
+      const data = await r.json();
+      if (data.ok) {
+        renderMessage(data.message);
+        replyForm.reset();
+        if (uploader) uploader.clear();
+        replyBody.style.height = 'auto';
+      } else { alert(data.error || 'Failed to send'); }
+    } catch { alert('Network error'); }
+    finally { sendBtn.disabled = false; }
+  });
+}
+
+// ─── Status change ────────────────────────────────────────────────
+async function changeStatus(status, note) {
+  try {
+    const r = await fetch(`/tickets/${TICKET_ID}/status`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({status: status, resolution_note: note || null}),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      applyStatusToUI(data.status);
+    } else {
+      alert(data.error || 'Failed');
+    }
+  } catch { alert('Network error'); }
+}
+
+function askResolution(status) {
+  const modal = document.getElementById('resolution-modal');
+  const title = document.getElementById('modal-title');
+  const help = document.getElementById('modal-help');
+  const eyebrow = document.getElementById('modal-eyebrow');
+  const confirm = document.getElementById('modal-confirm');
+  const note = document.getElementById('resolution-note');
+
+  if (status === 'denied') {
+    eyebrow.textContent = 'Denial';
+    title.textContent = 'Deny this ticket';
+    help.textContent = 'Tell the client why this can\'t be done. They\'ll see this on the ticket.';
+    confirm.className = 'status-btn danger';
+    confirm.textContent = '🚫 Confirm denial';
+    note.placeholder = 'Why is this being denied?';
+  } else {
+    eyebrow.textContent = 'Resolution';
+    title.textContent = 'Mark as resolved';
+    help.textContent = IS_STAFF
+      ? 'Brief note explaining how this was resolved. The client will see it.'
+      : 'Optional: tell us what fixed it. Once closed, only staff can reopen the ticket.';
+    confirm.className = 'status-btn success';
+    confirm.textContent = '✅ Confirm resolved';
+    note.placeholder = 'Resolution summary…';
+  }
+  note.value = '';
+  modal.classList.add('show');
+  note.focus();
+
+  confirm.onclick = () => {
+    if (!note.value.trim()) {
+      note.focus();
+      note.style.borderColor = '#ef4444';
+      setTimeout(() => note.style.borderColor = '', 1500);
+      return;
+    }
+    closeModal();
+    changeStatus(status, note.value.trim());
+  };
+}
+
+function closeModal() {
+  document.getElementById('resolution-modal').classList.remove('show');
+}
+
+window.changeStatus = changeStatus;
+window.askResolution = askResolution;
+window.closeModal = closeModal;
+</script>
+{% endblock %}

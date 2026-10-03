@@ -1,0 +1,2348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StockTool Kiosk</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0c1120;
+    --sidebar: #10162a;
+    --panel: #161d33;
+    --panel-border: #232b45;
+    --text: #e6e9f2;
+    --muted: #8b93a8;
+    --accent: #6d5ef0;
+    --accent-soft: rgba(109,94,240,.15);
+    --blue: #3b82f6; --blue-soft: rgba(59,130,246,.15);
+    --green: #22c55e; --green-soft: rgba(34,197,94,.15);
+    --orange: #f59e0b; --orange-soft: rgba(245,158,11,.15);
+    --red: #ef4444; --red-soft: rgba(239,68,68,.15);
+  }
+</style>
+<style type="text/tailwindcss">
+  @layer base {
+    * { @apply box-border; }
+    body { @apply m-0 antialiased; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--text); }
+    input, select { @apply text-sm rounded-lg px-3 py-2.5 outline-none transition-shadow; background:var(--bg); border:1px solid var(--panel-border); color:var(--text); }
+    input:focus, select:focus { box-shadow:0 0 0 3px var(--accent-soft); border-color:var(--accent); }
+    code { @apply rounded px-1.5 py-0.5 text-xs; background:var(--panel-border); color:var(--text); }
+  }
+  @layer components {
+    #appScreen { @apply flex; height:100vh; }
+
+    /* ── Sidebar ─────────────────────────────────────────────── */
+    aside { @apply w-[220px] shrink-0 flex flex-col py-4; background:var(--sidebar); border-right:1px solid var(--panel-border); }
+    .brand { @apply flex items-center gap-2.5 pb-4 mb-3.5; padding-left:18px; padding-right:18px; border-bottom:1px solid var(--panel-border); }
+    .brand .logo { @apply w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm text-white shadow-md; background:linear-gradient(135deg, var(--accent), #8b7bf7); }
+    .brand div b { @apply block text-sm leading-tight; }
+    .brand div span { @apply block text-[11px]; color:var(--muted); }
+    .navgroup { @apply px-2.5 mb-4; }
+    .navgroup .label { @apply text-[10px] tracking-wider uppercase px-2.5 pb-1.5; color:var(--muted); }
+    .navitem { @apply flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-[13.5px] cursor-pointer select-none transition-all duration-150; color:var(--muted); }
+    .navitem:hover { @apply translate-x-0.5; background:var(--panel); color:var(--text); }
+    .navitem.active { @apply font-medium shadow-sm; background:var(--accent-soft); color:#c8c2ff; }
+    .navitem.disabled { @apply opacity-40 cursor-not-allowed; }
+    .navitem.disabled:hover { @apply translate-x-0; background:none; color:var(--muted); }
+    .sidebar-footer { @apply mt-auto pt-3 flex items-center gap-2.5; padding-left:18px; padding-right:18px; border-top:1px solid var(--panel-border); }
+    .avatar { @apply w-7 h-7 rounded-full flex items-center justify-center text-xs; background:#374151; }
+    .sidebar-footer div b { @apply block text-[13px]; }
+    .sidebar-footer div span { @apply block text-[11px]; color:var(--muted); }
+    .sidebar-footer button { @apply ml-auto bg-transparent border-0 cursor-pointer text-base transition-colors hover:text-red-400; color:var(--muted); }
+
+    /* ── Main area ───────────────────────────────────────────── */
+    main { @apply flex-1 overflow-y-auto; padding:24px 28px; }
+    .topbar { @apply flex justify-between items-start mb-5; }
+    .topbar h1 { @apply m-0 text-[22px] font-semibold tracking-tight; }
+    .topbar .date { @apply text-[13px] mt-0.5; color:var(--muted); }
+
+    .stat-grid { @apply grid gap-3.5 mb-5; grid-template-columns:repeat(4, 1fr); }
+    .stat-card { @apply rounded-2xl p-4 transition-all duration-150 hover:-translate-y-0.5; background:var(--panel); border:1px solid var(--panel-border); box-shadow:0 1px 0 rgba(255,255,255,.02) inset; }
+    .stat-card:hover { box-shadow:0 12px 28px -14px rgba(0,0,0,.5); }
+    .stat-card .icon { @apply w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 text-[15px]; }
+    .stat-card .num { @apply text-2xl font-bold tracking-tight; }
+    .stat-card .lbl { @apply text-xs uppercase tracking-wide; color:var(--muted); }
+    .stat-card .sub { @apply text-[11px] mt-0.5; }
+    .icon.blue { background:var(--blue-soft); color:var(--blue); }
+    .icon.green { background:var(--green-soft); color:var(--green); }
+    .icon.orange { background:var(--orange-soft); color:var(--orange); }
+    .icon.red { background:var(--red-soft); color:var(--red); }
+    .sub.orange { color:var(--orange); } .sub.green { color:var(--green); } .sub.red { color:var(--red); } .sub.muted { color:var(--muted); }
+
+    .panel-grid { @apply grid gap-3.5; grid-template-columns:1fr 1fr; }
+    .panel { @apply rounded-2xl p-4 mb-3.5; background:var(--panel); border:1px solid var(--panel-border); box-shadow:0 1px 0 rgba(255,255,255,.02) inset; }
+    .panel-head { @apply flex justify-between items-center mb-2.5; }
+    .panel-head b { @apply text-sm font-semibold; }
+    .panel-head a { @apply text-xs cursor-pointer hover:underline; color:var(--accent); }
+    .empty { @apply text-[13px] text-center py-6; color:var(--muted); }
+    .activity-row { @apply flex justify-between items-center py-2 text-[13px]; border-bottom:1px solid var(--panel-border); }
+    .activity-row:last-child { @apply border-b-0; }
+    .activity-row .meta { @apply text-[11px]; color:var(--muted); }
+    .activity-row .t { @apply text-[11px]; color:var(--muted); }
+
+    .card { @apply rounded-xl px-3.5 py-3 mb-2 flex justify-between items-center gap-2.5 flex-wrap transition-colors; background:var(--bg); border:1px solid var(--panel-border); }
+    .card:hover { border-color:var(--accent); }
+    /* Empty/Finished welding wire cards -- red border + tinted red
+       background, driven purely by status (see loadWireCoils()), never
+       by current_weight being 0 on its own. */
+    .card.card-empty { border-color:var(--red); background:rgba(239,68,68,0.08); }
+    .card.card-empty:hover { border-color:var(--red); }
+    .card .meta { @apply text-xs; color:var(--muted); }
+    button.action { @apply text-white border-0 px-3.5 py-2 rounded-lg cursor-pointer text-[13px] font-medium transition-all hover:brightness-110 hover:-translate-y-px active:translate-y-0; background:var(--accent); }
+    button.action.danger { background:var(--red); }
+    button.action.secondary { color:var(--text); background:var(--panel-border); }
+    .hidden { display:none !important; }
+    .msg { @apply px-3.5 py-2.5 rounded-lg mb-3.5 text-sm; }
+    .msg.error { @apply bg-red-950 text-red-200; }
+    .msg.ok { @apply text-emerald-200; background:#065f46; }
+    .searchbar { @apply mb-3.5 w-full box-border p-2.5; }
+
+    .admin-only.hidden { display:none !important; }
+    .financial-only.hidden { display:none !important; }
+    .datatable { @apply w-full border-collapse text-[13px]; }
+    .datatable th { @apply text-left px-2.5 py-2 font-semibold text-gray-500; border-bottom:1px solid var(--panel-border); }
+    .datatable td { @apply px-2.5 py-2; border-bottom:1px solid var(--panel-border); }
+    .datatable tbody tr { @apply transition-colors; }
+    .datatable tbody tr:hover { background:var(--panel); }
+    .modal-overlay { @apply fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm; background:rgba(0,0,0,.6); }
+    .modal-box { @apply rounded-2xl p-6 w-[360px] shadow-2xl; background:var(--panel); border:1px solid var(--panel-border); max-width:calc(100vw - 40px); box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); }
+    .modal-box h2 { @apply m-0 mb-3.5 text-base font-semibold; }
+    .modal-field { @apply mb-3; }
+    .modal-field label { @apply block text-xs mb-1.5; color:var(--muted); }
+    .modal-field input, .modal-field select, .modal-field textarea { @apply w-full; }
+    .modal-field textarea { @apply resize-y; font-family:inherit; min-height:60px; }
+    .modal-actions { @apply flex justify-end gap-2 mt-4; }
+    .card .row-actions { @apply flex gap-1.5; }
+  }
+</style>
+</head>
+<body>
+
+<div id="updateCountdownBanner" class="hidden" style="position:fixed; top:0; left:0; right:0; z-index:9999; display:flex; align-items:center; justify-content:center; gap:12px; background:#7c3aed; color:#fff; padding:10px 16px; font-weight:600; font-size:14px;">
+  <span id="updateCountdownText"></span>
+</div>
+
+<div id="loginScreen" class="min-h-screen flex flex-col"
+     style="background:radial-gradient(1200px 600px at 50% -10%, rgba(109,94,240,0.14), transparent 60%), var(--bg);">
+
+  <header class="flex items-center gap-3 px-8 py-5 border-b" style="border-color:var(--panel-border);">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center text-base font-bold text-white shadow-md"
+         style="background:linear-gradient(135deg, var(--accent), #8b7bf7); box-shadow:0 6px 18px -4px rgba(109,94,240,0.5);">S</div>
+    <div>
+      <div class="text-sm font-semibold tracking-tight" style="color:var(--text);">StockTool</div>
+      <div class="text-[11px]" style="color:var(--muted);">Asset Management</div>
+    </div>
+  </header>
+
+  <div class="flex-1 flex items-center justify-center p-6">
+    <div class="w-full max-w-sm">
+      <div class="mb-4 rounded-xl border px-4 py-3 text-center text-xs font-semibold tracking-wide uppercase"
+           style="border-color:var(--panel-border); background:rgba(22,29,51,0.4); color:var(--accent);">Global Engineering Worx (Pty) Ltd</div>
+
+      <div class="rounded-2xl border p-8 shadow-2xl backdrop-blur-sm"
+           style="background:rgba(22,29,51,0.7); border-color:var(--panel-border); box-shadow:0 20px 60px -20px rgba(0,0,0,0.6);">
+
+        <h1 class="text-lg font-semibold text-center mb-1.5" style="color:var(--text);">Welcome back</h1>
+        <p class="text-sm text-center mb-6" style="color:var(--muted);">Scan your badge, or type your number or username</p>
+
+        <input id="loginInput" autofocus placeholder="Scan badge, or type number/username + Enter"
+               class="w-full text-center text-base rounded-xl px-4 py-3.5 outline-none transition-all"
+               style="background:var(--bg); color:var(--text); border:1px solid var(--panel-border);"
+               onfocus="this.style.borderColor='var(--accent)'; this.style.boxShadow='0 0 0 3px var(--accent-soft)';"
+               onblur="this.style.borderColor='var(--panel-border)'; this.style.boxShadow='none';" />
+
+        <div id="loginError" class="msg error hidden mt-3"></div>
+      </div>
+
+      <div id="loginFooter" class="mt-6 rounded-xl border px-4 py-3 text-center text-[11px] leading-relaxed"
+           style="border-color:var(--panel-border); background:rgba(22,29,51,0.4); color:var(--muted);"></div>
+    </div>
+  </div>
+</div>
+
+<div id="appScreen" class="hidden">
+  <aside>
+    <div class="brand">
+      <div class="logo">S</div>
+      <div><b>StockTool</b><span>Asset Management</span></div>
+    </div>
+    <div class="navgroup">
+      <div class="label">Overview</div>
+      <div class="navitem active" data-tab="dashboard" onclick="showTab('dashboard')">Dashboard</div>
+    </div>
+    <div class="navgroup">
+      <div class="label">Inventory</div>
+      <div class="navitem" data-tab="items" onclick="showTab('items')">Items</div>
+      <div class="navitem" data-tab="lowstock" onclick="showTab('lowstock')">Low Stock</div>
+      <div class="navitem" data-tab="tools" onclick="showTab('tools')">Tools</div>
+      <div class="navitem" data-tab="projects" onclick="showTab('projects')">Projects</div>
+      <div class="navitem" data-tab="wire" onclick="showTab('wire')">Welding Wire</div>
+      <div class="navitem" data-tab="scan" onclick="showTab('scan')">Scan Barcode</div>
+    </div>
+    <div class="navgroup">
+      <div class="label">Records</div>
+      <div class="navitem" data-tab="activity" onclick="showTab('activity')">Activity</div>
+      <div class="navitem" data-tab="synclog" onclick="showTab('synclog')">Sync Log</div>
+    </div>
+    <div class="navgroup">
+      <div class="label">Administration</div>
+      <div class="navitem admin-only hidden" data-tab="users" onclick="showTab('users')">Users</div>
+      <div class="navitem financial-only hidden" data-tab="audit" onclick="showTab('audit')">Audit</div>
+      <div class="navitem admin-only hidden" data-tab="dbtools" onclick="showTab('dbtools')">DB Tools</div>
+    </div>
+    <div id="idleTimerBox" style="padding:0 18px 10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--muted); margin-bottom:4px;">
+        <span>Auto-logout</span>
+        <span id="idleTimerText">2:00</span>
+      </div>
+      <div style="height:4px; border-radius:2px; overflow:hidden; background:var(--panel-border);">
+        <div id="idleTimerBar" style="height:100%; width:100%; background:var(--accent); transition:width 1s linear, background-color .3s;"></div>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="avatar">👤</div>
+      <div><b id="whoamiName">—</b><span id="whoamiRole">—</span></div>
+      <button onclick="logout()" title="Log out">⏻</button>
+    </div>
+  </aside>
+
+  <main>
+    <div id="globalMsg"></div>
+    <div id="lowStockBanner" class="hidden" style="display:flex; align-items:center; gap:10px; background:var(--orange-soft); border:1px solid var(--orange); border-radius:8px; padding:10px 14px; margin-bottom:14px;">
+      <span style="color:var(--orange)">⚠</span>
+      <span id="lowStockBannerText" style="flex:1;"></span>
+      <a onclick="showTab('lowstock')" style="cursor:pointer; font-weight:600;">View Low Stock</a>
+      <button class="action secondary" style="padding:4px 10px; font-size:12px;" onclick="dismissLowStockBanner()">Dismiss</button>
+    </div>
+
+    <section id="tab-dashboard">
+      <div class="topbar">
+        <div>
+          <h1>Dashboard</h1>
+          <div class="date" id="todayDate"></div>
+          <div class="date" id="versionInfo" style="margin-top:2px; opacity:0.75;"></div>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="icon blue">📦</div>
+          <div class="num" id="statLowStock">0</div>
+          <div class="lbl">Items</div>
+          <div class="sub orange">Low stock</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon green">🔧</div>
+          <div class="num" id="statToolsAvailable">0</div>
+          <div class="lbl">Tools</div>
+          <div class="sub green">Available</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon orange">📤</div>
+          <div class="num" id="statOut">0</div>
+          <div class="lbl">Out</div>
+          <div class="sub muted">In use</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon red">⚠️</div>
+          <div class="num" id="statIssues">0</div>
+          <div class="lbl">Issues</div>
+          <div class="sub red">Broken / repair</div>
+        </div>
+      </div>
+
+      <div class="panel-grid">
+        <div class="panel">
+          <div class="panel-head"><b>Available Tools</b><a onclick="showTab('tools')">View all tools</a></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><b>Low Stock</b><a onclick="showTab('lowstock')">View low stock</a></div>
+        </div>
+      </div>
+
+      <div class="panel-grid">
+        <div class="panel">
+          <div class="panel-head"><b>Recent Checkouts</b><a onclick="showTab('tools')">View all</a></div>
+          <div id="recentCheckouts"><div class="empty">No recent checkouts</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><b>Recent Activity</b><a onclick="showTab('activity')">View all</a></div>
+          <div id="recentActivity"><div class="empty">No recent activity</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-scan" class="hidden">
+      <div class="topbar"><h1>Scan Barcode</h1></div>
+      <p class="meta" style="margin:-6px 0 10px;">Scan a user badge and project before scanning an item or welding wire to check out. Checking a tool out only needs a user badge first. Checking a tool or welding wire back in needs no user or project scan — just scan it.</p>
+      <div id="scanActiveUser" class="hidden" style="display:flex; align-items:center; gap:10px; background:var(--accent-soft); border:1px solid var(--accent); border-radius:8px; padding:8px 12px; margin-bottom:10px;">
+        <span>1. User: <b id="scanActiveUserName"></b></span>
+        <button class="action secondary" style="margin-left:auto; padding:4px 10px; font-size:12px;" onclick="clearScanActiveUser()">Clear / Start Over</button>
+      </div>
+      <div id="scanActiveProject" class="hidden" style="display:flex; align-items:center; gap:10px; background:var(--accent-soft); border:1px solid var(--accent); border-radius:8px; padding:8px 12px; margin-bottom:10px;">
+        <span>2. Project: <b id="scanActiveProjectName"></b></span>
+        <button class="action secondary" style="margin-left:auto; padding:4px 10px; font-size:12px;" onclick="clearScanActiveProject()">Clear Project</button>
+      </div>
+      <input id="scanInput" class="searchbar" placeholder="Scan or type a badge/barcode…" />
+      <div style="display:flex; align-items:center; gap:10px; margin:10px 0;">
+        <button id="cameraToggleBtn" class="action" onclick="toggleCameraScan()">Use Camera</button>
+        <span id="cameraStatus" class="meta" style="color:var(--muted); font-size:12px;"></span>
+      </div>
+      <div id="cameraWrap" class="hidden" style="position:relative; max-width:480px; margin-bottom:12px;">
+        <video id="cameraVideo" autoplay playsinline muted style="width:100%; border-radius:10px; border:1px solid var(--panel-border); display:block;"></video>
+        <div style="position:absolute; inset:0; border:2px solid #10b98188; border-radius:10px; pointer-events:none;"></div>
+      </div>
+      <div id="scanResult"></div>
+    </section>
+
+    <section id="tab-items" class="hidden">
+      <div class="topbar">
+        <h1>Items</h1>
+        <div style="display:flex; gap:8px;">
+          <button class="action secondary admin-only hidden" onclick="exportCsv('items')">Export CSV</button>
+          <button class="action secondary admin-only hidden" onclick="document.getElementById('itemsImportFile').click()">Import CSV</button>
+          <input type="file" id="itemsImportFile" accept=".csv" class="hidden" onchange="importCsv('items', this)" />
+          <button class="action admin-only hidden" onclick="openItemModal()">+ Add Item</button>
+        </div>
+      </div>
+      <input id="itemsSearch" class="searchbar" placeholder="Search items by name or SKU…" oninput="loadItems()" />
+      <div id="itemsList"></div>
+    </section>
+
+    <section id="tab-lowstock" class="hidden">
+      <div class="topbar"><h1>Low Stock</h1></div>
+      <p class="meta" style="margin:-6px 0 10px;">Items at or below the low-stock threshold (<span id="lowStockThresholdText"></span> units).</p>
+      <div id="lowStockList"></div>
+    </section>
+
+    <section id="tab-tools" class="hidden">
+      <div class="topbar">
+        <h1>Tools</h1>
+        <div style="display:flex; gap:8px;">
+          <button class="action secondary admin-only hidden" onclick="exportCsv('tools')">Export CSV</button>
+          <button class="action secondary admin-only hidden" onclick="document.getElementById('toolsImportFile').click()">Import CSV</button>
+          <input type="file" id="toolsImportFile" accept=".csv" class="hidden" onchange="importCsv('tools', this)" />
+          <button class="action admin-only hidden" onclick="openToolModal()">+ Add Tool</button>
+        </div>
+      </div>
+      <div id="toolsList"></div>
+    </section>
+
+    <section id="tab-projects" class="hidden">
+      <div class="topbar">
+        <h1>Projects</h1>
+        <button class="action admin-only hidden" onclick="openProjectModal()">+ Add Project</button>
+      </div>
+      <div id="projectsList"></div>
+    </section>
+
+    <section id="tab-wire" class="hidden">
+      <div class="topbar">
+        <h1>Welding Wire</h1>
+        <div style="display:flex; gap:8px;">
+          <button class="action secondary admin-only hidden" onclick="openWireCodesModal()">Manage Wire Codes</button>
+          <button class="action secondary admin-only hidden" onclick="openWireReportModal()">Generate Report</button>
+          <button class="action admin-only hidden" onclick="openWireModal()">+ Add Welding Wire</button>
+        </div>
+      </div>
+      <p class="meta" style="margin:-6px 0 10px;">Check-out/check-in happens by scanning — see the Scan Barcode tab. This list is for browsing coils and admin setup.</p>
+      <div id="wireList"></div>
+
+      <div id="wireEmptySection" class="hidden" style="margin-top:22px;">
+        <div class="topbar" style="margin-bottom:8px;">
+          <h1 style="font-size:16px;">Empty / Finished</h1>
+        </div>
+        <p class="meta" style="margin:-4px 0 10px;">Kept for 30 days after being marked finished, then removed automatically. Delete now to free up its barcode sooner.</p>
+        <div id="wireEmptyList"></div>
+      </div>
+    </section>
+
+    <section id="tab-users" class="hidden">
+      <div class="topbar">
+        <h1>Users</h1>
+        <button class="action" onclick="openUserModal()">+ Add User</button>
+      </div>
+      <div id="usersList"></div>
+
+      <div class="card" style="margin-top:20px;">
+        <h2 style="margin:0 0 4px; font-size:15px;">Role logins</h2>
+        <p class="meta" style="margin:0 0 12px;">Turn off logins for an entire role at once -- e.g. during an audit -- without touching individual accounts. The admin role can't be disabled here (that would lock everyone out).</p>
+        <div id="rolePermissionsList"></div>
+      </div>
+
+      <div class="card" style="margin-top:20px; display:block;">
+        <h2 style="margin:0 0 4px; font-size:15px;">Auto-logout</h2>
+        <p class="meta" style="margin:0 0 12px;">Automatically log out an inactive session after this many minutes of no scans, taps, or typing -- protects the kiosk if someone walks away mid-session. Shortly before logging out, the current user is asked to re-scan their badge to stay signed in. Applies to this device.</p>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <input id="idleTimeoutInput" type="number" min="1" max="240" step="1" style="width:100px;" />
+          <span class="meta">minutes</span>
+          <button class="action" onclick="saveIdleTimeoutSetting()">Save</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-activity" class="hidden">
+      <div class="topbar"><h1>Activity</h1></div>
+      <p class="meta" style="margin:-6px 0 10px;">Every stock adjustment and tool check-out/check-in, most recent first.</p>
+      <div id="activityList"></div>
+    </section>
+
+    <section id="tab-synclog" class="hidden">
+      <div class="topbar"><h1>Sync Log</h1></div>
+      <div id="syncLogList"></div>
+    </section>
+
+    <section id="tab-audit" class="hidden">
+      <div class="topbar">
+        <h1>Stock Audit</h1>
+        <div style="display:flex; gap:8px;">
+          <select id="auditPeriodFilter" onchange="loadAuditRuns()"
+                  style="background:var(--panel,#1a1a22); color:#fff; border:1px solid #333; border-radius:8px; padding:6px 10px;">
+            <option value="">All periods</option>
+            <option value="day">Day</option>
+            <option value="month">Month</option>
+            <option value="year">Year</option>
+          </select>
+          <button class="action secondary" onclick="runAuditNow('day')">Run Today's Audit Now</button>
+        </div>
+      </div>
+      <p class="meta" style="margin:0 0 16px;">
+        Runs automatically every day between 07:00 and 18:00 SAST. If a day is missed, the
+        previous day's audit is backfilled automatically the next time the window opens.
+        A discrepancy is any change in an item's quantity since its last audit -- this system
+        doesn't know your expected restock schedule, so every change is surfaced for review,
+        not just decreases.
+      </p>
+      <div id="auditRunsList"></div>
+      <div id="auditRunDetail" style="margin-top:20px;"></div>
+    </section>
+
+    <section id="tab-dbtools" class="hidden">
+      <div class="topbar"><h1>DB Tools</h1></div>
+      <p class="meta" style="margin:-6px 0 18px;">
+        Export, import, or diff any table directly. Raw tool -- for messy spreadsheets, use
+        Items/Tools Export/Import CSV on their own tabs instead.
+      </p>
+
+      <div class="panel">
+        <div class="panel-head"><b>Export</b></div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <select id="dbToolsExportTable" style="min-width:200px; background:var(--bg); color:inherit; border:1px solid var(--panel-border); border-radius:8px; padding:9px 12px;"></select>
+          <button class="action secondary" onclick="exportDbTable()">Download table JSON</button>
+          <button class="action secondary" onclick="exportDbAll()">Download whole database</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><b>Import</b></div>
+        <p class="meta" style="margin:0 0 10px;">Upserts by primary key -- existing rows update, new rows insert. All-or-nothing per table.</p>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+          <select id="dbToolsImportTable" style="min-width:200px; background:var(--bg); color:inherit; border:1px solid var(--panel-border); border-radius:8px; padding:9px 12px;"></select>
+          <input type="file" id="dbToolsImportFile" accept=".json" style="max-width:280px; color:inherit;">
+          <button class="action secondary" onclick="importDbTable()">Import</button>
+        </div>
+        <pre id="dbToolsImportResult" class="meta" style="background:var(--bg); border:1px solid var(--panel-border); border-radius:8px; padding:12px; max-height:280px; overflow:auto; font-size:12.5px; margin:0;"></pre>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><b>Diff two snapshots</b></div>
+        <div style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; margin-bottom:12px;">
+          <div><label class="meta" style="display:block; margin-bottom:4px;">Before</label><input type="file" id="dbToolsDiffBefore" accept=".json"></div>
+          <div><label class="meta" style="display:block; margin-bottom:4px;">After</label><input type="file" id="dbToolsDiffAfter" accept=".json"></div>
+          <button class="action secondary" onclick="diffDbSnapshots()">Compare</button>
+        </div>
+        <pre id="dbToolsDiffResult" class="meta" style="background:var(--bg); border:1px solid var(--panel-border); border-radius:8px; padding:12px; max-height:320px; overflow:auto; font-size:12.5px; margin:0;"></pre>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ── Item modal ─────────────────────────────────────────────── -->
+<div id="itemModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2 id="itemModalTitle">Add Item</h2>
+    <input type="hidden" id="itemModalId" />
+    <div class="modal-field"><label>Name</label><input id="itemModalName" /></div>
+    <div class="modal-field"><label>SKU</label><input id="itemModalSku" /></div>
+    <div class="modal-field"><label>Quantity</label><input id="itemModalQuantity" type="number" min="0" /></div>
+    <div class="modal-field"><label>Unit (optional)</label><input id="itemModalUnit" placeholder="e.g. box, ft, each" /></div>
+    <div class="modal-field"><label>Description (optional)</label><textarea id="itemModalDescription"></textarea></div>
+    <div class="modal-field"><label>Barcode (optional — leave blank to auto-generate)</label><input id="itemModalBarcode" style="font-family:monospace;" /></div>
+    <div id="itemModalError" class="msg error hidden"></div>
+    <div class="modal-actions">
+      <button class="action secondary" onclick="closeModal('itemModal')">Cancel</button>
+      <button class="action" onclick="saveItemModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Tool modal ─────────────────────────────────────────────── -->
+<div id="toolModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2 id="toolModalTitle">Add Tool</h2>
+    <input type="hidden" id="toolModalId" />
+    <div class="modal-field"><label>Name</label><input id="toolModalName" /></div>
+    <div class="modal-field"><label>Status</label>
+      <select id="toolModalStatus">
+        <option value="available">Available</option>
+        <option value="checked_out">Checked out</option>
+        <option value="maintenance">Maintenance</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Description (optional)</label><textarea id="toolModalDescription"></textarea></div>
+    <div class="modal-field"><label>Barcode (optional — leave blank to auto-generate)</label><input id="toolModalBarcode" style="font-family:monospace;" /></div>
+    <div id="toolModalError" class="msg error hidden"></div>
+    <div class="modal-actions">
+      <button class="action secondary" onclick="closeModal('toolModal')">Cancel</button>
+      <button class="action" onclick="saveToolModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Project modal ──────────────────────────────────────────── -->
+<div id="projectModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2 id="projectModalTitle">Add Project</h2>
+    <input type="hidden" id="projectModalId" />
+    <div class="modal-field"><label>Name</label><input id="projectModalName" /></div>
+    <div class="modal-field"><label>Description (optional)</label><textarea id="projectModalDescription"></textarea></div>
+    <div class="modal-field"><label><input type="checkbox" id="projectModalActive" style="width:auto; margin-right:6px;" checked />Active</label></div>
+    <div class="modal-field"><label>Barcode (optional — leave blank to auto-generate)</label><input id="projectModalBarcode" style="font-family:monospace;" /></div>
+    <div id="projectModalError" class="msg error hidden"></div>
+    <div class="modal-actions">
+      <button class="action secondary" onclick="closeModal('projectModal')">Cancel</button>
+      <button class="action" onclick="saveProjectModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Welding wire coil modal ────────────────────────────────── -->
+<div id="wireModal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:560px;">
+    <h2 id="wireModalTitle">Add Welding Wire</h2>
+    <input type="hidden" id="wireModalId" />
+
+    <div class="modal-field hidden" id="wireModalBulkToggleField">
+      <label><input type="checkbox" id="wireModalBulk" style="width:auto; margin-right:6px;" onchange="onWireModalBulkToggle()" />Add multiple boxes in bulk</label>
+    </div>
+
+    <div class="modal-field"><label>Name / description (optional)</label><input id="wireModalName" placeholder="e.g. ER70S-6 Mild Steel" /></div>
+    <div class="modal-field"><label>Wire code / type</label>
+      <select id="wireModalCode"></select>
+    </div>
+
+    <div class="modal-field hidden" id="wireModalCountField"><label>Number of boxes</label><input id="wireModalCount" type="number" min="1" max="200" step="1" value="2" oninput="onWireModalCountChange()" /></div>
+
+    <div class="modal-field" id="wireModalWeightField"><label>Starting weight (kg)</label><input id="wireModalWeight" type="number" min="0.01" step="0.01" /></div>
+    <div class="modal-field hidden" id="wireModalTotalWeightField">
+      <label>Total weight for all boxes (kg)</label>
+      <input id="wireModalTotalWeight" type="number" min="0.01" step="0.01" oninput="onWireModalTotalWeightChange()" />
+    </div>
+
+    <div class="modal-field hidden" id="wireModalStatusField"><label>Status</label>
+      <select id="wireModalStatus">
+        <option value="available">Available</option>
+        <option value="empty">Empty / Finished</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+
+    <div class="modal-field" id="wireModalBarcodeField"><label>Barcode (optional — leave blank to auto-generate)</label><input id="wireModalBarcode" style="font-family:monospace;" /></div>
+
+    <div class="modal-field hidden" id="wireModalBoxesField">
+      <label>Per-box weight &amp; barcode — change any box's weight if it's not equal, or set a specific barcode (blank = auto-generate). Changing the count or total weight above resets these to an even split.</label>
+      <div id="wireModalBoxesList" style="max-height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-top:6px;"></div>
+    </div>
+
+    <div id="wireModalError" class="msg error hidden"></div>
+    <div class="modal-actions">
+      <button class="action secondary" onclick="closeModal('wireModal')">Cancel</button>
+      <button class="action" onclick="saveWireModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add weight (restock) modal ─────────────────────────────── -->
+<div id="wireAddWeightModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2>Add Weight</h2>
+    <input type="hidden" id="wireAddWeightCoilId" />
+    <p class="meta" id="wireAddWeightCurrent" style="margin:-4px 0 12px;"></p>
+    <div class="modal-field"><label>Weight to add (kg)</label><input id="wireAddWeightAmount" type="number" min="0.01" step="0.01" /></div>
+    <div id="wireAddWeightError" class="msg error hidden"></div>
+    <div class="modal-actions">
+      <button class="action secondary" onclick="closeModal('wireAddWeightModal')">Cancel</button>
+      <button class="action" onclick="saveWireAddWeight()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Manage wire codes modal ────────────────────────────────── -->
+<div id="wireCodesModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2>Manage Wire Codes</h2>
+    <p class="meta" style="margin:-4px 0 12px;">These populate the "Wire code / type" dropdown when adding welding wire. Deactivating keeps history intact but hides it from new coils.</p>
+    <div id="wireCodesList"></div>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <input id="wireCodeNewName" placeholder="New wire code, e.g. 1.0 Code Wire" style="flex:1;" />
+      <button class="action" onclick="addWireCode()">Add</button>
+    </div>
+    <div id="wireCodesError" class="msg error hidden"></div>
+    <div class="modal-actions">
+      <button class="action secondary" onclick="closeModal('wireCodesModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Wire report modal ──────────────────────────────────────── -->
+<div id="wireReportModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2>Generate Welding Wire Report</h2>
+    <div class="modal-field"><label>Date range</label>
+      <select id="wireReportRange" onchange="onWireReportRangeChange()">
+        <option value="">All dates</option>
+        <option value="today">Today</option>
+        <option value="this_week">This week</option>
+        <option value="this_month">This month</option>
+        <option value="last_month">Last month</option>
+        <option value="custom">Custom range…</option>
+      </select>
+    </div>
+    <div id="wireReportCustomFields" class="hidden">
+      <div class="modal-field"><label>From</label><input id="wireReportFrom" type="date" /></div>
+      <div class="modal-field"><label>To</label><input id="wireReportTo" type="date" /></div>
+    </div>
+    <div id="wireReportError" class="msg error hidden"></div>
+    <div class="modal-actions">
+      <button class="action secondary" onclick="closeModal('wireReportModal')">Cancel</button>
+      <button class="action" onclick="generateWireReport()">Generate PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── User modal ─────────────────────────────────────────────── -->
+<div id="userModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2 id="userModalTitle">Add User</h2>
+    <input type="hidden" id="userModalId" />
+    <div class="modal-field"><label>Name</label><input id="userModalUsername" /></div>
+    <div class="modal-field"><label>Badge code (optional — leave blank to auto-generate)</label><input id="userModalBadge" style="font-family:monospace;" /></div>
+    <div class="modal-field"><label>Role</label>
+      <select id="userModalRole">
+        <option value="stock_user">Stock user</option>
+        <option value="supervisor">Supervisor</option>
+        <option value="financial">Financial (Audit access)</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="modal-field"><label><input type="checkbox" id="userModalActive" style="width:auto; margin-right:6px;" checked />Active</label></div>
+    <div id="userModalError" class="msg error hidden"></div>
+    <div class="modal-actions">
+      <button class="action secondary" onclick="closeModal('userModal')">Cancel</button>
+      <button class="action" onclick="saveUserModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Idle timeout security check ──────────────────────────────── -->
+<div id="idleWarningModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2>Security check</h2>
+    <p class="meta" style="margin:0 0 14px;">
+      This session has been inactive. Scan your badge, or type your number/username, to stay signed in --
+      otherwise it will log out automatically in <b id="idleWarningSeconds">20</b>s.
+    </p>
+    <input id="idleWarningInput" placeholder="Scan badge, or type number/username + Enter"
+           style="width:100%; text-align:center; margin-bottom:10px;" />
+    <div id="idleWarningError" class="msg error hidden"></div>
+    <div class="modal-actions">
+      <button class="action secondary" onclick="logout()">Log out now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Barcode viewer modal (items/tools/projects/users) ─────────── -->
+<div id="barcodeModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2 id="barcodeModalTitle">Barcode</h2>
+    <div id="barcodeModalContent" style="background:#fff; border-radius:8px; padding:16px; margin:12px 0; min-height:60px;"></div>
+    <div id="barcodeModalError" class="msg error hidden"></div>
+    <p id="barcodeModalHint" class="hint" style="margin:0 0 4px;"></p>
+    <div class="modal-actions">
+      <button class="action secondary" onclick="closeModal('barcodeModal')">Close</button>
+      <button class="action secondary" id="barcodeCopyLinkBtn" onclick="copyBarcodeLink()">Copy link</button>
+      <button class="action" onclick="printBarcodeModal()">Print</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let TOKEN = null;
+let CURRENT_ROLE = null;
+let ITEMS_CACHE = [];
+let TOOLS_CACHE = [];
+let PROJECTS_CACHE = [];
+let USERS_CACHE = [];
+let WIRE_COILS_CACHE = [];
+let WIRE_CODES_CACHE = [];
+const LOW_STOCK_THRESHOLD = 5; // no reorder-point field on Item yet — flat threshold until the cloud model adds one
+const ACTIVITY_LABELS = { item_adjust: 'Stock adjusted', tool_checkout: 'Checked out', tool_checkin: 'Checked in' };
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+function api(path, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  if (TOKEN) opts.headers['Authorization'] = 'Bearer ' + TOKEN;
+  return fetch(path, opts).then(async (r) => ({ status: r.status, data: await r.json().catch(() => ({})) }));
+}
+
+// Like api(), but for endpoints that return raw text/SVG instead of JSON
+// (the barcode-svg endpoint) -- api() always calls .json(), which would
+// fail on an SVG response.
+function apiText(path, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign({}, opts.headers || {});
+  if (TOKEN) opts.headers['Authorization'] = 'Bearer ' + TOKEN;
+  return fetch(path, opts).then(async (r) => ({ status: r.status, text: await r.text().catch(() => '') }));
+}
+
+// ── CSV import/export (Items & Tools, admin-only) ─────────────────────
+// A plain <a href> download won't carry the Authorization header, so we
+// fetch the CSV ourselves and hand the browser a blob URL instead.
+async function exportCsv(kind) {
+  const res = await fetch(`/api/admin/${kind}/export`, {
+    headers: TOKEN ? { 'Authorization': 'Bearer ' + TOKEN } : {},
+  });
+  if (!res.ok) { flash('globalMsg', `Export failed (${res.status}).`, 'error'); return; }
+  const blob = await res.blob();
+  const cd = res.headers.get('Content-Disposition') || '';
+  const match = cd.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : `${kind}_export.csv`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function importCsv(kind, inputEl) {
+  const file = inputEl.files[0];
+  inputEl.value = ''; // allow re-selecting the same filename next time
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`/api/admin/${kind}/import`, {
+    method: 'POST',
+    headers: TOKEN ? { 'Authorization': 'Bearer ' + TOKEN } : {},
+    body: formData,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { flash('globalMsg', data.error || `Import failed (${res.status}).`, 'error'); return; }
+
+  const summary = `Imported: ${data.created} created, ${data.updated} updated` +
+    (data.errors && data.errors.length ? `, ${data.errors.length} row(s) skipped` : '');
+  flash('globalMsg', summary, data.errors && data.errors.length ? 'error' : 'ok');
+  if (data.errors && data.errors.length) console.warn(`${kind} import issues:`, data.errors);
+
+  if (kind === 'items') loadItems(); else loadTools();
+}
+
+function flash(id, text, cls) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'msg ' + cls;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3500);
+}
+
+// Version/release date/copyright on the login screen -- /api/status is
+// public (no login required), so this can run before anyone's logged in.
+(async () => {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    const parts = [];
+    if (data.version) parts.push(`Version ${data.version}`);
+    if (data.release_date) {
+      const d = new Date(data.release_date).toLocaleDateString(undefined, { day:'numeric', month:'long', year:'numeric' });
+      parts.push(`Released ${d}`);
+    }
+    const line1 = parts.join(' \u2014 ');
+    const year = new Date().getFullYear();
+    document.getElementById('loginFooter').innerHTML =
+      (line1 ? escapeHtml(line1) + '<br>' : '') + `\u00a9 ${year} OpsLab Systems`;
+  } catch (e) { /* footer is cosmetic -- a failed fetch just leaves it blank */ }
+})();
+
+document.getElementById('loginInput').addEventListener('keydown', async (e) => {
+  if (e.key !== 'Enter') return;
+  const val = e.target.value.trim();
+  e.target.value = '';
+  if (!val) return;
+  const body = { badge_code: val };
+  const { status, data } = await api('/api/auth/login', { method: 'POST', body: JSON.stringify(body) });
+  if (status !== 200) {
+    document.getElementById('loginError').textContent = data.error || 'Login failed.';
+    document.getElementById('loginError').classList.remove('hidden');
+    return;
+  }
+  TOKEN = data.token;
+  CURRENT_ROLE = data.user.role;
+  document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', CURRENT_ROLE !== 'admin'));
+  document.querySelectorAll('.financial-only').forEach(el => el.classList.toggle('hidden', CURRENT_ROLE !== 'financial' && CURRENT_ROLE !== 'admin'));
+  document.getElementById('whoamiName').textContent = data.user.username;
+  document.getElementById('whoamiRole').textContent = data.user.role;
+  document.getElementById('loginError').classList.add('hidden');
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appScreen').classList.remove('hidden');
+  document.getElementById('todayDate').textContent = new Date().toLocaleDateString(undefined, { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  checkLowStockBanner();
+  startIdleTimer();
+  showTab('scan');
+});
+
+function logout() {
+  stopIdleTimer();
+  TOKEN = null;
+  CURRENT_ROLE = null;
+  SCAN_ACTIVE_USER = null;
+  SCAN_ACTIVE_PROJECT = null;
+  LOW_STOCK_DISMISSED = false;
+  document.getElementById('scanActiveUser').classList.add('hidden');
+  document.getElementById('scanActiveProject').classList.add('hidden');
+  document.getElementById('lowStockBanner').classList.add('hidden');
+  document.getElementById('appScreen').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.navitem[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'items') loadItems();
+  if (name === 'lowstock') loadLowStock();
+  if (name === 'tools') loadTools();
+  if (name === 'projects') loadProjects();
+  if (name === 'wire') loadWireCoils();
+  if (name === 'activity') loadActivityLog();
+  if (name === 'synclog') loadSyncLog();
+  if (name === 'users') { loadUsers(); loadRolePermissions(); loadIdleTimeoutSetting(); }
+  if (name === 'audit') loadAuditRuns();
+  if (name === 'dbtools') loadDbTools();
+}
+
+// ── Idle timeout (auto-logout for security) ──────────────────────────
+// Default is 2 minutes; an admin can change it from the Users tab. The
+// setting lives in localStorage, so it's per-kiosk (this device/browser),
+// not per-user -- there's no server-side settings table to put it in.
+// Shortly before logging out, the current user is challenged to re-scan
+// their badge rather than just tapping a button -- an incidental bump of
+// the screen shouldn't be enough to keep a session alive, and re-scanning
+// also naturally supports one worker handing the kiosk off to another
+// without a full log-out/log-in round trip.
+const IDLE_TIMEOUT_KEY = 'stocktool_idle_timeout_seconds';
+let IDLE_TIMEOUT_SECONDS = parseInt(localStorage.getItem(IDLE_TIMEOUT_KEY), 10) || 120;
+let idleSecondsLeft = IDLE_TIMEOUT_SECONDS;
+let idleIntervalHandle = null;
+let idleWarningShown = false;
+const IDLE_ACTIVITY_EVENTS = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'];
+
+function _idleWarningSeconds() {
+  // Scales with the configured timeout (10–30s window) rather than a
+  // fixed 20s, so a 5-minute setting and a 60-minute setting both get a
+  // sensibly-sized final warning.
+  return Math.min(30, Math.max(10, Math.round(IDLE_TIMEOUT_SECONDS * 0.2)));
+}
+
+function _onIdleActivity() {
+  if (!TOKEN) return;
+  if (idleWarningShown) return; // once the security check is up, only a successful re-scan clears it
+  resetIdleTimer();
+}
+
+function startIdleTimer() {
+  resetIdleTimer();
+  IDLE_ACTIVITY_EVENTS.forEach(evt => document.addEventListener(evt, _onIdleActivity, true));
+  if (!idleIntervalHandle) idleIntervalHandle = setInterval(idleTick, 1000);
+}
+
+function stopIdleTimer() {
+  if (idleIntervalHandle) { clearInterval(idleIntervalHandle); idleIntervalHandle = null; }
+  IDLE_ACTIVITY_EVENTS.forEach(evt => document.removeEventListener(evt, _onIdleActivity, true));
+  hideIdleWarning();
+}
+
+function resetIdleTimer() {
+  idleSecondsLeft = IDLE_TIMEOUT_SECONDS;
+  if (idleWarningShown) hideIdleWarning();
+  updateIdleDisplay();
+}
+
+function idleTick() {
+  if (!TOKEN) return;
+  idleSecondsLeft--;
+  if (idleSecondsLeft <= 0) {
+    logout();
+    const err = document.getElementById('loginError');
+    err.textContent = 'Logged out automatically after a period of inactivity.';
+    err.classList.remove('hidden');
+    return;
+  }
+  if (idleSecondsLeft <= _idleWarningSeconds() && !idleWarningShown) showIdleWarning();
+  if (idleWarningShown) document.getElementById('idleWarningSeconds').textContent = idleSecondsLeft;
+  updateIdleDisplay();
+}
+
+function updateIdleDisplay() {
+  const textEl = document.getElementById('idleTimerText');
+  if (!textEl) return;
+  const mins = Math.floor(idleSecondsLeft / 60);
+  const secs = idleSecondsLeft % 60;
+  textEl.textContent = `${mins}:${String(secs).padStart(2, '0')}`;
+  const bar = document.getElementById('idleTimerBar');
+  if (bar) {
+    const pct = Math.max(0, (idleSecondsLeft / IDLE_TIMEOUT_SECONDS) * 100);
+    bar.style.width = pct + '%';
+    bar.style.background = idleSecondsLeft <= _idleWarningSeconds() ? 'var(--red)'
+      : idleSecondsLeft <= IDLE_TIMEOUT_SECONDS * 0.34 ? 'var(--orange)'
+      : 'var(--accent)';
+  }
+}
+
+function showIdleWarning() {
+  idleWarningShown = true;
+  document.getElementById('idleWarningSeconds').textContent = idleSecondsLeft;
+  document.getElementById('idleWarningError').classList.add('hidden');
+  const input = document.getElementById('idleWarningInput');
+  input.value = '';
+  document.getElementById('idleWarningModal').classList.remove('hidden');
+  setTimeout(() => input.focus(), 50);
+}
+
+function hideIdleWarning() {
+  idleWarningShown = false;
+  document.getElementById('idleWarningModal').classList.add('hidden');
+}
+
+// Re-scanning a badge in the security-check modal reuses the normal
+// login endpoint -- success resets the idle timer and refreshes
+// TOKEN/CURRENT_ROLE (covering both "same person, still here" and a
+// handoff to a different logged-in user) without a full logout/login.
+document.getElementById('idleWarningInput').addEventListener('keydown', async (e) => {
+  if (e.key !== 'Enter') return;
+  const val = e.target.value.trim();
+  e.target.value = '';
+  if (!val) return;
+  const { status, data } = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ badge_code: val }) });
+  const err = document.getElementById('idleWarningError');
+  if (status !== 200) {
+    err.textContent = data.error || 'Could not verify — try again.';
+    err.classList.remove('hidden');
+    return;
+  }
+  err.classList.add('hidden');
+  TOKEN = data.token;
+  CURRENT_ROLE = data.user.role;
+  document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', CURRENT_ROLE !== 'admin'));
+  document.querySelectorAll('.financial-only').forEach(el => el.classList.toggle('hidden', CURRENT_ROLE !== 'financial' && CURRENT_ROLE !== 'admin'));
+  document.getElementById('whoamiName').textContent = data.user.username;
+  document.getElementById('whoamiRole').textContent = data.user.role;
+  resetIdleTimer();
+});
+
+function loadIdleTimeoutSetting() {
+  const el = document.getElementById('idleTimeoutInput');
+  if (el) el.value = Math.round(IDLE_TIMEOUT_SECONDS / 60);
+}
+
+function saveIdleTimeoutSetting() {
+  const el = document.getElementById('idleTimeoutInput');
+  const mins = parseInt(el.value, 10);
+  if (!mins || mins < 1) { flash('globalMsg', 'Enter a whole number of minutes, 1 or more.', 'error'); return; }
+  IDLE_TIMEOUT_SECONDS = mins * 60;
+  localStorage.setItem(IDLE_TIMEOUT_KEY, String(IDLE_TIMEOUT_SECONDS));
+  if (TOKEN) resetIdleTimer();
+  flash('globalMsg', `Auto-logout set to ${mins} minute${mins === 1 ? '' : 's'}.`, 'ok');
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const [{ data: items }, { data: tools }, { data: status }] = await Promise.all([
+    api('/api/items'), api('/api/tools'), api('/api/status'),
+  ]);
+  if (status && status.version) {
+    const dateStr = status.release_date
+      ? new Date(status.release_date).toLocaleDateString(undefined, { day:'numeric', month:'long', year:'numeric' })
+      : null;
+    document.getElementById('versionInfo').textContent =
+      `Version ${status.version}` + (dateStr ? ` — released ${dateStr}` : '');
+  }
+
+  const lowStock = items.filter(i => i.quantity <= LOW_STOCK_THRESHOLD);
+  const available = tools.filter(t => t.status === 'available');
+  const checkedOut = tools.filter(t => t.status === 'checked_out');
+  const maintenance = tools.filter(t => t.status === 'maintenance');
+
+  document.getElementById('statLowStock').textContent = lowStock.length;
+  document.getElementById('statToolsAvailable').textContent = available.length;
+  document.getElementById('statOut').textContent = checkedOut.length;
+  document.getElementById('statIssues').textContent = maintenance.length;
+
+  const rc = document.getElementById('recentCheckouts');
+  rc.innerHTML = checkedOut.length ? checkedOut.map(t => `
+    <div class="activity-row">
+      <div><b>${escapeHtml(t.name)}</b><div class="meta">${escapeHtml(t.checked_out_by_name || '')}</div></div>
+      <div class="t">${t.updated_at ? new Date(t.updated_at).toLocaleDateString() : ''}</div>
+    </div>`).join('') : '<div class="empty">No recent checkouts</div>';
+
+  const { data: activity } = await api('/api/status/activity');
+  const ra = document.getElementById('recentActivity');
+  ra.innerHTML = (activity && activity.length) ? activity.slice(0, 6).map(a => `
+    <div class="activity-row">
+      <div><b>${escapeHtml(a.entity_name)}</b><div class="meta">${escapeHtml(ACTIVITY_LABELS[a.event_type] || a.event_type)}${a.actor ? ' — ' + escapeHtml(a.actor) : ''}${a.project ? ' — for ' + escapeHtml(a.project) : ''}${a.detail ? ' — ' + escapeHtml(a.detail) : ''}</div></div>
+      <div class="t">${a.created_at ? new Date(a.created_at).toLocaleDateString() : ''}</div>
+    </div>`).join('') : '<div class="empty">No recent activity</div>';
+}
+
+// ── Scan tab ─────────────────────────────────────────────────────────
+document.getElementById('scanInput').addEventListener('keydown', async (e) => {
+  if (e.key !== 'Enter') return;
+  const code = e.target.value.trim();
+  e.target.value = '';
+  if (!code) return;
+  await handleScannedCode(code);
+});
+
+// ── Camera barcode scanning ─────────────────────────────────────────
+// Uses the browser's native BarcodeDetector (Chrome/Edge/most Chromium
+// kiosks) — no external library, no CDN fetch, works fully offline.
+// Falls back to the existing USB/keyboard-wedge + manual-type input
+// (already wired above) on browsers that lack it.
+let cameraStream = null;
+let cameraDetector = null;
+let cameraLoopHandle = null;
+let cameraLastCode = null;
+let cameraLastCodeAt = 0;
+
+function cameraSupported() {
+  return 'BarcodeDetector' in window && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+}
+
+async function toggleCameraScan() {
+  const wrap = document.getElementById('cameraWrap');
+  const btn = document.getElementById('cameraToggleBtn');
+  const status = document.getElementById('cameraStatus');
+
+  if (cameraStream) {
+    stopCameraScan();
+    return;
+  }
+
+  if (!cameraSupported()) {
+    status.textContent = 'Camera scanning not supported in this browser — use a USB scanner or type the code above.';
+    return;
+  }
+
+  try {
+    cameraDetector = new BarcodeDetector({
+      formats: ['qr_code', 'code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'itf', 'codabar']
+    });
+  } catch (err) {
+    status.textContent = 'Camera scanning unavailable: ' + err.message;
+    return;
+  }
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+  } catch (err) {
+    status.textContent = 'Could not access camera: ' + err.message;
+    return;
+  }
+
+  const video = document.getElementById('cameraVideo');
+  video.srcObject = cameraStream;
+  wrap.classList.remove('hidden');
+  btn.textContent = 'Stop Camera';
+  status.textContent = 'Point the camera at a barcode or QR code…';
+  cameraScanLoop();
+}
+
+function stopCameraScan() {
+  if (cameraLoopHandle) cancelAnimationFrame(cameraLoopHandle);
+  cameraLoopHandle = null;
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  document.getElementById('cameraWrap').classList.add('hidden');
+  document.getElementById('cameraToggleBtn').textContent = 'Use Camera';
+  document.getElementById('cameraStatus').textContent = '';
+}
+
+async function cameraScanLoop() {
+  if (!cameraStream) return;
+  const video = document.getElementById('cameraVideo');
+
+  try {
+    if (video.readyState >= 2) {
+      const codes = await cameraDetector.detect(video);
+      if (codes && codes.length) {
+        const value = (codes[0].rawValue || '').trim();
+        const now = Date.now();
+        // Debounce: ignore the same code re-fired every frame while it's
+        // still in view; allow re-scan of the same code after 2.5s.
+        if (value && (value !== cameraLastCode || now - cameraLastCodeAt > 2500)) {
+          cameraLastCode = value;
+          cameraLastCodeAt = now;
+          await handleScannedCode(value);
+        }
+      }
+    }
+  } catch (err) {
+    // Transient decode errors are normal (blurry frame, no code in view) —
+    // don't stop the loop for them.
+  }
+
+  cameraLoopHandle = requestAnimationFrame(cameraScanLoop);
+}
+
+let SCAN_ACTIVE_USER = null; // { id, username } -- set by scanning a user's badge in the Scan tab
+let SCAN_ACTIVE_PROJECT = null; // { id, name } -- set by scanning a project barcode, AFTER a user
+
+function setScanActiveUser(user) {
+  SCAN_ACTIVE_USER = { id: user.id, username: user.username, badge_code: user.badge_code };
+  document.getElementById('scanActiveUserName').textContent = user.username;
+  document.getElementById('scanActiveUser').classList.remove('hidden');
+}
+
+function clearScanActiveUser() {
+  SCAN_ACTIVE_USER = null;
+  SCAN_ACTIVE_PROJECT = null; // starting over means the whole sequence resets, not just the user
+  document.getElementById('scanActiveUser').classList.add('hidden');
+  document.getElementById('scanActiveProject').classList.add('hidden');
+  _refocusScanInput();
+}
+
+function setScanActiveProject(project) {
+  SCAN_ACTIVE_PROJECT = { id: project.id, name: project.name };
+  document.getElementById('scanActiveProjectName').textContent = project.name;
+  document.getElementById('scanActiveProject').classList.remove('hidden');
+}
+
+function clearScanActiveProject() {
+  SCAN_ACTIVE_PROJECT = null;
+  document.getElementById('scanActiveProject').classList.add('hidden');
+  _refocusScanInput();
+}
+
+async function handleScannedCode(code) {
+  const status = document.getElementById('cameraStatus');
+  status.textContent = 'Scanned: ' + code;
+  const { status: httpStatus, data } = await api('/api/barcode/lookup', { method: 'POST', body: JSON.stringify({ code }) });
+  const box = document.getElementById('scanResult');
+  if (httpStatus !== 200) {
+    box.innerHTML = `<div class="msg error">${escapeHtml(data.error)}</div>`;
+    return;
+  }
+
+  const entityType = data.entity_type;
+  const entity = data.entity;
+
+  // Mandatory order: user, then project, then tool/item. Each step
+  // blocks until the one before it is satisfied -- this isn't just a
+  // convenience shortcut anymore (it used to be skippable), it's a
+  // hard requirement, so a scan out of order is rejected with a clear
+  // "scan X first" message rather than silently doing something else.
+  if (entityType === 'user') {
+    setScanActiveUser(entity);
+    box.innerHTML = `<div class="msg ok">User: ${escapeHtml(entity.username)} — now scan the project.</div>`;
+    _refocusScanInput();
+    return;
+  }
+
+  if (entityType === 'project') {
+    if (!SCAN_ACTIVE_USER) {
+      box.innerHTML = `<div class="msg error">Scan a user badge first, then the project.</div>`;
+      _refocusScanInput();
+      return;
+    }
+    setScanActiveProject(entity);
+    box.innerHTML = `<div class="msg ok">Project: ${escapeHtml(entity.name)} — now scan a tool or item.</div>`;
+    _refocusScanInput();
+    return;
+  }
+
+  if (entityType === 'item') {
+    if (!SCAN_ACTIVE_USER) {
+      box.innerHTML = `<div class="msg error">Scan a user badge first, then a project, then the ${escapeHtml(entityType)}.</div>`;
+      _refocusScanInput();
+      return;
+    }
+    if (!SCAN_ACTIVE_PROJECT) {
+      box.innerHTML = `<div class="msg error">Scan the project barcode first, then the ${escapeHtml(entityType)}.</div>`;
+      _refocusScanInput();
+      return;
+    }
+  }
+
+  if (entityType === 'tool') {
+    // Checking a tool back in needs no user or project scan -- just
+    // scan the tool itself. Checking one out still needs a user badge
+    // scanned first, but the project scan is no longer required.
+    if (entity.status !== 'checked_out' && !SCAN_ACTIVE_USER) {
+      box.innerHTML = `<div class="msg error">Scan a user badge first, then the tool.</div>`;
+      _refocusScanInput();
+      return;
+    }
+  }
+
+  if (entityType === 'wire') {
+    // Checking wire back in needs no user or project scan -- just scan
+    // the coil. Checking wire out still needs both a user and a
+    // project scanned first, same as before.
+    if (entity.status !== 'checked_out') {
+      if (!SCAN_ACTIVE_USER) {
+        box.innerHTML = `<div class="msg error">Scan a user badge first, then a project, then the wire.</div>`;
+        _refocusScanInput();
+        return;
+      }
+      if (!SCAN_ACTIVE_PROJECT) {
+        box.innerHTML = `<div class="msg error">Scan the project barcode first, then the wire.</div>`;
+        _refocusScanInput();
+        return;
+      }
+    }
+  }
+
+  // Scanning IS the action, not just a lookup -- an item scan removes
+  // one immediately, a tool scan toggles checked-out/available based on
+  // its CURRENT status (scan once to check out, scan the same barcode
+  // again to check back in). The resulting card still shows manual
+  // +1/-1 and Check In/Out buttons for follow-up corrections (e.g.
+  // undoing an accidental double-scan), but the primary action needs no
+  // extra click -- that's the whole point of a handheld scanner
+  // workflow: scan and move on. Welding wire follows the same
+  // scan-once-to-checkout / scan-again-to-checkin pattern as tools,
+  // except checking IN also needs the finishing weight, which can't be
+  // scanned -- see scanWireCheckin's prompt().
+  if (entityType === 'item') {
+    await scanAdjust(entity.id, -1);
+  } else if (entityType === 'tool') {
+    if (entity.status === 'checked_out') {
+      await scanCheckin(entity.id);
+    } else {
+      await scanCheckout(entity.id, entity);
+    }
+  } else if (entityType === 'wire') {
+    if (entity.status === 'checked_out') {
+      await scanWireCheckin(entity.id, entity);
+    } else {
+      await scanWireCheckout(entity.id, entity);
+    }
+  } else {
+    // Anything else with no scan-triggered action -- just show what was found.
+    renderScanResult(entityType, entity);
+  }
+}
+
+// Renders the scan-result card with quick-action buttons appropriate to
+// the entity type, and is reused after a quick action succeeds too (so
+// the card updates in place with the new quantity/status, and the scan
+// input -- refocused by the caller -- stays ready for the next scan,
+// matching how a real USB barcode scanner gets used: rapid-fire, hands
+// never leaving the scanner to click into the Items/Tools tabs).
+function renderScanResult(entityType, entity) {
+  const box = document.getElementById('scanResult');
+  let actions = '';
+  if (entityType === 'item') {
+    actions = `
+      <button class="action secondary" onclick="scanAdjust(${entity.id}, -1)">−1 Stock</button>
+      <button class="action" onclick="scanAdjust(${entity.id}, 1)">+1 Stock</button>`;
+  } else if (entityType === 'tool') {
+    actions = entity.status === 'checked_out'
+      ? `<button class="action" onclick="scanCheckin(${entity.id})">Check In</button>`
+      : `<button class="action" onclick="scanCheckout(${entity.id})">Check Out</button>`;
+  } else if (entityType === 'wire') {
+    actions = entity.status === 'checked_out'
+      ? `<button class="action" onclick="scanWireCheckin(${entity.id})">Check In</button>`
+      : `<button class="action" onclick="scanWireCheckout(${entity.id})">Check Out</button>`;
+  }
+  const owner = entity.last_adjusted_by ? ` — last by ${escapeHtml(entity.last_adjusted_by)}` : '';
+  const displayName = entity.name || entity.username || entity.barcode_code || ('#' + entity.id);
+  const weightInfo = entityType === 'wire' ? ` — ${entity.current_weight}/${entity.initial_weight} kg` : '';
+  box.innerHTML = `<div class="card">
+    <div><b>${escapeHtml(displayName)}</b><div class="meta">${escapeHtml(entityType)}${entity.quantity !== undefined ? ' — qty ' + entity.quantity : ''}${entity.status ? ' — ' + escapeHtml(entity.status) : ''}${weightInfo}${owner}</div></div>
+    <div class="row-actions">${actions}</div>
+  </div>`;
+}
+
+function _refocusScanInput() {
+  const el = document.getElementById('scanInput');
+  if (el) el.focus();
+}
+
+async function scanAdjust(id, delta) {
+  const body = { delta };
+  if (SCAN_ACTIVE_USER) body.adjusted_by = SCAN_ACTIVE_USER.username;
+  if (SCAN_ACTIVE_PROJECT) body.project = SCAN_ACTIVE_PROJECT.name;
+  const { status, data } = await api(`/api/items/${id}/adjust`, { method: 'POST', body: JSON.stringify(body) });
+  if (status === 200) {
+    renderScanResult('item', data);
+    flash('globalMsg', `Stock ${delta > 0 ? '+1' : '−1'} — now ${data.quantity}.`, 'ok');
+  } else {
+    flash('globalMsg', data.error, 'error');
+  }
+  _refocusScanInput();
+}
+
+async function scanCheckout(id, fallbackEntity) {
+  const who = (SCAN_ACTIVE_USER && SCAN_ACTIVE_USER.username) || prompt('Your name:');
+  if (!who) {
+    if (fallbackEntity) renderScanResult('tool', fallbackEntity);
+    flash('globalMsg', 'Checkout cancelled.', 'error');
+    _refocusScanInput();
+    return;
+  }
+  const body = { checked_out_by_name: who };
+  if (SCAN_ACTIVE_PROJECT) body.project = SCAN_ACTIVE_PROJECT.name;
+  const { status, data } = await api(`/api/tools/${id}/checkout`, { method: 'POST', body: JSON.stringify(body) });
+  if (status === 200) {
+    renderScanResult('tool', data);
+    flash('globalMsg', 'Checked out.', 'ok');
+  } else {
+    flash('globalMsg', data.error, 'error');
+  }
+  _refocusScanInput();
+}
+
+async function scanCheckin(id) {
+  const body = {};
+  if (SCAN_ACTIVE_PROJECT) body.project = SCAN_ACTIVE_PROJECT.name;
+  const { status, data } = await api(`/api/tools/${id}/checkin`, { method: 'POST', body: JSON.stringify(body) });
+  if (status === 200) {
+    renderScanResult('tool', data);
+    flash('globalMsg', 'Checked in.', 'ok');
+  } else {
+    flash('globalMsg', data.error, 'error');
+  }
+  _refocusScanInput();
+}
+
+// ── Welding wire check-out / check-in (via the Scan tab) ────────────
+async function scanWireCheckout(id, fallbackEntity) {
+  if (!SCAN_ACTIVE_USER) { flash('globalMsg', 'Scan a user badge first.', 'error'); _refocusScanInput(); return; }
+  const body = {
+    user_name: SCAN_ACTIVE_USER.username,
+    user_badge: SCAN_ACTIVE_USER.badge_code || null,
+    project: SCAN_ACTIVE_PROJECT ? SCAN_ACTIVE_PROJECT.name : null,
+  };
+  const { status, data } = await api(`/api/wire/coils/${id}/checkout`, { method: 'POST', body: JSON.stringify(body) });
+  if (status === 200) {
+    renderScanResult('wire', data.coil);
+    flash('globalMsg', `Welding wire checked out — starting weight ${data.transaction.starting_weight}kg.`, 'ok');
+  } else {
+    if (fallbackEntity) renderScanResult('wire', fallbackEntity);
+    flash('globalMsg', data.error, 'error');
+  }
+  _refocusScanInput();
+}
+
+async function scanWireCheckin(id, fallbackEntity) {
+  // Finishing weight can't be scanned -- this is the one step in the
+  // whole welding-wire flow that genuinely needs manual entry (spec
+  // requires the user to weigh the coil and key in what's left).
+  const raw = prompt('Finishing weight (kg):');
+  if (raw === null) { // cancelled
+    if (fallbackEntity) renderScanResult('wire', fallbackEntity);
+    _refocusScanInput();
+    return;
+  }
+  const finishingWeight = parseFloat(raw);
+  if (isNaN(finishingWeight) || finishingWeight < 0) {
+    flash('globalMsg', 'Enter a valid finishing weight in kg.', 'error');
+    if (fallbackEntity) renderScanResult('wire', fallbackEntity);
+    _refocusScanInput();
+    return;
+  }
+  const body = {
+    finishing_weight: finishingWeight,
+    user_name: SCAN_ACTIVE_USER ? SCAN_ACTIVE_USER.username : undefined,
+    user_badge: SCAN_ACTIVE_USER ? SCAN_ACTIVE_USER.badge_code : undefined,
+  };
+  const { status, data } = await api(`/api/wire/coils/${id}/checkin`, { method: 'POST', body: JSON.stringify(body) });
+  if (status === 200) {
+    renderScanResult('wire', data.coil);
+    flash('globalMsg', `Checked in — ${data.transaction.consumed}kg used.`, 'ok');
+  } else {
+    if (fallbackEntity) renderScanResult('wire', fallbackEntity);
+    flash('globalMsg', data.error, 'error');
+  }
+  _refocusScanInput();
+}
+
+// ── Role permissions (per-role login toggle) ────────────────────────
+const _ROLE_LABELS = { admin: 'Admin', supervisor: 'Supervisor', stock_user: 'Stock user' };
+
+async function loadRolePermissions() {
+  const { status, data } = await api('/api/admin/role-permissions');
+  const list = document.getElementById('rolePermissionsList');
+  if (status !== 200) {
+    list.innerHTML = `<div class="msg error">${escapeHtml(data.error || 'Could not load role permissions.')}</div>`;
+    return;
+  }
+  list.innerHTML = data.map(rp => `
+    <div class="card" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px;">
+      <b>${escapeHtml(_ROLE_LABELS[rp.role] || rp.role)}</b>
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted);">
+        Can log in
+        <input type="checkbox" ${rp.login_enabled ? 'checked' : ''} ${rp.role === 'admin' ? 'disabled title="The admin role can\'t be disabled"' : ''}
+               onchange="toggleRolePermission('${rp.role}', this.checked)" style="width:auto;">
+      </label>
+    </div>`).join('');
+}
+
+async function toggleRolePermission(role, enabled) {
+  const { status, data } = await api(`/api/admin/role-permissions/${role}`, { method: 'PATCH', body: JSON.stringify({ login_enabled: enabled }) });
+  if (status === 200) {
+    flash('globalMsg', `${_ROLE_LABELS[role] || role} logins ${enabled ? 'enabled' : 'disabled'}.`, 'ok');
+  } else {
+    flash('globalMsg', data.error || 'Could not update.', 'error');
+  }
+  loadRolePermissions(); // re-render either way, so a rejected change snaps the checkbox back
+}
+
+// Stop the camera if the user navigates away from the Scan tab, so the
+// camera light doesn't stay on in the background.
+const _origShowTab = showTab;
+showTab = function(name) {
+  if (name !== 'scan' && cameraStream) stopCameraScan();
+  _origShowTab(name);
+};
+
+// ── Items tab ────────────────────────────────────────────────────────
+async function loadItems() {
+  const q = document.getElementById('itemsSearch').value;
+  const { data } = await api('/api/items?q=' + encodeURIComponent(q));
+  ITEMS_CACHE = data;
+  const list = document.getElementById('itemsList');
+  list.innerHTML = data.map(i => `
+    <div class="card">
+      <div><b>${escapeHtml(i.name)}</b><div class="meta">${escapeHtml(i.sku || '')} — qty ${i.quantity} ${escapeHtml(i.unit || '')}${i.quantity <= LOW_STOCK_THRESHOLD ? ' <span style="color:var(--orange)">● low stock</span>' : ''}${i.last_used_project ? ' — last used for ' + escapeHtml(i.last_used_project) : ''}${i.barcode_code ? ` — code <code>${escapeHtml(i.barcode_code)}</code>` : ''}</div></div>
+      <div class="row-actions">
+        <button class="action secondary" onclick="adjustItem(${i.id}, -1)">−1</button>
+        <button class="action" onclick="adjustItem(${i.id}, 1)">+1</button>
+        <button class="action secondary" onclick="openBarcodeModal('item', ${i.id})">Barcode</button>
+        <button class="action secondary admin-only hidden" onclick="openItemModal(${i.id})">Edit</button>
+        <button class="action danger admin-only hidden" onclick="deleteItem(${i.id})">Delete</button>
+      </div>
+    </div>`).join('') || '<div class="empty">No items found.</div>';
+  document.querySelectorAll('#itemsList .admin-only').forEach(el => el.classList.toggle('hidden', CURRENT_ROLE !== 'admin'));
+}
+async function adjustItem(id, delta) {
+  const { status, data } = await api(`/api/items/${id}/adjust`, { method: 'POST', body: JSON.stringify({ delta }) });
+  if (status === 200) { loadItems(); checkLowStockBanner(); } else flash('globalMsg', data.error, 'error');
+}
+
+// ── Low Stock (dedicated list + dismissible banner) ────────────────
+let LOW_STOCK_DISMISSED = false; // resets on next login, matching a lightweight per-session dismiss
+
+async function loadLowStock() {
+  document.getElementById('lowStockThresholdText').textContent = LOW_STOCK_THRESHOLD;
+  const { data } = await api('/api/items');
+  const lowStock = (data || []).filter(i => i.quantity <= LOW_STOCK_THRESHOLD).sort((a, b) => a.quantity - b.quantity);
+  const list = document.getElementById('lowStockList');
+  list.innerHTML = lowStock.length ? lowStock.map(i => `
+    <div class="card">
+      <div><b>${escapeHtml(i.name)}</b><div class="meta">${escapeHtml(i.sku || '')} — qty ${i.quantity} ${escapeHtml(i.unit || '')} <span style="color:var(--orange)">● low stock</span>${i.last_used_project ? ' — last used for ' + escapeHtml(i.last_used_project) : ''}</div></div>
+      <div class="row-actions">
+        <button class="action" onclick="adjustLowStockItem(${i.id}, 1)">+1 Restock</button>
+        <button class="action secondary" onclick="showTab('items')">Open in Items</button>
+      </div>
+    </div>`).join('') : '<div class="empty">Nothing is currently low on stock.</div>';
+}
+
+async function adjustLowStockItem(id, delta) {
+  const { status, data } = await api(`/api/items/${id}/adjust`, { method: 'POST', body: JSON.stringify({ delta }) });
+  if (status === 200) { loadLowStock(); checkLowStockBanner(); } else flash('globalMsg', data.error, 'error');
+}
+
+async function checkLowStockBanner() {
+  if (LOW_STOCK_DISMISSED) return;
+  const { data } = await api('/api/items');
+  const count = (data || []).filter(i => i.quantity <= LOW_STOCK_THRESHOLD).length;
+  const banner = document.getElementById('lowStockBanner');
+  if (count > 0) {
+    document.getElementById('lowStockBannerText').textContent =
+      count === 1 ? '1 item is low on stock.' : `${count} items are low on stock.`;
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+function dismissLowStockBanner() {
+  LOW_STOCK_DISMISSED = true;
+  document.getElementById('lowStockBanner').classList.add('hidden');
+}
+
+// ── Tools tab ────────────────────────────────────────────────────────
+async function loadTools() {
+  const { data } = await api('/api/tools');
+  TOOLS_CACHE = data;
+  const list = document.getElementById('toolsList');
+  const _STATUS_BADGE = {
+    available: '<span style="color:var(--green)">● Available</span>',
+    checked_out: '<span style="color:var(--orange)">● Checked out</span>',
+    maintenance: '<span style="color:var(--red)">● Under maintenance</span>',
+  };
+  list.innerHTML = data.map(t => `
+    <div class="card">
+      <div><b>${escapeHtml(t.name)}</b><div class="meta">${_STATUS_BADGE[t.status] || escapeHtml(t.status)}${t.checked_out_by_name ? ' — ' + escapeHtml(t.checked_out_by_name) : ''}${t.current_project ? ' — for ' + escapeHtml(t.current_project) : ''}${t.barcode_code ? ` — code <code>${escapeHtml(t.barcode_code)}</code>` : ''}</div></div>
+      <div class="row-actions">
+        ${t.status === 'checked_out'
+          ? `<button class="action" onclick="checkinTool(${t.id})">Check In</button>`
+          : t.status === 'maintenance'
+          ? `<button class="action secondary admin-only hidden" onclick="setToolStatus(${t.id}, 'available')">Mark Available</button>`
+          : `<button class="action" onclick="checkoutTool(${t.id})">Check Out</button>`}
+        ${t.status !== 'maintenance' && t.status !== 'checked_out'
+          ? `<button class="action secondary admin-only hidden" onclick="setToolStatus(${t.id}, 'maintenance')">Mark Maintenance</button>` : ''}
+        <button class="action secondary" onclick="openBarcodeModal('tool', ${t.id})">Barcode</button>
+        <button class="action secondary admin-only hidden" onclick="openToolModal(${t.id})">Edit</button>
+        <button class="action danger admin-only hidden" onclick="deleteTool(${t.id})">Delete</button>
+      </div>
+    </div>`).join('') || '<div class="empty">No tools found.</div>';
+  document.querySelectorAll('#toolsList .admin-only').forEach(el => el.classList.toggle('hidden', CURRENT_ROLE !== 'admin'));
+}
+async function checkoutTool(id) {
+  const who = prompt('Your name:');
+  if (!who) return;
+  const { status, data } = await api(`/api/tools/${id}/checkout`, { method: 'POST', body: JSON.stringify({ checked_out_by_name: who }) });
+  if (status === 200) loadTools(); else flash('globalMsg', data.error, 'error');
+}
+async function checkinTool(id) {
+  const { status, data } = await api(`/api/tools/${id}/checkin`, { method: 'POST' });
+  if (status === 200) loadTools(); else flash('globalMsg', data.error, 'error');
+}
+async function setToolStatus(id, status) {
+  const { status: httpStatus, data } = await api(`/api/tools/${id}/status`, { method: 'POST', body: JSON.stringify({ status }) });
+  if (httpStatus === 200) loadTools(); else flash('globalMsg', data.error, 'error');
+}
+
+// ── Projects tab ─────────────────────────────────────────────────────
+async function loadProjects() {
+  const { data } = await api('/api/projects');
+  PROJECTS_CACHE = data;
+  const list = document.getElementById('projectsList');
+  list.innerHTML = data.map(p => `
+    <div class="card">
+      <div><b>${escapeHtml(p.name)}</b><div class="meta">${escapeHtml(p.description || '')}${p.barcode_code ? ` — code <code>${escapeHtml(p.barcode_code)}</code>` : ''}</div></div>
+      <div class="row-actions">
+        <button class="action secondary" onclick="openBarcodeModal('project', ${p.id})">Barcode</button>
+        <button class="action secondary admin-only hidden" onclick="openProjectModal(${p.id})">Edit</button>
+        <button class="action danger admin-only hidden" onclick="deleteProject(${p.id})">Delete</button>
+      </div>
+    </div>`
+  ).join('') || '<div class="empty">No active projects.</div>';
+  document.querySelectorAll('#projectsList .admin-only').forEach(el => el.classList.toggle('hidden', CURRENT_ROLE !== 'admin'));
+}
+
+// ── Welding Wire tab ─────────────────────────────────────────────────
+const _WIRE_STATUS_LABELS = { available: 'Available', checked_out: 'Checked Out', empty: 'Empty / Finished', inactive: 'Inactive' };
+const _WIRE_STATUS_COLORS = { available: 'green', checked_out: 'orange', empty: 'muted', inactive: 'red' };
+
+function _wireCoilCard(c) {
+  // The red styling below is keyed off c.status === 'empty' ONLY -- never
+  // off current_weight being 0 -- so a coil an admin hasn't marked
+  // finished yet stays in its normal appearance even at 0kg remaining.
+  const isEmpty = c.status === 'empty';
+  return `
+    <div class="card${isEmpty ? ' card-empty' : ''}">
+      <div>
+        <b>${escapeHtml(c.name || c.barcode_code || ('Coil #' + c.id))}</b>
+        <div class="meta">
+          ${escapeHtml(c.wire_code_name || 'No wire code set')}
+          — <span style="color:var(--${_WIRE_STATUS_COLORS[c.status] || 'muted'})">${escapeHtml(_WIRE_STATUS_LABELS[c.status] || c.status)}</span>
+          — ${c.current_weight} / ${c.initial_weight} kg remaining
+          ${c.status === 'checked_out' ? ` — out to ${escapeHtml(c.checked_out_by_name || 'unknown')}${c.current_project ? ' on ' + escapeHtml(c.current_project) : ''}` : ''}
+          ${c.barcode_code ? ` — code <code>${escapeHtml(c.barcode_code)}</code>` : ''}
+        </div>
+      </div>
+      <div class="row-actions">
+        <button class="action secondary" onclick="openBarcodeModal('wire', ${c.id})">Barcode</button>
+        ${!isEmpty && c.status !== 'checked_out' ? `<button class="action secondary admin-only hidden" onclick="openWireAddWeightModal(${c.id})">Add Weight</button>` : ''}
+        <button class="action secondary admin-only hidden" onclick="openWireModal(${c.id})">Edit</button>
+        ${isEmpty ? `<button class="action danger admin-only hidden" onclick="deleteWireCoil(${c.id})">Delete</button>` : ''}
+      </div>
+    </div>`;
+}
+
+async function loadWireCoils() {
+  const { data } = await api('/api/wire/coils');
+  WIRE_COILS_CACHE = data || [];
+
+  // Active vs Empty/Finished are kept as two clearly separate lists --
+  // a coil moves into "Empty / Finished" the moment its status becomes
+  // 'empty' (checkin reaching 0kg, or an admin marking it finished) and
+  // moves back the moment it's revived (Add Weight), never anything
+  // manual beyond that status change.
+  const active = WIRE_COILS_CACHE.filter(c => c.status !== 'empty');
+  const finished = WIRE_COILS_CACHE.filter(c => c.status === 'empty');
+
+  document.getElementById('wireList').innerHTML =
+    active.map(_wireCoilCard).join('') || '<div class="empty">No welding wire registered yet.</div>';
+
+  document.getElementById('wireEmptySection').classList.toggle('hidden', finished.length === 0);
+  document.getElementById('wireEmptyList').innerHTML = finished.map(_wireCoilCard).join('');
+
+  document.querySelectorAll('#wireList .admin-only, #wireEmptyList .admin-only')
+    .forEach(el => el.classList.toggle('hidden', CURRENT_ROLE !== 'admin'));
+}
+
+async function deleteWireCoil(id) {
+  const coil = WIRE_COILS_CACHE.find(c => c.id === id);
+  if (!confirm(`Delete "${coil ? (coil.name || coil.barcode_code) : 'this box'}"? This can't be undone.`)) return;
+  const { status, data } = await api(`/api/wire/coils/${id}`, { method: 'DELETE' });
+  if (status !== 200) { flash('globalMsg', data.error || 'Delete failed.', 'error'); return; }
+  loadWireCoils();
+}
+
+// Tops up an existing box's weight -- always added on top of whatever
+// current_weight already is (see routes_wire.py's update_coil), never
+// a replacement, so this is safe to open on a box mid-use.
+function openWireAddWeightModal(id) {
+  const coil = WIRE_COILS_CACHE.find(c => c.id === id);
+  if (!coil) return;
+  document.getElementById('wireAddWeightCoilId').value = id;
+  document.getElementById('wireAddWeightCurrent').textContent =
+    `${escapeHtml(coil.name || coil.barcode_code || ('Coil #' + coil.id))} — currently ${coil.current_weight}kg remaining.`;
+  document.getElementById('wireAddWeightAmount').value = '';
+  document.getElementById('wireAddWeightError').classList.add('hidden');
+  document.getElementById('wireAddWeightModal').classList.remove('hidden');
+}
+
+async function saveWireAddWeight() {
+  const id = document.getElementById('wireAddWeightCoilId').value;
+  const amount = parseFloat(document.getElementById('wireAddWeightAmount').value);
+  if (!amount || amount <= 0) { showModalError('wireAddWeightError', 'Weight to add must be a number greater than 0.'); return; }
+  const { status, data } = await api(`/api/wire/coils/${id}`, { method: 'PATCH', body: JSON.stringify({ add_weight: amount }) });
+  if (status !== 200) { showModalError('wireAddWeightError', data.error || 'Save failed.'); return; }
+  closeModal('wireAddWeightModal');
+  loadWireCoils();
+  flash('globalMsg', `Added ${amount}kg — now ${data.current_weight}kg remaining.`, 'ok');
+}
+
+async function _loadWireCodesIntoSelect(selectEl, currentId) {
+  const { data } = await api('/api/wire/codes');
+  WIRE_CODES_CACHE = data || [];
+  selectEl.innerHTML = '<option value="">— none —</option>' +
+    WIRE_CODES_CACHE.map(wc => `<option value="${wc.id}" ${currentId === wc.id ? 'selected' : ''}>${escapeHtml(wc.name)}</option>`).join('');
+}
+
+async function openWireModal(id) {
+  const coil = id ? WIRE_COILS_CACHE.find(c => c.id === id) : null;
+  document.getElementById('wireModalTitle').textContent = coil ? 'Edit Welding Wire' : 'Add Welding Wire';
+  document.getElementById('wireModalId').value = coil ? coil.id : '';
+  document.getElementById('wireModalName').value = coil ? (coil.name || '') : '';
+  document.getElementById('wireModalBarcode').value = coil ? (coil.barcode_code || '') : '';
+  await _loadWireCodesIntoSelect(document.getElementById('wireModalCode'), coil ? coil.wire_code_id : null);
+
+  // Starting weight is only settable when creating a new coil -- the
+  // backend has no endpoint to change it afterward (current_weight only
+  // ever changes via an actual checkout/checkin), so editing shows
+  // status instead.
+  document.getElementById('wireModalWeightField').classList.toggle('hidden', !!coil);
+  document.getElementById('wireModalStatusField').classList.toggle('hidden', !coil);
+  document.getElementById('wireModalWeight').value = '';
+  if (coil) document.getElementById('wireModalStatus').value = coil.status === 'checked_out' ? 'available' : coil.status;
+
+  // Bulk add is only offered when creating (editing is always one coil).
+  document.getElementById('wireModalBulkToggleField').classList.toggle('hidden', !!coil);
+  document.getElementById('wireModalBulk').checked = false;
+  document.getElementById('wireModalCount').value = 2;
+  document.getElementById('wireModalTotalWeight').value = '';
+  document.getElementById('wireModalBoxesList').innerHTML = '';
+  _setWireModalBulkMode(false, !!coil);
+
+  document.getElementById('wireModalError').classList.add('hidden');
+  document.getElementById('wireModal').classList.remove('hidden');
+}
+
+// Shows/hides the single-box fields vs the bulk fields. `editing` keeps
+// the weight/barcode/status fields behaving exactly as before whenever
+// this is an edit (bulk is never available while editing).
+function _setWireModalBulkMode(bulk, editing) {
+  document.getElementById('wireModalCountField').classList.toggle('hidden', !bulk);
+  document.getElementById('wireModalTotalWeightField').classList.toggle('hidden', !bulk);
+  document.getElementById('wireModalBoxesField').classList.toggle('hidden', !bulk);
+  document.getElementById('wireModalWeightField').classList.toggle('hidden', bulk || editing);
+  document.getElementById('wireModalBarcodeField').classList.toggle('hidden', bulk);
+}
+
+function onWireModalBulkToggle() {
+  const bulk = document.getElementById('wireModalBulk').checked;
+  _setWireModalBulkMode(bulk, false);
+  if (bulk) _renderWireModalBoxes();
+}
+
+function onWireModalCountChange() {
+  _renderWireModalBoxes();
+}
+
+function onWireModalTotalWeightChange() {
+  _renderWireModalBoxes();
+}
+
+// Rebuilds the per-box weight/barcode rows from the current count and
+// total weight, splitting evenly (remainder on the last box, matching
+// the backend's own rounding) -- see the field's label for why this
+// resets any weights the user already customized per box.
+function _renderWireModalBoxes() {
+  let count = parseInt(document.getElementById('wireModalCount').value, 10);
+  if (!count || count < 1) count = 1;
+  if (count > 200) count = 200;
+  document.getElementById('wireModalCount').value = count;
+
+  const total = parseFloat(document.getElementById('wireModalTotalWeight').value);
+  let share = null;
+  if (total && total > 0) {
+    share = Math.round((total / count) * 10000) / 10000;
+  }
+
+  const list = document.getElementById('wireModalBoxesList');
+  let rows = '';
+  for (let i = 0; i < count; i++) {
+    const w = share !== null ? share.toFixed(2) : '';
+    rows += `
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span class="meta" style="width:52px; flex-shrink:0;">Box ${i + 1}</span>
+        <input type="number" min="0.01" step="0.01" placeholder="weight (kg)" value="${w}" id="wireModalBoxWeight_${i}" style="flex:1;" />
+        <input type="text" placeholder="barcode (optional)" id="wireModalBoxBarcode_${i}" style="flex:1; font-family:monospace;" />
+      </div>`;
+  }
+  list.innerHTML = rows;
+}
+
+async function saveWireModal() {
+  const id = document.getElementById('wireModalId').value;
+  const wireCodeId = document.getElementById('wireModalCode').value;
+  const isBulk = !id && document.getElementById('wireModalBulk').checked;
+
+  if (isBulk) {
+    const count = parseInt(document.getElementById('wireModalCount').value, 10);
+    const perBoxWeight = [];
+    const perBoxBarcode = [];
+    for (let i = 0; i < count; i++) {
+      const w = parseFloat(document.getElementById(`wireModalBoxWeight_${i}`).value);
+      if (!w || w <= 0) { showModalError('wireModalError', `Box ${i + 1}: weight must be a number greater than 0.`); return; }
+      perBoxWeight.push(w);
+      perBoxBarcode.push(document.getElementById(`wireModalBoxBarcode_${i}`).value.trim());
+    }
+    const body = {
+      count,
+      name: document.getElementById('wireModalName').value.trim(),
+      wire_code_id: wireCodeId ? parseInt(wireCodeId, 10) : null,
+      per_box_weight: perBoxWeight,
+      per_box_barcode: perBoxBarcode,
+    };
+    const { status, data } = await api('/api/wire/coils/bulk', { method: 'POST', body: JSON.stringify(body) });
+    if (status !== 200 && status !== 201) { showModalError('wireModalError', data.error || 'Save failed.'); return; }
+    closeModal('wireModal');
+    loadWireCoils();
+    flash('globalMsg', `${data.count} welding wire boxes added — ${data.total_weight}kg total.`, 'ok');
+    const coilIds = data.coils.map(c => c.id);
+    if (confirm(`Print individual unique barcodes for all ${data.count} boxes as a printable PDF?`)) {
+      downloadWireBarcodesSheet(coilIds);
+    }
+    return;
+  }
+
+  const body = {
+    name: document.getElementById('wireModalName').value.trim(),
+    wire_code_id: wireCodeId ? parseInt(wireCodeId, 10) : null,
+    barcode_code: document.getElementById('wireModalBarcode').value.trim(),
+  };
+  if (!id) {
+    const weight = parseFloat(document.getElementById('wireModalWeight').value);
+    if (!weight || weight <= 0) { showModalError('wireModalError', 'Starting weight must be a number greater than 0.'); return; }
+    body.initial_weight = weight;
+  } else {
+    body.status = document.getElementById('wireModalStatus').value;
+  }
+  const { status, data } = id
+    ? await api(`/api/wire/coils/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+    : await api('/api/wire/coils', { method: 'POST', body: JSON.stringify(body) });
+  if (status !== 200 && status !== 201) { showModalError('wireModalError', data.error || 'Save failed.'); return; }
+  closeModal('wireModal');
+  loadWireCoils();
+  if (!id) flash('globalMsg', `Welding wire added — barcode ${data.barcode_code}`, 'ok');
+}
+
+// Fetches the printable barcode-sheet PDF for a set of coil ids and
+// hands the browser a blob download -- same pattern exportCsv() and
+// generateWireReport() use, since a plain <a href> can't carry the
+// Authorization header this kiosk's API needs.
+async function downloadWireBarcodesSheet(coilIds) {
+  const res = await fetch('/api/wire/coils/barcodes-pdf', {
+    method: 'POST',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, TOKEN ? { 'Authorization': 'Bearer ' + TOKEN } : {}),
+    body: JSON.stringify({ coil_ids: coilIds }),
+  });
+  if (!res.ok) {
+    let msg = `Barcode sheet generation failed (${res.status}).`;
+    try { msg = (await res.json()).error || msg; } catch (e) {}
+    flash('globalMsg', msg, 'error');
+    return;
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'welding_wire_barcodes.pdf';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// ── Wire codes management ───────────────────────────────────────────
+async function openWireCodesModal() {
+  document.getElementById('wireCodeNewName').value = '';
+  document.getElementById('wireCodesError').classList.add('hidden');
+  document.getElementById('wireCodesModal').classList.remove('hidden');
+  await _renderWireCodesList();
+}
+
+async function _renderWireCodesList() {
+  const { data } = await api('/api/wire/codes?include_inactive=1');
+  WIRE_CODES_CACHE = data || [];
+  const list = document.getElementById('wireCodesList');
+  list.innerHTML = WIRE_CODES_CACHE.map(wc => `
+    <div class="card" style="display:flex; align-items:center; gap:8px; padding:10px 14px;">
+      <input value="${escapeHtml(wc.name)}" style="flex:1;" onchange="renameWireCode(${wc.id}, this.value)" />
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); white-space:nowrap;">
+        Active
+        <input type="checkbox" ${wc.is_active ? 'checked' : ''} style="width:auto;" onchange="toggleWireCodeActive(${wc.id}, this.checked)">
+      </label>
+    </div>`
+  ).join('') || '<div class="empty">No wire codes yet — add one below.</div>';
+}
+
+async function addWireCode() {
+  const nameEl = document.getElementById('wireCodeNewName');
+  const name = nameEl.value.trim();
+  if (!name) return;
+  const { status, data } = await api('/api/wire/codes', { method: 'POST', body: JSON.stringify({ name }) });
+  if (status !== 201) { showModalError('wireCodesError', data.error || 'Could not add wire code.'); return; }
+  nameEl.value = '';
+  document.getElementById('wireCodesError').classList.add('hidden');
+  await _renderWireCodesList();
+}
+
+async function renameWireCode(id, name) {
+  name = name.trim();
+  if (!name) { await _renderWireCodesList(); return; } // revert blank edits rather than sending them
+  const { status, data } = await api(`/api/wire/codes/${id}`, { method: 'PATCH', body: JSON.stringify({ name }) });
+  if (status !== 200) { showModalError('wireCodesError', data.error || 'Rename failed.'); await _renderWireCodesList(); return; }
+  document.getElementById('wireCodesError').classList.add('hidden');
+}
+
+async function toggleWireCodeActive(id, active) {
+  const { status, data } = await api(`/api/wire/codes/${id}`, { method: 'PATCH', body: JSON.stringify({ is_active: active }) });
+  if (status !== 200) { showModalError('wireCodesError', data.error || 'Could not update.'); }
+  await _renderWireCodesList();
+}
+
+// ── Wire usage report (PDF) ─────────────────────────────────────────
+function openWireReportModal() {
+  document.getElementById('wireReportRange').value = '';
+  document.getElementById('wireReportCustomFields').classList.add('hidden');
+  document.getElementById('wireReportFrom').value = '';
+  document.getElementById('wireReportTo').value = '';
+  document.getElementById('wireReportError').classList.add('hidden');
+  document.getElementById('wireReportModal').classList.remove('hidden');
+}
+
+function onWireReportRangeChange() {
+  const isCustom = document.getElementById('wireReportRange').value === 'custom';
+  document.getElementById('wireReportCustomFields').classList.toggle('hidden', !isCustom);
+}
+
+async function generateWireReport() {
+  const range = document.getElementById('wireReportRange').value;
+  const params = new URLSearchParams();
+  if (range === 'custom') {
+    const from = document.getElementById('wireReportFrom').value;
+    const to = document.getElementById('wireReportTo').value;
+    if (from) params.set('date_from', from);
+    if (to) params.set('date_to', to);
+  } else if (range) {
+    params.set('range', range);
+  }
+
+  const res = await fetch(`/api/wire/report/pdf?${params.toString()}`, {
+    headers: TOKEN ? { 'Authorization': 'Bearer ' + TOKEN } : {},
+  });
+  if (!res.ok) {
+    let msg = `Report generation failed (${res.status}).`;
+    try { msg = (await res.json()).error || msg; } catch (e) {}
+    showModalError('wireReportError', msg);
+    return;
+  }
+  const blob = await res.blob();
+  const cd = res.headers.get('Content-Disposition') || '';
+  const match = cd.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : 'welding_wire_report.pdf';
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  closeModal('wireReportModal');
+}
+
+// ── Activity tab (full history of what Recent Activity previews) ─────
+async function loadActivityLog() {
+  const { data } = await api('/api/status/activity');
+  const list = document.getElementById('activityList');
+  list.innerHTML = (data && data.length) ? data.map(a => `
+    <div class="card">
+      <div><b>${escapeHtml(a.entity_name)}</b><div class="meta">${escapeHtml(ACTIVITY_LABELS[a.event_type] || a.event_type)}${a.actor ? ' — ' + escapeHtml(a.actor) : ''}${a.project ? ' — for ' + escapeHtml(a.project) : ''}${a.detail ? ' — ' + escapeHtml(a.detail) : ''}</div></div>
+      <div class="meta">${a.created_at ? new Date(a.created_at).toLocaleString() : ''}</div>
+    </div>`).join('') : '<div class="empty">No activity recorded yet.</div>';
+}
+
+// ── Sync log tab ─────────────────────────────────────────────────────
+async function loadSyncLog() {
+  const { data } = await api('/api/status/sync-log');
+  const list = document.getElementById('syncLogList');
+  list.innerHTML = (data && data.length) ? data.map(l => `
+    <div class="card">
+      <div><b>${escapeHtml(l.entity_type || 'sync')} — ${escapeHtml(l.direction)}</b><div class="meta">${escapeHtml(l.message || l.status)}</div></div>
+      <div class="meta">${l.created_at ? new Date(l.created_at).toLocaleString() : ''}</div>
+    </div>`).join('') : '<div class="empty">No sync activity yet.</div>';
+}
+
+// ── Stock Audit (financial role only) ──────────────────────────────
+async function loadAuditRuns() {
+  const filter = document.getElementById('auditPeriodFilter').value;
+  const qs = filter ? `?period_type=${filter}` : '';
+  const { status, data } = await api(`/api/admin/audit/runs${qs}`);
+  const list = document.getElementById('auditRunsList');
+  document.getElementById('auditRunDetail').innerHTML = '';
+  if (status !== 200) {
+    list.innerHTML = `<div class="empty">${escapeHtml(data.error || 'Could not load audit runs.')}</div>`;
+    return;
+  }
+  const runs = data.runs || [];
+  if (!runs.length) {
+    list.innerHTML = '<div class="empty">No audits have run yet.</div>';
+    return;
+  }
+  list.innerHTML = `
+    <table class="datatable">
+      <thead><tr>
+        <th>Period</th><th>Type</th><th>Items</th><th>Total Qty</th>
+        <th>Discrepancies</th><th>Net Change</th><th>Ran</th>
+      </tr></thead>
+      <tbody>
+        ${runs.map(r => `
+          <tr style="cursor:pointer" onclick="viewAuditRun(${r.id})">
+            <td>${escapeHtml(r.period_key)} ${r.is_backfill ? '<span class="meta">(backfilled)</span>' : ''}</td>
+            <td>${escapeHtml(r.period_type)}</td>
+            <td>${r.total_items}</td>
+            <td>${r.total_quantity}</td>
+            <td>${r.discrepancy_count}</td>
+            <td style="color:${r.net_quantity_change < 0 ? '#f66' : r.net_quantity_change > 0 ? '#6f6' : 'inherit'}">
+              ${r.net_quantity_change > 0 ? '+' : ''}${r.net_quantity_change}
+            </td>
+            <td class="meta">${r.created_at ? new Date(r.created_at).toLocaleString() : ''}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+async function viewAuditRun(runId) {
+  const { status, data } = await api(`/api/admin/audit/runs/${runId}`);
+  const el = document.getElementById('auditRunDetail');
+  if (status !== 200) {
+    el.innerHTML = `<div class="empty">${escapeHtml(data.error || 'Could not load that audit.')}</div>`;
+    return;
+  }
+  const records = (data.records || []).filter(r => r.discrepancy);
+  el.innerHTML = `
+    <div class="card">
+      <h2 style="margin:0 0 4px; font-size:15px;">
+        ${escapeHtml(data.period_type)} ${escapeHtml(data.period_key)} — items with a discrepancy
+      </h2>
+      ${records.length ? `
+        <table class="datatable">
+          <thead><tr><th>Item</th><th>SKU</th><th>Was</th><th>Now</th><th>Change</th></tr></thead>
+          <tbody>
+            ${records.map(r => `
+              <tr>
+                <td>${escapeHtml(r.item_name)}</td>
+                <td>${escapeHtml(r.sku || '-')}</td>
+                <td>${r.previous_quantity ?? '-'}</td>
+                <td>${r.quantity_at_audit}</td>
+                <td style="color:${r.discrepancy < 0 ? '#f66' : '#6f6'}">${r.discrepancy > 0 ? '+' : ''}${r.discrepancy}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      ` : '<div class="empty">No discrepancies in this period.</div>'}
+    </div>`;
+}
+
+async function runAuditNow(periodType) {
+  const { status, data } = await api('/api/admin/audit/run-now', {
+    method: 'POST',
+    body: JSON.stringify({ period_type: periodType }),
+  });
+  if (status === 200) {
+    flash('globalMsg', `Audit for ${data.period_key} complete: ${data.discrepancy_count} discrepancy(ies), net change ${data.net_quantity_change}.`, 'ok');
+    loadAuditRuns();
+  } else {
+    flash('globalMsg', data.error || 'Audit run failed.', 'error');
+  }
+}
+
+// ── DB Tools: raw per-table export/import/diff (admin-only) ──────────
+async function loadDbTools() {
+  const { status, data } = await api('/api/admin/db-tools/tables');
+  if (status !== 200) { flash('globalMsg', data.error || 'Could not load table list.', 'error'); return; }
+  const opts = data.tables.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  document.getElementById('dbToolsExportTable').innerHTML = opts;
+  document.getElementById('dbToolsImportTable').innerHTML = opts;
+}
+
+async function exportDbTable() {
+  const t = document.getElementById('dbToolsExportTable').value;
+  const res = await fetch(`/api/admin/db-tools/export/${encodeURIComponent(t)}`, {
+    headers: TOKEN ? { 'Authorization': 'Bearer ' + TOKEN } : {},
+  });
+  if (!res.ok) { flash('globalMsg', `Export failed (${res.status}).`, 'error'); return; }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${t}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function exportDbAll() {
+  const res = await fetch('/api/admin/db-tools/export-all', {
+    headers: TOKEN ? { 'Authorization': 'Bearer ' + TOKEN } : {},
+  });
+  if (!res.ok) { flash('globalMsg', `Export failed (${res.status}).`, 'error'); return; }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'database-export.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function importDbTable() {
+  const t = document.getElementById('dbToolsImportTable').value;
+  const fileInput = document.getElementById('dbToolsImportFile');
+  const result = document.getElementById('dbToolsImportResult');
+  if (!fileInput.files.length) { result.textContent = 'Choose a file first.'; return; }
+  const fd = new FormData();
+  fd.append('file', fileInput.files[0]);
+  result.textContent = 'Importing...';
+  const res = await fetch(`/api/admin/db-tools/import/${encodeURIComponent(t)}`, {
+    method: 'POST',
+    headers: TOKEN ? { 'Authorization': 'Bearer ' + TOKEN } : {},
+    body: fd,
+  });
+  const data = await res.json().catch(() => ({}));
+  result.textContent = JSON.stringify(data, null, 2);
+  fileInput.value = '';
+}
+
+async function diffDbSnapshots() {
+  const before = document.getElementById('dbToolsDiffBefore');
+  const after = document.getElementById('dbToolsDiffAfter');
+  const result = document.getElementById('dbToolsDiffResult');
+  if (!before.files.length || !after.files.length) { result.textContent = 'Choose both files first.'; return; }
+  const fd = new FormData();
+  fd.append('before', before.files[0]);
+  fd.append('after', after.files[0]);
+  result.textContent = 'Comparing...';
+  const res = await fetch('/api/admin/db-tools/diff', {
+    method: 'POST',
+    headers: TOKEN ? { 'Authorization': 'Bearer ' + TOKEN } : {},
+    body: fd,
+  });
+  const data = await res.json().catch(() => ({}));
+  result.textContent = JSON.stringify(data, null, 2);
+}
+
+// ── Modal helpers ────────────────────────────────────────────────────
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+function showModalError(fieldId, msg) {
+  const el = document.getElementById(fieldId);
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+// ── Items: add/edit/delete ──────────────────────────────────────────
+function openItemModal(id) {
+  const item = id ? ITEMS_CACHE.find(i => i.id === id) : null;
+  document.getElementById('itemModalTitle').textContent = item ? 'Edit Item' : 'Add Item';
+  document.getElementById('itemModalId').value = item ? item.id : '';
+  document.getElementById('itemModalName').value = item ? item.name : '';
+  document.getElementById('itemModalSku').value = item ? (item.sku || '') : '';
+  document.getElementById('itemModalQuantity').value = item ? item.quantity : 0;
+  document.getElementById('itemModalUnit').value = item ? (item.unit || '') : '';
+  document.getElementById('itemModalDescription').value = item ? (item.description || '') : '';
+  document.getElementById('itemModalBarcode').value = item ? (item.barcode_code || '') : '';
+  document.getElementById('itemModalError').classList.add('hidden');
+  document.getElementById('itemModal').classList.remove('hidden');
+}
+async function saveItemModal() {
+  const id = document.getElementById('itemModalId').value;
+  const body = {
+    name: document.getElementById('itemModalName').value.trim(),
+    sku: document.getElementById('itemModalSku').value.trim(),
+    quantity: parseInt(document.getElementById('itemModalQuantity').value, 10) || 0,
+    unit: document.getElementById('itemModalUnit').value.trim(),
+    description: document.getElementById('itemModalDescription').value.trim(),
+    barcode_code: document.getElementById('itemModalBarcode').value.trim(),
+  };
+  const { status, data } = id
+    ? await api(`/api/admin/items/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+    : await api('/api/admin/items', { method: 'POST', body: JSON.stringify(body) });
+  if (status !== 200 && status !== 201) { showModalError('itemModalError', data.error || 'Save failed.'); return; }
+  closeModal('itemModal');
+  loadItems();
+  if (!id) flash('globalMsg', `Item added — barcode ${data.barcode_code}`, 'ok');
+}
+async function deleteItem(id) {
+  const item = ITEMS_CACHE.find(i => i.id === id);
+  if (!confirm(`Delete "${item ? item.name : 'this item'}"? This can't be undone.`)) return;
+  const { status, data } = await api(`/api/admin/items/${id}`, { method: 'DELETE' });
+  if (status === 200) loadItems(); else flash('globalMsg', data.error || 'Delete failed.', 'error');
+}
+
+// ── Tools: add/edit/delete ──────────────────────────────────────────
+function openToolModal(id) {
+  const tool = id ? TOOLS_CACHE.find(t => t.id === id) : null;
+  document.getElementById('toolModalTitle').textContent = tool ? 'Edit Tool' : 'Add Tool';
+  document.getElementById('toolModalId').value = tool ? tool.id : '';
+  document.getElementById('toolModalName').value = tool ? tool.name : '';
+  document.getElementById('toolModalStatus').value = tool ? tool.status : 'available';
+  document.getElementById('toolModalDescription').value = tool ? (tool.description || '') : '';
+  document.getElementById('toolModalBarcode').value = tool ? (tool.barcode_code || '') : '';
+  document.getElementById('toolModalError').classList.add('hidden');
+  document.getElementById('toolModal').classList.remove('hidden');
+}
+async function saveToolModal() {
+  const id = document.getElementById('toolModalId').value;
+  const body = {
+    name: document.getElementById('toolModalName').value.trim(),
+    status: document.getElementById('toolModalStatus').value,
+    description: document.getElementById('toolModalDescription').value.trim(),
+    barcode_code: document.getElementById('toolModalBarcode').value.trim(),
+  };
+  const { status, data } = id
+    ? await api(`/api/admin/tools/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+    : await api('/api/admin/tools', { method: 'POST', body: JSON.stringify(body) });
+  if (status !== 200 && status !== 201) { showModalError('toolModalError', data.error || 'Save failed.'); return; }
+  closeModal('toolModal');
+  loadTools();
+  if (!id) flash('globalMsg', `Tool added — barcode ${data.barcode_code}`, 'ok');
+}
+async function deleteTool(id) {
+  const tool = TOOLS_CACHE.find(t => t.id === id);
+  if (!confirm(`Delete "${tool ? tool.name : 'this tool'}"? This can't be undone.`)) return;
+  const { status, data } = await api(`/api/admin/tools/${id}`, { method: 'DELETE' });
+  if (status === 200) loadTools(); else flash('globalMsg', data.error || 'Delete failed.', 'error');
+}
+
+// ── Projects: add/edit/delete ───────────────────────────────────────
+function openProjectModal(id) {
+  const project = id ? PROJECTS_CACHE.find(p => p.id === id) : null;
+  document.getElementById('projectModalTitle').textContent = project ? 'Edit Project' : 'Add Project';
+  document.getElementById('projectModalId').value = project ? project.id : '';
+  document.getElementById('projectModalName').value = project ? project.name : '';
+  document.getElementById('projectModalDescription').value = project ? (project.description || '') : '';
+  document.getElementById('projectModalActive').checked = project ? !!project.is_active : true;
+  document.getElementById('projectModalBarcode').value = project ? (project.barcode_code || '') : '';
+  document.getElementById('projectModalError').classList.add('hidden');
+  document.getElementById('projectModal').classList.remove('hidden');
+}
+async function saveProjectModal() {
+  const id = document.getElementById('projectModalId').value;
+  const body = {
+    name: document.getElementById('projectModalName').value.trim(),
+    description: document.getElementById('projectModalDescription').value.trim(),
+    is_active: document.getElementById('projectModalActive').checked,
+    barcode_code: document.getElementById('projectModalBarcode').value.trim(),
+  };
+  const { status, data } = id
+    ? await api(`/api/admin/projects/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+    : await api('/api/admin/projects', { method: 'POST', body: JSON.stringify(body) });
+  if (status !== 200 && status !== 201) { showModalError('projectModalError', data.error || 'Save failed.'); return; }
+  closeModal('projectModal');
+  loadProjects();
+  if (!id) flash('globalMsg', `Project added — barcode ${data.barcode_code}`, 'ok');
+}
+async function deleteProject(id) {
+  const project = PROJECTS_CACHE.find(p => p.id === id);
+  if (!confirm(`Delete "${project ? project.name : 'this project'}"? This can't be undone.`)) return;
+  const { status, data } = await api(`/api/admin/projects/${id}`, { method: 'DELETE' });
+  if (status === 200) loadProjects(); else flash('globalMsg', data.error || 'Delete failed.', 'error');
+}
+
+// ── Users tab: list/add/edit/deactivate/delete ──────────────────────
+async function loadUsers() {
+  const { status, data } = await api('/api/admin/users');
+  const list = document.getElementById('usersList');
+  if (status !== 200) {
+    list.innerHTML = `<div class="msg error">${escapeHtml(data.error || 'Could not load users.')}</div>`;
+    return;
+  }
+  USERS_CACHE = data;
+  list.innerHTML = data.map(u => `
+    <div class="card">
+      <div><b>${escapeHtml(u.username)}</b><div class="meta">${escapeHtml(u.role)}${u.is_active ? '' : ' — deactivated'}${u.badge_code ? ` — badge <code>${escapeHtml(u.badge_code)}</code>` : ''}</div></div>
+      <div class="row-actions">
+        <button class="action secondary" onclick="openBarcodeModal('user', ${u.id})">Badge</button>
+        <button class="action secondary" onclick="openUserModal(${u.id})">Edit</button>
+        <button class="action danger" onclick="deleteUser(${u.id})">Delete</button>
+      </div>
+    </div>`).join('') || '<div class="empty">No users found.</div>';
+}
+function openUserModal(id) {
+  const user = id ? USERS_CACHE.find(u => u.id === id) : null;
+  document.getElementById('userModalTitle').textContent = user ? 'Edit User' : 'Add User';
+  document.getElementById('userModalId').value = user ? user.id : '';
+  document.getElementById('userModalUsername').value = user ? user.username : '';
+  document.getElementById('userModalBadge').value = user ? (user.badge_code || '') : '';
+  document.getElementById('userModalRole').value = user ? user.role : 'stock_user';
+  document.getElementById('userModalActive').checked = user ? !!user.is_active : true;
+  document.getElementById('userModalError').classList.add('hidden');
+  document.getElementById('userModal').classList.remove('hidden');
+}
+async function saveUserModal() {
+  const id = document.getElementById('userModalId').value;
+  const body = {
+    username: document.getElementById('userModalUsername').value.trim(),
+    badge_code: document.getElementById('userModalBadge').value.trim(),
+    role: document.getElementById('userModalRole').value,
+    is_active: document.getElementById('userModalActive').checked,
+  };
+  const { status, data } = id
+    ? await api(`/api/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+    : await api('/api/admin/users', { method: 'POST', body: JSON.stringify(body) });
+  if (status !== 200 && status !== 201) { showModalError('userModalError', data.error || 'Save failed.'); return; }
+  closeModal('userModal');
+  loadUsers();
+  if (!id) flash('globalMsg', `User added — badge code ${data.badge_code}`, 'ok');
+}
+async function deleteUser(id) {
+  const user = USERS_CACHE.find(u => u.id === id);
+  if (!confirm(`Delete user "${user ? user.username : 'this user'}"? This can't be undone. Consider editing and unchecking Active instead if they may come back.`)) return;
+  const { status, data } = await api(`/api/admin/users/${id}`, { method: 'DELETE' });
+  if (status === 200) loadUsers(); else flash('globalMsg', data.error || 'Delete failed.', 'error');
+}
+
+// ── Barcode viewer (items/tools/projects/users) ─────────────────────
+let CURRENT_BARCODE_ENTITY = null; // { type, id } -- 'user' entries never get a public link
+
+async function openBarcodeModal(entityType, entityId) {
+  const cache = { item: ITEMS_CACHE, tool: TOOLS_CACHE, project: PROJECTS_CACHE, user: USERS_CACHE, wire: WIRE_COILS_CACHE }[entityType] || [];
+  const entity = cache.find(e => e.id === entityId);
+  const name = entity ? (entity.name || entity.username || entity.barcode_code) : entityType;
+
+  CURRENT_BARCODE_ENTITY = { type: entityType, id: entityId };
+  document.getElementById('barcodeModalTitle').textContent = `Barcode — ${name}`;
+  document.getElementById('barcodeModalContent').innerHTML = '<p style="color:#555; margin:0;">Loading…</p>';
+  document.getElementById('barcodeModalError').classList.add('hidden');
+  const isUser = entityType === 'user';
+  document.getElementById('barcodeCopyLinkBtn').style.display = isUser ? 'none' : '';
+  document.getElementById('barcodeModalHint').textContent = isUser
+    ? 'This is a login credential — there is no shareable public link for a badge, only this in-app view.'
+    : 'This link works without logging in — safe to text, email, or print for later.';
+  document.getElementById('barcodeModal').classList.remove('hidden');
+
+  const { status, text } = await apiText(`/api/admin/barcode-svg/${entityType}/${entityId}`);
+  if (status !== 200) {
+    document.getElementById('barcodeModalContent').innerHTML = '';
+    let msg = 'Could not load barcode.';
+    try { msg = JSON.parse(text).error || msg; } catch (e) {}
+    showModalError('barcodeModalError', msg);
+    return;
+  }
+  document.getElementById('barcodeModalContent').innerHTML = text;
+}
+
+function printBarcodeModal() {
+  const content = document.getElementById('barcodeModalContent').innerHTML;
+  const title = document.getElementById('barcodeModalTitle').textContent;
+  const w = window.open('', '_blank', 'width=480,height=420,noopener,noreferrer');
+  if (!w) { flash('globalMsg', 'Your browser blocked the print window — allow popups for this site.', 'error'); return; }
+  // title/content are re-serialized into a fresh HTML document here, so
+  // even though they were safely set via textContent/escapeHtml earlier,
+  // title must be re-escaped -- textContent returns the raw string, and
+  // an entity name like `</title><script>...` would otherwise break out
+  // of the <title> tag and run in this popup. noopener also means that
+  // even a future injection here can't reach back into window.opener to
+  // read this session's TOKEN.
+  w.document.write(`<!doctype html><html><head><title>${escapeHtml(title)}</title></head>` +
+    `<body style="margin:0; padding:24px; text-align:center; font-family:sans-serif;">${content}</body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 200); // give the SVG a moment to actually paint before printing
+}
+
+async function copyBarcodeLink() {
+  if (!CURRENT_BARCODE_ENTITY || CURRENT_BARCODE_ENTITY.type === 'user') return;
+  const url = `${location.origin}/barcode/print/${CURRENT_BARCODE_ENTITY.type}/${CURRENT_BARCODE_ENTITY.id}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    flash('globalMsg', 'Link copied.', 'ok');
+  } catch (e) {
+    flash('globalMsg', url, 'ok');
+  }
+}
+
+// ── Update countdown banner ──────────────────────────────────────────
+// Deliberately runs unauthenticated and regardless of login state --
+// an update applying restarts the whole kiosk, which affects whoever's
+// using it (or the login screen itself) either way. Polls every 3s
+// rather than trusting a client-side-only countdown timer to stay in
+// sync with the server's actual apply_at.
+async function pollUpdateStatus() {
+  try {
+    const r = await fetch('/api/status/update');
+    const data = await r.json();
+    const banner = document.getElementById('updateCountdownBanner');
+    if (data.pending) {
+      const mins = Math.floor(data.seconds_remaining / 60);
+      const secs = data.seconds_remaining % 60;
+      const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      document.getElementById('updateCountdownText').textContent =
+        `Update ${data.version} is installing in ${timeStr} — save any in-progress work now.`;
+      banner.classList.remove('hidden');
+    } else {
+      banner.classList.add('hidden');
+    }
+  } catch (e) {
+    // Network hiccup or the app is already mid-restart -- not worth
+    // surfacing an error for a background poll; just try again next tick.
+  }
+}
+pollUpdateStatus();
+setInterval(pollUpdateStatus, 3000);
+</script>
+</body>
+</html>

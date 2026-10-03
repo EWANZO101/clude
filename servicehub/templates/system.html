@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}All active services{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>All services on this host</h1>
+    <div class="desc">
+      {{ units|length }} unit{{ 's' if units|length != 1 else '' }} shown ·
+      {% if show_all %}
+        <a href="{{ url_for('system_services') }}">show active only</a>
+      {% else %}
+        <a href="{{ url_for('system_services', all=1) }}">show everything (incl. inactive)</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card" style="padding:0; overflow:hidden;">
+  <table style="width:100%; border-collapse:collapse; font-size:13.5px;">
+    <thead>
+      <tr style="text-align:left; border-bottom:1px solid var(--border);">
+        <th style="padding:12px 16px; color:var(--text-dim); font-family:var(--mono); font-weight:500; font-size:11.5px;">STATUS</th>
+        <th style="padding:12px 16px; color:var(--text-dim); font-family:var(--mono); font-weight:500; font-size:11.5px;">UNIT</th>
+        <th style="padding:12px 16px; color:var(--text-dim); font-family:var(--mono); font-weight:500; font-size:11.5px;">DESCRIPTION</th>
+        <th style="padding:12px 16px; color:var(--text-dim); font-family:var(--mono); font-weight:500; font-size:11.5px;">MANAGED BY SERVICEHUB</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in units %}
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 16px;">
+          <span class="badge {{ 'active' if u.active == 'active' else ('failed' if u.sub == 'failed' else 'inactive') }}">
+            <span class="dot"></span>{{ u.active }}
+          </span>
+        </td>
+        <td style="padding:10px 16px; font-family:var(--mono);">{{ u.unit }}</td>
+        <td style="padding:10px 16px; color:var(--text-dim);">{{ u.description }}</td>
+        <td style="padding:10px 16px;">
+          {% if u.managed_service %}
+          <a href="{{ url_for('service_detail', service_id=u.managed_service.id) }}" class="btn btn-sm">Manage</a>
+          {% else %}
+          <span class="hint" style="margin:0;">external — not created here</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p class="hint" style="margin-top:14px;">
+  Only units named <code>opslab-*.service</code> can be started, stopped, or edited from here —
+  those are the ones ServiceHub itself created. Everything else is shown read-only so you can see
+  the full picture of what's running on the box without ServiceHub being able to touch it.
+</p>
+
+{% endblock %}

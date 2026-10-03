@@ -1,0 +1,88 @@
+OPSLAB MIGRATE — SUMMARY
+==================================================
+Source:       102.211.207.197
+Destination:  51.89.167.197
+Duration:     00:12:21
+
+[OK] nginx-manager (flask)
+     archive: 4.6 MB  sha256: 42e3898b0060ffef…
+     checks:  4/4 passed
+[OK] nova-app (flask)
+     archive: 26.5 MB  sha256: 86c1257701823c21…
+     checks:  5/6 passed
+       FAIL HTTP response: no port answered
+[OK] opslab-books (flask)
+     archive: 53.3 MB  sha256: 891eb38d80f7bf67…
+     checks:  7/7 passed
+[OK] cloudpanel (flask)
+     archive: 155.8 KB  sha256: d561d0081b1f49cc…
+     checks:  2/3 passed
+       FAIL database sqlite::memory:: missing: /root/.gunicorn/cloudpanel/:memory:
+[OK] cbot (unknown)
+     archive: 8.4 MB  sha256: 0456abb18fae7b83…
+     checks:  3/4 passed
+       FAIL service cbot-contact.service active: activating
+[OK] cfrp_bot (unknown)
+     archive: 15.8 MB  sha256: 8b93c8169672d9d2…
+     checks:  3/4 passed
+       FAIL service ollama.service active: failed
+[OK] cioda-commissions (flask)
+     archive: 153.1 KB  sha256: 81407614ee06a116…
+     checks:  3/7 passed
+       FAIL service cioda-discord-bot.service active: activating
+       FAIL service cioda_commissions.service active: failed
+       FAIL port 5002 listening: not listening
+       FAIL HTTP response: no port answered
+[OK] license (unknown)
+     archive: 11.8 MB  sha256: 93b58dd7979ff751…
+     checks:  3/3 passed
+[OK] motoguard (flask)
+     archive: 14.0 MB  sha256: 8627a710f5d74c77…
+     checks:  7/7 passed
+[OK] ops (unknown)
+     archive: 8.9 MB  sha256: 875c41f7c87dc27f…
+     checks:  3/5 passed
+       FAIL service opslabs-app.service active: activating
+       FAIL service opslabs-bot.service active: activating
+[OK] opslabs (flask)
+     archive: 55.0 MB  sha256: d6e44ae34635cee9…
+     checks:  5/6 passed
+       FAIL service opslabs-bot.service active: activating
+[OK] portal-install (flask)
+     archive: 120.2 KB  sha256: 4444dc99aa76fb52…
+     checks:  2/2 passed
+[OK] rq-bot (unknown)
+     archive: 9.0 MB  sha256: a3371120f7d05a42…
+     checks:  3/3 passed
+[OK] safetosay (flask)
+     archive: 16.1 MB  sha256: 09b3b42af6cb4995…
+     checks:  7/7 passed
+[OK] spn (unknown)
+     archive: 3.2 KB  sha256: a636838e4e2d32e2…
+     checks:  2/3 passed
+       FAIL service spn.service active: activating
+[OK] whitelist-app (flask)
+     archive: 39.2 MB  sha256: 503fcd2f46111ab9…
+     checks:  6/7 passed
+       FAIL database postgresql:whitelist_db: 
+
+WARNINGS:
+  - nova-app: 1 verification check(s) still failing after healing
+  - cloudpanel: 1 verification check(s) still failing after healing
+  - cbot: 1 verification check(s) still failing after healing
+  - cfrp_bot: 1 verification check(s) still failing after healing
+  - cioda-commissions: 4 verification check(s) still failing after healing
+  - ops: 2 verification check(s) still failing after healing
+  - opslabs: 1 verification check(s) still failing after healing
+  - spn: 1 verification check(s) still failing after healing
+  - whitelist-app: 1 verification check(s) still failing after healing
+
+HEALING ACTIONS:
+  - nova-app: restarted service nova-app.service
+  - nova-app: restarted service nova-app.service
+  - nova-app: restarted service nova-app.service
+  - cbot: installed missing module discord
+  - cbot: restarted service cbot.service
+  - cfrp_bot: installed missing module flask
+  - cfrp_bot: restarted service ai-support.service
+  - opslabs: installed missing module discord

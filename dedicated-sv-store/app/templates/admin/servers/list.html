@@ -1,0 +1,38 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Servers — Admin{% endblock %}
+{% block page_title %}Servers{% endblock %}
+{% block header_actions %}
+<a href="{{ url_for('admin.server_new') }}" class="btn-primary">Add server</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="p-4 border-b border-border">
+    <form method="GET" class="flex gap-2">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search by title…" class="input-field max-w-xs">
+      <button type="submit" class="btn-secondary">Search</button>
+    </form>
+  </div>
+  <table class="table-base">
+    <thead><tr><th>Title</th><th>Seller</th><th>Status</th><th>Inventory</th><th>Price</th><th></th></tr></thead>
+    <tbody>
+      {% for server in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ server.title }}</td>
+        <td class="text-text-secondary">{{ server.seller.business_name if server.seller else "Platform" }}</td>
+        <td><span class="badge-neutral">{{ server.status|hwval }}</span></td>
+        <td><span class="badge-info">{{ server.inventory_status|hwval }}</span></td>
+        <td class="text-text-secondary">£{{ server.monthly_price }}/mo</td>
+        <td class="whitespace-nowrap">
+          <a href="{{ url_for('admin.server_detail', server_id=server.id) }}" class="text-brand-400 hover:text-brand-300 text-sm mr-3">View</a>
+          <a href="{{ url_for('admin.server_edit', server_id=server.id) }}" class="text-brand-400 hover:text-brand-300 text-sm">Edit</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-text-muted py-8">No servers listed yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.servers", q=q) }}
+</div>
+{% endblock %}

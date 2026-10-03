@@ -1,0 +1,25 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% block title %}Messages — {{ app_name }}{% endblock %}
+{% block page_title %}Messages{% endblock %}
+{% block content %}
+{% if conversations %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Subject</th><th>Last message</th><th>Updated</th><th></th></tr></thead>
+    <tbody>
+      {% for c in conversations %}
+      {% set last = c.last_message() %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ c.subject }}</td>
+        <td class="text-text-secondary truncate max-w-xs">{{ last.body if last else "—" }}</td>
+        <td class="text-text-muted">{{ c.updated_at.strftime("%d %b %Y") }}</td>
+        <td><a href="{{ url_for('customer.conversation_detail', conversation_id=c.id) }}" class="text-brand-400 hover:text-brand-300">Open</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card p-10 text-center text-text-secondary">No messages yet.</div>
+{% endif %}
+{% endblock %}

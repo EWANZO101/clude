@@ -1,0 +1,26 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Networks — Admin{% endblock %}
+{% block page_title %}Network assignments{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Equipment</th><th>Switch</th><th>Port</th><th>VLAN</th><th>Management IP</th><th>Public IP</th></tr></thead>
+    <tbody>
+      {% for na in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ na.equipment_item.manufacturer }} {{ na.equipment_item.model }}</td>
+        <td class="text-text-secondary">{{ na.switch_name or "—" }}</td>
+        <td class="text-text-secondary">{{ na.switch_port or "—" }}</td>
+        <td class="text-text-secondary">{{ na.vlan or "—" }}</td>
+        <td class="text-text-secondary font-mono text-xs">{{ na.management_ip or "—" }}</td>
+        <td class="text-text-secondary font-mono text-xs">{{ na.public_ipv4 or "—" }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-text-muted py-8">No network assignments yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.networks") }}
+</div>
+{% endblock %}

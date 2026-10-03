@@ -1,0 +1,82 @@
+{
+  "ticket_id": "TICK-0061",
+  "ticket_type": "whitelist",
+  "opened_by": "tenkay",
+  "opened_at": "2026-04-26 06:29:29",
+  "closed_by": "e",
+  "closed_at": "2026-04-26 07:48 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-26T06:29:30.723000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T07:06:52.402000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "<@1189248587448729620> are you available for a interview",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T07:08:42.404000+00:00",
+      "author": "tenkay",
+      "author_id": "1189248587448729620",
+      "role": "staff",
+      "content": "yes",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T07:09:18.074000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "join https://discord.com/channels/1213807920635052043/1492612043776458832 whenever and someone will be with u soon",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T07:15:03.003000+00:00",
+      "author": "tenkay",
+      "author_id": "1189248587448729620",
+      "role": "staff",
+      "content": "<@344560012997165057>  is this rp 18+",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T07:27:48.227000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "yes",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T07:41:49.498000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-26T07:42:11.494000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@1189248587448729620>",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

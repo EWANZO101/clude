@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="eyebrow mb-1">Moderation</p>
+<h1 class="font-display font-800 text-3xl text-chalk mb-6">Admin</h1>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-7">
+  {% for label, key, tone in [('Users','users','text-chalk'),('Vehicles','vehicles','text-chalk'),('Stolen','stolen','text-stolen'),('Open reports','open_reports','text-plate'),('Pending sightings','pending_sightings','text-plate')] %}
+  <div class="card p-4 text-center"><div class="font-display font-800 text-2xl {{ tone }}">{{ stats[key] }}</div><div class="eyebrow mt-1">{{ label }}</div></div>
+  {% endfor %}
+</div>
+<div class="flex flex-wrap gap-2">
+  <a href="{{ url_for('admin.reports') }}" class="btn btn-ghost">Moderation queue</a>
+  <a href="{{ url_for('admin.sightings') }}" class="btn btn-ghost">Sightings</a>
+  <a href="{{ url_for('admin.users') }}" class="btn btn-ghost">Users</a>
+</div>
+{% endblock %}

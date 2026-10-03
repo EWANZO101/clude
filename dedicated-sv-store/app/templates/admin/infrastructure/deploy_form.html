@@ -1,0 +1,50 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}Deploy Equipment — Admin{% endblock %}
+{% block page_title %}Deploy {{ item.manufacturer }} {{ item.model }}{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6 max-w-4xl">
+  <div class="card p-6">
+    <h2 class="font-semibold text-text-primary mb-4">Rack assignment</h2>
+    <form method="POST">
+      {{ rack_form.hidden_tag() }}
+      <input type="hidden" name="action" value="assign_rack">
+      {{ field(rack_form.rack_id) }}
+      {{ field(rack_form.start_u) }}
+      {{ field(rack_form.u_height) }}
+      <button type="submit" class="btn-primary w-full">Save</button>
+    </form>
+    {% if rack_assignment %}<p class="text-xs text-text-muted mt-3">Currently: {{ rack_assignment.rack.datacenter.code }}/{{ rack_assignment.rack.name }}, U{{ rack_assignment.start_u }}</p>{% endif %}
+  </div>
+
+  <div class="card p-6">
+    <h2 class="font-semibold text-text-primary mb-4">Power assignment</h2>
+    <form method="POST">
+      {{ power_form.hidden_tag() }}
+      <input type="hidden" name="action" value="assign_power">
+      {{ field(power_form.power_feed_a) }}
+      {{ field(power_form.power_feed_b) }}
+      {{ field(power_form.pdu_outlet_a) }}
+      {{ field(power_form.pdu_outlet_b) }}
+      {{ field(power_form.amperage) }}
+      <button type="submit" class="btn-primary w-full">Save</button>
+    </form>
+  </div>
+
+  <div class="card p-6">
+    <h2 class="font-semibold text-text-primary mb-4">Network assignment</h2>
+    <form method="POST">
+      {{ network_form.hidden_tag() }}
+      <input type="hidden" name="action" value="assign_network">
+      {{ field(network_form.switch_name) }}
+      {{ field(network_form.switch_port) }}
+      {{ field(network_form.vlan) }}
+      {{ field(network_form.management_ip) }}
+      {{ field(network_form.public_ipv4) }}
+      {{ field(network_form.public_ipv6) }}
+      {{ field(network_form.bandwidth_mbps) }}
+      <button type="submit" class="btn-primary w-full">Save</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

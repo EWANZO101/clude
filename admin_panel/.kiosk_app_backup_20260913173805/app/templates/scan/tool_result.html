@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Scanned: {{ tool.name }} — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('scan.index') }}">← Scan another</a></p>
+
+<div class="panel" style="max-width:480px;">
+  <div class="muted" style="font-size:11.5px; text-transform:uppercase; letter-spacing:.05em;">Tool scanned</div>
+  <h1 style="margin-top:4px;">{{ tool.name }}</h1>
+
+  {% if tool.status == 'available' %}
+    <div class="muted"><span style="color:var(--green);">● Available</span></div>
+    <form method="post" action="{{ url_for('tools.checkout_tool', tool_id=tool.id) }}" style="margin-top:20px;">
+      <input type="hidden" name="next" value="scan">
+      <label>Project</label>
+      <input type="text" name="project" value="{{ active_project.name if active_project else '' }}"
+             placeholder="No active project — optional">
+      <button type="submit" style="margin-top:18px; width:100%;">Check Out</button>
+    </form>
+
+  {% elif tool.status == 'checked_out' %}
+    <div class="muted">
+      <span style="color:var(--orange);">● Checked out</span> — {{ tool.checked_out_by_name }}
+      {% if tool.current_project %} for {{ tool.current_project }}{% endif %}
+    </div>
+    <form method="post" action="{{ url_for('tools.checkin_tool', tool_id=tool.id) }}" style="margin-top:20px;">
+      <input type="hidden" name="next" value="scan">
+      <button type="submit" style="width:100%;">Check In</button>
+    </form>
+
+  {% else %}
+    <div class="muted"><span style="color:var(--red);">● In maintenance (level {{ tool.maintenance_level }})</span></div>
+    <p class="muted" style="margin-top:16px;">
+      This tool can't be checked out or in from the scan screen while in maintenance.
+      <a href="{{ url_for('tools.list_tools') }}">Manage it from the Tools page</a>.
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

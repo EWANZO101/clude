@@ -1,0 +1,24 @@
+<div class="list-item px-5 py-4">
+  <div class="grid sm:grid-cols-2 gap-3">
+    {% for f in schema.sublist_fields %}
+    <div {% if f.kind == 'textarea' %}class="sm:col-span-2"{% endif %}>
+      <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">{{ f.label }}</div>
+      {% if f.kind == 'textarea' %}
+        <textarea data-key="{{ f.key }}" rows="{{ f.rows or 2 }}"
+                  class="form-textarea px-3 py-2 text-sm">{{ item.get(f.key, '') if item else '' }}</textarea>
+      {% elif f.kind == 'int' %}
+        <input type="number" data-key="{{ f.key }}" value="{{ item.get(f.key, '') if item else '' }}"
+               class="form-input px-3 py-2 text-sm">
+      {% else %}
+        <input data-key="{{ f.key }}" value="{{ item.get(f.key, '') if item else '' }}"
+               class="form-input px-3 py-2 text-sm">
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <div class="flex justify-end mt-3">
+    <button type="button" onclick="this.closest('.list-item').remove()" class="btn btn-danger btn-sm">
+      Remove
+    </button>
+  </div>
+</div>

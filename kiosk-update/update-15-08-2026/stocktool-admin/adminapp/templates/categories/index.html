@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Categories{% endblock %}
+{% block content %}
+{% if layout_components %}
+  {% import "_layout_blocks.html" as blocks with context %}
+  {% for c in layout_components %}
+    {% if c.visible != false %}
+      {% if c.type == 'page_header' %}
+        {{ blocks.render_page_header(c, 'Categories', categories|length ~ ' categor' ~ ('y' if categories|length == 1 else 'ies') ~ ' — drag to reorder', 'fas fa-tags', None, '') }}
+      {% elif c.type == 'text_block' %}
+        {{ blocks.render_text_block(c) }}
+      {% elif c.type == 'spacer' %}
+        {{ blocks.render_spacer(c) }}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+{% else %}
+<div class="page-header">
+  <div class="page-header-row">
+    <div>
+      <h1 class="page-title"><i class="fas fa-tags" style="color:#60a5fa;"></i> Categories</h1>
+      <p class="page-subtitle">{{ categories|length }} categor{{ 'y' if categories|length == 1 else 'ies' }} — drag to reorder</p>
+    </div>
+    {% if current_user.is_admin %}
+    <button class="btn btn-primary" onclick="openAddModal()"><i class="fas fa-plus"></i> Add Category</button>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% if layout_components and current_user.is_admin %}
+  {% set hdr = (layout_components | selectattr('type', 'equalto', 'page_header') | list | first) %}
+  {% if not hdr or hdr.settings.show_add_button != false %}
+  <div style="margin-bottom:16px;">
+    <button class="btn btn-primary" onclick="openAddModal()"><i class="fas fa-plus"></i> Add Category</button>
+  </div>
+  {% endif %}
+{% endif %}
+
+<div class="card" style="padding:8px;">
+  <div id="categoryList">
+    {% for cat in categories %}
+    <div class="cat-row" data-id="{{ cat.id }}">
+      <i class="fas fa-grip-vertical cat-drag-handle"></i>
+      <i class="{{ cat.icon or 'fa-solid fa-tag' }}" style="color:{{ cat.color or '#93c5fd' }};width:22px;text-align:center;"></i>
+      <div class="cat-row-name">{{ cat.name }}</div>
+      <div class="cat-row-meta">{{ cat.item_count }} item{{ 's' if cat.item_count != 1 }} · {{ cat.tool_count }} tool{{ 's' if cat.tool_count != 1 }}</div>
+      {% if current_user.is_admin %}
+      <div class="cat-row-actions">
+        <button class="btn btn-secondary btn-sm" onclick='openEditModal({{ cat.id }}, {{ cat.name | tojson }}, {{ (cat.icon or "") | tojson }}, {{ (cat.color or "") | tojson }})'>
+          <i class="fas fa-pen"></i>
+        </button>
+        <form method="POST" action="{{ url_for('categories.delete', category_id=cat.id) }}"
+              onsubmit="return confirm('Delete category &quot;{{ cat.name }}&quot;? Items/tools stay — they just lose this category.');" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <button type="submit" class="btn btn-secondary btn-sm" style="color:#fca5a5;"><i class="fas fa-trash"></i></button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div style="padding:24px;text-align:center;color:#6b7280;font-size:14px;">
+      No categories yet. Categories group items/tools for the kiosk dashboard — create your first one above.
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Add/Edit modal -->
+<div class="modal-overlay" id="categoryModal">
+  <div class="modal-box" style="max-width:420px;">
+    <div style="font-size:16px;font-weight:700;color:#f9fafb;margin-bottom:16px;" id="categoryModalTitle">Add Category</div>
+    <form method="POST" id="categoryForm" action="{{ url_for('categories.add') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">Name</label>
+        <input type="text" name="name" id="categoryNameInput" class="form-input" required placeholder="e.g. Fasteners" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div>
+          <label class="form-label">Icon (Font Awesome class)</label>
+          <input type="text" name="icon" id="categoryIconInput" class="form-input" placeholder="fa-solid fa-screwdriver-wrench" />
+        </div>
+        <div>
+          <label class="form-label">Colour</label>
+          <input type="color" name="color" id="categoryColorInput" class="form-input" value="#4f46e5" style="height:42px;padding:4px;" />
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn btn-primary" style="flex:1;">Save</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('categoryModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .cat-row { display:flex; align-items:center; gap:12px; padding:12px 10px; border-radius:8px; }
+  .cat-row:hover { background:#111827; }
+  .cat-drag-handle { color:#4b5563; cursor:grab; }
+  .cat-row-name { font-weight:600; color:#f3f4f6; flex:1; }
+  .cat-row-meta { font-size:12px; color:#6b7280; }
+  .cat-row-actions { display:flex; gap:6px; }
+  .btn-sm { padding:8px 10px; font-size:12px; }
+  .cat-row.dragging { opacity:.4; }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<script>
+  function openAddModal() {
+    document.getElementById('categoryModalTitle').textContent = 'Add Category';
+    document.getElementById('categoryForm').action = "{{ url_for('categories.add') }}";
+    document.getElementById('categoryNameInput').value = '';
+    document.getElementById('categoryIconInput').value = '';
+    document.getElementById('categoryColorInput').value = '#4f46e5';
+    openModal('categoryModal');
+  }
+  function openEditModal(id, name, icon, color) {
+    document.getElementById('categoryModalTitle').textContent = 'Edit Category';
+    document.getElementById('categoryForm').action = `/categories/${id}/edit`;
+    document.getElementById('categoryNameInput').value = name;
+    document.getElementById('categoryIconInput').value = icon;
+    document.getElementById('categoryColorInput').value = color || '#4f46e5';
+    openModal('categoryModal');
+  }
+
+  {% if current_user.is_admin %}
+  const catListEl = document.getElementById('categoryList');
+  if (catListEl && catListEl.children.length) {
+    new Sortable(catListEl, {
+      handle: '.cat-drag-handle',
+      animation: 150,
+      ghostClass: 'dragging',
+      onEnd: function () {
+        const order = Array.from(catListEl.children).map(el => parseInt(el.dataset.id));
+        const token = document.querySelector('meta[name="csrf-token"]').content;
+        fetch("{{ url_for('categories.reorder') }}", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
+          body: JSON.stringify({ order }),
+        });
+      },
+    });
+  }
+  {% endif %}
+</script>
+{% endblock %}

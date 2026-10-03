@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}{{ company.name }} — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <h1>{{ company.name }}</h1>
+    <div class="page-sub">
+      <span class="mono">{{ company.slug }}</span>
+      <span class="badge badge-{{ role }}">{{ role }}</span>
+    </div>
+  </div>
+  {% if role in ["owner", "administrator"] %}
+    <div class="page-actions">
+      <a href="{{ url_for('companies.edit', company_id=company.public_id) }}" class="btn btn-secondary btn-sm">Edit details</a>
+    </div>
+  {% endif %}
+</div>
+
+{% if company_has_kiosk %}
+<div class="panel">
+  <div class="panel-head">
+    <h2>Kiosk instances</h2>
+    <div class="page-actions">
+      <a href="{{ url_for('instances.list_instances', company_id=company.public_id) }}" class="btn btn-secondary btn-sm">Manage fleet →</a>
+      <a href="{{ url_for('instances.audit_log', company_id=company.public_id) }}" class="btn btn-secondary btn-sm">Audit log →</a>
+    </div>
+  </div>
+  <p class="muted" style="margin:0;">Register new kiosks with an enrollment token, then manage them from the Fleet page.</p>
+</div>
+{% endif %}
+
+{% if company_has_inventory_ops %}
+<div class="panel">
+  <div class="panel-head">
+    <h2>Inventory Ops instances</h2>
+    <div class="page-actions">
+      <a href="{{ url_for('inventory_ops_instances.list_instances', company_id=company.public_id) }}" class="btn btn-secondary btn-sm">Manage fleet →</a>
+    </div>
+  </div>
+  <p class="muted" style="margin:0;">Register new Inventory Ops machines with an enrollment token, then manage them from the Fleet page.</p>
+</div>
+{% endif %}
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Users</h2>
+    <div class="page-actions">
+      <a href="{{ url_for('companies.users_page', company_id=company.public_id) }}" class="btn btn-secondary btn-sm">Manage users →</a>
+    </div>
+  </div>
+  <p class="muted" style="margin:0;">
+    {{ member_count }} member{{ 's' if member_count != 1 }}{% if pending_invite_count %}, {{ pending_invite_count }} pending invite{{ 's' if pending_invite_count != 1 }}{% endif %}.
+  </p>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Products</h2>
+  </div>
+  <p class="muted" style="margin-top:0;">
+    Every system on the platform, and this company's access to each. New access always needs approval —
+    {% if role in ["owner", "administrator"] %}request one below and{% else %}an owner or administrator can request one and{% endif %}
+    a platform admin will review it.
+  </p>
+  {% if products %}
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Product</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for p in products %}
+          {% set access = access_by_product_id.get(p.id) %}
+          <tr>
+            <td>
+              <div style="font-weight:600;">{{ p.name }}</div>
+              {% if p.description %}<div class="muted" style="font-size:12.5px;">{{ p.description }}</div>{% endif %}
+            </td>
+            <td>
+              {% if access is none %}
+                <span class="pill pill-muted">No access</span>
+              {% elif access.status == 'approved' %}
+                <span class="pill pill-green">Approved</span>
+              {% elif access.status == 'pending' %}
+                <span class="pill pill-amber">Pending</span>
+              {% else %}
+                <span class="pill pill-red">Rejected</span>
+              {% endif %}
+              {% if access and access.status != 'approved' and access.decision_note %}
+                <div class="muted" style="font-size:11.5px; margin-top:3px;">{{ access.decision_note }}</div>
+              {% endif %}
+            </td>
+            <td style="white-space:nowrap;">
+              {% if current_user.is_platform_admin %}
+                {% if access and access.status == 'approved' %}
+                  <form method="post" action="{{ url_for('companies.revoke_product', company_id=company.public_id, product_id=p.public_id) }}"
+                        onsubmit="return confirm('Revoke {{ company.name|e }}\'s access to {{ p.name|e }}?');" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm">Revoke</button>
+                  </form>
+                {% else %}
+                  <form method="post" action="{{ url_for('companies.grant_product', company_id=company.public_id, product_id=p.public_id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-secondary btn-sm">Grant</button>
+                  </form>
+                {% endif %}
+              {% elif role in ["owner", "administrator"] %}
+                {% if access is none or access.status == 'rejected' %}
+                  <form method="post" action="{{ url_for('companies.request_product', company_id=company.public_id, product_id=p.public_id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-secondary btn-sm">{{ 'Request again' if access else 'Request access' }}</button>
+                  </form>
+                {% endif %}
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted">No products available yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

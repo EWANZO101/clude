@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}OpsLab Systems · Six services, one team{% endblock %}
+
+{# ────────────────────────────────────────────────────────────────────────
+   This is now a LANDING PAGE, not a full marketing site. Its only jobs are:
+   1) say who OpsLab Systems is (About section)
+   2) send visitors to the right dedicated subdomain for what they need
+   Each subdomain's own content lives in subsites/templates/home.html and
+   is driven by app/services_data.py — edit that file to change what any
+   one division's site says. Contact email is set just below.
+   ──────────────────────────────────────────────────────────────────────── #}
+
+{% block head_extra %}
+<style>
+  .eyebrow { font-size: 13px; font-weight: 500; color: #60a5fa; }
+  .tag { font-size: 11.5px; padding: 1px 8px; border-radius: 6px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); color: #a1a1aa; }
+  .svc-card { background: #0c0c0e; transition: background .15s ease; }
+  .svc-card:hover { background: #131316; }
+  .hero-fade { background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(59,130,246,.10), transparent 70%); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════════════════════════════ HERO ══ -->
+<section class="relative overflow-hidden">
+  <div class="absolute inset-0 hero-fade pointer-events-none"></div>
+  <div class="absolute inset-0 grid-overlay pointer-events-none"></div>
+  <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 lg:pt-28 pb-20 text-center">
+    <a href="#services" class="inline-flex items-center gap-2 pl-2 pr-3 py-1 mb-8 rounded-full border border-white/10 bg-white/[.02] text-xs text-gray-400 hover:text-gray-200 hover:border-white/20 transition">
+      <span class="live-dot"></span>
+      Six divisions · One team · One ticket system
+      <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+    </a>
+
+    <h1 class="text-4xl sm:text-5xl lg:text-[64px] font-semibold tracking-[-0.035em] leading-[1.05] text-white">
+      One team that builds it, fixes it, and turns up in person.
+    </h1>
+
+    <p class="mt-6 text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
+      OpsLab Systems is a hands-on technology outfit working across six specialised divisions —
+      websites, FiveM, hosting, system setup, support and on-site IT.
+    </p>
+
+    <div class="mt-10 flex flex-wrap gap-3 justify-center">
+      <a href="#services" class="ui-btn ui-btn-primary ui-btn-lg">
+        Explore services
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </a>
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('tickets.new') }}" class="ui-btn ui-btn-ghost ui-btn-lg">Open a ticket</a>
+      {% else %}
+        <a href="{{ url_for('auth.register') }}" class="ui-btn ui-btn-ghost ui-btn-lg">Create an account</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════ SERVICES ══ -->
+<section id="services" class="py-20 scroll-mt-16 border-t border-white/[.06]">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid lg:grid-cols-12 gap-6 mb-12 items-end">
+      <div class="lg:col-span-7">
+        <div class="eyebrow mb-3">Services</div>
+        <h2 class="text-3xl sm:text-4xl font-semibold tracking-tight text-white">Six divisions, six dedicated sites.</h2>
+      </div>
+      <p class="lg:col-span-5 text-gray-400 leading-relaxed">
+        Each division has its own site focused on one service. All six share the same team and the
+        same ticket system, so nothing falls between the cracks.
+      </p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-white/[.07] border border-white/[.07] rounded-xl overflow-hidden">
+      {% for sub, slug, s in SUBDOMAINS_ORDERED %}
+      <a href="{{ sub_url(sub) }}" class="svc-card group p-7 flex flex-col">
+        <div class="flex items-center justify-between mb-6">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-white/[.03] border border-white/[.08]" style="color:{{ s.accent }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ s.icon }}"/></svg>
+          </div>
+          <svg class="w-4 h-4 text-gray-600 group-hover:text-white group-hover:translate-x-0.5 transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+        </div>
+        <h3 class="text-base font-semibold text-white mb-2">{{ s.name }}</h3>
+        <p class="text-sm text-gray-400 mb-5 leading-relaxed flex-1">{{ s.summary }}</p>
+        <div class="flex flex-wrap gap-1.5">
+          {% for t in s.tech[:4] %}<span class="tag">{{ t }}</span>{% endfor %}
+        </div>
+        <div class="mt-5 pt-4 border-t border-white/[.06] text-xs text-gray-500 group-hover:text-gray-300 transition font-mono">{{ sub }}.{{ PUBLIC_DOMAIN }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════ ABOUT ══ -->
+<section id="about" class="py-20 border-t border-white/[.06] scroll-mt-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-12">
+    <div class="lg:col-span-5">
+      <div class="eyebrow mb-3">About</div>
+      <h2 class="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
+        A small, hands-on technology outfit.
+      </h2>
+      <p class="mt-5 text-gray-400 leading-relaxed">
+        OpsLab Systems builds and runs the infrastructure other people rely on: websites and web
+        applications, FiveM development, hosting, system setup, technical support, and on-site IT.
+      </p>
+      <p class="mt-4 text-gray-400 leading-relaxed">
+        Everything moves through one shared ticket system that stays in sync across the web and
+        Discord, so nothing gets lost between "I emailed about this" and someone actually fixing it.
+      </p>
+    </div>
+
+    <div class="lg:col-span-7 grid sm:grid-cols-2 gap-4 content-start">
+      {% set values = [
+        ('One point of contact', 'No call-centre, no ticket bouncing between departments — you talk to the person doing the work.', 'M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'),
+        ('Built, not templated', 'Every site, script, and server is hand-built for what you actually need, not assembled from a generic kit.', 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4'),
+        ('Remote or on-site', 'Most work happens remotely through tickets. When something needs a person physically there, we turn up.', 'M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z'),
+        ('Web + Discord sync', 'Reply from the portal or from Discord — every message lands on the same ticket, in real time.', 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'),
+      ] %}
+      {% for title, desc, icon in values %}
+      <div class="p-6 rounded-xl border border-white/[.07] bg-ink-900">
+        <svg class="w-5 h-5 text-gray-400 mb-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ icon }}"/></svg>
+        <h3 class="text-sm font-semibold text-white">{{ title }}</h3>
+        <p class="text-sm text-gray-400 mt-1.5 leading-relaxed">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════ CONTACT ══ -->
+<section id="contact" class="scroll-mt-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="relative overflow-hidden rounded-2xl border border-white/[.08] bg-ink-900 px-6 py-12 sm:px-12 sm:py-16">
+      <div class="absolute inset-0 grid-overlay pointer-events-none opacity-60"></div>
+      <div class="relative flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+        <div class="max-w-xl">
+          <h2 class="text-2xl sm:text-3xl font-semibold tracking-tight text-white">Not sure which service you need?</h2>
+          <p class="mt-3 text-gray-400 leading-relaxed">
+            Open a ticket and describe what you're trying to do — we'll route it to the right
+            division. Or drop us an email if you just want to ask something.
+          </p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 shrink-0">
+          <!-- Contact email is set via the CONTACT_EMAIL environment variable -->
+          <a href="mailto:{{ CONTACT_EMAIL }}" class="ui-btn ui-btn-ghost ui-btn-lg">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            {{ CONTACT_EMAIL }}
+          </a>
+          {% if current_user.is_authenticated %}
+            <a href="{{ url_for('tickets.new') }}" class="ui-btn ui-btn-primary ui-btn-lg">Open a ticket</a>
+          {% else %}
+            <a href="{{ url_for('auth.register') }}" class="ui-btn ui-btn-primary ui-btn-lg">Create your account</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

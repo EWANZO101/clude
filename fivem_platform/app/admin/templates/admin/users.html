@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Users — Admin — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold text-white mb-6">Users</h1>
+
+  <form method="GET" class="mb-6">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search username, email, User ID, Support ID..."
+      class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+  </form>
+
+  <div class="space-y-2">
+    {% for u in users %}
+      <a href="{{ url_for('admin.user_detail', user_id=u.id) }}"
+         class="flex items-center justify-between gap-3 flex-wrap bg-surface-card border border-surface-border rounded-lg px-4 py-3 hover:border-brand transition">
+        <div class="min-w-0 flex-1">
+          <div class="text-white text-sm font-medium truncate">{{ u.username }}</div>
+          <div class="text-gray-500 text-xs truncate">{{ u.email }} · {{ u.user_id }}</div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          {% if u.is_admin %}<span class="text-xs px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-400">admin</span>{% endif %}
+          {% if u.is_support %}<span class="text-xs px-2 py-0.5 rounded-full bg-purple-950 text-purple-400">support</span>{% endif %}
+          {% if u.is_developer %}<span class="text-xs px-2 py-0.5 rounded-full bg-blue-950 text-blue-400">dev</span>{% endif %}
+          {% if u.is_suspended %}<span class="text-xs px-2 py-0.5 rounded-full bg-red-950 text-red-400">suspended</span>{% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+  {% if not users %}
+    <p class="text-sm text-gray-500">No users found.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}New Ticket — {{ app_name }}{% endblock %}
+{% block page_title %}New support ticket{% endblock %}
+{% block content %}
+<form method="POST" class="card p-6 max-w-2xl">
+  {{ form.hidden_tag() }}
+  {{ field(form.subject) }}
+  <div class="grid sm:grid-cols-2 gap-x-4">
+    {{ field(form.category) }}
+    {{ field(form.priority) }}
+  </div>
+  {{ field(form.description, rows=5) }}
+  <button type="submit" class="btn-primary">Submit ticket</button>
+</form>
+{% endblock %}

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enter PIN · {{ contract.title }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink: { DEFAULT: '#0E1210', surface: '#161B18', raised: '#1E2420', line: '#2B322C' },
+      gold: { DEFAULT: '#B08D3E', soft: '#8F7434', bright: '#D4B364' },
+      parchment: '#F3EFE4', muted: '#95907F', sage: '#5C8367', brick: '#B9584C' },
+    fontFamily: { display: ['Fraunces', 'serif'], sans: ['Inter', 'sans-serif'], mono: ['"JetBrains Mono"', 'monospace'] }
+  } } }
+</script>
+<style>
+  body {
+    background-color: #0A0D0C;
+    background-image:
+      radial-gradient(ellipse 900px 500px at 12% -8%, rgba(176,141,62,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(92,131,103,0.05), transparent 55%);
+    background-attachment: fixed;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/></svg>");
+  }
+  #app-root { position: relative; z-index: 1; }
+  ::selection { background: #B08D3E; color: #0E1210; }
+
+  .num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  .card {
+    background: linear-gradient(180deg, rgba(32,38,34,0.62), rgba(19,23,20,0.85));
+    border: 1px solid rgba(243,239,228,0.065);
+    border-radius: 16px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.035) inset, 0 16px 32px -20px rgba(0,0,0,0.65);
+  }
+  .card-raised {
+    background: linear-gradient(180deg, rgba(40,47,41,0.85), rgba(24,29,26,0.92));
+    border-color: rgba(176,141,62,0.16);
+  }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+    background: linear-gradient(180deg, #D9BC72, #B08D3E 65%, #9c7c34);
+    color: #171308; font-weight: 600; border-radius: 10px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset, 0 1px 2px rgba(0,0,0,0.2), 0 10px 20px -10px rgba(176,141,62,0.55);
+    transition: filter .15s ease, transform .12s ease, box-shadow .15s ease;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 14px 26px -10px rgba(176,141,62,0.65); }
+  .btn-primary:active { transform: translateY(0); filter: brightness(0.98); }
+  .btn-primary:disabled { opacity: .4; filter: none; transform: none; cursor: not-allowed; }
+
+  .btn-secondary {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+    background: rgba(243,239,228,0.025);
+    border: 1px solid rgba(243,239,228,0.12);
+    color: #F3EFE4; border-radius: 10px;
+    transition: border-color .15s ease, background .15s ease, color .15s ease;
+    white-space: nowrap;
+  }
+  .btn-secondary:hover { border-color: rgba(176,141,62,0.55); background: rgba(176,141,62,0.07); color: #D4B364; }
+
+  .input-field {
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(243,239,228,0.1);
+    border-radius: 10px;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .input-field:focus { outline: none; border-color: #B08D3E; box-shadow: 0 0 0 3px rgba(176,141,62,0.14); background: rgba(0,0,0,0.3); }
+  .input-field::placeholder { color: #6b6559; }
+
+  .stamp {
+    display: inline-flex; align-items: center; gap: .4rem;
+    border-radius: 999px; padding: .28rem .7rem;
+    font-size: .66rem; letter-spacing: .09em; text-transform: uppercase; font-weight: 600;
+    font-family: 'JetBrains Mono', monospace; line-height: 1;
+    background: color-mix(in oklab, currentColor 13%, transparent);
+    border: 1px solid color-mix(in oklab, currentColor 30%, transparent);
+  }
+  .stamp::before { content: ''; width: 5px; height: 5px; border-radius: 999px; background: currentColor; flex-shrink: 0; }
+</style>
+</head>
+<body class="min-h-screen text-parchment font-sans antialiased flex items-center justify-center">
+<div class="relative z-10 max-w-sm w-full px-6">
+  {% set company = contract.company %}
+  {% if company.brand_logo_filename %}
+  <div class="bg-white rounded-lg inline-block p-2.5 mb-6">
+    <img src="{{ url_for('uploaded_file', filename=company.brand_logo_filename) }}" alt="{{ company.brand_display_name or company.name }}" class="h-7 object-contain">
+  </div>
+  {% else %}
+  <div class="font-display text-xl mb-6 text-center" style="color:{{ company.brand_accent_color or '#B08D3E' }}">{{ company.brand_display_name or company.name }}</div>
+  {% endif %}
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-4 space-y-2">
+      {% for category, message in messages %}
+        <div class="text-sm px-4 py-2.5 rounded-md border border-brick/50 bg-brick/10 text-brick text-center">{{ message }}</div>
+      {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="card p-6 text-center">
+    <p class="text-gold text-xs tracking-[0.2em] uppercase mb-1">Protected document</p>
+    <p class="font-display text-lg mb-4">{{ contract.title }}</p>
+    <p class="text-sm text-muted mb-5">Enter the PIN you were given to view this contract.</p>
+    <form method="post" action="{{ url_for('contract_share_verify_pin', token=token) }}">
+      <input type="text" name="pin" maxlength="10" inputmode="numeric" autofocus placeholder="••••" class="w-full text-center num text-2xl tracking-[0.5em] input-field px-3 py-3 mb-4">
+      <button class="w-full btn-primary py-2.5 text-sm">Unlock</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Licenses — Admin — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold text-white mb-6">Licenses</h1>
+
+  <form method="GET" class="mb-6">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search license key or customer email..."
+      class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+  </form>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-gray-500 text-xs uppercase tracking-wide border-b border-surface-border">
+          <th class="py-2 pr-4">License key</th>
+          <th class="py-2 pr-4">Product</th>
+          <th class="py-2 pr-4">Customer</th>
+          <th class="py-2 pr-4">Status</th>
+          <th class="py-2 pr-4"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lic in licenses %}
+        <tr class="border-b border-surface-border/50">
+          <td class="py-2 pr-4 font-mono text-gray-300">{{ lic.license_key }}</td>
+          <td class="py-2 pr-4 text-gray-400">{{ lic.product.name }}</td>
+          <td class="py-2 pr-4 text-gray-400">{{ lic.customer_email or '—' }}</td>
+          <td class="py-2 pr-4">
+            <span class="text-xs px-2 py-0.5 rounded-full
+              {% if lic.status == 'active' %} bg-emerald-950 text-emerald-400
+              {% elif lic.status == 'suspended' %} bg-amber-950 text-amber-400
+              {% else %} bg-red-950 text-red-400 {% endif %}">
+              {{ lic.status }}
+            </span>
+          </td>
+          <td class="py-2 pr-4 text-right">
+            {% if lic.status != 'revoked' %}
+              <form method="POST" action="{{ url_for('admin.revoke_license', license_id=lic.id) }}" class="inline"
+                    onsubmit="return confirm('Revoke this license?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="text-xs text-red-400 hover:text-red-300">Revoke</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if not licenses %}
+    <p class="text-sm text-gray-500">No licenses found.</p>
+  {% endif %}
+</div>
+{% endblock %}

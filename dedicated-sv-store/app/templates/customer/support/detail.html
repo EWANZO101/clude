@@ -1,0 +1,21 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_message_thread.html" import message_thread with context %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}{{ ticket.ticket_number }} — {{ app_name }}{% endblock %}
+{% block page_title %}{{ ticket.subject }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+  <div class="card p-5 mb-6">
+    <p class="text-sm text-text-secondary whitespace-pre-line mb-4">{{ ticket.description }}</p>
+    {{ message_thread(visible_messages) }}
+  </div>
+  {% if ticket.status.value not in ("resolved", "closed") %}
+  <form method="POST" class="card p-5">
+    {{ form.hidden_tag() }}
+    <input type="hidden" name="action" value="reply">
+    {{ field(form.body, rows=3, placeholder="Write a reply…") }}
+    <button type="submit" class="btn-primary">Send</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

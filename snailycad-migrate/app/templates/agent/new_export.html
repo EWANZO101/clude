@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Agent export — {{ app_name }}{% endblock %}
+{% block content %}
+<h1 class="text-lg font-semibold text-gray-100 mb-2">Export via agent</h1>
+<p class="text-sm text-gray-500 mb-6 max-w-2xl">
+  No port forwarding, no firewall changes. You'll download a small script,
+  run it on the machine with the SnailyCAD install, and it connects out to
+  this platform on its own — nothing needs to be reachable from here.
+</p>
+
+<form method="POST" novalidate class="max-w-2xl bg-panel border border-border rounded-lg p-6 space-y-5">
+  {{ form.hidden_tag() }}
+  {% include "_form_errors.html" %}
+
+  <div class="flex items-center gap-2">
+    {{ form.include_files(class="rounded border-border bg-surface", id="include_files") }}
+    {{ form.include_files.label(class="text-sm text-gray-300") }}
+  </div>
+
+  <div id="install_path_field">
+    {{ form.install_path.label(class="block text-sm text-gray-400 mb-1") }}
+    {{ form.install_path(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200", placeholder="/opt/snailycad or D:\\SnailyCAD") }}
+    <p class="text-xs text-gray-600 mt-1">{{ form.install_path.description }}</p>
+  </div>
+  <div class="border-t border-border pt-4">
+    <p class="text-sm font-semibold text-gray-300 mb-3">Database</p>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div class="sm:col-span-2">
+        {{ form.db_type.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_type(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.db_host.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_host(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.db_port.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_port(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.db_name.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_name(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+        <p class="text-xs text-gray-600 mt-1">{{ form.db_name.description }}</p>
+      </div>
+      <div>
+        {{ form.db_user.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_user(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.db_password.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.db_password(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div>
+        {{ form.sqlite_path.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.sqlite_path(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+    </div>
+    <p class="text-xs text-gray-600 mt-2">
+      The agent runs pg_dump locally — the DB just needs to be reachable from
+      the machine running the agent, not from this server.
+    </p>
+  </div>
+
+  <div class="border-t border-border pt-4">
+    <div class="flex items-center gap-2 mb-3">
+      {{ form.include_uploads(class="rounded border-border bg-surface") }}
+      {{ form.include_uploads.label(class="text-sm text-gray-400") }}
+    </div>
+    <div>
+      {{ form.extra_paths.label(class="block text-sm text-gray-400 mb-1") }}
+      {{ form.extra_paths(rows=3, class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200 font-mono") }}
+    </div>
+  </div>
+
+  {{ form.submit(class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md py-2") }}
+</form>
+
+<script>
+  const includeFiles = document.getElementById('include_files');
+  const installPathField = document.getElementById('install_path_field');
+  function toggleInstallPath() {
+    installPathField.classList.toggle('opacity-40', !includeFiles.checked);
+  }
+  includeFiles.addEventListener('change', toggleInstallPath);
+  toggleInstallPath();
+</script>
+{% endblock %}

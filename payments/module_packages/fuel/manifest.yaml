@@ -1,0 +1,23 @@
+id: fuel
+name: Fuel
+version: "1.0.0"
+author: OpsLab Systems
+description: Vehicles, fuel entries, MPG/cost-per-mile tracking and fuel spending stats.
+core_compatibility: "0.x"
+dependencies:
+  - python-dateutil>=2.9
+permissions:
+  - fuel.view
+  - fuel.edit
+navigation:
+  - label: Fuel
+    icon: fuel
+    url: /fuel/
+    position: 25
+  - label: Vehicles
+    icon: car
+    url: /fuel/vehicles
+    position: 26
+dashboard_widgets:
+  - key: fuel_spending
+    label: Fuel spending this month

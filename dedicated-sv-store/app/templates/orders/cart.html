@@ -1,0 +1,43 @@
+{% extends "layouts/public.html" %}
+{% block title %}Your Cart — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+  <h1 class="text-2xl font-semibold text-text-primary mb-6">Your cart</h1>
+
+  {% if summary.lines %}
+  <div class="card mb-6">
+    <table class="table-base">
+      <thead><tr><th>Item</th><th>Qty</th><th>Monthly</th><th>Setup</th><th></th></tr></thead>
+      <tbody>
+        {% for line in summary.lines %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ line.title }}</td>
+          <td>{{ line.quantity }}</td>
+          <td class="text-text-secondary">£{{ line.line_total }}/mo</td>
+          <td class="text-text-secondary">{{ ("£" ~ (line.setup_fee * line.quantity)) if line.setup_fee else "—" }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('orders.cart_remove', cart_item_id=line.item.id) }}">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-status-danger hover:opacity-80 text-sm">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card p-5 max-w-sm ml-auto">
+    <div class="flex justify-between text-sm mb-2"><span class="text-text-secondary">Subtotal</span><span class="text-text-primary">£{{ summary.subtotal }}/mo</span></div>
+    {% if summary.setup_total %}
+    <div class="flex justify-between text-sm mb-4"><span class="text-text-secondary">Setup fees</span><span class="text-text-primary">£{{ summary.setup_total }}</span></div>
+    {% endif %}
+    <a href="{{ url_for('orders.checkout_view') }}" class="btn-primary w-full">Proceed to checkout</a>
+  </div>
+  {% else %}
+  <div class="card p-10 text-center text-text-secondary">
+    Your cart is empty. <a href="{{ url_for('marketplace.servers') }}" class="text-brand-400 hover:text-brand-300">Browse servers</a>.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

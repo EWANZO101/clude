@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><i class="fas fa-gear" style="color:#9ca3af;"></i> System Settings</h1>
+</div>
+
+<div class="card" style="padding:20px;max-width:520px;">
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div>
+        <label class="form-label">App Name</label>
+        <input type="text" name="app_name" class="form-input" value="{{ settings.app_name or 'StockTool' }}" />
+      </div>
+      <div>
+        <label class="form-label">Default Low Stock Threshold</label>
+        <input type="number" name="default_low_stock_threshold" class="form-input" min="0"
+               value="{{ settings.default_low_stock_threshold or 5 }}" />
+      </div>
+      <div>
+        <label class="form-label">Kiosk Idle Timeout (seconds)</label>
+        <input type="number" name="kiosk_idle_timeout_seconds" class="form-input" min="10"
+               value="{{ settings.kiosk_idle_timeout_seconds or 60 }}" />
+      </div>
+      <div>
+        <label class="form-label">Kiosk Badge Token Expiry (minutes)</label>
+        <input type="number" name="kiosk_token_expires_minutes" class="form-input" min="1"
+               value="{{ settings.kiosk_token_expires_minutes or 15 }}" />
+      </div>
+      <div>
+        <label class="form-label">Tool Overdue Alert Threshold (hours)</label>
+        <input type="number" name="max_checkout_hours" class="form-input" min="1"
+               value="{{ settings.max_checkout_hours or 24 }}" />
+        <p style="font-size:12px;color:#6b7280;margin-top:4px;">
+          A checked-out tool gets flagged as overdue on the dashboard once it's been
+          out this many hours.
+        </p>
+      </div>
+      <div>
+        <label class="form-label">Kiosk Home Screen</label>
+        <select name="kiosk_home_screen" class="form-select">
+          <option value="scan" {% if (settings.kiosk_home_screen or 'scan') == 'scan' %}selected{% endif %}>Classic scan-to-remove screen</option>
+          <option value="browse" {% if settings.kiosk_home_screen == 'browse' %}selected{% endif %}>Builder Mode dashboard (categories/items)</option>
+        </select>
+        <p style="font-size:12px;color:#6b7280;margin-top:4px;">
+          Either screen has a link to the other, so this only decides what a kiosk lands on
+          after login. Set up the dashboard on the Builder Mode page first.
+        </p>
+      </div>
+    </div>
+    <div style="margin-top:20px;">
+      <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Settings</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

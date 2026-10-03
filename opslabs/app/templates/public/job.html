@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} · OpsLab Systems{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-16 w-full">
+
+  <div class="rounded-2xl border border-ink-600 bg-ink-800/50 overflow-hidden">
+    <!-- Header -->
+    <div class="p-6 sm:p-8 border-b border-ink-600/60">
+      <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-ops-300 mb-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Job details
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight">{{ job.title }}</h1>
+      <div class="mt-3 flex items-center gap-2">
+        <span class="pill" style="background:{{ job.status_meta.color }}1f;color:{{ job.status_meta.color }};border:1px solid {{ job.status_meta.color }}55;">{{ job.status_meta.label }}</span>
+        {% if job.is_paid %}<span class="pill" style="background:#22c55e1f;color:#86efac;border:1px solid #22c55e55;">Paid</span>{% endif %}
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6 sm:p-8 space-y-6">
+
+      {% for cat, msg in get_flashed_messages(with_categories=true) %}
+        <div class="text-sm px-4 py-2.5 rounded-lg {{ 'bg-red-500/10 border border-red-500/30 text-red-200' if cat=='error' else 'bg-green-500/10 border border-green-500/30 text-green-200' }}">{{ msg }}</div>
+      {% endfor %}
+
+      {% if job.details %}
+      <div>
+        <div class="text-[11px] font-bold uppercase tracking-widest text-gray-500 mb-1">Description</div>
+        <p class="text-gray-200 whitespace-pre-line leading-relaxed">{{ job.details }}</p>
+      </div>
+      {% endif %}
+
+      {% if job.contact_phone %}
+      <p class="text-sm text-gray-400">Questions? Call us on <span class="text-gray-200 font-medium">{{ job.contact_phone }}</span>.</p>
+      {% endif %}
+
+      <!-- Items + total -->
+      <div class="pt-5 border-t border-ink-600/60">
+        <div class="text-[11px] font-bold uppercase tracking-widest text-gray-500 mb-2">{{ 'Your order' if job.client_can_edit else 'Items' }}</div>
+
+        {% if job.items %}
+        <div class="rounded-xl border border-ink-600 overflow-hidden divide-y divide-ink-600/50">
+          {% for it in job.items %}
+          <div class="flex items-center gap-3 p-3 bg-ink-900/30">
+            <div class="flex-1 min-w-0">
+              <div class="text-sm text-gray-100 truncate">{{ it.label }}</div>
+              <div class="text-xs text-gray-500">{{ it.unit_display }} each</div>
+            </div>
+            {% if job.client_can_edit %}
+            <div class="flex items-center gap-1">
+              <form method="post" action="{{ url_for('quickjobs.public_item_qty', token=job.token, item_id=it.id) }}"><input type="hidden" name="action" value="dec"><button class="w-7 h-7 rounded-md bg-white/5 border border-ink-600 text-gray-300 hover:bg-white/10">−</button></form>
+              <span class="w-8 text-center text-sm">{{ it.quantity }}</span>
+              <form method="post" action="{{ url_for('quickjobs.public_item_qty', token=job.token, item_id=it.id) }}"><input type="hidden" name="action" value="inc"><button class="w-7 h-7 rounded-md bg-white/5 border border-ink-600 text-gray-300 hover:bg-white/10">+</button></form>
+            </div>
+            {% else %}
+            <span class="text-sm text-gray-400">×{{ it.quantity }}</span>
+            {% endif %}
+            <div class="w-20 text-right text-sm font-semibold">{{ it.amount_display }}</div>
+            {% if job.client_can_edit %}
+            <form method="post" action="{{ url_for('quickjobs.public_item_remove', token=job.token, item_id=it.id) }}"><button class="text-gray-500 hover:text-red-400 px-1" title="Remove">✕</button></form>
+            {% endif %}
+          </div>
+          {% endfor %}
+          <div class="flex items-center justify-between p-3 bg-ink-800/70">
+            <span class="text-sm font-bold">Total</span>
+            <span class="text-lg font-semibold">{{ job.total_display }}</span>
+          </div>
+        </div>
+        {% elif job.total_cents %}
+        <div class="flex items-center justify-between p-3 rounded-xl border border-ink-600 bg-ink-900/30">
+          <span class="text-sm text-gray-300">Price</span>
+          <span class="text-lg font-semibold">{{ job.total_display }}</span>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No items yet.</p>
+        {% endif %}
+
+        {% if job.client_can_edit %}
+        <form method="post" action="{{ url_for('quickjobs.public_item_add', token=job.token) }}" class="mt-3 flex flex-col sm:flex-row gap-2 sm:items-end">
+          <div class="flex-1"><label class="block text-[11px] text-gray-500 mb-1">Add an item</label><input name="label" required class="form-input w-full" placeholder="e.g. Extra callout"></div>
+          <div class="w-full sm:w-28"><label class="block text-[11px] text-gray-500 mb-1">Price (£)</label><input name="unit_price" inputmode="decimal" class="form-input w-full" placeholder="0.00"></div>
+          <div class="w-full sm:w-16"><label class="block text-[11px] text-gray-500 mb-1">Qty</label><input name="quantity" value="1" class="form-input w-full"></div>
+          <button class="px-4 py-2.5 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-lg whitespace-nowrap">Add</button>
+        </form>
+        {% endif %}
+      </div>
+
+      <!-- Payment -->
+      {% if job.has_price and job.status != 'cancelled' %}
+      <div class="pt-5 border-t border-ink-600/60">
+        {% if request.args.get('paid') and not job.is_paid %}
+          <p class="text-sm text-gray-400 mb-3">Finishing up your payment… refresh in a moment if the status hasn't updated.</p>
+        {% endif %}
+        {% if job.is_paid %}
+          <div class="flex items-center justify-between gap-3 p-4 rounded-xl bg-green-500/10 border border-green-500/30">
+            <div class="flex items-center gap-2 text-green-200 font-semibold">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Paid
+            </div>
+            <span class="text-lg font-semibold text-green-200">{{ job.total_display }}</span>
+          </div>
+        {% else %}
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-xl bg-ink-900/50 border border-ink-600">
+            <div>
+              <div class="text-xs text-gray-500">Amount due</div>
+              <div class="text-2xl font-semibold">{{ job.total_display }}</div>
+            </div>
+            {% if stripe_on %}
+            <form method="post" action="{{ url_for('quickjobs.public_pay', token=job.token) }}">
+              <button class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-xl transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                Pay {{ job.total_display }}
+              </button>
+            </form>
+            {% else %}
+            <span class="text-sm text-yellow-300/90">Online payment isn't switched on yet.</span>
+            {% endif %}
+          </div>
+          {% if stripe_on %}<p class="text-xs text-gray-500 mt-2">Secure payment via Stripe.</p>{% endif %}
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Scheduling -->
+      <div class="pt-5 border-t border-ink-600/60">
+        {% if job.status == 'cancelled' %}
+          <div class="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-sm text-red-200">This job has been cancelled.</div>
+        {% elif job.scheduled_day %}
+          <div class="flex items-center gap-3 p-4 rounded-xl bg-green-500/10 border border-green-500/30">
+            <svg class="w-6 h-6 text-green-300 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div>
+              <div class="text-sm text-gray-400">Scheduled for</div>
+              <div class="text-lg font-bold text-green-200">{{ job.scheduled_day.strftime('%A %d %B %Y') }}{{ ' · ' ~ job.scheduled_time if job.scheduled_time else '' }}</div>
+            </div>
+          </div>
+          {% if job.client_can_edit %}
+          <details class="mt-3 group">
+            <summary class="text-sm text-ops-300 hover:text-ops-200 cursor-pointer select-none">Change the day</summary>
+            <form method="post" action="{{ url_for('quickjobs.public_reschedule', token=job.token) }}" class="mt-3 flex flex-col sm:flex-row gap-3 sm:items-end">
+              <div class="flex-1"><label class="block text-xs text-gray-400 mb-1">New date</label><input name="scheduled_day" type="date" min="{{ today }}" required class="form-input w-full"></div>
+              <div><label class="block text-xs text-gray-400 mb-1">Time (optional)</label><input name="scheduled_time" type="time" class="form-input w-full"></div>
+              <button class="px-5 py-2.5 text-sm font-semibold text-white bg-white/5 border border-ink-600 rounded-lg hover:bg-white/10 whitespace-nowrap">Update day</button>
+            </form>
+          </details>
+          {% endif %}
+        {% elif job.is_open_for_scheduling %}
+          <div class="text-[11px] font-bold uppercase tracking-widest text-gray-500 mb-2">Choose a day</div>
+          <form method="post" action="{{ url_for('quickjobs.public_schedule', token=job.token) }}" class="flex flex-col sm:flex-row gap-3 sm:items-end">
+            <div class="flex-1"><label class="block text-xs text-gray-400 mb-1">Preferred date</label><input name="scheduled_day" type="date" min="{{ today }}" required class="form-input w-full"></div>
+            <div><label class="block text-xs text-gray-400 mb-1">Time (optional)</label><input name="scheduled_time" type="time" class="form-input w-full"></div>
+            <button class="px-5 py-2.5 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-lg transition whitespace-nowrap">Confirm day</button>
+          </form>
+          <p class="text-xs text-gray-500 mt-2">Times are Europe/London.</p>
+        {% else %}
+          <div class="p-4 rounded-xl bg-white/5 border border-ink-600 text-sm text-gray-300">A day will be confirmed with you directly.</div>
+        {% endif %}
+      </div>
+
+      <!-- Your details (editable) -->
+      {% if job.client_can_edit %}
+      <div class="pt-5 border-t border-ink-600/60">
+        <div class="text-[11px] font-bold uppercase tracking-widest text-gray-500 mb-2">Your details</div>
+        <form method="post" action="{{ url_for('quickjobs.public_details', token=job.token) }}" class="grid sm:grid-cols-2 gap-3">
+          <div><label class="block text-[11px] text-gray-500 mb-1">Name</label><input name="client_name" value="{{ job.client_name or '' }}" class="form-input w-full"></div>
+          <div><label class="block text-[11px] text-gray-500 mb-1">Email</label><input name="client_email" type="email" value="{{ job.client_email or '' }}" class="form-input w-full"></div>
+          <div><label class="block text-[11px] text-gray-500 mb-1">Phone</label><input name="client_phone" value="{{ job.client_phone or '' }}" class="form-input w-full"></div>
+          <div><label class="block text-[11px] text-gray-500 mb-1">Address</label><input name="location" value="{{ job.location or '' }}" class="form-input w-full"></div>
+          <div class="sm:col-span-2"><button class="px-5 py-2.5 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-lg">Save details</button></div>
+        </form>
+      </div>
+      {% elif job.location or job.client_name %}
+      <div class="pt-5 border-t border-ink-600/60 grid sm:grid-cols-2 gap-4 text-sm">
+        {% if job.client_name %}<div><div class="text-gray-500 text-xs">For</div><div class="text-gray-200">{{ job.client_name }}</div></div>{% endif %}
+        {% if job.location %}<div><div class="text-gray-500 text-xs">Address</div><div class="text-gray-200">{{ job.location }}</div></div>{% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Cancel -->
+      {% if job.allow_client_edits and not job.is_paid and job.status != 'cancelled' %}
+      <div class="pt-5 border-t border-ink-600/60">
+        <form method="post" action="{{ url_for('quickjobs.public_cancel', token=job.token) }}" onsubmit="return confirm('Cancel this job? This cannot be undone here.');">
+          <button class="text-sm text-gray-500 hover:text-red-300">Cancel this job</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <p class="text-center text-xs text-gray-600 mt-6">Powered by <span class="text-ops-500 font-semibold">OpsLab</span> Systems</p>
+</div>
+{% endblock %}

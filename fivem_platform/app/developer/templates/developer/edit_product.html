@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ product.name }} — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-6">Edit product</h1>
+
+  <form method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Product name</label>
+      <input type="text" name="name" required value="{{ product.name }}"
+        class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+    </div>
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Version</label>
+      <input type="text" name="version" value="{{ product.version }}"
+        class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+    </div>
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Description</label>
+      <textarea name="description" rows="5"
+        class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">{{ product.description or '' }}</textarea>
+      <p class="text-xs text-gray-500 mt-1">Shown on your marketplace listing, if you have one.</p>
+    </div>
+    <button type="submit" class="bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition">
+      Save changes
+    </button>
+  </form>
+</div>
+{% endblock %}

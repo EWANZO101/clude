@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block header %}Content{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <div class="text-slate-400 text-sm">{{ posts|length }} posts</div>
+  <form method="post" action="{{ url_for('content.generate') }}">
+    <button class="px-4 py-2 bg-accent-600 hover:bg-accent-500 rounded-lg text-sm font-medium text-white" {{ 'disabled' if not brand }}>Generate 30 posts</button>
+  </form>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+  {% for post in posts %}
+  <a href="{{ url_for('content.detail', post_id=post.id) }}" class="block bg-base-900 border border-base-700 rounded-xl p-4 hover:border-accent-500">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs uppercase tracking-wide text-slate-500">{{ post.kind }}</span>
+      <span class="text-xs px-2 py-0.5 rounded-full
+        {{ 'bg-slate-500/10 text-slate-400' if post.status == 'draft' }}
+        {{ 'bg-amber-500/10 text-amber-400' if post.status == 'ai_review' }}
+        {{ 'bg-sky-500/10 text-sky-400' if post.status == 'approved' }}
+        {{ 'bg-violet-500/10 text-violet-400' if post.status == 'ready' }}
+        {{ 'bg-emerald-500/10 text-emerald-400' if post.status == 'published' }}">
+        {{ post.status.replace('_', ' ') }}
+      </span>
+    </div>
+    <p class="text-sm text-slate-300 line-clamp-3">{{ post.caption }}</p>
+  </a>
+  {% else %}
+  <p class="text-slate-500 text-sm">No content yet. Generate your first batch above.</p>
+  {% endfor %}
+</div>
+{% endblock %}

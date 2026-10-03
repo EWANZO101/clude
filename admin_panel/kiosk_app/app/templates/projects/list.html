@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Projects — {{ tenant_name }}{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center;">
+  <h1 style="margin:0;">Projects</h1>
+  <a href="{{ url_for('projects.add_project') }}" class="btn">+ Add Project</a>
+</div>
+<p style="margin-top:10px;">
+  {% if show_closed %}
+    <a href="{{ url_for('projects.list_projects') }}">Show active only</a>
+  {% else %}
+    <a href="{{ url_for('projects.list_projects', closed=1) }}">Show closed projects too</a>
+  {% endif %}
+</p>
+
+<div class="panel" style="margin-top:8px; padding:0;">
+  {% if projects %}
+    <div class="table-scroll">
+    <table style="width:100%; border-collapse:collapse;">
+      <tbody>
+        {% for project in projects %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:14px;">
+              <div style="font-weight:600;">
+                {{ project.name }}
+                {% if project.code %}<span class="muted" style="font-weight:400;">({{ project.code }})</span>{% endif %}
+              </div>
+              <div class="muted" style="font-size:12.5px;">
+                {% if project.status == 'active' %}
+                  <span style="color:var(--green);">● Active</span>
+                {% else %}
+                  <span style="color:var(--muted);">● Closed</span>
+                {% endif %}
+                — code <code>{{ project.barcode_code }}</code>
+                {% if active_project_name == project.name %}
+                  <span style="color:var(--accent); font-weight:600;">— active scan project</span>
+                {% endif %}
+              </div>
+            </td>
+            <td style="padding:14px;">
+              <div class="row-actions">
+              <a href="{{ url_for('projects.view_barcode', project_id=project.id) }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text); padding:6px 10px; font-size:12.5px;">Barcode</a>
+              <a href="{{ url_for('projects.edit_project', project_id=project.id) }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text); padding:6px 10px; font-size:12.5px;">Edit</a>
+              {% if project.status == 'active' %}
+                <form method="post" action="{{ url_for('projects.close_project', project_id=project.id) }}">
+                  <button type="submit" style="background:transparent; border:1px solid var(--panel-border); padding:6px 10px; font-size:12.5px;">Close</button>
+                </form>
+              {% else %}
+                <form method="post" action="{{ url_for('projects.reopen_project', project_id=project.id) }}">
+                  <button type="submit" class="btn" style="padding:6px 10px; font-size:12.5px;">Reopen</button>
+                </form>
+                <form method="post" action="{{ url_for('projects.delete_project', project_id=project.id) }}" onsubmit="return confirm('Delete this project?');">
+                  <button type="submit" style="background:var(--red); padding:6px 10px; font-size:12.5px;">Delete</button>
+                </form>
+              {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="muted" style="padding:20px;">No {{ 'closed ' if show_closed else '' }}projects yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

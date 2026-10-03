@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Too many attempts{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto text-center py-16">
+  <span class="plate text-sm mb-6 inline-block">429</span>
+  <h1 class="font-bold text-2xl mb-2">Too many attempts</h1>
+  <p class="text-sm text-ink-muted mb-6">You've made too many attempts in a short time. Please wait a while and try again.</p>
+  <a href="{{ url_for('main.index') }}" class="inline-flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-800 font-medium rounded-lg text-sm px-4 py-2.5 text-center transition">Back home</a>
+</div>
+{% endblock %}

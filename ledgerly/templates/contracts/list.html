@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Contracts · Ledgerly{% endblock %}
+{% block content %}
+<div class="flex items-end justify-between mb-8">
+  <div>
+    <p class="text-gold text-xs tracking-[0.2em] uppercase mb-1">All contracts</p>
+    <h1 class="font-display text-4xl tracking-tight">Contracts</h1>
+  </div>
+  <a href="{{ url_for('contract_new') }}" class="text-sm btn-primary px-3.5 py-1.5">+ New contract</a>
+</div>
+
+{% if not contracts %}
+<div class="border border-dashed border-white/10 rounded-2xl p-10 text-center text-muted">No contracts yet.</div>
+{% else %}
+<div class="card divide-y divide-ink-line">
+  {% for c in contracts %}
+  <div class="flex items-center justify-between px-5 py-4 hover:bg-ink-raised transition group">
+    <a href="{{ url_for('contract_view', contract_id=c.id) }}" class="flex-1">
+      <p class="font-medium">{{ c.title }}</p>
+      <p class="text-xs text-muted mt-0.5">{{ c.client.name }}</p>
+    </a>
+    <div class="flex items-center gap-6 text-sm">
+      <span class="num">{{ c.total_amount|money(c.currency_code) }}</span>
+      <span class="stamp {{ 'text-sage' if c.status=='signed' else ('text-gold' if c.status=='sent' else 'text-muted') }}">{{ c.status }}</span>
+      <form method="post" action="{{ url_for('contract_delete', contract_id=c.id) }}" class="confirm-delete-form" data-title="{{ c.title }}">
+        <button class="text-xs text-muted opacity-0 group-hover:opacity-100 hover:text-brick transition">Delete</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<script>
+  document.querySelectorAll('.confirm-delete-form').forEach((form) => {
+    form.addEventListener('submit', (e) => {
+      const title = form.dataset.title || 'this contract';
+      if (!confirm(`Delete "${title}"? This removes its payment schedule, audit trail, and share link permanently.`)) {
+        e.preventDefault();
+      }
+    });
+  });
+</script>
+{% endif %}
+{% endblock %}

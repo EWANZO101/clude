@@ -1,0 +1,62 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% block title %}API Keys — Admin{% endblock %}
+{% block page_title %}API keys{% endblock %}
+{% block header_actions %}
+<a href="{{ url_for('api_v1.api_docs') }}" target="_blank" class="btn-secondary">View API docs</a>
+{% endblock %}
+{% block content %}
+{% if new_raw_key %}
+<div class="card p-4 mb-6 border-status-success/40">
+  <p class="text-sm font-medium text-status-success mb-1">New API key created</p>
+  <p class="font-mono text-xs text-text-primary break-all">{{ new_raw_key }}</p>
+  <p class="text-xs text-text-muted mt-1">Copy this now — it will not be shown again.</p>
+</div>
+{% endif %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Name</th><th>Owner</th><th>Prefix</th><th>Scopes</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for key in keys %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ key.name }}</td>
+          <td class="text-text-secondary">{{ key.user.email }}</td>
+          <td class="text-text-muted font-mono text-xs">{{ key.key_prefix }}…</td>
+          <td class="text-text-secondary text-xs">{{ key.scopes|join(", ") if key.scopes else "all" }}</td>
+          <td>{% if key.is_valid() %}<span class="badge-success">Active</span>{% else %}<span class="badge-danger">Revoked</span>{% endif %}</td>
+          <td>
+            {% if key.is_valid() %}
+            <form method="POST" action="{{ url_for('admin.api_key_revoke', key_id=key.id) }}">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-status-danger hover:opacity-80 text-sm">Revoke</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-text-muted py-8">No API keys yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Create API key</h2>
+    <form method="POST" class="space-y-3">
+      {% include "components/_csrf.html" %}
+      <div>
+        <label class="field-label">User email</label>
+        <input type="email" name="email" class="input-field" required>
+      </div>
+      <div>
+        <label class="field-label">Name</label>
+        <input type="text" name="name" class="input-field" placeholder="e.g. Production integration">
+      </div>
+      <div>
+        <label class="field-label">Scopes (comma separated, blank = all)</label>
+        <input type="text" name="scopes" class="input-field" placeholder="servers:read,orders:read">
+      </div>
+      <button type="submit" class="btn-primary w-full">Create key</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

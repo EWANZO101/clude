@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Team — {{ business.name }}{% endblock %}
+{% block content %}
+<h1 class="page-title mb-2">Team — {{ business.name }}</h1>
+<p class="page-subtitle">Invite an accountant, bookkeeper, or employee. They only gain access after accepting.</p>
+
+<div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow max-w-lg mb-8">
+  <h2 class="section-title mb-4">Invite someone</h2>
+  <form method="POST" action="{{ url_for('businesses.invite_team_member', business_id=business.id) }}" class="space-y-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div><label class="label-field">Email</label><input type="email" name="email" required class="input-field w-full"></div>
+    <div><label class="label-field">Role</label>
+      <select name="role" class="input-field w-full">
+        <option value="accountant">Accountant</option>
+        <option value="bookkeeper">Bookkeeper</option>
+        <option value="manager">Manager</option>
+        <option value="employee">Employee</option>
+        <option value="readonly">Read-only</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <button class="btn btn-primary">Send invite</button>
+  </form>
+</div>
+
+<h2 class="section-title">Pending invitations</h2>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">Email</th><th class="p-3">Role</th><th class="p-3">Expires</th><th class="p-3"></th></tr></thead>
+    <tbody>
+      {% for inv in invitations %}
+      <tr class="row-border">
+        <td class="p-3">{{ inv.email }}</td>
+        <td class="p-3 capitalize">{{ inv.role }}</td>
+        <td class="p-3">{{ inv.expires_at.strftime('%Y-%m-%d') }}</td>
+        <td class="p-3 text-right">
+          <form method="POST" action="{{ url_for('businesses.revoke_invitation', business_id=business.id, invitation_id=inv.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="text-red-600 text-sm">Revoke</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="empty-state">No pending invitations.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

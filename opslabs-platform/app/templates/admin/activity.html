@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Activity — Admin{% endblock %}
+{% block content %}
+<h1>Platform Activity</h1>
+<p style="font-size:0.85rem;color:#9aa3af;">Most recent 200 admin actions.</p>
+<div class="card">
+  <table>
+    <tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Details</th></tr>
+    {% for e in entries %}
+    <tr>
+      <td>{{ e.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td>{{ e.actor.email if e.actor else 'system' }}</td>
+      <td>{{ e.action }}</td>
+      <td>{{ e.target_type }}{{ ' #' ~ e.target_id if e.target_id else '' }}</td>
+      <td style="font-size:0.78rem;color:#9aa3af;">{{ e.details }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% if not entries %}<p style="color:#9aa3af;">No activity recorded yet.</p>{% endif %}
+</div>
+{% endblock %}

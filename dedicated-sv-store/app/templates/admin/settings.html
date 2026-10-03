@@ -1,0 +1,40 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% block title %}Settings — Admin{% endblock %}
+{% block page_title %}System settings{% endblock %}
+{% block content %}
+<div class="card p-5 max-w-xl">
+  <form method="POST">
+    {% include "components/_csrf.html" %}
+    <div class="flex items-center justify-between py-3 border-b border-border mb-4">
+      <div>
+        <p class="font-medium text-text-primary">Maintenance mode</p>
+        <p class="text-sm text-text-secondary">Show a maintenance page to everyone except staff.</p>
+      </div>
+      <input type="checkbox" name="maintenance_mode" {{ "checked" if maintenance_mode }}
+             class="h-5 w-9 rounded-full appearance-none bg-surface-700 checked:bg-brand-600 relative cursor-pointer transition-colors">
+    </div>
+
+    <h2 class="font-semibold text-text-primary mb-3">Server builder pricing</h2>
+    <div class="grid sm:grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="field-label">Base monthly price</label>
+        <input type="number" step="0.01" name="builder_base_price" value="{{ builder_settings.base_price }}" class="input-field">
+      </div>
+      <div>
+        <label class="field-label">Setup fee</label>
+        <input type="number" step="0.01" name="builder_setup_fee" value="{{ builder_settings.setup_fee }}" class="input-field">
+      </div>
+      <div>
+        <label class="field-label">IP addresses included</label>
+        <input type="number" name="builder_included_ips" value="{{ builder_settings.included_ips }}" class="input-field">
+      </div>
+      <div>
+        <label class="field-label">Price per extra IP</label>
+        <input type="number" step="0.01" name="price_per_extra_ip" value="{{ builder_settings.price_per_extra_ip }}" class="input-field">
+      </div>
+    </div>
+
+    <button type="submit" class="btn-primary">Save settings</button>
+  </form>
+</div>
+{% endblock %}

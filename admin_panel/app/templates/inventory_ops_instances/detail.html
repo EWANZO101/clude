@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}{{ instance.display_name() }} — {{ company.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('inventory_ops_instances.list_instances', company_id=company.public_id) }}" class="crumb">← Inventory Ops instances</a></p>
+
+<div class="page-header">
+  <div class="titles">
+    <h1>{{ instance.display_name() }}</h1>
+    <div class="page-sub">
+      {% if instance.connection_status == 'online' %}
+        <span class="pill pill-green">Online</span>
+      {% else %}
+        <span class="pill pill-muted">Offline</span>
+      {% endif %}
+      <span class="muted">{{ instance.os }}{% if instance.os_version %} ({{ instance.os_version }}){% endif %}</span>
+    </div>
+  </div>
+  {% if can_manage_instances %}
+    <div class="page-actions">
+      <form method="post" action="{{ url_for('inventory_ops_instances.delete_instance', company_id=company.public_id, instance_id=instance.public_id) }}"
+            onsubmit="return confirm('Permanently delete {{ instance.display_name()|e }}? This cannot be undone.');">
+        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+      </form>
+    </div>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2>Process</h2>
+  <table class="kv-table" style="margin-bottom:14px;">
+    <tr><th>Status</th><td class="mono">{{ instance.kiosk_process_status or 'unknown' }}</td></tr>
+    <tr><th>Version</th><td class="mono">{{ instance.app_version or '—' }}</td></tr>
+    <tr><th>Last seen</th><td>{{ instance.last_seen_at | friendly_dt if instance.last_seen_at else 'never' }}</td></tr>
+  </table>
+
+  {% if pending_command %}
+    <div class="flash flash-warning">
+      <strong>{{ pending_command.command_type|capitalize }}</strong> — {{ pending_command.status }}
+      (queued {{ pending_command.created_at | friendly_dt }})
+    </div>
+  {% endif %}
+
+  {% if can_manage_instances %}
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <form method="post" action="{{ url_for('inventory_ops_instances.start', company_id=company.public_id, instance_id=instance.public_id) }}">
+        <button type="submit">Start</button>
+      </form>
+      <form method="post" action="{{ url_for('inventory_ops_instances.stop', company_id=company.public_id, instance_id=instance.public_id) }}">
+        <button type="submit" class="btn btn-secondary">Stop</button>
+      </form>
+      <form method="post" action="{{ url_for('inventory_ops_instances.restart', company_id=company.public_id, instance_id=instance.public_id) }}">
+        <button type="submit" class="btn btn-secondary">Restart</button>
+      </form>
+    </div>
+
+    <form method="post" action="{{ url_for('inventory_ops_instances.rename', company_id=company.public_id, instance_id=instance.public_id) }}" style="margin-top:18px; display:flex; gap:8px; align-items:flex-end;">
+      <div style="flex:1;">
+        <label>Display name</label>
+        <input type="text" name="name" value="{{ instance.name or '' }}" placeholder="{{ instance.hostname or 'e.g. Front desk PC' }}">
+      </div>
+      <button type="submit">Save</button>
+    </form>
+  {% endif %}
+
+  {% if recent_commands %}
+    <h3 style="margin-top:20px; font-size:13px; text-transform:uppercase; color:var(--muted);">Recent commands</h3>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Command</th><th>Status</th><th>Result</th><th>Queued</th></tr></thead>
+      <tbody>
+        {% for cmd in recent_commands %}
+          <tr>
+            <td>{{ cmd.command_type }}</td>
+            <td class="muted">{{ cmd.status }}</td>
+            <td class="muted">{{ cmd.result_message or '—' }}</td>
+            <td class="muted">{{ cmd.created_at | friendly_dt }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2>Updates</h2>
+  <table class="kv-table" style="margin-bottom:14px;">
+    <tr><th>Current version</th><td class="mono">{{ instance.app_version or '—' }}</td></tr>
+  </table>
+
+  {% if active_deployment %}
+    {% set d = active_deployment %}
+    <div class="flash {{ 'flash-danger' if d.status in ['failed','rolling_back'] else 'flash-warning' }}">
+      <strong>v{{ d.package.version }}</strong> — status: <strong>{{ d.status.replace('_',' ')|capitalize }}</strong>
+      {% if can_manage_updates and d.status in ["scheduled", "waiting"] %}
+        <form method="post" action="{{ url_for('inventory_ops_instances.cancel_update', company_id=company.public_id, instance_id=instance.public_id, deployment_id=d.public_id) }}" style="display:inline; margin-left:10px;">
+          <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
+        </form>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if can_manage_updates %}
+    {% if usable_packages %}
+      <form method="post" action="{{ url_for('inventory_ops_instances.schedule_update', company_id=company.public_id, instance_id=instance.public_id) }}" style="margin-top:10px;">
+        <label>Package</label>
+        <select name="package_id">
+          {% for p in usable_packages %}
+            <option value="{{ p.public_id }}" title="{{ p.release_notes or '' }}">
+              v{{ p.version }} — {{ p.uploaded_at.strftime('%d %b') }}{{ ' (latest)' if p.public_id == usable_packages[0].public_id else '' }}
+            </option>
+          {% endfor %}
+        </select>
+        <label>When</label>
+        <select name="mode">
+          <option value="now">Update now</option>
+          <option value="schedule">Use configured schedule (company / 9PM UK default)</option>
+        </select>
+        <button type="submit" style="margin-top:14px;">Push update</button>
+      </form>
+    {% else %}
+      <p class="muted">No validated Inventory Ops packages support {{ instance.os }} yet — build/upload one from Releases.</p>
+    {% endif %}
+  {% endif %}
+
+  {% if deployment_history %}
+  <h2 style="margin-top:24px;">Update history</h2>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Version</th><th>Status</th><th>Target time</th><th>Completed</th><th>Requested by</th></tr></thead>
+    <tbody>
+      {% for d in deployment_history %}
+        <tr>
+          <td class="mono">v{{ d.package.version }}</td>
+          <td>
+            {% if d.status == 'successful' %}
+              <span class="pill pill-green">Successful</span>
+            {% elif d.status in ['failed','rolled_back'] %}
+              <span class="pill pill-red">{{ d.status.replace('_',' ')|capitalize }}</span>
+            {% elif d.status in ['cancelled','superseded'] %}
+              <span class="pill pill-muted">{{ d.status|capitalize }}</span>
+            {% else %}
+              <span class="pill pill-amber">{{ d.status.replace('_',' ')|capitalize }}</span>
+            {% endif %}
+          </td>
+          <td>{{ d.target_time_utc | friendly_dt }}</td>
+          <td>{{ d.completed_at | friendly_dt if d.completed_at else '—' }}</td>
+          <td class="muted">{{ d.requested_by.full_name }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

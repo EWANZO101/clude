@@ -1,0 +1,28 @@
+{
+  "ticket_id": "TICK-0055",
+  "ticket_type": "support",
+  "opened_by": "Alex Bento | Pierre jordaan",
+  "opened_at": "2026-04-20 23:50:37",
+  "closed_by": "Alex Bento | Pierre jordaan",
+  "closed_at": "2026-04-20 23:50 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-20T23:50:37.479000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1451691985730539592> <@842719474405998612>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-20T23:50:42.344000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

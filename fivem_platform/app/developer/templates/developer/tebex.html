@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Tebex — {{ product.name }} — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-1">Tebex integration</h1>
+  <p class="text-sm text-gray-500 mb-6">{{ product.name }} · {{ product.product_id }}</p>
+
+  {% if integration %}
+    <div class="bg-surface-card border border-surface-border rounded-lg p-5 space-y-4 mb-6">
+      <div class="flex items-center justify-between">
+        <div class="text-xs uppercase tracking-wide text-gray-500">Status</div>
+        <span class="text-xs px-2 py-0.5 rounded-full {{ 'bg-emerald-950 text-emerald-400' if integration.is_active else 'bg-gray-800 text-gray-500' }}">
+          {{ 'active' if integration.is_active else 'paused' }}
+        </span>
+      </div>
+      <div>
+        <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">Webhook URL</div>
+        <div class="font-mono text-xs text-gray-300 break-all">{{ integration.webhook_url }}</div>
+        <p class="text-xs text-gray-500 mt-1">Paste this into your Tebex webstore's webhook settings.</p>
+      </div>
+      <div>
+        <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">Webhook secret</div>
+        <div class="font-mono text-sm text-gray-400 break-all">{{ integration.webhook_secret_prefix }}••••••••••••••••••••••••</div>
+        <p class="text-xs text-gray-500 mt-1">Used to sign requests as X-Signature (HMAC-SHA256 of the raw body).</p>
+      </div>
+      {% if integration.package_id_filter %}
+      <div>
+        <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">Package ID filter</div>
+        <div class="font-mono text-sm text-gray-300">{{ integration.package_id_filter }}</div>
+      </div>
+      {% endif %}
+      <div class="grid grid-cols-2 gap-4 pt-2 border-t border-surface-border text-sm">
+        <div>
+          <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">Purchases processed</div>
+          <div class="text-white">{{ integration.total_purchases }}</div>
+        </div>
+        <div>
+          <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">Last event</div>
+          <div class="text-white">{{ integration.last_event_at.strftime('%Y-%m-%d %H:%M') if integration.last_event_at else 'never' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-3">
+      <form method="POST" action="{{ url_for('developer.tebex_regenerate', product_id=product.product_id) }}"
+            onsubmit="return confirm('This invalidates the current webhook secret immediately. Update Tebex with the new one right after. Continue?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="text-sm text-amber-400 hover:text-amber-300 border border-surface-border rounded-md px-4 py-2 transition">
+          Regenerate secret
+        </button>
+      </form>
+      <form method="POST" action="{{ url_for('developer.tebex_toggle', product_id=product.product_id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="text-sm text-gray-400 hover:text-white border border-surface-border rounded-md px-4 py-2 transition">
+          {{ 'Pause integration' if integration.is_active else 'Resume integration' }}
+        </button>
+      </form>
+    </div>
+
+  {% else %}
+    <p class="text-sm text-gray-400 mb-6">
+      Connect Tebex so purchases automatically create and email a license
+      key to the customer.
+    </p>
+    <form method="POST" action="{{ url_for('developer.tebex_enable', product_id=product.product_id) }}" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Tebex package ID (optional)</label>
+        <input type="text" name="package_id" placeholder="e.g. 123456"
+          class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+        <p class="text-xs text-gray-500 mt-1">Leave blank to accept any package as a purchase of this product.</p>
+      </div>
+      <button type="submit" class="bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition">
+        Connect Tebex
+      </button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Monitoring - TeamTreck{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <h1 class="text-2xl font-bold">Screenshots &amp; Activity{% if view_user.id != current_user.id %} — {{ view_user.name }}{% endif %}</h1>
+    {% if current_user.is_manager and team_members %}
+    <form method="GET" class="flex items-center gap-2">
+        <select name="user_id" onchange="this.form.submit()" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+            <option value="{{ current_user.id }}" {{ 'selected' if view_user.id == current_user.id }}>Me</option>
+            {% for m in team_members %}
+                {% if m.id != current_user.id %}
+                <option value="{{ m.id }}" {{ 'selected' if view_user.id == m.id }}>{{ m.name }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </form>
+    {% endif %}
+</div>
+
+{% if view_user.id == current_user.id %}
+<div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 mb-6">
+    <h2 class="font-semibold mb-2">Desktop Agent Token</h2>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">This token authenticates the desktop agent so it can upload screenshots and activity on your behalf. Keep it private.</p>
+    {% if current_user.api_token %}
+    <div class="flex items-center gap-2 mb-3">
+        <input type="text" readonly value="{{ current_user.api_token }}" class="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm font-mono">
+    </div>
+    <form method="POST" action="{{ url_for('monitoring.revoke_api_token') }}">
+        <button class="text-sm px-3 py-1.5 rounded-lg bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Revoke Token</button>
+    </form>
+    {% else %}
+    <form method="POST" action="{{ url_for('monitoring.generate_api_token') }}">
+        <button class="text-sm px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white">Generate Token</button>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Avg Activity Level</div>
+        <div class="text-2xl font-bold {{ 'text-green-500' if avg_activity and avg_activity >= 60 else ('text-yellow-500' if avg_activity and avg_activity >= 30 else 'text-gray-400') }}">
+            {{ avg_activity if avg_activity is not none else '—' }}{% if avg_activity is not none %}%{% endif %}
+        </div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Screenshots (recent)</div>
+        <div class="text-2xl font-bold">{{ screenshots|length }}</div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Activity Samples (recent)</div>
+        <div class="text-2xl font-bold">{{ activity|length }}</div>
+    </div>
+</div>
+
+<h2 class="text-lg font-semibold mb-3">Recent Activity Levels</h2>
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 mb-8">
+    {% if activity %}
+    <div class="flex items-end gap-1 h-24">
+        {% for a in activity[:40] | reverse %}
+        <div class="flex-1 rounded-t {{ 'bg-green-500' if a.activity_level >= 60 else ('bg-yellow-500' if a.activity_level >= 30 else 'bg-gray-300 dark:bg-gray-700') }}"
+             style="height: {{ [a.activity_level, 5] | max }}%;"
+             title="{{ a.window_start.strftime('%H:%M') }} — {{ a.activity_level }}%"></div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-400">No activity data yet.</p>
+    {% endif %}
+</div>
+
+<h2 class="text-lg font-semibold mb-3">Screenshots</h2>
+{% if screenshots %}
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+    {% for s in screenshots %}
+    <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <img src="{{ url_for('monitoring.screenshot_image', shot_id=s.id) }}" alt="Screenshot" class="w-full aspect-video object-cover bg-gray-100 dark:bg-gray-800">
+        <div class="px-2 py-1.5 text-[10px] text-gray-500 dark:text-gray-400">{{ s.captured_at.strftime('%d %b %H:%M') }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-sm text-gray-400">No screenshots yet. These are uploaded by the desktop agent (Phase 15) once running.</p>
+{% endif %}
+{% endblock %}

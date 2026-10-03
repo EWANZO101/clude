@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Wire Batches — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('wire.list_spools') }}">← Welding Wire</a></p>
+<h1>Wire Batches</h1>
+
+<div class="panel" style="padding:0;">
+  {% if batches %}
+    <table style="width:100%; border-collapse:collapse;">
+      <tbody>
+        {% for batch in batches %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:14px;">
+              <div style="font-weight:600;">{{ batch.label }} — {{ batch.wire_type }}{% if batch.diameter %} {{ batch.diameter }}{% endif %}</div>
+              <div class="muted" style="font-size:12.5px;">
+                {{ batch.quantity }} spools received {{ batch.received_at.strftime('%Y-%m-%d') }}
+                {% if batch.received_by %} by {{ batch.received_by }}{% endif %}
+                {% if batch.lot_number %} — lot {{ batch.lot_number }}{% endif %}
+                {% if batch.unit_cost %} — {{ "$%.2f"|format(batch.unit_cost) }}/spool{% endif %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted" style="padding:20px;">No batches yet — use Bulk Add to receive a shipment.</p>
+  {% endif %}
+</div>
+{% endblock %}

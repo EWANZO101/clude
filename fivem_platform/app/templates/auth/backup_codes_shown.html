@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Backup codes — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-2">Save your backup codes</h1>
+  <p class="text-sm text-gray-400 mb-6">
+    Each works once, if you lose access to your authenticator app. Shown
+    only now — store them somewhere safe.
+  </p>
+
+  <div class="bg-surface-card border border-surface-border rounded-lg p-5 grid grid-cols-2 gap-3">
+    {% for code in codes %}
+      <div class="font-mono text-sm text-amber-300">{{ code }}</div>
+    {% endfor %}
+  </div>
+
+  <a href="{{ url_for('dashboard.index') }}" class="inline-block mt-6 bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition">
+    Done
+  </a>
+</div>
+{% endblock %}

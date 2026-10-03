@@ -1,0 +1,59 @@
+{% extends "client_portal/_base.html" %}
+{% import "_icons.html" as icons %}
+{% block title %}My Instances — Client Portal{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles"><h1>My Instances</h1></div>
+</div>
+
+{% if instances %}
+  <ul class="row-list">
+    {% for i in instances %}
+      <li data-instance-row="{{ i.public_id }}">
+        <div>
+          <div style="font-weight:600;">{{ i.display_name() }}</div>
+          <div class="muted" style="font-size:12.5px; margin-top:2px;">
+            {{ i.os }}{% if i.os_version %} {{ i.os_version }}{% endif %}
+            <span data-field="connection" style="margin-left:6px;">
+              {% if i.connection_status == 'online' %}
+                <span class="pill pill-green">Online</span>
+              {% else %}
+                <span class="pill pill-muted">Offline</span>
+              {% endif %}
+            </span>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          {% if i.last_kiosk_inventory_sync_url %}
+            <a href="{{ i.last_kiosk_inventory_sync_url }}" target="_blank" rel="noopener noreferrer"
+               class="btn btn-secondary btn-sm" title="Opens the kiosk's own screen — only works from a browser on this kiosk PC itself">
+              {{ icons.icon('external', 14) }}Open kiosk
+            </a>
+          {% endif %}
+          <a href="{{ url_for('client_portal.instance_detail', instance_id=i.public_id) }}" class="btn btn-secondary btn-sm">Open →</a>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var STATUS_URL = {{ url_for('client_portal.dashboard_status')|tojson }};
+    opslabLongPoll(STATUS_URL, function (data) {
+      Object.keys(data.instances).forEach(function (publicId) {
+        var row = document.querySelector('[data-instance-row="' + publicId + '"]');
+        if (!row) return;
+        var cell = row.querySelector('[data-field="connection"]');
+        if (!cell) return;
+        cell.innerHTML = data.instances[publicId].connection_status === 'online'
+          ? '<span class="pill pill-green">Online</span>'
+          : '<span class="pill pill-muted">Offline</span>';
+      });
+    });
+  });
+  </script>
+{% else %}
+  <div class="panel empty">
+    <p style="margin-bottom:0;">No instances assigned to your account yet. Contact your admin to get set up.</p>
+  </div>
+{% endif %}
+{% endblock %}

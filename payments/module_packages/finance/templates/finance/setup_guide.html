@@ -1,0 +1,99 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Bank setup guide{% endblock %}
+{% block content %}
+<div class="max-w-2xl space-y-6">
+  <div>
+    <a href="{{ url_for('finance.new_account') }}" class="text-xs text-accent hover:text-accent-hover hover:underline flex items-center gap-1">{{ ui.icon('chevron-right', 'w-3 h-3 rotate-180') }} Back to accounts</a>
+    <h1 class="text-xl font-semibold text-white mt-2 mb-1">Bank setup guide</h1>
+    <p class="text-xs text-slate-500">Exactly where each field comes from, per bank.</p>
+  </div>
+
+  {% for bank in banks %}
+    {% set s = bank.setup %}
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-3 hover:border-slate-700 transition-colors">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-100">{{ bank.name }}</h2>
+        {% if bank.connectable %}
+          {{ ui.badge('Configured', 'success') }}
+        {% elif s.kind == 'direct' %}
+          {{ ui.badge('Not configured yet', 'warning') }}
+        {% else %}
+          {{ ui.badge('Not implemented', 'neutral') }}
+        {% endif %}
+      </div>
+
+      {% if s.kind == 'direct' %}
+        <ol class="text-xs text-slate-400 space-y-1.5 list-decimal list-inside">
+          {% for step in s.steps %}
+            <li>{{ step }}</li>
+          {% endfor %}
+        </ol>
+        <div class="bg-surface border border-surface-border rounded-lg p-3 space-y-2">
+          <div>
+            <div class="text-[11px] text-slate-500 mb-0.5">Redirect URL to paste into {{ s.portal_name }}</div>
+            <code class="text-xs text-slate-300 break-all">{{ redirect_uri }}</code>
+          </div>
+        </div>
+        <p class="text-[11px] text-slate-600">{{ s.note }}</p>
+        <a href="{{ s.portal_url }}" target="_blank" class="inline-block text-xs text-accent hover:underline">Open {{ s.portal_name }} &rarr;</a>
+
+        <div class="border-t border-surface-border pt-3 mt-1">
+          <h3 class="text-xs font-semibold text-slate-300 mb-2">Save what Monzo gave you</h3>
+          {% if monzo_saved.is_placeholder %}
+            <p class="text-[11px] text-amber-400 mb-2">Currently set to the placeholder text — paste the real values below.</p>
+          {% else %}
+            <p class="text-[11px] text-slate-500 mb-2">
+              Currently saved: <code class="text-slate-400">{{ monzo_saved.client_id_masked }}</code>
+              — paste new values below to replace it.
+            </p>
+          {% endif %}
+          <form method="POST" action="{{ url_for('finance.save_monzo_credentials') }}" class="space-y-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div>
+              <label class="text-[11px] text-slate-500">Client ID</label>
+              <input name="monzo_client_id" placeholder="e.g. oauth2client_0000abCDEfghIJklMNopQR"
+                     class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-xs font-mono">
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-500">Client Secret</label>
+              <input name="monzo_client_secret" type="password"
+                     placeholder="e.g. mnzconf.aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789..."
+                     class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-xs font-mono">
+            </div>
+            {{ ui.button("Save to .env", type="submit", variant="primary", size="sm") }}
+            <p class="text-[11px] text-slate-600">Both values are on the Monzo Clients page after you create/open your OAuth client.
+              This writes straight to .env — you still need to restart the app afterwards for it to take effect.</p>
+          </form>
+        </div>
+      {% else %}
+        <p class="text-xs text-slate-400">
+          No developer portal to register with — {{ s.display_name }} doesn't issue individual OAuth
+          credentials to self-hosted apps like this one. This app has no integration code for it yet.
+        </p>
+        <p class="text-xs text-slate-500">
+          Until that's built, use <a href="{{ url_for('finance.new_account') }}#manual" class="text-accent hover:underline">Add manually</a>
+          to track the account and update the balance by hand.
+        </p>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-2 hover:border-slate-700 transition-colors">
+    <h2 class="text-sm font-semibold text-slate-100">Adding a bank that isn't Monzo</h2>
+    <p class="text-xs text-slate-400">
+      Most UK banks don't hand out OAuth apps one at a time — you'd go through an Open Banking
+      aggregator that covers all of them behind one integration:
+    </p>
+    <ul class="text-xs text-slate-400 space-y-1">
+      {% for agg in aggregators %}
+        <li>
+          <a href="{{ agg.url }}" target="_blank" class="text-accent hover:underline">{{ agg.name }}</a>
+          — {{ agg.note }}
+        </li>
+      {% endfor %}
+    </ul>
+    <p class="text-[11px] text-slate-600">None of these are wired up yet — this is just where a future integration would start.</p>
+  </div>
+</div>
+{% endblock %}

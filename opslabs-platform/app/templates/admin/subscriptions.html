@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Subscriptions — Admin{% endblock %}
+{% block content %}
+<h1>Subscriptions</h1>
+<div class="card">
+  <table>
+    <tr><th>Company</th><th>Plan</th><th>Status</th><th>Started</th><th>Renews / Ended</th><th>Stripe</th></tr>
+    {% for s in subscriptions %}
+    <tr>
+      <td><a href="{{ url_for('admin.company_detail', company_id=s.company_id) }}" style="color:#e6e8eb;">{{ s.company.name }}</a></td>
+      <td>{{ s.plan.name }}</td>
+      <td><span class="badge {{ 'active' if s.is_current else 'suspended' }}">{{ s.status }}</span></td>
+      <td>{{ s.started_at.strftime('%Y-%m-%d') }}</td>
+      <td>
+        {% if s.ended_at %}ended {{ s.ended_at.strftime('%Y-%m-%d') }}
+        {% elif s.current_period_end %}{{ s.current_period_end.strftime('%Y-%m-%d') }}
+        {% else %}—{% endif %}
+      </td>
+      <td>{{ 'yes' if s.stripe_subscription_id else 'manual' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% if not subscriptions %}<p style="color:#9aa3af;">No subscriptions yet.</p>{% endif %}
+</div>
+{% endblock %}

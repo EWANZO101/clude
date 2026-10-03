@@ -1,0 +1,46 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Integrations{% endblock %}
+{% block content %}
+<div class="max-w-lg space-y-5">
+  {{ ui.page_header("Integrations", "Connect your own keys here — no server access needed.") }}
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+    <div class="flex items-start gap-3">
+      <span class="w-9 h-9 rounded-lg bg-accent/15 text-accent flex items-center justify-center shrink-0">{{ ui.icon('building', 'w-4 h-4') }}</span>
+      <div>
+        <p class="text-sm text-slate-200 font-medium">Companies House</p>
+        <p class="text-xs text-slate-500 mt-0.5">Powers "look up by company number" for every company you add. Free, self-serve key from <a href="https://developer.company-information.service.gov.uk" target="_blank" rel="noopener" class="text-accent hover:text-accent-hover">developer.company-information.service.gov.uk</a>.</p>
+      </div>
+    </div>
+    {% if has_ch_key %}
+      <div class="flex items-center justify-between gap-3">
+        {{ ui.badge('Key saved', 'success') }}
+        <form method="POST" onsubmit="return confirm('Remove your Companies House key?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="clear_companies_house">
+          {{ ui.button("Remove", type="submit", variant="danger", size="sm", icon_name="trash") }}
+        </form>
+      </div>
+      <p class="text-xs text-slate-500">To change it, remove the current one and add a new one.</p>
+    {% else %}
+      <form method="POST" class="flex gap-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="password" name="companies_house_api_key" placeholder="Paste your API key" required
+               class="flex-1 bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+        {{ ui.button("Save", type="submit", variant="primary", icon_name="check") }}
+      </form>
+    {% endif %}
+  </div>
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-2">
+    <div class="flex items-start gap-3">
+      <span class="w-9 h-9 rounded-lg bg-accent/15 text-accent flex items-center justify-center shrink-0">{{ ui.icon('landmark', 'w-4 h-4') }} </span>
+      <div>
+        <p class="text-sm text-slate-200 font-medium">Bank connections</p>
+        <p class="text-xs text-slate-500 mt-0.5">Connecting a bank is done per company, from that company's page — go to a company and use "Connect bank". Nothing to set up here.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Transactions — Admin{% endblock %}
+{% block page_title %}Transactions{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Payment</th><th>Type</th><th>Provider ref</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for tx in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">#{{ tx.payment_id }}</td>
+        <td class="text-text-secondary capitalize">{{ tx.transaction_type.value }}</td>
+        <td class="text-text-muted font-mono text-xs">{{ tx.provider_transaction_id or "—" }}</td>
+        <td class="text-text-primary">£{{ tx.amount }}</td>
+        <td>
+          {% if tx.status.value == "completed" %}<span class="badge-success">Completed</span>
+          {% elif tx.status.value == "failed" %}<span class="badge-danger">Failed</span>
+          {% else %}<span class="badge-warning">{{ tx.status|hwval }}</span>{% endif %}
+        </td>
+        <td class="text-text-muted">{{ tx.created_at.strftime("%d %b %Y %H:%M") }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-text-muted py-8">No transactions yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.transactions") }}
+</div>
+{% endblock %}

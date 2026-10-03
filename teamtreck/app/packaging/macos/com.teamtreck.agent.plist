@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+launchd LoginItem for the agent. Installed to
+~/Library/LaunchAgents/com.teamtreck.agent.plist by the postinstall script,
+NOT installed automatically by the .pkg itself - autostart should be
+something the user opts into during first-run setup, same as the Windows
+installer's "start on login" checkbox, not a silent default.
+
+Load manually with:
+    launchctl load ~/Library/LaunchAgents/com.teamtreck.agent.plist
+Unload with:
+    launchctl unload ~/Library/LaunchAgents/com.teamtreck.agent.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.teamtreck.agent</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Applications/TeamTreck Agent.app/Contents/MacOS/teamtreck-agent</string>
+        <string>run</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>/tmp/teamtreck-agent.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/teamtreck-agent.err</string>
+</dict>
+</plist>

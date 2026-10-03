@@ -1,0 +1,60 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}Hardware API Connections — Admin{% endblock %}
+{% block page_title %}Hardware API connections{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Name</th><th>Provider</th><th>Base URL</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for conn in connections %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ conn.name }}</td>
+          <td class="text-text-secondary">{{ conn.provider_type|hwval }}</td>
+          <td class="text-text-secondary font-mono text-xs truncate max-w-xs">{{ conn.base_url }}</td>
+          <td>
+            {% if conn.status.value == "connected" %}<span class="badge-success">Connected</span>
+            {% elif conn.status.value == "failed" %}<span class="badge-danger">Failed</span>
+            {% else %}<span class="badge-neutral">Untested</span>{% endif %}
+            {% if not conn.is_active %}<span class="badge-neutral">Disabled</span>{% endif %}
+          </td>
+          <td class="whitespace-nowrap">
+            <form method="POST" action="{{ url_for('admin.hardware_api_test', connection_id=conn.id) }}" class="inline">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-brand-400 hover:text-brand-300 text-sm mr-3">Test</button>
+            </form>
+            <form method="POST" action="{{ url_for('admin.hardware_api_toggle', connection_id=conn.id) }}" class="inline">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-text-secondary hover:text-text-primary text-sm mr-3">{{ "Disable" if conn.is_active else "Enable" }}</button>
+            </form>
+            <form method="POST" action="{{ url_for('admin.hardware_api_delete', connection_id=conn.id) }}" class="inline">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-status-danger hover:opacity-80 text-sm">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% if conn.last_error %}
+        <tr><td colspan="5" class="text-xs text-status-danger px-4 pb-3">{{ conn.last_error }}</td></tr>
+        {% endif %}
+        {% else %}
+        <tr><td colspan="5" class="text-center text-text-muted py-8">No hardware API connections configured yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Add connection</h2>
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      {{ field(form.name) }}
+      {{ field(form.provider_type) }}
+      {{ field(form.base_url, placeholder="https://provider.example.com/api") }}
+      {{ field(form.api_key) }}
+      {{ field(form.sync_frequency_hours) }}
+      {{ checkbox(form.is_active) }}
+      <button type="submit" class="btn-primary w-full">Add connection</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Profit & Loss{% endblock %}
+{% block content %}
+<h1 class="page-title mb-6">Profit &amp; Loss</h1>
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-2xl space-y-6 text-sm">
+  <div>
+    <div class="section-title">Revenue</div>
+    {% for a, b in revenue_rows %}<div class="flex justify-between"><span>{{ a.name }}</span><span>{{ "%.2f"|format(b) }}</span></div>{% endfor %}
+    <div class="summary-row-total"><span>Total revenue</span><span>{{ "%.2f"|format(total_revenue) }}</span></div>
+  </div>
+  <div>
+    <div class="section-title">Cost of goods sold</div>
+    {% for a, b in cogs_rows %}<div class="flex justify-between"><span>{{ a.name }}</span><span>{{ "%.2f"|format(b) }}</span></div>{% endfor %}
+    <div class="summary-row-total"><span>Gross profit</span><span>{{ "%.2f"|format(gross_profit) }}</span></div>
+  </div>
+  <div>
+    <div class="section-title">Expenses</div>
+    {% for a, b in expense_rows %}<div class="flex justify-between"><span>{{ a.name }}</span><span>{{ "%.2f"|format(b) }}</span></div>{% endfor %}
+  </div>
+  <div class="table-foot-total" style="display:flex;justify-content:space-between;font-size:1rem;padding-top:0.5rem;">
+    <span>Net profit</span><span class="{{ 'text-green-600' if net_profit >= 0 else 'text-red-600' }}">{{ "%.2f"|format(net_profit) }}</span>
+  </div>
+</div>
+{% endblock %}

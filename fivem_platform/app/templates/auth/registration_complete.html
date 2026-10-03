@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Save your recovery PIN — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-2">Welcome, {{ user.username }}</h1>
+  <p class="text-sm text-gray-400 mb-6">Your account has been created. Save these details now — the recovery PIN will not be shown again.</p>
+
+  <div class="bg-surface-card border border-surface-border rounded-lg p-5 space-y-4">
+    <div>
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">User ID</div>
+      <div class="font-mono text-white">{{ user.user_id }}</div>
+    </div>
+    <div>
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">Support ID</div>
+      <div class="font-mono text-white">{{ user.support_id }}</div>
+      <p class="text-xs text-gray-500 mt-1">Give this to support if you ever need help accessing your account.</p>
+    </div>
+    <div>
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">API Identifier</div>
+      <div class="font-mono text-white">{{ user.api_identifier }}</div>
+    </div>
+    <div class="border-t border-surface-border pt-4">
+      <div class="text-xs uppercase tracking-wide text-amber-400 mb-1">Recovery PIN — shown once</div>
+      <div class="font-mono text-lg text-amber-300">{{ recovery_pin }}</div>
+      <p class="text-xs text-gray-500 mt-1">Store this somewhere safe. If you're ever locked out, support will ask for your Support ID and this PIN to verify it's you.</p>
+    </div>
+  </div>
+
+  <a href="{{ url_for('dashboard.index') }}" class="inline-block mt-6 bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition">
+    Continue to dashboard
+  </a>
+</div>
+{% endblock %}

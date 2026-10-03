@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Manage Inventory — {{ tenant_name }}{% endblock %}
+{% block content %}
+<style>
+  .inv-select, .inv-textarea {
+    width:100%; padding:10px 12px; border-radius:7px; border:1px solid var(--panel-border);
+    background:var(--bg); color:var(--text); font-size:14px; font-family:inherit;
+  }
+  .inv-checkline { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13.5px; color:var(--muted); }
+  .inv-checkline input { width:auto; }
+  .field-row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--panel-border); }
+  .field-row:last-child { border-bottom:none; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
+  .pill-muted { background:rgba(139,147,168,.15); color:var(--muted); }
+  .pill-accent { background:rgba(109,94,240,.15); color:var(--accent); }
+</style>
+
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+  <h1 style="margin:0;">Manage Inventory</h1>
+</div>
+<p class="muted">
+  Define your own item/tool types (Consumables, Materials, Equipment, Parts, Bulk, Welding Wire, or anything
+  else) with their own custom fields — no code needed. Each type gets its own entry in the sidebar automatically.
+</p>
+
+<details class="category-group" open>
+  <summary>+ Add a new type</summary>
+  <div class="category-body" style="padding:16px;">
+    <form method="post" action="{{ url_for('inventory.add_type') }}">
+      <label>Name</label>
+      <input type="text" name="name" required placeholder="e.g. Consumables, Materials, Welding Wire">
+      <label>Description (optional)</label>
+      <input type="text" name="description" placeholder="What this type is for">
+      <button type="submit" style="margin-top:14px;">Create Type</button>
+    </form>
+  </div>
+</details>
+
+{% for t in types %}
+<details class="category-group" style="margin-top:12px;">
+  <summary>
+    {{ t.name }}
+    {% if t.is_builtin %}<span class="pill pill-muted">Built-in</span>{% endif %}
+    <span class="muted" style="font-weight:400;">({{ t.item_count }} item{{ '' if t.item_count == 1 else 's' }})</span>
+  </summary>
+  <div class="category-body" style="padding:16px;">
+    <a href="{{ url_for('inventory.list_type_items', type_key=t.key) }}" class="btn" style="margin-bottom:16px;">View items →</a>
+
+    <form method="post" action="{{ url_for('inventory.edit_type', type_key=t.key) }}" style="margin-bottom:20px;">
+      <label>Name</label>
+      <input type="text" name="name" value="{{ t.name }}" required>
+      <label>Description</label>
+      <input type="text" name="description" value="{{ t.description or '' }}">
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button type="submit">Save</button>
+        {% if not t.is_builtin and t.item_count == 0 %}
+        <form method="post" action="{{ url_for('inventory.delete_type', type_key=t.key) }}"
+              onsubmit="return confirm('Delete the {{ t.name }} type? This cannot be undone.');">
+          <button type="submit" style="background:var(--red);">Delete Type</button>
+        </form>
+        {% endif %}
+      </div>
+    </form>
+
+    <h3 style="font-size:13px; text-transform:uppercase; color:var(--muted); margin-bottom:8px;">Custom fields</h3>
+    {% if t.fields %}
+      {% for f in t.fields %}
+        <div class="field-row">
+          <div>
+            <strong>{{ f.label }}</strong>
+            <span class="pill pill-accent">{{ f.field_type }}</span>
+            {% if f.required %}<span class="pill pill-muted">required</span>{% endif %}
+            {% if f.options %}<div class="muted" style="font-size:12px;">options: {{ f.options|join(', ') }}</div>{% endif %}
+          </div>
+          <form method="post" action="{{ url_for('inventory.delete_field', type_key=t.key, field_id=f.id) }}"
+                onsubmit="return confirm('Remove this field? Existing values are kept but hidden.');">
+            <button type="submit" style="background:transparent; border:1px solid var(--panel-border); padding:6px 10px; font-size:12.5px;">Remove</button>
+          </form>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted" style="font-size:13px;">No custom fields yet.</p>
+    {% endif %}
+
+    <details style="margin-top:12px;">
+      <summary style="cursor:pointer; color:var(--accent); font-size:13px;">+ Add a field</summary>
+      <form method="post" action="{{ url_for('inventory.add_field', type_key=t.key) }}" style="margin-top:10px;">
+        <label>Label</label>
+        <input type="text" name="label" required placeholder="e.g. Diameter, Lot Number, Color">
+        <label>Field type</label>
+        <select name="field_type" class="inv-select">
+          {% for ft in field_types %}<option value="{{ ft }}">{{ ft }}</option>{% endfor %}
+        </select>
+        <label>Options (comma-separated, only used for "select")</label>
+        <input type="text" name="options" placeholder="e.g. Red, Green, Blue">
+        <div class="inv-checkline">
+          <input type="checkbox" name="required" id="req-{{ t.key }}"><label for="req-{{ t.key }}" style="margin:0;">Required</label>
+        </div>
+        <button type="submit" style="margin-top:14px;">Add Field</button>
+      </form>
+    </details>
+  </div>
+</details>
+{% endfor %}
+{% endblock %}

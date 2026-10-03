@@ -1,0 +1,46 @@
+{
+  "ticket_id": "TICK-0077",
+  "ticket_type": "whitelist",
+  "opened_by": "Eddiethabang",
+  "opened_at": "2026-05-03 13:22:12",
+  "closed_by": "IMPI CHAPLIN",
+  "closed_at": "2026-05-03 15:38 UTC",
+  "messages": [
+    {
+      "ts": "2026-05-03T13:22:12.894000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1451691985730539592> <@1494125036481544233>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-03T13:22:13.607000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-03T13:48:25.810000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "staff",
+      "content": "<@1494125036481544233> plz go read <#1492610119664406528>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-05-03T14:05:55.547000+00:00",
+      "author": "Eddiethabang",
+      "author_id": "1494125036481544233",
+      "role": "",
+      "content": "I DID READ",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

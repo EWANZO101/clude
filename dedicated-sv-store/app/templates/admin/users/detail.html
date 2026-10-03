@@ -1,0 +1,65 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}{{ user.email }} — Admin{% endblock %}
+{% block page_title %}{{ user.email }}{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-6">
+    <div class="card p-5">
+      <h2 class="font-semibold text-text-primary mb-4">Account details</h2>
+      <dl class="grid grid-cols-2 gap-4 text-sm">
+        <div><dt class="text-text-muted">Name</dt><dd class="text-text-primary">{{ user.full_name }}</dd></div>
+        <div><dt class="text-text-muted">Email</dt><dd class="text-text-primary">{{ user.email }}</dd></div>
+        <div><dt class="text-text-muted">Account type</dt><dd class="text-text-primary capitalize">{{ user.account_type.value }}</dd></div>
+        <div><dt class="text-text-muted">Email verified</dt><dd class="text-text-primary">{{ "Yes" if user.is_email_verified else "No" }}</dd></div>
+        <div><dt class="text-text-muted">Last login</dt><dd class="text-text-primary">{{ user.last_login_at.strftime("%d %b %Y %H:%M") if user.last_login_at else "Never" }}</dd></div>
+        <div><dt class="text-text-muted">Joined</dt><dd class="text-text-primary">{{ user.created_at.strftime("%d %b %Y") }}</dd></div>
+      </dl>
+    </div>
+
+    <div class="card p-5">
+      <h2 class="font-semibold text-text-primary mb-4">Roles</h2>
+      <form method="POST">
+        {% include "components/_csrf.html" %}
+        <input type="hidden" name="action" value="set_roles">
+        <div class="space-y-2 mb-4">
+          {% for role in all_roles %}
+          <label class="flex items-center gap-2 text-sm text-text-secondary">
+            <input type="checkbox" name="role_ids" value="{{ role.id }}"
+                   {{ "checked" if role.id in user.user_roles|map(attribute='role_id')|list }}
+                   class="rounded border-border bg-surface-800 text-brand-600 focus:ring-brand-500">
+            {{ role.name }}
+          </label>
+          {% endfor %}
+        </div>
+        <button type="submit" class="btn-secondary">Save roles</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="space-y-6">
+    <div class="card p-5">
+      <h2 class="font-semibold text-text-primary mb-4">Actions</h2>
+      <form method="POST">
+        {% include "components/_csrf.html" %}
+        <input type="hidden" name="action" value="toggle_active">
+        <button type="submit" class="{{ 'btn-danger' if user.is_active else 'btn-primary' }} w-full">
+          {{ "Deactivate account" if user.is_active else "Activate account" }}
+        </button>
+      </form>
+    </div>
+
+    <div class="card p-5">
+      <h2 class="font-semibold text-text-primary mb-4">Reset password</h2>
+      <p class="text-xs text-text-muted mb-4">Sets a new password for this account immediately. The user is not notified automatically — share the new password with them securely.</p>
+      <form method="POST">
+        {{ password_form.hidden_tag() }}
+        <input type="hidden" name="action" value="set_password">
+        {{ field(password_form.new_password, autocomplete="new-password") }}
+        {{ field(password_form.confirm_password, autocomplete="new-password") }}
+        <button type="submit" class="btn-secondary w-full">Reset password</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

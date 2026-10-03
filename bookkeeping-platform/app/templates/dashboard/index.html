@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ business.name }}</h1>
+    <p class="text-muted text-sm">Here's where things stand today.</p>
+  </div>
+  <a href="{{ url_for('accounting.new_journal_entry') }}" class="btn btn-primary">{{ icon('plus-circle', 'w-4 h-4') }} New journal entry</a>
+</div>
+
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+  <div class="card stat-card">
+    <div class="stat-card-top">
+      <span class="stat-label">Assets</span>
+      <span class="stat-icon">{{ icon('wallet', 'w-4 h-4') }}</span>
+    </div>
+    <div class="stat-value">{{ "%.2f"|format(total_assets) }}</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-card-top">
+      <span class="stat-label">Liabilities</span>
+      <span class="stat-icon">{{ icon('scale', 'w-4 h-4') }}</span>
+    </div>
+    <div class="stat-value">{{ "%.2f"|format(total_liabilities) }}</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-card-top">
+      <span class="stat-label">Revenue</span>
+      <span class="stat-icon">{{ icon('trending-up', 'w-4 h-4') }}</span>
+    </div>
+    <div class="stat-value">{{ "%.2f"|format(total_revenue) }}</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-card-top">
+      <span class="stat-label">Profit</span>
+      <span class="stat-icon" style="{{ '' if profit >= 0 else 'background:color-mix(in srgb, var(--negative) 15%, transparent); color:var(--negative);' }}">{{ icon('pie-chart', 'w-4 h-4') }}</span>
+    </div>
+    <div class="stat-value {{ 'text-positive' if profit >= 0 else 'text-negative' }}">{{ "%.2f"|format(profit) }}</div>
+  </div>
+</div>
+
+<div class="grid gap-4 sm:grid-cols-3">
+  <a href="{{ url_for('invoices.list_invoices') }}" class="card card-padded" style="display:flex; align-items:center; gap:0.85rem;">
+    <span class="stat-icon" style="width:2.4rem; height:2.4rem;">{{ icon('invoice', 'w-5 h-5') }}</span>
+    <div>
+      <div class="section-title" style="margin-bottom:0;">Invoices</div>
+      <div class="text-muted text-sm">Create, send, get paid</div>
+    </div>
+  </a>
+  <a href="{{ url_for('expenses.list_expenses') }}" class="card card-padded" style="display:flex; align-items:center; gap:0.85rem;">
+    <span class="stat-icon" style="width:2.4rem; height:2.4rem;">{{ icon('wallet', 'w-5 h-5') }}</span>
+    <div>
+      <div class="section-title" style="margin-bottom:0;">Expenses</div>
+      <div class="text-muted text-sm">Log spending as it happens</div>
+    </div>
+  </a>
+  <a href="{{ url_for('accounting.report_profit_and_loss') }}" class="card card-padded" style="display:flex; align-items:center; gap:0.85rem;">
+    <span class="stat-icon" style="width:2.4rem; height:2.4rem;">{{ icon('bar-chart', 'w-5 h-5') }}</span>
+    <div>
+      <div class="section-title" style="margin-bottom:0;">Reports</div>
+      <div class="text-muted text-sm">P&amp;L, balance sheet, and more</div>
+    </div>
+  </a>
+</div>
+{% endblock %}

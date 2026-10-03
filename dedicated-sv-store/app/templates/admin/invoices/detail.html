@@ -1,0 +1,33 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_invoice_badge.html" import invoice_status_badge with context %}
+{% block title %}{{ invoice.invoice_number }} — Admin{% endblock %}
+{% block page_title %}{{ invoice.invoice_number }}{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for item in invoice.items %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ item.description }}</td>
+          <td>{{ item.quantity }}</td>
+          <td class="text-text-secondary">£{{ item.unit_price }}</td>
+          <td class="text-text-secondary">£{{ item.line_total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5">
+    <dl class="space-y-2 text-sm">
+      <div class="flex justify-between"><dt class="text-text-muted">Customer</dt><dd class="text-text-primary">{{ invoice.user.email }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Status</dt><dd>{{ invoice_status_badge(invoice.status) }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Subtotal</dt><dd class="text-text-primary">£{{ invoice.subtotal }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Tax</dt><dd class="text-text-primary">£{{ invoice.tax_amount }}</dd></div>
+      <div class="flex justify-between border-t border-border pt-2"><dt class="text-text-primary font-medium">Total</dt><dd class="text-text-primary font-semibold">£{{ invoice.total }}</dd></div>
+      <div class="flex justify-between"><dt class="text-text-muted">Balance due</dt><dd class="text-text-primary">£{{ invoice.balance_due }}</dd></div>
+    </dl>
+  </div>
+</div>
+{% endblock %}

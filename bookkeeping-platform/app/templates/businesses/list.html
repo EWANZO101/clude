@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Your businesses{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Your businesses</h1>
+  <a href="{{ url_for('businesses.new_business') }}" class="btn btn-primary btn-sm">+ New business</a>
+</div>
+
+{% if not businesses %}
+<div class="card empty-state" style="padding:2rem;">
+  You don't have any businesses yet.
+</div>
+{% else %}
+<div class="grid gap-4 sm:grid-cols-2">
+  {% for business in businesses %}
+  <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex flex-col gap-2">
+    <div class="font-medium">{{ business.name }}</div>
+    <div class="text-muted text-sm">{{ business.base_currency }}</div>
+    <form method="POST" action="{{ url_for('businesses.switch_business', business_id=business.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="link text-sm">Switch to this business →</button>
+    </form>
+    <a href="{{ url_for('businesses.team', business_id=business.id) }}" class="text-muted text-sm">Manage team →</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

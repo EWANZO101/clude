@@ -1,0 +1,117 @@
+{% extends "admin/_layout.html" %}
+{% block admin_content %}
+
+<!-- Header -->
+<div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-8">
+  <div>
+    <div class="text-xs font-bold uppercase tracking-widest text-ops-400 mb-1">Overview</div>
+    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Dashboard</h1>
+    <p class="text-sm text-gray-400 mt-1">Welcome back, <span class="text-white font-semibold">{{ current_user.username }}</span>. Here's what's happening.</p>
+  </div>
+  <div class="flex items-center gap-2 text-xs text-gray-400">
+    <span class="live-dot"></span>
+    <span>All systems operational</span>
+  </div>
+</div>
+
+<!-- Stats grid -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+  {% set stat_cards = [
+    ('Open Tickets', stats.tickets_open, 'green', 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9', true),
+    ('Pending', stats.tickets_pending, 'yellow', 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', false),
+    ('Closed', stats.tickets_closed, 'gray', 'M5 13l4 4L19 7', false),
+    ('Total Users', stats.users, 'blue', 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z', false),
+  ] %}
+  {% for label, value, color, icon, featured in stat_cards %}
+  <div class="relative p-5 rounded-2xl border overflow-hidden
+              {% if featured %}bg-gradient-to-br from-ops-500/15 via-ops-700/5 to-ink-800 border-ops-500/30
+              {% else %}bg-ink-800/50 border-ink-600{% endif %}">
+    <div class="flex items-start justify-between">
+      <div>
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-400">{{ label }}</div>
+        <div class="text-3xl font-extrabold text-white mt-2">{{ value }}</div>
+      </div>
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center
+                  {% if color == 'green' %}bg-green-500/15 text-green-300
+                  {% elif color == 'yellow' %}bg-yellow-500/15 text-yellow-300
+                  {% elif color == 'blue' %}bg-ops-500/15 text-ops-300
+                  {% else %}bg-gray-500/15 text-gray-300{% endif %}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ icon }}"/></svg>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Secondary stats -->
+<div class="grid sm:grid-cols-3 gap-3 mb-8">
+  <div class="p-4 rounded-xl bg-ink-800/40 border border-ink-600 flex items-center gap-3">
+    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-ops-500 to-ops-700 flex items-center justify-center text-sm font-bold">A</div>
+    <div>
+      <div class="text-xs text-gray-400">Admins</div>
+      <div class="text-xl font-extrabold">{{ stats.admins }}</div>
+    </div>
+  </div>
+  <div class="p-4 rounded-xl bg-ink-800/40 border border-ink-600 flex items-center gap-3">
+    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-sm font-bold">S</div>
+    <div>
+      <div class="text-xs text-gray-400">Staff</div>
+      <div class="text-xl font-extrabold">{{ stats.staff }}</div>
+    </div>
+  </div>
+  <div class="p-4 rounded-xl bg-ink-800/40 border border-ink-600 flex items-center gap-3">
+    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-500 to-gray-700 flex items-center justify-center text-sm font-bold">C</div>
+    <div>
+      <div class="text-xs text-gray-400">Companies</div>
+      <div class="text-xl font-extrabold">{{ stats.companies }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Two-column: Recent tickets + Recent users -->
+<div class="grid lg:grid-cols-2 gap-5">
+  <!-- Recent tickets -->
+  <div class="bg-ink-800/50 border border-ink-600 rounded-2xl overflow-hidden">
+    <div class="px-5 py-3 border-b border-ink-600/60 flex items-center justify-between">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-gray-300">Recent Tickets</h2>
+      <a href="{{ url_for('admin.tickets') }}" class="text-xs text-ops-400 hover:text-ops-300">View all →</a>
+    </div>
+    <div class="divide-y divide-ink-600/50">
+      {% for t in recent_tickets %}
+      <a href="{{ url_for('tickets.view', tid=t.id) }}" class="flex items-center gap-3 px-5 py-3 hover:bg-ops-500/5 transition group">
+        <span class="font-mono text-[11px] text-gray-500 w-12 flex-shrink-0">#{{ '%04d' % t.id }}</span>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-white group-hover:text-ops-300 truncate">{{ t.subject }}</div>
+          <div class="text-[11px] text-gray-500 mt-0.5">{{ t.owner.username if t.owner else '—' }} · {{ t.updated_at.strftime('%b %d %H:%M') }}</div>
+        </div>
+        <span class="pill pill-{{ t.status }} flex-shrink-0">{{ t.status }}</span>
+      </a>
+      {% else %}
+      <div class="px-5 py-10 text-center text-sm text-gray-500">No tickets yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Recent users -->
+  <div class="bg-ink-800/50 border border-ink-600 rounded-2xl overflow-hidden">
+    <div class="px-5 py-3 border-b border-ink-600/60 flex items-center justify-between">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-gray-300">Recent Users</h2>
+      {% if current_user.is_admin %}<a href="{{ url_for('admin.users') }}" class="text-xs text-ops-400 hover:text-ops-300">View all →</a>{% endif %}
+    </div>
+    <div class="divide-y divide-ink-600/50">
+      {% for u in recent_users %}
+      <div class="flex items-center gap-3 px-5 py-3">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-ops-400 to-ops-700 flex items-center justify-center text-xs font-bold flex-shrink-0">{{ u.username[0].upper() }}</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-white truncate">{{ u.username }}</div>
+          <div class="text-[11px] text-gray-500 truncate">{{ u.email }}</div>
+        </div>
+        <span class="pill pill-{{ u.role }} flex-shrink-0">{{ u.role }}</span>
+      </div>
+      {% else %}
+      <div class="px-5 py-10 text-center text-sm text-gray-500">No users yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

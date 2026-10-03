@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if service else 'New' }} service{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>{{ 'Edit ' + service.name if service else 'New service' }}</h1>
+    <div class="desc">Defines a systemd unit named <code>opslab-&lt;slug&gt;.service</code></div>
+  </div>
+</div>
+
+<div class="card">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Name</label>
+    <input type="text" name="name" placeholder="e.g. Directry" required
+           value="{{ (form.name if form else service.name) or '' }}">
+    <div class="hint">Used to derive the systemd unit name.</div>
+
+    <label>Description</label>
+    <input type="text" name="description" placeholder="What this service does"
+           value="{{ (form.description if form else service.description) or '' }}">
+
+    <div class="form-row">
+      <div>
+        <label>Working directory (path)</label>
+        <input type="text" name="working_dir" placeholder="/var/www/directry" required
+               value="{{ (form.working_dir if form else service.working_dir) or '' }}">
+      </div>
+      <div>
+        <label>Port</label>
+        <input type="number" name="port" placeholder="5001" min="1" max="65535"
+               value="{{ (form.port if form else service.port) or '' }}">
+        <div class="hint">Optional. Exposed to the unit as $PORT.</div>
+      </div>
+    </div>
+
+    <label>Start command</label>
+    <input type="text" name="command"
+           placeholder="/var/www/directry/venv/bin/gunicorn -w2 -b 127.0.0.1:5001 app:app" required
+           value="{{ (form.command if form else service.command) or '' }}">
+    <div class="hint">Full path to the executable. This is exactly what systemd runs as ExecStart.</div>
+
+    <div class="form-row">
+      <div>
+        <label>Run as user</label>
+        <input type="text" name="run_user" placeholder="www-data"
+               value="{{ (form.run_user if form else service.run_user) or 'www-data' }}">
+      </div>
+      <div>
+        <label>Restart policy</label>
+        <select name="restart_policy">
+          {% set current = (form.restart_policy if form else service.restart_policy) or 'on-failure' %}
+          <option value="on-failure" {{ 'selected' if current == 'on-failure' }}>on-failure</option>
+          <option value="always" {{ 'selected' if current == 'always' }}>always</option>
+          <option value="no" {{ 'selected' if current == 'no' }}>no</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Extra environment variables</label>
+    <textarea name="env_vars" class="mono" placeholder="FLASK_ENV=production&#10;SECRET_KEY=...">{{ (form.env_vars if form else service.env_vars) or '' }}</textarea>
+    <div class="hint">One KEY=VALUE per line.</div>
+
+    <label>Notes</label>
+    <textarea name="notes" placeholder="Anything worth remembering about this service">{{ (form.notes if form else service.notes) or '' }}</textarea>
+
+    <div style="margin-top:22px; display:flex; gap:10px;">
+      <button class="btn btn-primary" type="submit">
+        {{ 'Save & restart' if service else 'Create & start' }}
+      </button>
+      <a href="{{ url_for('dashboard') if not service else url_for('service_detail', service_id=service.id) }}" class="btn">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

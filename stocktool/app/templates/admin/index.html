@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <div>
+      <h1 class="page-title"><i class="fas fa-users-gear" style="color:#fbbf24;"></i> Users</h1>
+      <p class="page-subtitle">{{ users|length }} user{{ 's' if users|length != 1 }}</p>
+    </div>
+    <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary">
+      <i class="fas fa-user-plus"></i> Add User
+    </a>
+  </div>
+</div>
+
+<!-- Desktop table -->
+<div class="card desktop-table">
+  <div class="table-wrap">
+    <table style="width:100%;border-collapse:collapse;min-width:540px;">
+      <thead>
+        <tr class="table-header">
+          <th style="padding:11px 16px;text-align:left;">User</th>
+          <th style="padding:11px 16px;text-align:left;" class="hide-tablet">Email</th>
+          <th style="padding:11px 16px;text-align:center;">Role</th>
+          <th style="padding:11px 16px;text-align:center;">Status</th>
+          <th style="padding:11px 16px;text-align:left;" class="hide-tablet">Last Login</th>
+          <th style="padding:11px 16px;text-align:center;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr class="table-row">
+          <td style="padding:11px 16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="background:#374151;border-radius:50%;width:32px;height:32px;
+                          display:flex;align-items:center;justify-content:center;
+                          font-size:13px;font-weight:600;color:#9ca3af;flex-shrink:0;">
+                {{ user.username[0].upper() }}
+              </div>
+              <div>
+                <div style="font-weight:500;color:#f3f4f6;">{{ user.username }}</div>
+                {% if user.force_password_change %}
+                <div style="font-size:11px;color:#fbbf24;">must change password</div>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+          <td style="padding:11px 16px;font-size:13px;color:#9ca3af;" class="hide-tablet">{{ user.email }}</td>
+          <td style="padding:11px 16px;text-align:center;">
+            {% if user.is_admin %}
+            <span class="badge" style="background:#451a03;color:#fcd34d;">Admin</span>
+            {% else %}
+            <span class="badge" style="background:#1e3a5f;color:#93c5fd;">Stock</span>
+            {% endif %}
+          </td>
+          <td style="padding:11px 16px;text-align:center;">
+            {% if user.is_active %}
+            <span class="badge" style="background:#064e3b;color:#6ee7b7;">Active</span>
+            {% else %}
+            <span class="badge" style="background:#1f2937;color:#6b7280;">Off</span>
+            {% endif %}
+          </td>
+          <td style="padding:11px 16px;font-size:13px;color:#6b7280;" class="hide-tablet">
+            {{ user.last_login.strftime('%d %b %Y %H:%M') if user.last_login else 'Never' }}
+          </td>
+          <td style="padding:11px 16px;text-align:center;">
+            <div style="display:flex;gap:6px;justify-content:center;">
+              {% if user.barcode %}
+              <a href="{{ url_for('barcode.view', code=user.barcode.code) }}" class="btn btn-secondary btn-sm" title="View badge barcode">
+                <i class="fas fa-barcode"></i>
+              </a>
+              {% endif %}
+              <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-pen"></i>
+              </a>
+              {% if user.id != current_user.id %}
+              <form id="del-user-{{ user.id }}" method="POST"
+                    action="{{ url_for('admin.delete_user', user_id=user.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="button" class="btn btn-danger btn-sm"
+                        onclick="confirmDelete('del-user-{{ user.id }}','{{ user.username }}')">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Mobile card list -->
+<div class="mobile-card-list">
+  {% for user in users %}
+  <div class="m-card">
+    <div class="m-card-row">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+        <div style="background:#374151;border-radius:50%;width:36px;height:36px;
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:14px;font-weight:600;color:#9ca3af;flex-shrink:0;">
+          {{ user.username[0].upper() }}
+        </div>
+        <div style="min-width:0;">
+          <div style="font-size:15px;font-weight:600;color:#f3f4f6;">{{ user.username }}</div>
+          <div style="font-size:12px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            {{ user.email }}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+        {% if user.is_admin %}
+        <span class="badge" style="background:#451a03;color:#fcd34d;">Admin</span>
+        {% else %}
+        <span class="badge" style="background:#1e3a5f;color:#93c5fd;">Stock</span>
+        {% endif %}
+        {% if user.is_active %}
+        <span class="badge" style="background:#064e3b;color:#6ee7b7;">Active</span>
+        {% else %}
+        <span class="badge" style="background:#1f2937;color:#6b7280;">Disabled</span>
+        {% endif %}
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px;">
+      <div style="font-size:12px;color:#4b5563;">
+        Last login: {{ user.last_login.strftime('%d %b %Y') if user.last_login else 'Never' }}
+        {% if user.force_password_change %}
+        · <span style="color:#fbbf24;">must change password</span>
+        {% endif %}
+      </div>
+      <div style="display:flex;gap:6px;">
+        {% if user.barcode %}
+        <a href="{{ url_for('barcode.view', code=user.barcode.code) }}" class="btn btn-secondary btn-sm" title="View badge barcode">
+          <i class="fas fa-barcode"></i>
+        </a>
+        {% endif %}
+        <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-secondary btn-sm">
+          <i class="fas fa-pen"></i>
+        </a>
+        {% if user.id != current_user.id %}
+        <form id="del-mob-{{ user.id }}" method="POST"
+              action="{{ url_for('admin.delete_user', user_id=user.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <button type="button" class="btn btn-danger btn-sm"
+                  onclick="confirmDelete('del-mob-{{ user.id }}','{{ user.username }}')">
+            <i class="fas fa-trash"></i>
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

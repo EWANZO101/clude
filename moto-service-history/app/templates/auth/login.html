@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import field, btn_primary %}
+{% block title %}Log in — {{ site_name|default('Moto Service History') }}{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto mt-8">
+  <h1 class="font-bold text-2xl mb-6 text-center">Log in</h1>
+  <div class="card p-6">
+    <form method="post" class="space-y-4">
+      {{ form.hidden_tag() }}
+      {{ field(form.username) }}
+      {{ field(form.password) }}
+      {{ field(form.remember, help="Remember me on this device") }}
+      <div class="pt-2">{{ btn_primary("Log in") }}</div>
+    </form>
+  </div>
+  <p class="text-center text-sm text-ink-muted mt-4">No account yet? <a href="{{ url_for('auth.register') }}" class="text-gauge hover:underline">Sign up</a></p>
+</div>
+{% endblock %}

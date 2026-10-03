@@ -1,0 +1,26 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Sign up{% endblock %}
+{% block auth_content %}
+<div class="w-full max-w-sm">
+  <div class="flex items-center gap-2.5 justify-center mb-6">
+    <span class="w-9 h-9 rounded-lg bg-accent/15 text-accent flex items-center justify-center">{{ ui.icon('shield-check', 'w-5 h-5') }}</span>
+    <span class="font-semibold text-lg text-white">Statutory Records</span>
+  </div>
+  <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+    <div>
+      <h1 class="text-lg font-semibold text-white">Create your account</h1>
+      <p class="text-sm text-slate-500 mt-0.5">Track company info, directors, and filing deadlines in one place.</p>
+    </div>
+    <form method="POST" class="space-y-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {{ ui.field_input("name", "Your name", value=name if name else "", required=true) }}
+      {{ ui.field_input("email", "Email", type="email", value=email if email else "", required=true) }}
+      {{ ui.field_input("password", "Password", type="password", placeholder="At least 8 characters", required=true) }}
+      {{ ui.field_input("confirm_password", "Confirm password", type="password", required=true) }}
+      {{ ui.button("Create account", type="submit", variant="primary", extra="w-full justify-center") }}
+    </form>
+    <p class="text-xs text-slate-500 text-center">Already have an account? <a href="{{ url_for('auth.login') }}" class="text-accent hover:text-accent-hover">Log in</a></p>
+  </div>
+</div>
+{% endblock %}

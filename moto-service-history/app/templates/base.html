@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}{{ site_name|default('Moto Service History') }}{% endblock %}</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('main.favicon') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          /* Flowbite-style dark palette: gray-900/800/700 + blue accent */
+          asphalt: { DEFAULT: '#111827', panel: '#1F2937', alt: '#374151', border: '#374151' },
+          ink: { DEFAULT: '#F9FAFB', muted: '#9CA3AF', faint: '#6B7280' },
+          gauge: { DEFAULT: '#3B82F6', dim: '#2563EB', 50: '#EFF6FF' },
+          odometer: { DEFAULT: '#38BDF8', dim: '#0284C7' },
+          danger: { DEFAULT: '#F87171', dim: '#DC2626' },
+          okay: { DEFAULT: '#4ADE80', dim: '#16A34A' },
+        },
+        fontFamily: {
+          display: ['"Inter"', 'sans-serif'],
+          body: ['"Inter"', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+      }
+    }
+  }
+</script>
+<style>
+  body { background-color: #111827; }
+
+  .card {
+    background-color: #1F2937;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  }
+  .card-flat {
+    background-color: #1F2937;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+  }
+
+  .plate {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    background: #FFD204;
+    color: #0F0F0F;
+    border: 2px solid #0F0F0F;
+    border-radius: 4px;
+    padding: 0.15rem 0.6rem;
+    display: inline-block;
+  }
+  .plate-blue-strip { background:#003399; color:#fff; font-size:0.55rem; padding:0 3px; border-radius:2px 0 0 2px; }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: #111827; }
+  ::-webkit-scrollbar-thumb { background: #374151; border-radius: 6px; }
+  .focus-ring:focus-visible { outline: 2px solid #3B82F6; outline-offset: 2px; }
+
+  ::selection { background: rgba(59,130,246,0.35); color: #F9FAFB; }
+</style>
+{% block head %}{% endblock %}
+</head>
+<body class="bg-asphalt text-ink font-body min-h-screen flex flex-col antialiased">
+
+{% include "partials/nav.html" %}
+
+<main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8">
+  {% include "partials/flashes.html" %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="border-t border-asphalt-border mt-16">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-xs text-ink-faint flex flex-wrap gap-2 justify-between">
+    <span>{{ site_name|default('Moto Service History') }} — your bike's complete digital service book.</span>
+    <span>Built with OpsLab Systems</span>
+  </div>
+</footer>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

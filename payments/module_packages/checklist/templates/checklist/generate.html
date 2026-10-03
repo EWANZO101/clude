@@ -1,0 +1,37 @@
+{% extends "layout/base.html" %}
+{% block title %}Generate checklist{% endblock %}
+{% block content %}
+<div class="space-y-6 max-w-3xl">
+  <h1 class="text-xl font-semibold">Generate a checklist</h1>
+  <form method="POST" class="space-y-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <textarea name="raw_text" rows="6" placeholder="Paste a list, requirements, or rough ideas…"
+      class="w-full bg-surface-card border border-surface-border rounded-xl px-3 py-2 text-sm">{{ raw_text }}</textarea>
+    <button class="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 rounded-lg">Generate</button>
+  </form>
+
+  {% if preview is not none %}
+    <form method="POST" action="{{ url_for('checklist.generate_save') }}" class="space-y-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input name="name" placeholder="Checklist name" class="w-full bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm" value="Generated checklist">
+      <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+        {% for item in preview %}
+          <div class="p-3 flex flex-wrap gap-2 items-center">
+            <input name="task_title" value="{{ item.title }}" class="flex-1 min-w-[180px] bg-surface border border-surface-border rounded px-2 py-1 text-sm">
+            <input name="task_category" value="{{ item.category }}" class="w-28 bg-surface border border-surface-border rounded px-2 py-1 text-xs">
+            <select name="task_priority" class="bg-surface border border-surface-border rounded px-2 py-1 text-xs">
+              {% for p in ['low','medium','high'] %}
+                <option value="{{ p }}" {{ 'selected' if p == item.priority }}>{{ p }}</option>
+              {% endfor %}
+            </select>
+            <input name="task_minutes" value="{{ item.estimated_minutes }}" class="w-16 bg-surface border border-surface-border rounded px-2 py-1 text-xs">
+          </div>
+        {% else %}
+          <p class="p-4 text-sm text-slate-500">Nothing detected — try more descriptive lines.</p>
+        {% endfor %}
+      </div>
+      {% if preview %}
+        <button class="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 rounded-lg">Save as checklist</button>
+      {% endif %}
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

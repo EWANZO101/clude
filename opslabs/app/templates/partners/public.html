@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ c.name }} · OpsLab Systems{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  {% if preview %}
+  <div class="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-sm px-4 py-2.5">
+    Preview — this page isn't public yet ({{ c.status_label }}). Only you and staff can see it.
+  </div>
+  {% endif %}
+
+  <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-ops-300 mb-2">{{ c.ctype }}{% if c.country %} · {{ c.country }}{% endif %}</div>
+  <h1 class="text-4xl font-semibold tracking-tight">{{ c.name }}</h1>
+  {% if c.description %}<p class="text-gray-300 mt-4 text-lg whitespace-pre-line">{{ c.description }}</p>{% endif %}
+
+  {% if c.external_url %}
+  <a href="{{ c.external_url }}" target="_blank" rel="nofollow noopener" class="inline-flex items-center gap-2 mt-5 px-5 py-2.5 text-sm font-semibold text-white bg-ops-600 hover:bg-ops-500 rounded-xl">Visit website ↗</a>
+  {% endif %}
+
+  {% if c.services %}
+  <div class="mt-10">
+    <h2 class="text-xl font-bold mb-3">Services</h2>
+    <div class="rounded-2xl border border-ink-600 bg-ink-800/40 p-5 text-gray-300 whitespace-pre-line">{{ c.services }}</div>
+  </div>
+  {% endif %}
+
+  {% if c.pricing %}
+  <div class="mt-8">
+    <h2 class="text-xl font-bold mb-3">Pricing &amp; packages</h2>
+    <div class="rounded-2xl border border-ink-600 bg-ink-800/40 p-5 text-gray-300 whitespace-pre-line">{{ c.pricing }}</div>
+  </div>
+  {% endif %}
+
+  {% if c.terms or c.privacy %}
+  <div class="mt-10 flex flex-wrap gap-4 text-sm">
+    {% if c.terms %}<details class="rounded-xl border border-ink-600 bg-ink-800/40 p-4 flex-1 min-w-[240px]"><summary class="font-semibold cursor-pointer">Terms &amp; Conditions</summary><div class="mt-2 text-gray-400 whitespace-pre-line">{{ c.terms }}</div></details>{% endif %}
+    {% if c.privacy %}<details class="rounded-xl border border-ink-600 bg-ink-800/40 p-4 flex-1 min-w-[240px]"><summary class="font-semibold cursor-pointer">Privacy Policy</summary><div class="mt-2 text-gray-400 whitespace-pre-line">{{ c.privacy }}</div></details>{% endif %}
+  </div>
+  {% endif %}
+
+  <p class="text-xs text-gray-600 mt-10">Listed on OpsLab Systems. This company operates as an independent service provider.</p>
+</div>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "layout.html" %}
+{% block title %}{{ s.name }} · OpsLab Systems{% endblock %}
+{% block meta_desc %}{{ s.tagline }}{% endblock %}
+
+{% block head_extra %}
+<style>
+  :root { --accent: {{ s.accent }}; }
+  .hero-fade { background: radial-gradient(ellipse 60% 55% at 50% 0%, {{ s.accent }}1c, transparent 70%); }
+  .icon-box { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); color: {{ s.accent }}; }
+  .chip { font-size: 12px; padding: 3px 10px; border-radius: 6px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); color: #d4d4d8; }
+  .check { width: 18px; height: 18px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; color: {{ s.accent }}; }
+  .step-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #71717a; }
+  .section { border-top: 1px solid rgba(255,255,255,.06); }
+  .eyebrow { font-size: 13px; font-weight: 500; color: {{ s.accent }}; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════════ HERO ══ -->
+<section id="overview" class="relative overflow-hidden scroll-mt-16">
+  <div class="absolute inset-0 hero-fade pointer-events-none"></div>
+  <div class="absolute inset-0 grid-overlay pointer-events-none"></div>
+  <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 lg:pt-24 pb-20 text-center">
+    <div class="icon-box w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-6">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ s.icon }}"/></svg>
+    </div>
+    <div class="text-sm text-gray-400">{{ s.eyebrow }} <span class="text-gray-600 mx-1.5">/</span> An OpsLab Systems division</div>
+    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-[-0.035em] leading-[1.05] mt-4 text-white">{{ s.name }}</h1>
+    <p class="mt-6 text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">{{ s.tagline }}</p>
+    <div class="mt-10 flex flex-wrap gap-3 justify-center">
+      <a href="{{ hub_url(s.cta_url|default('/auth/register')) }}" class="ui-btn ui-btn-primary ui-btn-lg">
+        {{ s.cta_label }}
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </a>
+      <a href="#faq" class="ui-btn ui-btn-ghost ui-btn-lg">Common questions</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ OVERVIEW ══ -->
+<section class="section py-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-12">
+    <div class="lg:col-span-7">
+      <div class="eyebrow mb-3">Overview</div>
+      <h2 class="text-3xl font-semibold tracking-tight text-white">What we do</h2>
+      <p class="mt-5 text-gray-400 leading-relaxed">{{ s.overview }}</p>
+
+      <div class="mt-10 grid sm:grid-cols-2 gap-x-6 gap-y-3">
+        {% for item in s.services %}
+        <div class="flex items-start gap-2.5">
+          <span class="check mt-0.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          </span>
+          <span class="text-sm text-gray-300">{{ item }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="lg:col-span-5">
+      <div class="card p-6 sm:p-7">
+        <div class="text-sm font-medium text-white mb-4">{{ s.tech_label }}</div>
+        <div class="flex flex-wrap gap-1.5">
+          {% for t in s.tech %}<span class="chip">{{ t }}</span>{% endfor %}
+        </div>
+        <div class="mt-7 pt-6 border-t border-white/[.06]">
+          <div class="text-sm font-medium text-white mb-2">How to get started</div>
+          <p class="text-sm text-gray-400 leading-relaxed">
+            Create a free OpsLab Systems account, then open a ticket describing what you need. It's routed
+            straight to us and stays in sync with Discord, so nothing gets lost between messages.
+          </p>
+          <a href="{{ hub_url(s.cta_url|default('/auth/register')) }}" class="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-white hover:underline underline-offset-4">
+            {{ s.cta_label }}
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if key == 'onsite' %}
+<!-- ══════════════════════════════════════ ONSITE: DIRECT CONTACT ══ -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+  <div class="card p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <div>
+      <h3 class="text-lg font-semibold text-white">Need to talk to someone right now?</h3>
+      <p class="text-sm text-gray-400 mt-1">Call or WhatsApp us directly, or book a call-out online.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="tel:+447448421725" class="ui-btn ui-btn-primary">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        +44 7448 421725
+      </a>
+      <a href="https://wa.me/447448421725" target="_blank" rel="noopener" class="ui-btn ui-btn-ghost">
+        <span class="w-2 h-2 rounded-full bg-green-500"></span> WhatsApp
+      </a>
+      <a href="{{ hub_url('/callout') }}" class="ui-btn ui-btn-ghost">Book a call-out</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ══════════════════════════════════════ PROCESS ══ -->
+<section class="section py-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="eyebrow mb-3">Process</div>
+    <h2 class="text-3xl font-semibold tracking-tight text-white mb-10">How it works</h2>
+    <div class="grid md:grid-cols-5 gap-px bg-white/[.07] border border-white/[.07] rounded-xl overflow-hidden">
+      {% for title, desc in s.process %}
+      <div class="bg-ink-900 p-6">
+        <div class="step-num mb-6">0{{ loop.index }}</div>
+        <h3 class="text-sm font-semibold text-white">{{ title }}</h3>
+        <p class="text-sm text-gray-400 mt-1.5 leading-relaxed">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if s.packages %}
+<!-- ══════════════════════════════════════ PACKAGES ══ -->
+<section id="packages" class="section py-20 scroll-mt-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="eyebrow mb-3">Packages</div>
+    <h2 class="text-3xl font-semibold tracking-tight text-white">Starting points</h2>
+    <p class="text-gray-400 mt-3 mb-10 max-w-2xl">Every job is scoped and quoted for what you actually need.</p>
+    <div class="grid md:grid-cols-3 gap-4">
+      {% for name, desc, features in s.packages %}
+      <div class="card p-7 flex flex-col {{ 'md:border-white/20' if loop.index == 2 }}">
+        <h3 class="text-base font-semibold text-white">{{ name }}</h3>
+        <p class="text-sm text-gray-400 mt-1.5 leading-relaxed">{{ desc }}</p>
+        <div class="my-6 h-px bg-white/[.06]"></div>
+        <div class="space-y-2.5 flex-1">
+          {% for f in features %}
+          <div class="flex items-start gap-2.5">
+            <span class="check mt-0.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </span>
+            <span class="text-sm text-gray-300">{{ f }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        <a href="{{ hub_url('/auth/register') }}" class="mt-8 ui-btn {{ 'ui-btn-primary' if loop.index == 2 else 'ui-btn-ghost' }} w-full">Enquire</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ══════════════════════════════════════ FAQ ══ -->
+<section id="faq" class="section py-20 scroll-mt-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-10">
+    <div class="lg:col-span-4">
+      <div class="eyebrow mb-3">FAQ</div>
+      <h2 class="text-3xl font-semibold tracking-tight text-white">Frequently asked questions</h2>
+    </div>
+    <div class="lg:col-span-8 divide-y divide-white/[.07] border-y border-white/[.07]">
+      {% for q, a in s.faqs %}
+      <details class="group py-5">
+        <summary class="flex items-center justify-between cursor-pointer list-none">
+          <span class="text-[15px] font-medium text-white pr-4">{{ q }}</span>
+          <svg class="w-4 h-4 text-gray-500 shrink-0 transition group-open:rotate-45" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        </summary>
+        <p class="text-sm text-gray-400 mt-3 leading-relaxed pr-8">{{ a }}</p>
+      </details>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ CTA / CONTACT ══ -->
+<section id="contact" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 scroll-mt-16">
+  <div class="relative overflow-hidden rounded-2xl border border-white/[.08] bg-ink-900 px-6 py-12 sm:px-12 sm:py-16">
+    <div class="absolute inset-0 grid-overlay pointer-events-none opacity-60"></div>
+    <div class="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+      <div>
+        <h2 class="text-2xl sm:text-3xl font-semibold tracking-tight text-white">Ready to start?</h2>
+        <p class="text-gray-400 mt-3 max-w-xl leading-relaxed">
+          Open a ticket and describe what you need — it goes straight into our queue and stays visible from
+          first message to done. Prefer email? <a href="mailto:{{ CONTACT_EMAIL }}" class="text-white hover:underline underline-offset-4">{{ CONTACT_EMAIL }}</a>
+        </p>
+      </div>
+      <a href="{{ hub_url(s.cta_url|default('/auth/register')) }}" class="ui-btn ui-btn-primary ui-btn-lg shrink-0">
+        {{ s.cta_label }}
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ OTHER DIVISIONS ══ -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
+  <h2 class="text-sm font-medium text-gray-400 mb-4">Other OpsLab Systems divisions</h2>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+    {% for sub, slug2, svc in siblings %}
+    <a href="{{ subdomain_url(sub) }}" class="card p-4 flex items-center gap-3 group">
+      <span class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-white/[.03] border border-white/[.08]" style="color:{{ svc.accent }}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ svc.icon }}"/></svg>
+      </span>
+      <span class="text-sm font-medium text-gray-200 group-hover:text-white">{{ svc.short_name }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+{% endblock %}

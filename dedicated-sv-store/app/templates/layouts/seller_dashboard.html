@@ -1,0 +1,24 @@
+{% extends "layouts/_dashboard_base.html" %}
+{% from "components/_nav_section.html" import nav_section with context %}
+{% block sidebar_nav %}
+{{ nav_section(None, [("Dashboard", "seller.dashboard", None)]) }}
+{{ nav_section("Sales", [
+  ("Servers", "seller.servers", None),
+  ("Inventory", "seller.inventory", None),
+  ("Orders", "seller.orders", None),
+  ("Sales", "seller.sales", None),
+  ("Revenue", "seller.revenue", None),
+  ("Payouts", "seller.payouts", None),
+]) }}
+{{ nav_section("Customers", [
+  ("Customers", "seller.customers", None),
+  ("Messages", "seller.messages", None),
+]) }}
+{{ nav_section("Developer", [
+  ("API", "seller.api", None),
+  ("Webhooks", "seller.webhooks", None),
+]) }}
+{{ nav_section("Settings", [
+  ("Settings", "seller.settings", None),
+]) }}
+{% endblock %}

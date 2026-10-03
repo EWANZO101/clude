@@ -1,0 +1,62 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Fuel{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  {% call ui.page_header("Fuel", "Spending and MPG across every vehicle.") %}
+    {{ ui.button("Add vehicle", href=url_for('fuel.new_vehicle'), variant="primary", icon_name="plus") }}
+  {% endcall %}
+
+  {% if fuel_stats_available %}
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+      {% for key, label in [('today','Today'),('this_week','This week'),('this_month','This month'),('this_year','This year'),('all_time','All time')] %}
+        {{ ui.stat_tile(label, spending.get(key, 0) | money) }}
+      {% endfor %}
+    </div>
+    <p class="text-xs text-slate-500">Spend at fuel-station merchants, from your matched bank transactions.</p>
+  {% else %}
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-4 text-sm text-slate-400">
+      Install the Finance and Merchant modules to see fuel spending pulled automatically from your bank transactions.
+      Vehicle MPG/cost-per-mile tracking below works either way, from entries you log yourself.
+    </div>
+  {% endif %}
+
+  <div class="space-y-3">
+    <h2 class="text-lg font-semibold text-white flex items-center gap-1.5">{{ ui.icon('car', 'w-4 h-4 text-slate-500') }} Vehicles</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for v in vehicles %}
+        {% set s = summary_by_vehicle[v.id] %}
+        <a href="{{ url_for('fuel.vehicle_detail', vehicle_id=v.id) }}" class="bg-surface-card border border-surface-border rounded-2xl p-4 hover:border-accent hover:bg-surface-hover/40 transition-colors">
+          <p class="text-sm font-medium text-slate-100">{{ v.name }}</p>
+          <p class="text-xs text-slate-500 mb-3">{{ v.make }} {{ v.model }} {% if v.year %}· {{ v.year }}{% endif %}</p>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div><p class="text-slate-500">Avg MPG</p><p class="text-slate-100 font-medium tabular-nums">{{ s.average_mpg or '—' }}</p></div>
+            <div><p class="text-slate-500">Cost/mile</p><p class="text-slate-100 font-medium tabular-nums">{{ (s.average_cost_per_mile_minor | money) if s.average_cost_per_mile_minor else '—' }}</p></div>
+          </div>
+        </a>
+      {% else %}
+        <div class="sm:col-span-2 lg:col-span-3">
+          {% call ui.empty_state("No vehicles yet", "Add one to start logging fill-ups.", "car") %}
+            {{ ui.button("Add vehicle", href=url_for('fuel.new_vehicle'), variant="primary", icon_name="plus") }}
+          {% endcall %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="space-y-3">
+    <h2 class="text-lg font-semibold text-white flex items-center gap-1.5">{{ ui.icon('fuel', 'w-4 h-4 text-slate-500') }} Recent fill-ups</h2>
+    <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+      {% for e in recent_entries %}
+        <a href="{{ url_for('fuel.edit_entry', entry_id=e.id) }}" class="p-3 flex items-center justify-between text-sm hover:bg-surface-hover transition-colors gap-3">
+          <span class="text-slate-300">{{ e.vehicle.name }} · {{ e.date.strftime('%d %b %Y') }}</span>
+          <span class="text-slate-500">{{ e.litres or '—' }} L</span>
+          <span class="text-slate-100 font-medium tabular-nums">{{ e.cost_minor | money }}</span>
+        </a>
+      {% else %}
+        {% call ui.empty_state("No fuel entries logged yet", icon_name="fuel") %}{% endcall %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

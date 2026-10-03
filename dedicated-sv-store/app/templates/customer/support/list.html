@@ -1,0 +1,34 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% block title %}Support — {{ app_name }}{% endblock %}
+{% block page_title %}Support{% endblock %}
+{% block header_actions %}
+<a href="{{ url_for('customer.support_new') }}" class="btn-primary">New ticket</a>
+{% endblock %}
+{% block content %}
+{% if tickets %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Ticket #</th><th>Subject</th><th>Priority</th><th>Status</th><th>Created</th><th></th></tr></thead>
+    <tbody>
+      {% for ticket in tickets %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ ticket.ticket_number }}</td>
+        <td class="text-text-secondary">{{ ticket.subject }}</td>
+        <td class="text-text-secondary capitalize">{{ ticket.priority.value }}</td>
+        <td>
+          {% if ticket.status.value in ("resolved", "closed") %}<span class="badge-success">{{ ticket.status.value|replace("_", " ")|title }}</span>
+          {% else %}<span class="badge-info">{{ ticket.status.value|replace("_", " ")|title }}</span>{% endif %}
+        </td>
+        <td class="text-text-muted">{{ ticket.created_at.strftime("%d %b %Y") }}</td>
+        <td><a href="{{ url_for('customer.support_detail', ticket_id=ticket.id) }}" class="text-brand-400 hover:text-brand-300">View</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card p-10 text-center text-text-secondary">
+  No support tickets yet. <a href="{{ url_for('customer.support_new') }}" class="text-brand-400 hover:text-brand-300">Open one now</a>.
+</div>
+{% endif %}
+{% endblock %}

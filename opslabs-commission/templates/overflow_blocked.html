@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Please Wait — Cioda's Commissions{% endblock %}
+{% block body %}
+<nav class="nav-bar">
+  <a class="nav-logo" href="/">Cioda's <span>Commissions</span></a>
+</nav>
+<main style="max-width:500px;margin:0 auto;padding:5rem 1.5rem;text-align:center;" class="fade-in">
+  <div style="font-size:4rem;margin-bottom:1rem;">⏳</div>
+  <h1 class="font-display" style="font-size:1.9rem;margin-bottom:0.75rem;color:var(--warning);">
+    Almost Time!
+  </h1>
+  <p style="color:var(--text-secondary);font-size:1.05rem;margin-bottom:1.5rem;">
+    You were recently redirected to the overflow page. Please wait before rejoining the queue.
+  </p>
+  <div style="background:var(--bg-elevated);border:1px solid var(--accent);border-radius:14px;
+              padding:1.5rem;margin-bottom:1.5rem;">
+    <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--text-muted);
+                letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem;">Time Until You Can Rejoin</div>
+    <div id="blockTimer" style="font-size:3rem;font-weight:700;font-family:'Cinzel',serif;
+                                 color:var(--accent);line-height:1;">{{ secs_left }}</div>
+    <div style="font-size:.8rem;color:var(--text-muted);margin-top:.35rem;">seconds</div>
+  </div>
+  <p style="font-size:.85rem;color:var(--text-muted);font-style:italic;margin-bottom:1.5rem;">
+    You'll be redirected to the queue automatically when the timer reaches zero.
+  </p>
+  <a href="/" class="btn btn-ghost">← Back to Home</a>
+</main>
+<script>
+  let secs = {{ secs_left }};
+  const el = document.getElementById('blockTimer');
+  const iv = setInterval(() => {
+    secs--;
+    el.textContent = secs;
+    if (secs <= 0) {
+      clearInterval(iv);
+      window.location.href = '/queue/waiting';
+    }
+  }, 1000);
+</script>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}New Site — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">Nginx</p>
+    <h1 class="page-title">New site</h1>
+    <p class="page-sub">Creates the config, tests it, symlinks it, and reloads nginx.</p>
+  </div>
+</div>
+
+<div class="card" style="max-width:520px;">
+  <form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="field">
+      {{ form.domain.label }}
+      {{ form.domain(placeholder="app.opslabsystems.cloud") }}
+      {% for e in form.domain.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.port.label }}
+      {{ form.port(placeholder="5000") }}
+      {% for e in form.port.errors %}<div class="form-errors">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="field">
+      {{ form.extra_directives.label }}
+      {{ form.extra_directives(rows=4, placeholder="client_max_body_size 20M;") }}
+    </div>
+
+    <button class="btn btn-primary" type="submit">Create site</button>
+  </form>
+</div>
+{% endblock %}

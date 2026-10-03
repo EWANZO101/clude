@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+{% block title %}Order {{ order.order_id }} — Cioda's Commissions{% endblock %}
+
+{% block head %}
+<style>
+  .pin-gate {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+    background: var(--bg-base);
+  }
+  .pin-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-accent);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(192, 132, 252, 0.08);
+    animation: fadeIn 0.35s ease both;
+  }
+  .pin-dots {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin: 1.25rem 0;
+  }
+  .pin-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--border-accent);
+    background: transparent;
+    transition: all 0.2s;
+  }
+  .pin-dot.filled {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+  .pin-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.65rem;
+    margin: 0 auto;
+    max-width: 260px;
+  }
+  .pin-key {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pin-key:hover  { border-color: var(--accent); background: var(--accent-glow); color: var(--accent); }
+  .pin-key:active { transform: scale(0.93); }
+  .pin-key.danger { border-color: #7f1d1d; color: #fca5a5; }
+  .pin-key.danger:hover { background: #450a0a; border-color: var(--danger); }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-8px)}
+    40%{transform:translateX(8px)}
+    60%{transform:translateX(-5px)}
+    80%{transform:translateX(5px)}
+  }
+  .shake { animation: shake 0.4s ease; }
+
+  /* ── Status progress bars ── */
+  .progress-track {
+    display: flex; align-items: flex-start; overflow-x: auto; padding-bottom: 2px;
+  }
+  .progress-step {
+    display: flex; flex-direction: column; align-items: center;
+    flex: 0 0 auto; min-width: 64px;
+  }
+  .progress-dot {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--border-accent); background: var(--bg-elevated);
+    color: var(--text-muted); font-family: 'Cinzel', serif; font-weight: 700;
+    font-size: 0.82rem; flex-shrink: 0; transition: all 0.3s ease;
+  }
+  .progress-step.done .progress-dot {
+    background: var(--success); border-color: var(--success); color: #0f2a1f;
+  }
+  .progress-step.current .progress-dot {
+    background: var(--accent); border-color: var(--accent); color: #fff;
+    box-shadow: 0 0 0 4px var(--accent-glow);
+  }
+  .progress-label {
+    font-size: 0.66rem; color: var(--text-muted); margin-top: 0.45rem;
+    text-align: center; line-height: 1.25; max-width: 76px;
+  }
+  .progress-step.done .progress-label,
+  .progress-step.current .progress-label { color: var(--text-primary); font-weight: 600; }
+  .progress-line {
+    flex: 1 1 auto; min-width: 16px; height: 2px; background: var(--border-accent);
+    margin-top: 14px; transition: background 0.3s ease;
+  }
+  .progress-line.done { background: var(--success); }
+  @media (max-width: 480px) {
+    .progress-dot { width: 24px; height: 24px; font-size: 0.72rem; }
+    .progress-label { font-size: 0.6rem; max-width: 60px; }
+    .progress-line { margin-top: 11px; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<nav class="nav-bar">
+  <a class="nav-logo" href="/">Cioda's <span>Commissions</span></a>
+  <div style="font-size:0.85rem;color:var(--text-muted);font-family:'Cinzel',serif;">Order Tracker</div>
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div style="max-width:900px;margin:0 auto;padding:1rem 1.5rem 0;">
+    {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+{% if pin_mode == 'setup' %}
+{# ── PIN SETUP: first visit, no pin yet ── #}
+<div class="pin-gate">
+  <div class="pin-card">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem;">🔐</div>
+    <h1 class="font-display" style="font-size:1.4rem;margin-bottom:0.5rem;">Protect Your Order</h1>
+    <p style="color:var(--text-secondary);font-size:0.95rem;margin-bottom:0.2rem;">
+      Set a <strong style="color:var(--text-primary);">4–8 digit PIN</strong> to secure this link.
+    </p>
+    <p style="color:var(--text-muted);font-size:0.82rem;margin-bottom:1rem;">
+      You'll need it every time you visit.
+    </p>
+    <form method="POST" action="/order/{{ order.unique_link }}/pin/setup" id="setupForm">
+      <input type="hidden" name="pin" id="setupPinInput">
+      <input type="hidden" name="pin_confirm" id="setupPinConfirmInput">
+      <div id="setupStep1">
+        <div class="font-display" style="font-size:0.72rem;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;">Enter New PIN</div>
+        <div class="pin-dots" id="setupDots1"></div>
+        <div class="pin-keypad">
+          {% for d in ['1','2','3','4','5','6','7','8','9'] %}
+          <button type="button" class="pin-key" onclick="s1key('{{ d }}')">{{ d }}</button>
+          {% endfor %}
+          <button type="button" class="pin-key danger" onclick="s1back()">⌫</button>
+          <button type="button" class="pin-key" onclick="s1key('0')">0</button>
+          <button type="button" class="pin-key" style="color:var(--success);border-color:#166534;" onclick="s1next()">✓</button>
+        </div>
+      </div>
+      <div id="setupStep2" style="display:none;">
+        <div class="font-display" style="font-size:0.72rem;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;">Confirm PIN</div>
+        <div class="pin-dots" id="setupDots2"></div>
+        <div class="pin-keypad">
+          {% for d in ['1','2','3','4','5','6','7','8','9'] %}
+          <button type="button" class="pin-key" onclick="s2key('{{ d }}')">{{ d }}</button>
+          {% endfor %}
+          <button type="button" class="pin-key danger" onclick="s2back()">⌫</button>
+          <button type="button" class="pin-key" onclick="s2key('0')">0</button>
+          <button type="button" class="pin-key" style="color:var(--success);border-color:#166534;" onclick="s2confirm()">✓</button>
+        </div>
+        <button type="button" onclick="s1restart()" style="margin-top:0.75rem;background:none;border:none;color:var(--text-muted);font-size:0.82rem;cursor:pointer;text-decoration:underline;">← Start over</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+let p1='',p2='';
+const PMAX=8,PMIN=4;
+function rdots(id,v){
+  const c=document.getElementById(id);c.innerHTML='';
+  for(let i=0;i<Math.max(v.length,PMIN);i++){
+    const d=document.createElement('div');
+    d.className='pin-dot'+(i<v.length?' filled':'');
+    c.appendChild(d);
+  }
+}
+function shake(id){const e=document.getElementById(id);e.classList.remove('shake');void e.offsetWidth;e.classList.add('shake');}
+function s1key(d){if(p1.length>=PMAX)return;p1+=d;rdots('setupDots1',p1);}
+function s1back(){p1=p1.slice(0,-1);rdots('setupDots1',p1);}
+function s1next(){if(p1.length<PMIN){shake('setupDots1');return;}document.getElementById('setupStep1').style.display='none';document.getElementById('setupStep2').style.display='block';rdots('setupDots2',p2);}
+function s2key(d){if(p2.length>=PMAX)return;p2+=d;rdots('setupDots2',p2);}
+function s2back(){p2=p2.slice(0,-1);rdots('setupDots2',p2);}
+function s2confirm(){
+  if(p2.length<PMIN){shake('setupDots2');return;}
+  if(p1!==p2){
+    shake('setupDots2');p2='';rdots('setupDots2',p2);
+    const el=document.getElementById('setupDots2');
+    const m=document.createElement('div');m.style.cssText='color:#fca5a5;font-size:0.82rem;margin-top:0.4rem;';
+    m.textContent="PINs don't match — try again";el.after(m);setTimeout(()=>m.remove(),2500);return;
+  }
+  document.getElementById('setupPinInput').value=p1;
+  document.getElementById('setupPinConfirmInput').value=p2;
+  document.getElementById('setupForm').submit();
+}
+function s1restart(){p1='';p2='';rdots('setupDots1',p1);rdots('setupDots2',p2);document.getElementById('setupStep1').style.display='block';document.getElementById('setupStep2').style.display='none';}
+rdots('setupDots1',p1);
+</script>
+
+{% elif pin_mode == 'verify' %}
+{# ── PIN VERIFY: pin set, needs entry ── #}
+<div class="pin-gate">
+  <div class="pin-card">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem;">🔒</div>
+    <h1 class="font-display" style="font-size:1.4rem;margin-bottom:0.5rem;">Enter Your PIN</h1>
+    <p style="color:var(--text-secondary);font-size:0.92rem;margin-bottom:0.2rem;">This order is PIN-protected.</p>
+    <p style="color:var(--text-muted);font-size:0.82rem;margin-bottom:0.75rem;">
+      Order <span class="font-mono" style="color:var(--accent);">{{ order.order_id }}</span> — {{ order.customer_name }}
+    </p>
+    <form method="POST" action="/order/{{ order.unique_link }}/pin/verify" id="verifyForm">
+      <input type="hidden" name="pin" id="verifyPinInput">
+      <div class="pin-dots" id="verifyDots"></div>
+      <div class="pin-keypad">
+        {% for d in ['1','2','3','4','5','6','7','8','9'] %}
+        <button type="button" class="pin-key" onclick="vkey('{{ d }}')">{{ d }}</button>
+        {% endfor %}
+        <button type="button" class="pin-key danger" onclick="vback()">⌫</button>
+        <button type="button" class="pin-key" onclick="vkey('0')">0</button>
+        <button type="button" class="pin-key" style="color:var(--success);border-color:#166534;" onclick="vsubmit()">✓</button>
+      </div>
+    </form>
+    <p style="margin-top:1.25rem;font-size:0.82rem;color:var(--text-muted);">
+      Forgot your PIN? <a href="mailto:cioda@ciodrawz.space" style="color:var(--accent);">Contact the artist</a> to reset it.
+    </p>
+  </div>
+</div>
+<script>
+let vp='';
+const VMAX=8,VMIN=4;
+function vrdots(){
+  const c=document.getElementById('verifyDots');c.innerHTML='';
+  for(let i=0;i<Math.max(vp.length,VMIN);i++){
+    const d=document.createElement('div');d.className='pin-dot'+(i<vp.length?' filled':'');c.appendChild(d);
+  }
+}
+function vshake(){const e=document.getElementById('verifyDots');e.classList.remove('shake');void e.offsetWidth;e.classList.add('shake');}
+function vkey(d){if(vp.length>=VMAX)return;vp+=d;vrdots();}
+function vback(){vp=vp.slice(0,-1);vrdots();}
+function vsubmit(){if(vp.length<VMIN){vshake();return;}document.getElementById('verifyPinInput').value=vp;document.getElementById('verifyForm').submit();}
+document.addEventListener('keydown',e=>{
+  if(e.key>='0'&&e.key<='9')vkey(e.key);
+  else if(e.key==='Backspace')vback();
+  else if(e.key==='Enter')vsubmit();
+});
+vrdots();
+</script>
+
+{% else %}
+{# ── OPEN: PIN verified, full order view ── #}
+<main style="max-width:900px;margin:0 auto;padding:2rem 1.5rem;">
+  <div style="margin-bottom:2rem;" class="fade-in">
+    <div style="font-size:0.85rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.05em;margin-bottom:0.5rem;">ORDER TRACKING</div>
+    <h1 class="font-display" style="font-size:clamp(1.5rem,4vw,2.2rem);margin-bottom:0.25rem;">
+      {{ order.commission_type or 'Commission Order' }}
+    </h1>
+    <p style="color:var(--text-muted);font-size:0.9rem;">
+      Order <span class="font-mono" style="color:var(--accent);">{{ order.order_id }}</span>
+      — placed {{ order.created_at.strftime('%B %d, %Y') }}
+    </p>
+  </div>
+
+  {% if order.status == 'Done' and final_images %}
+  <div class="card fade-in" style="margin-bottom:1.5rem;border-color:var(--gold);
+              box-shadow:0 0 40px rgba(245,158,11,0.08);">
+    <h2 class="font-display" style="font-size:1.1rem;color:var(--gold);margin-bottom:0.35rem;">
+      🎉 Your Finished Artwork
+    </h2>
+    <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1.25rem;">
+      It's done! View, download, or share your commission below.
+    </p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;">
+      {% for img in final_images %}
+      <div style="background:var(--bg-elevated);border-radius:12px;overflow:hidden;border:1px solid var(--border-accent);">
+        <a href="/final-image/{{ img.filename }}" target="_blank">
+          <img src="/final-image/{{ img.filename }}" alt="Finished artwork"
+               style="width:100%;height:220px;object-fit:contain;background:var(--bg-base);display:block;">
+        </a>
+        <div style="display:flex;gap:0.4rem;padding:0.65rem;">
+          <a href="/final-image/{{ img.filename }}" download class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">
+            ⬇ Download
+          </a>
+          <button type="button" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;"
+                  onclick="shareFinalImage('{{ request.url_root.rstrip('/') }}/final-image/{{ img.filename }}', this)">
+            📤 Share
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card fade-in" style="margin-bottom:1rem;padding:1.5rem 1.25rem;">
+    <div class="font-display" style="font-size:0.78rem;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.25rem;">Order Status</div>
+    {% if order.status == 'Declined' %}
+    <div style="text-align:center;padding:0.5rem 0;">
+      <div style="font-size:2.5rem;margin-bottom:0.5rem;">❌</div>
+      <span class="badge badge-declined" style="font-size:0.9rem;padding:0.4rem 1rem;">Declined</span>
+    </div>
+    {% else %}
+    <div class="progress-track">
+      {% for step in order_progress_steps %}
+      <div class="progress-step {{ 'done' if loop.index0 < order_progress_index else 'current' if loop.index0 == order_progress_index else '' }}">
+        <div class="progress-dot">{{ '✓' if loop.index0 < order_progress_index else loop.index }}</div>
+        <div class="progress-label">{{ step }}</div>
+      </div>
+      {% if not loop.last %}
+      <div class="progress-line {{ 'done' if loop.index0 < order_progress_index else '' }}"></div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card fade-in" style="margin-bottom:2rem;padding:1.5rem 1.25rem;">
+    <div class="font-display" style="font-size:0.78rem;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.25rem;">Payment Status</div>
+    <div class="progress-track">
+      {% for step in payment_progress_steps %}
+      <div class="progress-step {{ 'done' if loop.index0 < payment_progress_index else 'current' if loop.index0 == payment_progress_index else '' }}">
+        <div class="progress-dot">{{ '✓' if loop.index0 < payment_progress_index else loop.index }}</div>
+        <div class="progress-label">{{ step }}</div>
+      </div>
+      {% if not loop.last %}
+      <div class="progress-line {{ 'done' if loop.index0 < payment_progress_index else '' }}"></div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card fade-in" style="margin-bottom:1.5rem;">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1rem;">📄 Order Receipt</h2>
+    <div style="display:grid;gap:0.6rem;">
+      <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border);">
+        <span style="color:var(--text-muted);">Customer</span><span>{{ order.customer_name }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border);">
+        <span style="color:var(--text-muted);">Commission Type</span><span>{{ order.commission_type or '—' }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border);">
+        <span style="color:var(--text-muted);">Price</span>
+        <span style="color:var(--gold);font-weight:700;font-size:1.1rem;">${{ "%.2f"|format(order.price) }}</span>
+      </div>
+      {% if order.eta %}
+      <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border);">
+        <span style="color:var(--text-muted);">Estimated Completion</span>
+        <span style="color:var(--accent);">{{ order.eta }}</span>
+      </div>
+      {% endif %}
+      {% if order.notes %}
+      <div style="padding:0.5rem 0;">
+        <div style="color:var(--text-muted);margin-bottom:0.4rem;">Notes from Artist</div>
+        <div style="background:var(--bg-elevated);padding:0.75rem;border-radius:8px;color:var(--text-secondary);font-size:0.95rem;white-space:pre-wrap;">{{ order.notes }}</div>
+      </div>
+      {% endif %}
+      {% if order.description %}
+      <div style="padding:0.5rem 0;">
+        <div style="color:var(--text-muted);margin-bottom:0.4rem;">Description</div>
+        <div style="background:var(--bg-elevated);padding:0.75rem;border-radius:8px;color:var(--text-secondary);font-size:0.95rem;white-space:pre-wrap;">{{ order.description }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card fade-in" style="margin-bottom:1.5rem;">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1rem;">📋 Order History</h2>
+    {% if logs %}
+    <div style="display:grid;gap:0.5rem;">
+      {% for log in logs %}
+      <div style="padding:0.75rem;background:var(--bg-elevated);border-radius:8px;border-left:3px solid var(--accent);">
+        {% if log.image_filename %}
+        <a href="/order-log-image/{{ log.image_filename }}" target="_blank">
+          <img src="/order-log-image/{{ log.image_filename }}" alt="{{ log.event }}"
+               style="width:100%;max-height:320px;object-fit:contain;border-radius:8px;
+                      background:var(--bg-base);margin-bottom:0.65rem;display:block;">
+        </a>
+        {% endif %}
+        <div style="display:flex;gap:1rem;align-items:flex-start;">
+          <div style="flex:1;">
+            <div style="font-size:0.95rem;font-weight:600;">{{ log.event }}</div>
+            {% if log.details %}<div style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.2rem;">{{ log.details }}</div>{% endif %}
+          </div>
+          <div class="font-mono" style="font-size:0.78rem;color:var(--text-muted);white-space:nowrap;">{{ log.created_at.strftime('%b %d, %H:%M') }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted);font-style:italic;text-align:center;padding:1rem 0;">No updates yet. Check back soon!</p>
+    {% endif %}
+  </div>
+
+  {% if invoice %}
+  <div class="card fade-in" style="margin-bottom:1.5rem;">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1rem;">🧾 Invoice</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <div class="font-mono" style="color:var(--text-muted);font-size:0.85rem;">{{ invoice.invoice_id }}</div>
+        <div style="font-size:1.3rem;font-weight:700;color:var(--gold);">${{ "%.2f"|format(invoice.amount) }}</div>
+        {% if invoice.due_date %}<div style="font-size:0.85rem;color:var(--text-muted);">Due: {{ invoice.due_date }}</div>{% endif %}
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+        <span class="badge {{ 'badge-paid' if invoice.paid else 'badge-unpaid' }}" style="font-size:0.9rem;">
+          {{ 'Paid' if invoice.paid else 'Payment Pending' }}
+        </span>
+        <a href="/order/{{ order.unique_link }}/invoice/{{ invoice.invoice_id }}/download" class="btn btn-ghost btn-sm">📄 Download PDF</a>
+      </div>
+    </div>
+    {% if not invoice.paid %}
+    <div style="margin-top:1rem;padding:0.75rem;background:var(--bg-elevated);border-radius:8px;font-size:0.9rem;color:var(--text-secondary);">
+      💵 Send payment via <a href="https://cash.app/$Cioda" target="_blank" style="color:var(--success);font-weight:600;">cash.app/$Cioda</a>
+      or contact the artist for other payment options.
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="card fade-in">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1rem;">💬 Need Help?</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+      <div style="padding:1rem;background:var(--bg-elevated);border-radius:8px;">
+        <div class="font-display" style="font-size:0.85rem;margin-bottom:0.4rem;">Discord</div>
+        <div style="color:var(--text-secondary);font-size:0.9rem;">DM: <strong style="color:var(--text-primary);">totallynotcioda</strong></div>
+      </div>
+      <div style="padding:1rem;background:var(--bg-elevated);border-radius:8px;">
+        <div class="font-display" style="font-size:0.85rem;margin-bottom:0.4rem;">Email</div>
+        <div style="color:var(--text-secondary);font-size:0.9rem;word-break:break-all;">
+          <a href="mailto:cioda@ciodrawz.space" style="color:var(--accent);">cioda@ciodrawz.space</a>
+        </div>
+      </div>
+    </div>
+    {% if tickets %}
+    <div style="margin-bottom:1rem;">
+      <div class="font-display" style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:0.5rem;">Your Tickets</div>
+      {% for t in all_tickets %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.75rem;background:var(--bg-elevated);border-radius:8px;margin-bottom:0.4rem;">
+        <span class="font-mono" style="font-size:0.85rem;color:var(--accent);">{{ t.ticket_id }}</span>
+        <span style="font-size:0.9rem;color:var(--text-secondary);">{{ t.subject or 'Support Ticket' }}</span>
+        <a href="/order/{{ order.unique_link }}/ticket/{{ t.ticket_id }}" class="btn btn-ghost btn-sm">View</a>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <a href="/order/{{ order.unique_link }}/ticket/new" class="btn btn-ghost btn-sm">🎫 Open a Support Ticket</a>
+    <p style="font-size:0.8rem;color:var(--text-muted);font-style:italic;margin-top:0.5rem;">No Discord? Use the ticket system. Sessions expire after 24 hours.</p>
+  </div>
+</main>
+<script>
+  async function shareFinalImage(url, btn) {
+    if (navigator.share) {
+      try { await navigator.share({ title: "My finished commission!", url: url }); return; }
+      catch (e) { /* user cancelled — fall through to nothing */ return; }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      const original = btn.textContent;
+      btn.textContent = '✓ Link Copied';
+      setTimeout(() => { btn.textContent = original; }, 2000);
+    } catch (e) {
+      prompt('Copy this link:', url);
+    }
+  }
+</script>
+{% endif %}
+{% endblock %}

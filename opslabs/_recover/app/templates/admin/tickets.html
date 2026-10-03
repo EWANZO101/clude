@@ -1,0 +1,72 @@
+{% extends "admin/_layout.html" %}
+{% block admin_content %}
+
+<div class="mb-8">
+  <div class="text-xs font-bold uppercase tracking-widest text-ops-400 mb-1">Manage</div>
+  <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">All Tickets</h1>
+  <p class="text-sm text-gray-400 mt-1">Every ticket across all companies.</p>
+</div>
+
+<!-- Filter pills -->
+<div class="flex flex-wrap gap-2 mb-6">
+  {% set filters = [('','All'),('open','Open'),('pending','Pending'),('closed','Closed')] %}
+  {% for val, label in filters %}
+    {% set is_active = (current_status == val) or (not current_status and not val) %}
+    <a href="{{ url_for('admin.tickets') }}{% if val %}?status={{ val }}{% endif %}"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition
+              {% if is_active %}bg-gradient-to-r from-ops-500 to-ops-700 text-white shadow-glow-sm
+              {% else %}bg-white/5 border border-ink-600 text-gray-300 hover:bg-white/10 hover:text-white{% endif %}">
+      {% if val == 'open' %}<span class="w-2 h-2 rounded-full bg-green-400"></span>{% endif %}
+      {% if val == 'pending' %}<span class="w-2 h-2 rounded-full bg-yellow-400"></span>{% endif %}
+      {% if val == 'closed' %}<span class="w-2 h-2 rounded-full bg-gray-400"></span>{% endif %}
+      {{ label }}
+    </a>
+  {% endfor %}
+</div>
+
+<div class="bg-ink-800/50 border border-ink-600 rounded-2xl overflow-hidden">
+  {% if tickets %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-ink-900/60 border-b border-ink-600">
+        <tr class="text-xs uppercase tracking-wider text-gray-400">
+          <th class="px-5 py-3 text-left font-semibold">ID</th>
+          <th class="px-5 py-3 text-left font-semibold">Subject</th>
+          <th class="px-5 py-3 text-left font-semibold hidden md:table-cell">Owner</th>
+          <th class="px-5 py-3 text-left font-semibold hidden lg:table-cell">Company</th>
+          <th class="px-5 py-3 text-left font-semibold">Status</th>
+          <th class="px-5 py-3 text-left font-semibold hidden md:table-cell">Priority</th>
+          <th class="px-5 py-3 text-left font-semibold hidden xl:table-cell">Assignee</th>
+          <th class="px-5 py-3 text-left font-semibold hidden lg:table-cell">Updated</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-ink-600/50">
+        {% for t in tickets %}
+        <tr onclick="location='{{ url_for('tickets.view', tid=t.id) }}'" class="hover:bg-ops-500/5 cursor-pointer transition group">
+          <td class="px-5 py-4 font-mono text-xs text-gray-400 group-hover:text-ops-400">#{{ '%04d' % t.id }}</td>
+          <td class="px-5 py-4">
+            <div class="font-semibold text-white group-hover:text-ops-300">{{ t.subject }}</div>
+          </td>
+          <td class="px-5 py-4 hidden md:table-cell">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-gradient-to-br from-ops-400 to-ops-700 flex items-center justify-center text-[10px] font-bold">{{ (t.owner.username[0].upper() if t.owner else '?') }}</div>
+              <span class="text-gray-300 text-xs">{{ t.owner.username if t.owner else '—' }}</span>
+            </div>
+          </td>
+          <td class="px-5 py-4 text-gray-300 hidden lg:table-cell">{{ t.company.name if t.company else '—' }}</td>
+          <td class="px-5 py-4"><span class="pill pill-{{ t.status }}">{{ t.status }}</span></td>
+          <td class="px-5 py-4 hidden md:table-cell"><span class="pill pill-{{ t.priority }}">{{ t.priority }}</span></td>
+          <td class="px-5 py-4 hidden xl:table-cell text-gray-400 text-xs">{% if t.assigned_to %}{{ t.assigned_to.username }}{% else %}<span class="text-gray-600">unassigned</span>{% endif %}</td>
+          <td class="px-5 py-4 hidden lg:table-cell text-gray-400 text-xs">{{ t.updated_at.strftime('%b %d · %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-16 px-6">
+    <p class="text-sm text-gray-400">No tickets match this filter.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

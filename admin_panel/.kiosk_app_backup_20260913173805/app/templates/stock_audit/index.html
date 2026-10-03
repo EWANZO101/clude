@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Stock Audit — {{ tenant_name }}{% endblock %}
+{% block content %}
+<h1>Stock Audit</h1>
+
+<div class="panel" style="max-width:480px;">
+  <h2 style="margin-top:0; font-size:15px;">Start a new audit</h2>
+  <p class="muted" style="font-size:13px;">
+    While an audit is open, item stock movement is frozen for non-admin
+    roles, and scanning an item barcode records a count instead of
+    issuing stock.
+  </p>
+  <form method="post" action="{{ url_for('stock_audit.start') }}">
+    <label>Label (optional)</label>
+    <input type="text" name="label" placeholder="e.g. Q3 2026 Audit">
+    <button type="submit" style="margin-top:14px;">Start Audit</button>
+  </form>
+</div>
+
+<h2 style="font-size:16px; margin-top:24px;">Past Audits</h2>
+<div class="panel" style="padding:0;">
+  {% if past %}
+    <table style="width:100%; border-collapse:collapse;">
+      <tbody>
+        {% for audit in past %}
+          <tr style="border-bottom:1px solid var(--panel-border);">
+            <td style="padding:14px;">
+              <div style="font-weight:600;">{{ audit.display_label() }}</div>
+              <div class="muted" style="font-size:12.5px;">
+                {{ audit.lines|length }} item(s) counted — started by {{ audit.started_by }},
+                closed by {{ audit.closed_by }} on {{ audit.closed_at.strftime('%Y-%m-%d') }}
+              </div>
+            </td>
+            <td style="padding:14px; text-align:right;">
+              <a href="{{ url_for('stock_audit.detail', audit_id=audit.id) }}" class="btn" style="padding:6px 10px; font-size:12.5px;">View</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted" style="padding:20px;">No closed audits yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

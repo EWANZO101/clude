@@ -1,0 +1,15 @@
+{% macro nav_section(title, items) %}
+<div>
+  {% if title %}
+  <p class="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-text-muted">{{ title }}</p>
+  {% endif %}
+  <div class="space-y-0.5">
+    {% for label, endpoint, icon in items %}
+    <a href="{{ url_for(endpoint) }}" class="{{ 'nav-link-active' if request.endpoint == endpoint else 'nav-link' }}">
+      {% if icon %}<span class="w-4 h-4 flex-shrink-0" aria-hidden="true">{{ icon|safe }}</span>{% endif %}
+      <span>{{ label }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endmacro %}

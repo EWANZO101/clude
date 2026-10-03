@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Maintenance Alerts — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('tools.list_tools') }}">← Tools</a></p>
+<h1>Overdue Maintenance</h1>
+<div class="panel">
+  {% if overdue %}
+    <ul style="list-style:none; padding:0; margin:0;">
+      {% for event, hours, threshold in overdue %}
+        <li style="padding:10px 0; border-bottom:1px solid var(--panel-border);">
+          <strong>{{ event.tool.name }}</strong> — level {{ event.level }}, in maintenance
+          {{ hours|round(1) }}h (threshold {{ threshold|round(1) }}h)
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">Nothing overdue.</p>
+  {% endif %}
+</div>
+{% endblock %}

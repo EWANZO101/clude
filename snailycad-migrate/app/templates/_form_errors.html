@@ -1,0 +1,12 @@
+{% if form.errors %}
+<div class="border border-red-800 bg-red-900/30 rounded-md px-4 py-3 mb-4 text-sm text-red-300">
+  <p class="font-semibold mb-1">Please fix the following:</p>
+  <ul class="list-disc list-inside space-y-0.5">
+    {% for field_name, errors in form.errors.items() %}
+      {% for error in errors %}
+        <li>{{ form[field_name].label.text }}: {{ error }}</li>
+      {% endfor %}
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}

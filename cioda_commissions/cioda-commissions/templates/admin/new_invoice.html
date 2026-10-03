@@ -1,0 +1,104 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}New Invoice — Admin{% endblock %}
+{% block admin_content %}
+
+<div style="max-width:700px;">
+  <div style="margin-bottom:1.5rem;">
+    <a href="/admin/invoices" style="color:var(--text-muted);font-size:0.9rem;text-decoration:none;">← Invoices</a>
+    <h1 class="font-display" style="font-size:1.7rem;margin-top:0.5rem;">Create Invoice</h1>
+  </div>
+
+  <form method="POST" class="card" id="invoiceForm">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+      <div>
+        <label class="form-label">Order ID *</label>
+        <select name="order_id" class="input" required id="orderSelect">
+          <option value="">— Select Order —</option>
+          {% for order in orders %}
+          <option value="{{ order.order_id }}" data-customer="{{ order.customer_name }}"
+                  data-price="{{ order.price }}">
+            {{ order.order_id }} — {{ order.customer_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Customer Name</label>
+        <input type="text" name="customer_name" id="customerName" class="input" placeholder="Auto-filled from order">
+      </div>
+    </div>
+
+    <div style="margin-bottom:1rem;">
+      <label class="form-label">Due Date</label>
+      <input type="text" name="due_date" class="input" placeholder="e.g. March 30, 2026 or On Completion">
+    </div>
+
+    <!-- Line Items -->
+    <div style="margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+        <label class="form-label" style="margin:0;">Line Items</label>
+        <button type="button" onclick="addItem()" class="btn btn-ghost btn-sm">+ Add Item</button>
+      </div>
+      <div id="lineItems">
+        <div class="line-item" style="display:grid;grid-template-columns:1fr auto;gap:0.75rem;margin-bottom:0.5rem;">
+          <input type="text" name="item_desc[]" class="input" placeholder="Description (e.g. Full Color Fullbody)" required>
+          <input type="number" name="item_amount[]" class="input" placeholder="$0.00"
+                 step="0.01" min="0" style="width:110px;" onchange="updateTotal()" oninput="updateTotal()">
+        </div>
+      </div>
+      <div style="text-align:right;margin-top:0.75rem;font-family:'Cinzel',serif;">
+        <span style="color:var(--text-muted);font-size:0.85rem;">TOTAL: </span>
+        <span id="totalDisplay" style="color:var(--gold);font-size:1.2rem;font-weight:700;">$0.00</span>
+      </div>
+    </div>
+
+    <div style="margin-bottom:1.5rem;">
+      <label class="form-label">Notes</label>
+      <textarea name="notes" class="input" placeholder="Payment instructions, CashApp handle, etc."
+                style="min-height:80px;"></textarea>
+    </div>
+
+    <div style="display:flex;gap:1rem;">
+      <button type="submit" class="btn btn-gold">Create Invoice</button>
+      <a href="/admin/invoices" class="btn btn-ghost">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.getElementById('orderSelect').addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const customer = opt.dataset.customer || '';
+    const price = parseFloat(opt.dataset.price || 0);
+    document.getElementById('customerName').value = customer;
+    // Pre-fill first line item price
+    const firstAmt = document.querySelector('input[name="item_amount[]"]');
+    if (firstAmt && price > 0) firstAmt.value = price.toFixed(2);
+    updateTotal();
+  });
+
+  function addItem() {
+    const container = document.getElementById('lineItems');
+    const div = document.createElement('div');
+    div.className = 'line-item';
+    div.style.cssText = 'display:grid;grid-template-columns:1fr auto;gap:0.75rem;margin-bottom:0.5rem;';
+    div.innerHTML = `
+      <input type="text" name="item_desc[]" class="input" placeholder="Description" required>
+      <div style="display:flex;gap:0.4rem;align-items:center;">
+        <input type="number" name="item_amount[]" class="input" placeholder="$0.00"
+               step="0.01" min="0" style="width:110px;" onchange="updateTotal()" oninput="updateTotal()">
+        <button type="button" onclick="this.closest('.line-item').remove();updateTotal();"
+                style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:1.1rem;padding:0 4px;">✕</button>
+      </div>
+    `;
+    container.appendChild(div);
+  }
+
+  function updateTotal() {
+    const amounts = document.querySelectorAll('input[name="item_amount[]"]');
+    let total = 0;
+    amounts.forEach(a => { total += parseFloat(a.value || 0); });
+    document.getElementById('totalDisplay').textContent = '$' + total.toFixed(2);
+  }
+</script>
+{% endblock %}

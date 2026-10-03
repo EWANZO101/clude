@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Customers{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Customers</h1>
+  <a href="{{ url_for('customers.new_customer') }}" class="btn btn-primary btn-sm">+ New customer</a>
+</div>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">Name</th><th class="p-3">Email</th><th class="p-3 text-right">Outstanding</th></tr></thead>
+    <tbody>
+      {% for c in customers %}
+      <tr class="row-border">
+        <td class="p-3"><a class="link" href="{{ url_for('customers.view_customer', customer_id=c.id) }}">{{ c.name }}</a></td>
+        <td class="p-3">{{ c.email or '—' }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(c.outstanding_balance()) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="empty-state">No customers yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+{% block content %}
+<div class="page-header" style="align-items:flex-start;">
+  <div>
+    <h1 class="page-title">Invoice {{ invoice.invoice_number }}</h1>
+    <p class="text-muted text-sm">{{ invoice.customer.name }} — status: <span class="capitalize">{{ invoice.status.replace('_',' ') }}</span></p>
+  </div>
+  {% if invoice.status == 'draft' %}
+  <form method="POST" action="{{ url_for('invoices.send_invoice', invoice_id=invoice.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-primary btn-sm">Send &amp; post to ledger</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto mb-6">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">Description</th><th class="p-3 text-right">Qty</th><th class="p-3 text-right">Unit price</th><th class="p-3 text-right">Tax %</th><th class="p-3 text-right">Line total</th></tr></thead>
+    <tbody>
+      {% for line in invoice.lines %}
+      <tr class="row-border">
+        <td class="p-3">{{ line.description }}</td>
+        <td class="p-3 text-right">{{ line.quantity }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(line.unit_price) }}</td>
+        <td class="p-3 text-right">{{ line.tax_rate }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(line.quantity * line.unit_price) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="table-foot-total">
+        <td class="p-3" colspan="4">Total (incl. tax)</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(invoice.total()) }}</td>
+      </tr>
+      <tr>
+        <td class="p-3" colspan="4">Balance due</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(invoice.balance_due()) }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+{% if invoice.status in ['sent', 'partially_paid', 'overdue'] %}
+<div class="card card-padded max-w-md">
+  <h2 class="section-title mb-4">Record a payment</h2>
+  <form method="POST" action="{{ url_for('invoices.record_payment', invoice_id=invoice.id) }}" class="space-y-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div><label class="label-field">Amount</label><input name="amount" required class="input-field w-full"></div>
+    <div><label class="label-field">Deposit to</label>
+      <select name="deposit_account_id" class="input-field w-full">
+        {% for a in accounts %}<option value="{{ a.id }}">{{ a.code }} {{ a.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div><label class="label-field">Payment date</label><input type="date" name="payment_date" class="input-field w-full"></div>
+    <button class="bg-green-600 text-white px-4 py-2 rounded text-sm">Record payment</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

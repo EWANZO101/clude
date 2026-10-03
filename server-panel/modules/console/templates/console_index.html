@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Console — {{ panel_name }}{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+<style>
+  #term-tabs { display:flex; gap:4px; align-items:center; overflow-x:auto; padding-bottom:2px; }
+  .term-tab {
+    display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius: var(--radius) var(--radius) 0 0;
+    background: var(--bg-panel-raised); border: 1px solid var(--border-subtle); border-bottom: none;
+    font-family: var(--font-mono); font-size:12px; color: var(--text-muted); cursor:pointer; white-space:nowrap;
+  }
+  .term-tab.active { background: var(--bg-void); color: var(--text-primary); border-color: var(--border-strong); }
+  .term-tab .close-x { opacity:0.6; padding:0 2px; }
+  .term-tab .close-x:hover { opacity:1; color: var(--danger); }
+  #term-container { background: var(--bg-void); border: 1px solid var(--border-strong); border-radius: 0 var(--radius-lg) var(--radius-lg) var(--radius-lg); padding:10px; height: 560px; }
+  .term-pane { display:none; height:100%; }
+  .term-pane.active { display:block; }
+  .xterm { height:100%; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-6-6-6M12 19h8"/></svg>
+      live shell
+    </p>
+    <h1 class="page-title">VPS Console</h1>
+    <p class="page-sub">A real interactive shell on this server, right in the browser.</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="badge badge-muted" id="session-count-badge">0 sessions</span>
+    <button class="btn btn-primary btn-sm" id="new-session-btn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      New session
+    </button>
+  </div>
+</div>
+
+<div class="flash flash-error" style="border-color: var(--danger); background: var(--danger-dim); color: var(--danger); margin-bottom:16px;">
+  <strong>This is a real root shell on this server.</strong> Anything typed here runs immediately with
+  full privileges — there's no undo. Sessions auto-close after 20 minutes idle, and close automatically
+  if you leave this page.
+</div>
+
+<div id="term-tabs"></div>
+<div id="term-container">
+  <div id="term-empty" class="empty-state" style="height:100%; display:flex; align-items:center; justify-content:center;">
+    No active sessions — click "New session" to open a shell.
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+<script>
+  if (typeof Terminal === 'undefined') {
+    document.getElementById('term-empty').innerHTML =
+      '<span style="color:var(--danger);">The terminal library failed to load from the CDN — check your network/ad-blocker and reload.</span>';
+    document.getElementById('new-session-btn').disabled = true;
+  }
+</script>
+<script>
+(function () {
+  const csrfToken = {{ csrf_token() | tojson }};
+  const socket = io('/terminal');
+
+  const tabsEl = document.getElementById('term-tabs');
+  const containerEl = document.getElementById('term-container');
+  const emptyEl = document.getElementById('term-empty');
+  const countBadge = document.getElementById('session-count-badge');
+  const newBtn = document.getElementById('new-session-btn');
+
+  const sessions = {}; // session_id -> { term, fitAddon, tabEl, paneEl, n }
+  let activeId = null;
+  let sessionCounter = 0;
+
+  function updateBadge() {
+    const n = Object.keys(sessions).length;
+    countBadge.textContent = n + ' session' + (n !== 1 ? 's' : '');
+    emptyEl.style.display = n === 0 ? 'flex' : 'none';
+  }
+
+  function activate(sessionId) {
+    activeId = sessionId;
+    Object.entries(sessions).forEach(([id, s]) => {
+      s.tabEl.classList.toggle('active', id === sessionId);
+      s.paneEl.classList.toggle('active', id === sessionId);
+    });
+    const s = sessions[sessionId];
+    if (s) {
+      s.fitAddon.fit();
+      s.term.focus();
+      socket.emit('resize', { session_id: sessionId, rows: s.term.rows, cols: s.term.cols });
+    }
+  }
+
+  function closeTab(sessionId) {
+    socket.emit('close_session', { session_id: sessionId });
+    const s = sessions[sessionId];
+    if (!s) return;
+    s.term.dispose();
+    s.tabEl.remove();
+    s.paneEl.remove();
+    delete sessions[sessionId];
+    updateBadge();
+    if (activeId === sessionId) {
+      const remaining = Object.keys(sessions);
+      if (remaining.length) activate(remaining[remaining.length - 1]);
+      else activeId = null;
+    }
+  }
+
+  socket.on('session_created', ({ session_id }) => {
+    try {
+      sessionCounter += 1;
+      const label = 'Session ' + sessionCounter;
+
+      const tabEl = document.createElement('div');
+      tabEl.className = 'term-tab';
+      tabEl.innerHTML = '<span>' + label + '</span><span class="close-x">&times;</span>';
+      tabEl.querySelector('span').addEventListener('click', () => activate(session_id));
+      tabEl.querySelector('.close-x').addEventListener('click', (e) => { e.stopPropagation(); closeTab(session_id); });
+      tabEl.addEventListener('click', () => activate(session_id));
+      tabsEl.appendChild(tabEl);
+
+      const paneEl = document.createElement('div');
+      paneEl.className = 'term-pane';
+      containerEl.appendChild(paneEl);
+
+      const term = new Terminal({
+        cursorBlink: true,
+        fontFamily: 'JetBrains Mono, monospace',
+        fontSize: 13,
+        theme: { background: '#00000000' },
+      });
+      const fitAddon = new FitAddon.FitAddon();
+      term.loadAddon(fitAddon);
+      term.open(paneEl);
+
+      term.onData((data) => socket.emit('input', { session_id, data }));
+
+      sessions[session_id] = { term, fitAddon, tabEl, paneEl };
+      updateBadge();
+      activate(session_id);
+    } catch (err) {
+      console.error('Failed to initialize terminal session:', err);
+      alert('Failed to open the terminal UI (see browser console for details). The server-side ' +
+            'session was created — closing it now so it isn\'t left running unused.');
+      socket.emit('close_session', { session_id });
+    }
+  });
+
+  socket.on('output', ({ session_id, data }) => {
+    const s = sessions[session_id];
+    if (s) s.term.write(data);
+  });
+
+  socket.on('error', ({ message }) => {
+    alert(message || 'Console error.');
+  });
+
+  newBtn.addEventListener('click', () => {
+    socket.emit('create_session', { csrf_token: csrfToken });
+  });
+
+  window.addEventListener('resize', () => {
+    if (activeId && sessions[activeId]) {
+      sessions[activeId].fitAddon.fit();
+      socket.emit('resize', {
+        session_id: activeId,
+        rows: sessions[activeId].term.rows,
+        cols: sessions[activeId].term.cols,
+      });
+    }
+  });
+
+  window.addEventListener('beforeunload', () => {
+    Object.keys(sessions).forEach((id) => socket.emit('close_session', { session_id: id }));
+  });
+})();
+</script>
+{% endblock %}

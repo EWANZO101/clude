@@ -1,0 +1,27 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Confirm import{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  {{ ui.page_header("Confirm import", rows | length ~ " rows found — duplicates are pre-unchecked.") }}
+  <form method="POST" action="{{ url_for('finance.confirm_import', batch_id=batch.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border max-h-[60vh] overflow-y-auto">
+      {% for row in rows %}
+        <div class="p-3 flex items-center gap-3 text-sm hover:bg-surface-hover/40 transition-colors {{ 'opacity-40' if row.duplicate }}">
+          <input type="checkbox" name="include" value="{{ loop.index0 }}" {{ 'checked' if not row.duplicate }} {{ 'disabled' if row.duplicate }} class="rounded border-surface-border bg-surface text-accent focus:ring-accent">
+          <input type="hidden" name="date" value="{{ row.date }}">
+          <input type="hidden" name="description" value="{{ row.raw_description }}">
+          <input type="hidden" name="amount_minor" value="{{ row.amount_minor }}">
+          <input type="hidden" name="external_id" value="{{ row.external_transaction_id or '' }}">
+          <input type="hidden" name="dedupe_hash" value="{{ row.dedupe_hash }}">
+          <span class="w-24 text-slate-500 text-xs">{{ row.date }}</span>
+          <span class="flex-1 truncate text-slate-200">{{ row.raw_description }}</span>
+          <span class="tabular-nums font-medium {{ 'text-emerald-400' if row.amount_minor >= 0 else 'text-slate-200' }}">{{ (row.amount_minor / 100) | round(2) }}</span>
+          {% if row.duplicate %}{{ ui.badge('Duplicate', 'warning') }}{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    {{ ui.button("Confirm import", type="submit", variant="primary", extra="mt-4") }}
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment
+.env
+
+# Data (contains user corrections and scraped content — back these up separately)
+data/
+
+# Logs
+*.log

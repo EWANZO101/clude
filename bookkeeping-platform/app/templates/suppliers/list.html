@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Suppliers{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Suppliers</h1>
+  <a href="{{ url_for('suppliers.new_supplier') }}" class="btn btn-primary btn-sm">+ New supplier</a>
+</div>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">Name</th><th class="p-3">Email</th><th class="p-3 text-right">Outstanding</th></tr></thead>
+    <tbody>
+      {% for s in suppliers %}
+      <tr class="row-border">
+        <td class="p-3"><a class="link" href="{{ url_for('suppliers.view_supplier', supplier_id=s.id) }}">{{ s.name }}</a></td>
+        <td class="p-3">{{ s.email or '—' }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(s.outstanding_balance()) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="empty-state">No suppliers yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

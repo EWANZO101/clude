@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Assist sessions — Admin — {{ app_name }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+
+<div class="bg-panel border border-border rounded-lg p-4 mb-6">
+  <h2 class="text-sm font-semibold text-gray-200 mb-3">Waiting for configuration ({{ active|length }})</h2>
+  {% if active %}
+    <div class="space-y-3">
+      {% for job in active %}
+      <div class="border border-border rounded-md p-4">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <p class="text-sm text-gray-200">{{ job.user.email if job.user else "—" }}</p>
+            <p class="text-xs text-gray-500">
+              {{ "Export" if job.kind == "export" else "Restore" }} —
+              {% if job.status == "awaiting_admin" %}
+                <span class="text-blue-400">agent connected, waiting on you</span>
+              {% else %}
+                <span class="text-yellow-400">waiting for the agent to connect</span>
+              {% endif %}
+            </p>
+          </div>
+          <span class="text-xs text-gray-600">
+            expires {{ job.admin_access_expires_at }}
+          </span>
+        </div>
+        {% if job.assist_note %}
+          <p class="text-sm text-gray-300 bg-surface border border-border rounded-md p-3 mb-3">{{ job.assist_note }}</p>
+        {% endif %}
+        <a href="{{ url_for('admin.assist_configure', job_id=job.id) }}"
+           class="inline-block px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs hover:bg-blue-500">
+          Fill in details →
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500">Nothing waiting on you right now.</p>
+  {% endif %}
+</div>
+
+{% if expired %}
+<div class="bg-panel border border-border rounded-lg p-4">
+  <h2 class="text-sm font-semibold text-gray-200 mb-3">Expired ({{ expired|length }})</h2>
+  <div class="space-y-2">
+    {% for job in expired %}
+    <p class="text-xs text-gray-500">
+      {{ job.user.email if job.user else "—" }} — {{ job.kind }} —
+      requested {{ job.created_at }}, window closed {{ job.admin_access_expires_at }}
+    </p>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

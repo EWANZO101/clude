@@ -1,0 +1,40 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}Categories — Admin{% endblock %}
+{% block page_title %}Categories{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <table class="table-base">
+      <thead><tr><th>Name</th><th>Sort</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for category in categories %}
+        <tr>
+          <td class="font-medium text-text-primary">{{ category.name }}</td>
+          <td class="text-text-secondary">{{ category.sort_order }}</td>
+          <td>{% if category.is_active %}<span class="badge-success">Active</span>{% else %}<span class="badge-neutral">Disabled</span>{% endif %}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.category_toggle', category_id=category.id) }}">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-brand-400 hover:text-brand-300 text-sm">{{ "Disable" if category.is_active else "Enable" }}</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-text-muted py-8">No categories yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-semibold text-text-primary mb-4">Add category</h2>
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      {{ field(form.name) }}
+      {{ field(form.description, rows=3) }}
+      {{ field(form.sort_order) }}
+      <button type="submit" class="btn-primary w-full">Add category</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

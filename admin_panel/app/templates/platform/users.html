@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Users — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles"><h1>Users</h1></div>
+  <div class="page-actions">
+    <a href="{{ url_for('platform.new_user') }}" class="btn">{% import "_icons.html" as icons %}{{ icons.icon('plus',14) }}Create user</a>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Public sign-up</h2>
+  </div>
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:16px;">
+    <p class="muted" style="margin:0; max-width:520px;">
+      {% if settings.signups_enabled %}
+        Anyone can create an account from the login page right now.
+      {% else %}
+        Sign-up is closed — the form at <code>/auth/signup</code> turns visitors away. Use "Create user" above to add accounts while it's off.
+      {% endif %}
+    </p>
+    <form method="post" action="{{ url_for('platform.toggle_signups') }}">
+      {% if settings.signups_enabled %}
+        <button type="submit" class="btn-secondary btn-sm">Close sign-up</button>
+      {% else %}
+        <button type="submit" class="btn-sm">Open sign-up</button>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Client Portal idle logout</h2>
+  </div>
+  <p class="muted" style="margin:0 0 12px; max-width:560px;">
+    A ClientUser's session auto-logs-out after this many minutes with no mouse movement or key press —
+    a countdown bar shows in the last 20 seconds so they can move the mouse to stay logged in. Platform-wide
+    (a client isn't scoped to one company). The real kiosk terminal has its own separate per-instance setting
+    for the same idea — see that instance's Configuration panel.
+  </p>
+  <form method="post" action="{{ url_for('platform.set_client_portal_timeout') }}" style="display:flex; align-items:flex-end; gap:12px;">
+    <div>
+      <label>Minutes</label>
+      <input type="text" name="minutes" value="{{ settings.client_portal_auto_logout_minutes }}" style="width:80px;">
+    </div>
+    <button type="submit" class="btn-sm">Save</button>
+  </form>
+</div>
+
+<div class="panel" style="padding:8px 22px 20px;">
+  <form method="get" style="margin:14px 0 4px;">
+    <input type="text" name="q" value="{{ q or '' }}" placeholder="Search by name or email…" style="max-width:320px;">
+  </form>
+
+  {% if users %}
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Companies</th><th>Last login</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+        {% for u in users %}
+          <tr>
+            <td style="font-weight:600;">
+              {{ u.full_name }}
+              {% if u.is_platform_admin %}<span class="pill pill-accent" style="margin-left:6px;">Admin</span>{% endif %}
+            </td>
+            <td class="muted">{{ u.email }}</td>
+            <td>
+              {% if not u.is_active %}
+                <span class="pill pill-red">Disabled</span>
+              {% elif not u.email_verified %}
+                <span class="pill pill-amber">Unverified</span>
+              {% else %}
+                <span class="pill pill-green">Active</span>
+              {% endif %}
+            </td>
+            <td class="muted mono">{{ u.memberships|length }}</td>
+            <td>{{ u.last_login_at | friendly_dt if u.last_login_at else 'never' }}</td>
+            <td class="muted">{{ u.created_at | friendly_date }}</td>
+            <td><a href="{{ url_for('platform.user_detail', user_id=u.public_id) }}" class="btn btn-secondary btn-sm">Open →</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="empty">No users match "{{ q }}".</div>
+  {% endif %}
+</div>
+{% endblock %}

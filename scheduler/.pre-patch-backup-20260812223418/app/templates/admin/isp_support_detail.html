@@ -1,0 +1,112 @@
+{% extends "layouts/admin.html" %}
+{% block title %}{{ req.full_name }} · ISP Support · {{ app_name }}{% endblock %}
+{% block page_content %}
+
+<a href="{{ url_for('isp_support.admin_list') }}" class="text-sm text-ink-muted hover:text-ink">&larr; All requests</a>
+
+<div class="mt-4 mb-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-semibold text-ink">{{ req.full_name }}</h1>
+    <p class="mt-1 text-sm text-ink-muted">{{ req.isp_name }} &middot; submitted {{ req.submitted_at.strftime('%d %b %Y at %H:%M') }}</p>
+  </div>
+  <span class="status-pill !py-1.5 !px-3 text-xs border-border bg-surface-raised text-ink-muted shrink-0">{{ req.status_label }}</span>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-6">
+    <div class="card p-5 sm:p-6">
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-3">Problem</p>
+      <p class="text-sm text-ink whitespace-pre-line">{{ req.problem_description }}</p>
+    </div>
+
+    <div class="card p-5 sm:p-6">
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-3">Contact</p>
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+        <div><dt class="text-ink-faint text-xs">Email</dt><dd class="text-ink">{{ req.email or '—' }}</dd></div>
+        <div><dt class="text-ink-faint text-xs">Phone</dt><dd class="text-ink">{{ req.phone or '—' }}</dd></div>
+      </dl>
+    </div>
+
+    {% if req.account_number or req.customer_number or req.full_address or req.service_address or req.date_of_birth or req.last_bill_date or req.last_bill_amount %}
+    <div class="card p-5 sm:p-6">
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-3">Account verification details</p>
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+        {% if req.account_number %}<div><dt class="text-ink-faint text-xs">Account number</dt><dd class="text-ink">{{ req.account_number }}</dd></div>{% endif %}
+        {% if req.customer_number %}<div><dt class="text-ink-faint text-xs">Customer number</dt><dd class="text-ink">{{ req.customer_number }}</dd></div>{% endif %}
+        {% if req.full_address %}<div class="sm:col-span-2"><dt class="text-ink-faint text-xs">Full address</dt><dd class="text-ink">{{ req.full_address }}</dd></div>{% endif %}
+        {% if req.service_address %}<div class="sm:col-span-2"><dt class="text-ink-faint text-xs">Service address</dt><dd class="text-ink">{{ req.service_address }}</dd></div>{% endif %}
+        {% if req.date_of_birth %}<div><dt class="text-ink-faint text-xs">Date of birth</dt><dd class="text-ink">{{ req.date_of_birth }}</dd></div>{% endif %}
+        {% if req.last_bill_date %}<div><dt class="text-ink-faint text-xs">Last bill date</dt><dd class="text-ink">{{ req.last_bill_date }}</dd></div>{% endif %}
+        {% if req.last_bill_amount %}<div><dt class="text-ink-faint text-xs">Last bill amount</dt><dd class="text-ink">{{ req.last_bill_amount }}</dd></div>{% endif %}
+      </dl>
+    </div>
+    {% endif %}
+
+    {% if req.mothers_maiden_name or req.childhood_nickname or req.security_question or req.security_answer or req.other_security_info %}
+    <div class="card p-5 sm:p-6">
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-3">Security questions</p>
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+        {% if req.mothers_maiden_name %}<div><dt class="text-ink-faint text-xs">Mother's maiden name</dt><dd class="text-ink">{{ req.mothers_maiden_name }}</dd></div>{% endif %}
+        {% if req.childhood_nickname %}<div><dt class="text-ink-faint text-xs">Childhood nickname</dt><dd class="text-ink">{{ req.childhood_nickname }}</dd></div>{% endif %}
+        {% if req.security_question %}<div class="sm:col-span-2"><dt class="text-ink-faint text-xs">Security question</dt><dd class="text-ink">{{ req.security_question }}</dd></div>{% endif %}
+        {% if req.security_answer %}<div class="sm:col-span-2"><dt class="text-ink-faint text-xs">Answer</dt><dd class="text-ink">{{ req.security_answer }}</dd></div>{% endif %}
+        {% if req.other_security_info %}<div class="sm:col-span-2"><dt class="text-ink-faint text-xs">Other security info</dt><dd class="text-ink whitespace-pre-line">{{ req.other_security_info }}</dd></div>{% endif %}
+      </dl>
+    </div>
+    {% endif %}
+
+    <div class="card p-5 sm:p-6">
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-3">Authorisation given</p>
+      <ul class="space-y-1.5 text-sm text-ink-muted">
+        <li class="flex items-center gap-2"><span class="status-dot {{ 'bg-status-available' if req.consent_authorised else 'bg-ink-faint' }}"></span> Authorised to provide this information</li>
+        <li class="flex items-center gap-2"><span class="status-dot {{ 'bg-status-available' if req.consent_accurate else 'bg-ink-faint' }}"></span> Confirmed information is accurate</li>
+        <li class="flex items-center gap-2"><span class="status-dot {{ 'bg-status-available' if req.consent_purpose else 'bg-ink-faint' }}"></span> Consented to use solely for contacting the ISP</li>
+        <li class="flex items-center gap-2"><span class="status-dot {{ 'bg-status-available' if req.consent_additional_verification else 'bg-ink-faint' }}"></span> Understands additional verification may be needed</li>
+        <li class="flex items-center gap-2"><span class="status-dot {{ 'bg-status-available' if req.consent_no_password_request else 'bg-ink-faint' }}"></span> Understands no password/OTP will ever be requested</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="space-y-6">
+    <div class="card p-5 sm:p-6">
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-3">Update status</p>
+      <form method="POST" action="{{ url_for('isp_support.admin_detail', request_id=req.id) }}" class="space-y-3">
+        {{ status_form.hidden_tag() }}
+        <div>
+          {{ status_form.status(class_="field-input") }}
+        </div>
+        <div>
+          <label class="field-label">Internal notes</label>
+          {{ status_form.admin_notes(class_="field-input", rows=4, placeholder="Not shown to the customer") }}
+        </div>
+        <button type="submit" class="btn-primary w-full">Save</button>
+      </form>
+    </div>
+
+    <div class="card p-5 sm:p-6">
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-3">Access log</p>
+      {% if recent_access %}
+      <ul class="space-y-2 text-xs text-ink-muted">
+        {% for log in recent_access %}
+        <li class="flex items-center justify-between gap-2">
+          <span class="truncate">{{ log.user.name if log.user else 'Unknown' }}</span>
+          <span class="text-ink-faint shrink-0">{{ log.accessed_at.strftime('%d %b, %H:%M') }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-xs text-ink-faint">No access recorded yet.</p>
+      {% endif %}
+    </div>
+
+    <div class="card p-5 sm:p-6">
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-3">Danger zone</p>
+      <form method="POST" action="{{ url_for('isp_support.admin_delete', request_id=req.id) }}" onsubmit="return confirm('Permanently delete this request and all its data?');">
+        {{ delete_form.hidden_tag() }}
+        <button type="submit" class="btn-danger w-full">Delete request</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

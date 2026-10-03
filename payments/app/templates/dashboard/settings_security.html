@@ -1,0 +1,20 @@
+{% extends "layout/base.html" %}
+{% block title %}Security settings{% endblock %}
+{% block content %}
+{% include "dashboard/_settings_nav.html" %}
+<div class="max-w-lg space-y-3 mt-4">
+  <a href="{{ url_for('auth.change_password') }}" class="block bg-surface-card border border-surface-border rounded-2xl p-5 hover:border-accent transition">
+    <p class="text-sm font-medium">Change password</p>
+  </a>
+  <a href="{{ url_for('auth.sessions') }}" class="block bg-surface-card border border-surface-border rounded-2xl p-5 hover:border-accent transition">
+    <p class="text-sm font-medium">Active sessions & login history</p>
+  </a>
+  <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+    <p class="text-sm font-medium mb-1">Two-factor authentication</p>
+    <p class="text-xs text-slate-500">Coming with the core security module.</p>
+  </div>
+  <form method="POST" action="{{ url_for('auth.delete_account') }}" onsubmit="return confirm('Delete your account permanently? This cannot be undone.');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="w-full bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 text-sm font-medium py-2.5 rounded-lg">Delete account</button>
+  </form>
+</div>
+{% endblock %}

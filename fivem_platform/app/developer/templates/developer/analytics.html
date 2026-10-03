@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Analytics — {{ product.name }} — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold text-white mb-1">Analytics</h1>
+  <p class="text-sm text-gray-500 mb-6">{{ product.name }} · {{ product.product_id }} · last 14 days</p>
+
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-8">
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">License checks</div>
+      <div class="text-white text-lg font-semibold">{{ totals.license_checks_14d }}</div>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Module downloads</div>
+      <div class="text-white text-lg font-semibold">{{ totals.module_downloads_14d }}</div>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Purchases</div>
+      <div class="text-white text-lg font-semibold">{{ totals.purchases_14d }}</div>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Total licenses</div>
+      <div class="text-white text-lg font-semibold">{{ totals.total_licenses }}</div>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Active licenses</div>
+      <div class="text-emerald-400 text-lg font-semibold">{{ totals.active_licenses }}</div>
+    </div>
+  </div>
+
+  <h2 class="text-sm font-medium text-gray-400 mb-3">Daily license checks (server activity)</h2>
+  <div class="bg-surface-card border border-surface-border rounded-lg p-5 mb-8">
+    <div class="flex items-end gap-2 h-32">
+      {% for bar in chart_bars %}
+        <div class="flex-1 flex flex-col items-center justify-end h-full group relative">
+          <div class="text-xs text-gray-500 mb-1 opacity-0 group-hover:opacity-100 transition">{{ bar.count }}</div>
+          <div class="w-full bg-brand rounded-t transition-all" style="height: {{ bar.height_pct }}%; min-height: {{ 2 if bar.count > 0 else 0 }}px;"></div>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="flex gap-2 mt-2">
+      {% for bar in chart_bars %}
+        <div class="flex-1 text-center text-xs text-gray-600">{{ bar.date }}</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <h2 class="text-sm font-medium text-gray-400 mb-3">Top modules (by downloads)</h2>
+  {% if top_modules %}
+    <div class="space-y-2">
+      {% for name, count in top_modules %}
+        <div class="flex items-center justify-between gap-3 bg-surface-card border border-surface-border rounded-lg px-4 py-3 text-sm">
+          <span class="text-white font-mono truncate min-w-0">{{ name }}</span>
+          <span class="text-gray-400 flex-shrink-0">{{ count }} downloads</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500">No module downloads in the last 14 days.</p>
+  {% endif %}
+</div>
+{% endblock %}

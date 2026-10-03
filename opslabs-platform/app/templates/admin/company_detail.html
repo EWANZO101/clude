@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}{{ company.name }} — Admin{% endblock %}
+{% block content %}
+<h1>{{ company.name }}</h1>
+<p><a href="{{ url_for('admin.companies') }}" style="color:#8b93ff;">&larr; All companies</a></p>
+
+<div class="card">
+  <h2>Overview</h2>
+  <p>Type: {{ 'Personal' if company.is_personal else 'Company' }}<br>
+     Status: <span class="badge {{ company.status }}">{{ company.status }}</span><br>
+     Users: {{ company.users|length }}</p>
+</div>
+
+<div class="card">
+  <h2>API Key</h2>
+  <p style="font-size:0.85rem;color:#9aa3af;">
+    Server-to-server bearer token for a product this company subscribes to (e.g. their
+    OpsLabs Commission instance) to check entitlement and spend credits via <code>/api/v1</code>.
+  </p>
+  {% if company.api_key %}
+    <p style="font-family:monospace;font-size:0.85rem;word-break:break-all;background:#0f1115;padding:0.6rem;border-radius:6px;margin-top:0.5rem;">{{ company.api_key }}</p>
+    <form method="POST" action="{{ url_for('admin.revoke_api_key', company_id=company.id) }}"
+          onsubmit="return confirm('Revoke this API key? Anything using it will stop working immediately.');">
+      <button class="danger" type="submit">Revoke</button>
+    </form>
+  {% else %}
+    <p style="color:#9aa3af;font-size:0.85rem;">No API key yet.</p>
+  {% endif %}
+  <form method="POST" action="{{ url_for('admin.generate_api_key', company_id=company.id) }}" style="margin-top:0.5rem;">
+    <button class="secondary" type="submit">{{ 'Rotate' if company.api_key else 'Generate' }} API key</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Subscription</h2>
+  {% set current = company.current_subscription %}
+  {% if current %}
+    <p>Plan: <strong>{{ current.plan.name }}</strong> ({{ current.plan.product.name }})<br>
+       Status: <span class="badge active">{{ current.status }}</span><br>
+       Started: {{ current.started_at.strftime('%Y-%m-%d') }}</p>
+    <form method="POST" action="{{ url_for('admin.cancel_subscription', company_id=company.id) }}"
+          onsubmit="return confirm('Cancel this subscription?');">
+      <button class="danger" type="submit">Cancel subscription</button>
+    </form>
+  {% else %}
+    <p style="color:#9aa3af;">No active subscription.</p>
+  {% endif %}
+
+  <h2 style="margin-top:1.5rem;">{{ 'Change plan' if current else 'Assign a plan' }}</h2>
+  <form method="POST" action="{{ url_for('admin.assign_plan', company_id=company.id) }}">
+    <label>Plan</label>
+    <select name="plan_id" required>
+      {% for p in plans %}
+        <option value="{{ p.id }}">{{ p.product.name }} — {{ p.name }} ({{ '%.2f'|format(p.price_cents / 100) }} {{ p.currency|upper }}/{{ p.billing_period }})</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Assign plan</button>
+    <p style="font-size:0.8rem;color:#9aa3af;margin-top:0.5rem;">
+      This assigns the plan directly (no payment collected) — for testing until Stripe billing is wired up.
+    </p>
+  </form>
+
+  {% if subscriptions %}
+    <h2 style="margin-top:1.5rem;">History</h2>
+    <table>
+      <tr><th>Plan</th><th>Status</th><th>Started</th><th>Ended</th></tr>
+      {% for s in subscriptions %}
+        <tr>
+          <td>{{ s.plan.name }}</td>
+          <td>{{ s.status }}</td>
+          <td>{{ s.started_at.strftime('%Y-%m-%d') }}</td>
+          <td>{{ s.ended_at.strftime('%Y-%m-%d') if s.ended_at else '—' }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Credits</h2>
+  <p style="font-size:1.5rem;font-weight:700;">{{ company.credit_balance }} <span style="font-size:0.9rem;color:#9aa3af;font-weight:400;">credits</span></p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <form method="POST" action="{{ url_for('admin.grant_credits', company_id=company.id) }}">
+      <label>Grant credits</label>
+      <input type="number" name="amount" min="1" required>
+      <input type="text" name="reason" placeholder="Reason (optional)" style="margin-top:0.5rem;">
+      <button type="submit">Grant</button>
+    </form>
+    <form method="POST" action="{{ url_for('admin.remove_credits', company_id=company.id) }}">
+      <label>Remove credits</label>
+      <input type="number" name="amount" min="1" required>
+      <input type="text" name="reason" placeholder="Reason (optional)" style="margin-top:0.5rem;">
+      <button class="danger" type="submit">Remove</button>
+    </form>
+  </div>
+
+  {% if ledger %}
+    <h2 style="margin-top:1.5rem;">Recent ledger activity</h2>
+    <table>
+      <tr><th>When</th><th>Change</th><th>Balance after</th><th>Reason</th><th>Source</th></tr>
+      {% for l in ledger %}
+        <tr>
+          <td>{{ l.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td style="color:{{ '#86efac' if l.delta > 0 else '#fca5a5' }};">{{ '+' if l.delta > 0 }}{{ l.delta }}</td>
+          <td>{{ l.balance_after }}</td>
+          <td>{{ l.reason }}</td>
+          <td>{{ l.source_type }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Feature Grants</h2>
+  <p style="font-size:0.85rem;color:#9aa3af;">
+    Extra access on top of whatever this company's plan already includes.
+  </p>
+  {% for g in company.active_feature_grants %}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid #23262e;">
+      <span>{{ g.feature_key }}
+        {% if g.expires_at %}<span style="color:#9aa3af;font-size:0.8rem;"> — expires {{ g.expires_at.strftime('%Y-%m-%d') }}</span>{% endif %}
+      </span>
+      <form class="inline" method="POST" action="{{ url_for('admin.revoke_feature', company_id=company.id, grant_id=g.id) }}">
+        <button class="danger" type="submit" style="padding:0.25rem 0.5rem;font-size:0.75rem;">Revoke</button>
+      </form>
+    </div>
+  {% endfor %}
+  <form method="POST" action="{{ url_for('admin.grant_feature', company_id=company.id) }}" style="margin-top:1rem;">
+    <label>Feature key</label>
+    <input type="text" name="feature_key" required placeholder="e.g. early_access_x">
+    <label>Expires after <span style="color:#9aa3af;">(days, blank = never)</span></label>
+    <input type="number" name="expires_days" min="1">
+    <button type="submit">Grant</button>
+  </form>
+</div>
+{% endblock %}

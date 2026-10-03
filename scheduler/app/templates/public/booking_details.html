@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Confirm booking · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto max-w-lg px-4 py-12 sm:py-16">
+  <a href="{{ url_for('public.pick_slot', type_id=booking_type.id, date=start_dt.date().isoformat()) }}" class="text-sm text-ink-muted hover:text-ink">&larr; Choose a different time</a>
+
+  <div class="mt-4 mb-8">
+    <h1 class="font-display text-2xl font-semibold text-ink">Confirm your details</h1>
+    <p class="mt-2 text-sm text-ink-muted">
+      {{ booking_type.name }} · {{ start_dt.strftime('%A %d %B, %H:%M') }}
+      ({{ booking_type.duration }} min) with {{ owner.name }}
+    </p>
+  </div>
+
+  {% include "partials/flash.html" %}
+
+  {% if is_out_of_hours and ooh_fee %}
+  <div class="card p-4 sm:p-5 mb-6 border-status-away/30 bg-status-away/10 flex items-start gap-3">
+    <span class="status-dot bg-status-away mt-1.5 shrink-0"></span>
+    <p class="text-sm text-ink">
+      This time is outside normal working hours, so a <span class="font-medium">{{ ooh_fee }}</span>
+      out-of-hours fee applies. You'll be asked to confirm you accept this below.
+    </p>
+  </div>
+  {% endif %}
+
+  <div class="card p-6 sm:p-7">
+    <form method="POST" action="{{ url_for('public.booking_details', type_id=booking_type.id, dt=dt_raw) }}" novalidate>
+      {{ form.hidden_tag() }}
+      <input type="hidden" name="dt" value="{{ dt_raw }}">
+
+      <div class="mb-4">
+        <label class="field-label" for="{{ form.name.id }}">Name</label>
+        {{ form.name(class_="field-input", autofocus=true) }}
+        {% for error in form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="mb-4">
+        <label class="field-label" for="{{ form.email.id }}">Email</label>
+        {{ form.email(class_="field-input") }}
+        {% for error in form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="mb-4">
+        <label class="field-label" for="{{ form.phone.id }}">Phone (optional)</label>
+        {{ form.phone(class_="field-input") }}
+      </div>
+
+      <div class="mb-6">
+        <label class="field-label" for="{{ form.notes.id }}">Anything you'd like to share? (optional)</label>
+        {{ form.notes(class_="field-input", rows=3) }}
+      </div>
+
+      {% if is_out_of_hours and ooh_fee %}
+      <label class="mb-6 flex items-start gap-3 text-sm text-ink-muted">
+        {{ form.consent_out_of_hours_fee(class_="mt-0.5 h-4 w-4 rounded border-border bg-surface-raised text-accent focus:ring-accent focus:ring-offset-base shrink-0") }}
+        <span>I understand a <strong class="text-ink">{{ ooh_fee }}</strong> out-of-hours fee applies to this booking and I agree to it.</span>
+      </label>
+      {% endif %}
+
+      <button type="submit" class="btn-primary w-full">Confirm booking</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

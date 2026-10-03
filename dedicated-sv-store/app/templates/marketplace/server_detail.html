@@ -1,0 +1,90 @@
+{% extends "layouts/public.html" %}
+{% from "components/_server_card.html" import server_card with context %}
+{% block title %}{{ server.title }} — {{ app_name }}{% endblock %}
+{% block meta_description %}{{ server.cpu_summary }}, {{ server.ram_summary }}, {{ server.storage_summary }} — from £{{ server.monthly_price }}/mo.{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+  <div class="grid lg:grid-cols-3 gap-8">
+    <div class="lg:col-span-2">
+      <div class="card overflow-hidden mb-6">
+        <div class="bg-surface-800 h-64 sm:h-80 flex items-center justify-center">
+          {% if server.images %}
+          <img src="{{ url_for('static', filename=server.images[0].image_path) }}" class="w-full h-full object-cover" alt="{{ server.title }}">
+          {% else %}
+          <span class="text-text-muted">No image available</span>
+          {% endif %}
+        </div>
+        {% if server.images|length > 1 %}
+        <div class="flex gap-2 p-3 overflow-x-auto">
+          {% for image in server.images[1:] %}
+          <img src="{{ url_for('static', filename=image.image_path) }}" class="h-16 w-16 object-cover rounded-md flex-shrink-0" alt="">
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <h1 class="text-2xl font-semibold text-text-primary mb-2">{{ server.title }}</h1>
+      <p class="text-text-secondary mb-6 whitespace-pre-line">{{ server.description }}</p>
+
+      <div class="card p-5">
+        <h2 class="font-semibold text-text-primary mb-4">Specifications</h2>
+        <dl class="grid sm:grid-cols-2 gap-4 text-sm">
+          <div><dt class="text-text-muted">CPU</dt><dd class="text-text-primary">{{ server.cpu_summary }}</dd></div>
+          <div><dt class="text-text-muted">RAM</dt><dd class="text-text-primary">{{ server.ram_summary }}</dd></div>
+          <div><dt class="text-text-muted">Storage</dt><dd class="text-text-primary">{{ server.storage_summary }}</dd></div>
+          {% if server.gpu_summary %}<div><dt class="text-text-muted">GPU</dt><dd class="text-text-primary">{{ server.gpu_summary }}</dd></div>{% endif %}
+          <div><dt class="text-text-muted">Network</dt><dd class="text-text-primary">{{ server.network_summary }}</dd></div>
+          {% if server.raid_summary %}<div><dt class="text-text-muted">RAID</dt><dd class="text-text-primary">{{ server.raid_summary }}</dd></div>{% endif %}
+          <div><dt class="text-text-muted">Bandwidth</dt><dd class="text-text-primary">{{ server.bandwidth_mbps ~ " Mbps" if server.bandwidth_mbps else "—" }}</dd></div>
+          <div><dt class="text-text-muted">IP addresses</dt><dd class="text-text-primary">{{ server.ip_addresses_included }}</dd></div>
+          {% if server.operating_system %}<div><dt class="text-text-muted">Operating system</dt><dd class="text-text-primary">{{ server.operating_system }}</dd></div>{% endif %}
+          <div><dt class="text-text-muted">Datacenter</dt><dd class="text-text-primary">{{ server.location.datacenter_name if server.location else "—" }}</dd></div>
+          <div><dt class="text-text-muted">Location</dt><dd class="text-text-primary">{{ (server.location.city ~ ", " ~ server.location.country) if server.location and server.location.city else "—" }}</dd></div>
+          <div><dt class="text-text-muted">Availability</dt><dd class="text-text-primary">{{ server.inventory_status|hwval }}</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="lg:col-span-1">
+      <div class="card p-5 sticky top-20">
+        <p class="text-3xl font-semibold text-text-primary">£{{ server.monthly_price }}<span class="text-sm text-text-muted font-normal">/mo</span></p>
+        {% if server.setup_fee %}<p class="text-sm text-text-secondary mb-4">+ £{{ server.setup_fee }} setup fee</p>{% endif %}
+
+        <div class="space-y-2 mt-4">
+          {% if server.inventory_status.value == "available" %}
+          <form method="POST" action="{{ url_for('orders.cart_add') }}">
+            {% include "components/_csrf.html" %}
+            <input type="hidden" name="item_type" value="server">
+            <input type="hidden" name="item_id" value="{{ server.id }}">
+            <button type="submit" class="btn-primary w-full">Add to cart</button>
+          </form>
+          {% else %}
+          <button class="btn-secondary w-full" disabled>Currently unavailable</button>
+          {% endif %}
+          <a href="{{ url_for('marketplace.build_server') }}" class="btn-secondary w-full">Configure similar</a>
+          {% if server.seller %}
+          <a href="mailto:{{ server.seller.support_email }}" class="btn-ghost w-full">Contact seller</a>
+          {% endif %}
+          {% if current_user.is_authenticated %}
+          <form method="POST" action="{{ url_for('marketplace.toggle_favourite', server_id=server.id) }}">
+            {% include "components/_csrf.html" %}
+            <button type="submit" class="btn-ghost w-full">{{ "Remove favourite" if is_favourited else "Add to favourites" }}</button>
+          </form>
+          {% endif %}
+        </div>
+
+        <p class="text-xs text-text-muted mt-4">Sold by <span class="text-text-secondary">{{ server.seller.business_name if server.seller else app_name }}</span></p>
+      </div>
+    </div>
+  </div>
+
+  {% if similar %}
+  <div class="mt-12">
+    <h2 class="text-lg font-semibold text-text-primary mb-4">Similar servers</h2>
+    <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      {% for s in similar %}{{ server_card(s) }}{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

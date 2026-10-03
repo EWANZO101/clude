@@ -1,0 +1,37 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% block title %}Saved Configurations — {{ app_name }}{% endblock %}
+{% block page_title %}Saved configurations{% endblock %}
+{% block header_actions %}
+<a href="{{ url_for('marketplace.build_server') }}" class="btn-primary">Build a server</a>
+{% endblock %}
+{% block content %}
+{% if configurations %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Name</th><th>Components</th><th>Monthly price</th><th>Saved</th><th></th></tr></thead>
+    <tbody>
+      {% for config in configurations %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ config.name }}</td>
+        <td class="text-text-secondary">{{ config.components|length }} components</td>
+        <td class="text-text-primary">£{{ config.monthly_price }}/mo</td>
+        <td class="text-text-muted">{{ config.created_at.strftime("%d %b %Y") }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('orders.cart_add') }}">
+            {% include "components/_csrf.html" %}
+            <input type="hidden" name="item_type" value="configuration">
+            <input type="hidden" name="item_id" value="{{ config.id }}">
+            <button type="submit" class="btn-secondary !px-3 !py-1.5 text-sm">Add to cart</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card p-10 text-center text-text-secondary">
+  You haven't saved any custom configurations yet. <a href="{{ url_for('marketplace.build_server') }}" class="text-brand-400 hover:text-brand-300">Build one now</a>.
+</div>
+{% endif %}
+{% endblock %}

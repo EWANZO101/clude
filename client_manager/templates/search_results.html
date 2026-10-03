@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Search · ClientHub{% endblock %}
+{% block content %}
+
+<div class="pt-6 pb-4">
+  <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Search results</h1>
+  {% if q %}<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Showing results for "<span class="font-medium">{{ q }}</span>"</p>{% endif %}
+</div>
+
+{% if not q %}
+  <p class="text-slate-400 text-sm">Type something in the search bar above to search across all clients, files, notes and projects.</p>
+{% else %}
+  {% set total = results.clients|length + results.files|length + results.notes|length + results.projects|length %}
+  {% if total == 0 %}
+    <div class="text-center py-16 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">
+      <p class="text-3xl mb-2">🔍</p>
+      <p class="font-semibold text-slate-700 dark:text-slate-200">No results found</p>
+      <p class="text-sm text-slate-400 mt-1">Try a different search term.</p>
+    </div>
+  {% endif %}
+
+  {% if results.clients %}
+  <section class="mb-6">
+    <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Clients ({{ results.clients|length }})</h2>
+    <div class="grid sm:grid-cols-2 gap-3">
+      {% for c in results.clients %}
+      <a href="{{ url_for('client_detail', client_id=c.id) }}" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 hover:border-brand-400 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-lg bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 font-bold text-sm flex items-center justify-center">{{ c.initials }}</span>
+        <div class="min-w-0">
+          <p class="font-medium text-slate-800 dark:text-slate-100 truncate">{{ c.name }}</p>
+          {% if c.company %}<p class="text-xs text-slate-400 truncate">{{ c.company }}</p>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if results.files %}
+  <section class="mb-6">
+    <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Files ({{ results.files|length }})</h2>
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl divide-y divide-slate-100 dark:divide-slate-800">
+      {% for f in results.files %}
+      <a href="{{ url_for('client_detail', client_id=f.client_id, tab='files') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60">
+        <span class="text-lg">{{ CATEGORY_ICONS.get(f.category, '📎') }}</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{{ f.original_filename }}</p>
+          <p class="text-xs text-slate-400">{{ f.client.name }} · {{ f.category_label }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if results.notes %}
+  <section class="mb-6">
+    <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Notes ({{ results.notes|length }})</h2>
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl divide-y divide-slate-100 dark:divide-slate-800">
+      {% for n in results.notes %}
+      <a href="{{ url_for('client_detail', client_id=n.client_id, tab='notes') }}" class="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60">
+        <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ n.title }}</p>
+        <p class="text-xs text-slate-400">{{ n.client.name }}</p>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if results.projects %}
+  <section class="mb-6">
+    <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Projects ({{ results.projects|length }})</h2>
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl divide-y divide-slate-100 dark:divide-slate-800">
+      {% for p in results.projects %}
+      <a href="{{ url_for('client_detail', client_id=p.client_id, tab='projects') }}" class="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60">
+        <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ p.name }}</p>
+        <p class="text-xs text-slate-400">{{ p.client.name }} · {{ p.status }}</p>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+{% endif %}
+
+{% endblock %}

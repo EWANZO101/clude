@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}New product — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('products.list_products') }}" class="crumb">← Products</a>
+    <h1>New product</h1>
+  </div>
+</div>
+
+<div class="panel" style="max-width:520px;">
+  <p class="muted">
+    A product doesn't do anything by itself — it's just something a company can be approved for.
+    What it actually unlocks (pages, features) is wired up separately in code once the product exists.
+  </p>
+  <form method="post">
+    <label>Name</label>
+    <input type="text" name="name" value="{{ name or '' }}" placeholder="e.g. Fleet Analytics" required autofocus>
+    <label>Description (optional)</label>
+    <textarea name="description" rows="3" style="font-family:inherit; font-size:13.5px;">{{ description or '' }}</textarea>
+    <button type="submit" style="margin-top:18px;">Create product</button>
+  </form>
+</div>
+{% endblock %}

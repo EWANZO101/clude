@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}About · OpsLab Systems{% endblock %}
+
+{% block content %}
+<section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-6">
+  <div class="text-[11px] font-bold uppercase tracking-[.25em] accent mb-3">About</div>
+  <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.05]">
+    A small, hands-on technology outfit —<br class="hidden sm:block"> six specialised divisions, one team.
+  </h1>
+  <p class="mt-6 text-lg text-gray-300 max-w-2xl leading-relaxed">
+    OpsLab Systems builds and runs the infrastructure other people rely on: websites and web
+    applications, FiveM development, hosting, system setup, technical support, and on-site IT.
+    Everything moves through one ticket system that stays in sync across the web and Discord, so
+    nothing gets lost between "I emailed about this" and someone actually fixing it.
+  </p>
+</section>
+
+<section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div class="grid sm:grid-cols-3 gap-5">
+    {% set values = [
+      ('One point of contact', 'No call-centre, no ticket bouncing between departments — you talk to the person doing the work.'),
+      ('Built, not templated', 'Every site, script, and server is hand-built for what you actually need, not assembled from a generic kit.'),
+      ('Remote or on-site', 'Most work happens remotely through tickets. When something needs a person physically there, we turn up.'),
+    ] %}
+    {% for title, desc in values %}
+    <div class="card p-6">
+      <h3 class="text-base font-bold text-white">{{ title }}</h3>
+      <p class="text-sm text-gray-400 mt-2 leading-relaxed">{{ desc }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <h2 class="text-2xl font-extrabold tracking-tight mb-6">The six divisions</h2>
+  <div class="grid sm:grid-cols-2 gap-4">
+    {% for slug, s in SERVICES_ORDERED %}
+    <a href="{{ url_for('services.detail', slug=slug) }}" class="card p-5 flex items-start gap-3">
+      <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style="background:{{ s.accent }}1f; border:1px solid {{ s.accent }}4d; color:{{ s.accent }}">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ s.icon }}"/></svg>
+      </span>
+      <span>
+        <span class="block text-sm font-bold text-white">{{ s.name }}</span>
+        <span class="block text-xs text-gray-400 mt-1 leading-relaxed">{{ s.summary }}</span>
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+  <div class="card p-8 sm:p-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+    <div>
+      <h2 class="text-xl font-extrabold tracking-tight">Got something to build or fix?</h2>
+      <p class="text-gray-400 mt-2">Open a ticket and tell us what you need.</p>
+    </div>
+    <a href="{{ url_for('tickets.new') if current_user.is_authenticated else url_for('auth.register') }}"
+       class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition shrink-0">
+      Open a ticket
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+    </a>
+  </div>
+</section>
+{% endblock %}

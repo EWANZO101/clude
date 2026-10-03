@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Game Servers — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow">FiveM / FXServer</p>
+    <h1 class="page-title">Game Servers</h1>
+    <p class="page-sub">Live status, control, and RCON for registered FXServer instances</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('gameservers.create') }}">+ Add server</a>
+</div>
+
+{% if servers %}
+<div class="card flush">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Systemd unit</th>
+          <th>HTTP endpoint</th>
+          <th>RCON</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in servers %}
+        <tr>
+          <td class="primary"><a href="{{ url_for('gameservers.detail', server_id=s.id) }}">{{ s.name }}</a></td>
+          <td class="mono">{{ s.service_unit or '—' }}</td>
+          <td class="mono">{{ s.http_host }}:{{ s.http_port }}</td>
+          <td>
+            {% if s.has_rcon() %}
+              <span class="status-dot ok"></span> configured
+            {% else %}
+              <span class="status-dot"></span> not set
+            {% endif %}
+          </td>
+          <td>
+            <div class="table-actions">
+              <a class="btn btn-secondary btn-sm" href="{{ url_for('gameservers.detail', server_id=s.id) }}">Open</a>
+              <a class="btn btn-secondary btn-sm" href="{{ url_for('gameservers.edit', server_id=s.id) }}">Edit</a>
+              <form method="POST" action="{{ url_for('gameservers.delete', server_id=s.id) }}" onsubmit="return confirm('Remove {{ s.name }} from the panel? This does not stop or delete the actual game server.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm" style="background:var(--bg-panel-raised); border:1px solid var(--danger); color:var(--danger);">Remove</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+  <div class="card"><div class="empty-state"><strong>No game servers registered yet.</strong>Add one to start tracking players, resources, and console access.</div></div>
+{% endif %}
+{% endblock %}

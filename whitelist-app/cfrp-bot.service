@@ -1,0 +1,16 @@
+[Unit]
+Description=CFRP Discord Leaderboard Bot
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/whitelist-app
+ExecStart=/root/whitelist-app/venv/bin/python discord_bot.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

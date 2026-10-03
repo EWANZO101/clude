@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ user.email }} — Admin — {{ app_name }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+
+<h1 class="text-lg font-semibold text-gray-100 mb-6 break-all">{{ user.email }}</h1>
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-6">
+    <form method="POST" class="bg-panel border border-border rounded-lg p-6 space-y-4">
+      {{ form.hidden_tag() }}
+      <div>
+        {{ form.role.label(class="block text-sm text-gray-400 mb-1") }}
+        {{ form.role(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+      </div>
+      <div class="flex items-center gap-2">
+        {{ form.is_suspended(class="rounded border-border bg-surface") }}
+        {{ form.is_suspended.label(class="text-sm text-gray-400") }}
+      </div>
+      {{ form.submit(class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-500") }}
+    </form>
+
+    <div class="bg-panel border border-border rounded-lg p-4">
+      <h2 class="text-sm font-semibold text-gray-200 mb-3">Recent exports</h2>
+      {% if exports %}
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="text-left text-gray-500 border-b border-border">
+              <th class="py-2">Created</th><th class="py-2">Status</th><th class="py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for export in exports %}
+            <tr class="border-b border-border/50">
+              <td class="py-1.5 text-gray-300">{{ export.created_at }}</td>
+              <td class="py-1.5 text-gray-400">{{ export.status }}</td>
+              <td class="py-1.5 text-right">
+                <a href="{{ url_for('exports.detail', export_id=export.id) }}"
+                   class="text-blue-400 hover:text-blue-300">View</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="text-xs text-gray-500">No exports yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="space-y-4">
+    <div class="bg-panel border border-border rounded-lg p-4">
+      <p class="text-xs text-gray-500 mb-1">Last login</p>
+      <p class="text-sm text-gray-300">{{ user.last_login_at or "Never" }}</p>
+      <p class="text-xs text-gray-600 mt-1">{{ user.last_login_ip or "" }}</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin.force_logout', user_id=user.id) }}">
+      <button type="submit" class="w-full text-xs px-3 py-2 rounded-md bg-border text-gray-200 hover:bg-yellow-900/40 hover:text-yellow-300">
+        Force logout all sessions
+      </button>
+    </form>
+
+    <form method="POST" action="{{ url_for('admin.generate_reset_link', user_id=user.id) }}">
+      <button type="submit" class="w-full text-xs px-3 py-2 rounded-md bg-border text-gray-200 hover:bg-blue-900/40 hover:text-blue-300">
+        Generate password reset link
+      </button>
+    </form>
+
+    <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}"
+          onsubmit="return confirm('Permanently delete this user and their exports?');">
+      <button type="submit" class="w-full text-xs px-3 py-2 rounded-md bg-border text-gray-200 hover:bg-red-900/40 hover:text-red-300">
+        Delete user
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

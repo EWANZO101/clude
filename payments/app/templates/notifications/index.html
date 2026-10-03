@@ -1,0 +1,30 @@
+{% extends "layout/base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<div class="space-y-4 max-w-2xl">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-semibold">Notifications</h1>
+    <form method="POST" action="{{ url_for('notifications.mark_all_read') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="text-xs text-accent hover:underline">Mark all read</button>
+    </form>
+  </div>
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    {% for n in items %}
+      <div class="p-4 flex items-start justify-between gap-3 {{ '' if n.read else 'bg-surface/40' }}">
+        <div>
+          <p class="text-sm font-medium {{ 'text-slate-300' if n.read else 'text-slate-100' }}">{{ n.title }}</p>
+          {% if n.body %}<p class="text-xs text-slate-500 mt-1">{{ n.body }}</p>{% endif %}
+          <p class="text-xs text-slate-600 mt-1">{{ n.created_at.strftime('%d %b %Y %H:%M') }}</p>
+        </div>
+        {% if not n.read %}
+        <form method="POST" action="{{ url_for('notifications.mark_read', notification_id=n.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="text-xs text-accent hover:underline whitespace-nowrap">Mark read</button>
+        </form>
+        {% endif %}
+      </div>
+    {% else %}
+      <p class="p-4 text-sm text-slate-500">No notifications yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

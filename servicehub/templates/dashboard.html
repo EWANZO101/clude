@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>Services</h1>
+    <div class="desc">{{ services|length }} managed service{{ 's' if services|length != 1 else '' }} on this host</div>
+  </div>
+  <a href="{{ url_for('service_new') }}" class="btn btn-primary">+ New service</a>
+</div>
+
+{% if not services %}
+<div class="card empty-state">
+  <div class="mark"></div>
+  <p>No services yet.</p>
+  <a href="{{ url_for('service_new') }}" class="btn btn-primary">Create your first service</a>
+</div>
+{% else %}
+<div class="service-grid" id="svc-grid">
+  {% for svc in services %}
+  {% set st = statuses.get(svc.id, {'active': 'unknown', 'enabled': 'unknown'}) %}
+  <div class="svc-card" data-id="{{ svc.id }}">
+    <div class="top">
+      <div>
+        <h3><a href="{{ url_for('service_detail', service_id=svc.id) }}">{{ svc.name }}</a></h3>
+        <div class="path">{{ svc.working_dir }}</div>
+      </div>
+      <span class="badge {{ st.active }}" data-role="badge">
+        <span class="dot"></span><span data-role="badge-text">{{ st.active }}</span>
+      </span>
+    </div>
+
+    <div class="meta">
+      {% if svc.port %}<span>port {{ svc.port }}</span>{% endif %}
+      <span>{{ svc.run_user }}</span>
+      <span>{{ svc.restart_policy }}</span>
+    </div>
+
+    <div class="actions">
+      <form class="inline" method="post" action="{{ url_for('service_action', service_id=svc.id, action='start') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm" type="submit">Start</button>
+      </form>
+      <form class="inline" method="post" action="{{ url_for('service_action', service_id=svc.id, action='restart') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm" type="submit">Restart</button>
+      </form>
+      <form class="inline" method="post" action="{{ url_for('service_action', service_id=svc.id, action='stop') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm" type="submit">Stop</button>
+      </form>
+      <a href="{{ url_for('service_detail', service_id=svc.id) }}" class="btn btn-sm">Details</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Poll status every 5s and update badges in place, no full reload.
+async function refreshStatuses() {
+  try {
+    const res = await fetch("{{ url_for('api_status') }}");
+    if (!res.ok) return;
+    const data = await res.json();
+    document.querySelectorAll('#svc-grid .svc-card').forEach(card => {
+      const id = card.dataset.id;
+      const st = data[id];
+      if (!st) return;
+      const badge = card.querySelector('[data-role="badge"]');
+      const text = card.querySelector('[data-role="badge-text"]');
+      badge.className = 'badge ' + st.active;
+      text.textContent = st.active;
+    });
+  } catch (e) { /* silent - next tick will retry */ }
+}
+setInterval(refreshStatuses, 5000);
+</script>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Set up {{ panel_name }}{% endblock %}
+{% block extra_head %}
+<style>
+  .auth-bg-glow { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .auth-bg-glow::before, .auth-bg-glow::after {
+    content: ""; position: absolute; border-radius: 50%; filter: blur(80px);
+  }
+  .auth-bg-glow::before {
+    width: 480px; height: 480px; top: -160px; left: 50%; transform: translateX(-65%);
+    background: radial-gradient(circle, var(--accent) 0%, transparent 70%); opacity: 0.16;
+  }
+  .auth-bg-glow::after {
+    width: 360px; height: 360px; bottom: -140px; right: 50%; transform: translateX(65%);
+    background: radial-gradient(circle, var(--data) 0%, transparent 70%); opacity: 0.12;
+  }
+</style>
+{% endblock %}
+{% block auth_content %}
+<div class="auth-shell">
+  <div class="auth-bg-glow"></div>
+
+  <div style="width:100%; max-width:420px; position:relative;">
+    <div class="auth-brand">
+      <div class="brand-mark">OL</div>
+      <div class="brand-text">
+        <span class="brand-name">{{ panel_name or 'OpsLab' }}</span>
+        <span class="brand-sub">SERVER PANEL</span>
+      </div>
+    </div>
+
+    <div class="auth-card">
+      <p class="badge badge-muted" style="display:table; margin: 0 auto 14px;">First-run setup</p>
+      <h1>Welcome to {{ panel_name or 'OpsLab' }}</h1>
+      <p class="sub">Create the super admin account to finish setting up your panel.</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" id="setup-form">
+        {{ form.hidden_tag() }}
+
+        <div class="field">
+          {{ form.username.label }}
+          {{ form.username(placeholder="admin", autofocus=true, autocomplete="username") }}
+          {% for error in form.username.errors %}<div class="form-errors">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="field">
+          {{ form.email.label }}
+          {{ form.email(placeholder="you@opslabsystems.cloud", autocomplete="email") }}
+          {% for error in form.email.errors %}<div class="form-errors">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="field">
+          {{ form.password.label }}
+          <div class="field-with-action">
+            {{ form.password(placeholder="••••••••", autocomplete="new-password", id="setup-password") }}
+            <button type="button" class="field-action-btn" data-toggle-for="setup-password" aria-label="Show password" tabindex="-1">
+              <svg class="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0112 20c-7 0-11-8-11-8a21.6 21.6 0 015.06-6.06M9.9 4.24A10.4 10.4 0 0112 4c7 0 11 8 11 8a21.6 21.6 0 01-2.61 3.87M14.12 14.12a3 3 0 11-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+            </button>
+          </div>
+          <p class="card-meta" style="margin-top:6px;">At least 8 characters.</p>
+          {% for error in form.password.errors %}<div class="form-errors">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="field">
+          {{ form.confirm_password.label }}
+          <div class="field-with-action">
+            {{ form.confirm_password(placeholder="••••••••", autocomplete="new-password", id="setup-confirm-password") }}
+            <button type="button" class="field-action-btn" data-toggle-for="setup-confirm-password" aria-label="Show password" tabindex="-1">
+              <svg class="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0112 20c-7 0-11-8-11-8a21.6 21.6 0 015.06-6.06M9.9 4.24A10.4 10.4 0 0112 4c7 0 11 8 11 8a21.6 21.6 0 01-2.61 3.87M14.12 14.12a3 3 0 11-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+            </button>
+          </div>
+          {% for error in form.confirm_password.errors %}<div class="form-errors">{{ error }}</div>{% endfor %}
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit" id="setup-submit">
+          <span id="setup-submit-label">Create administrator</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    document.querySelectorAll('[data-toggle-for]').forEach(function (btn) {
+      var input = document.getElementById(btn.getAttribute('data-toggle-for'));
+      var eyeOpen = btn.querySelector('.eye-open');
+      var eyeClosed = btn.querySelector('.eye-closed');
+      btn.addEventListener('click', function () {
+        var showing = input.type === 'text';
+        input.type = showing ? 'password' : 'text';
+        eyeOpen.style.display = showing ? '' : 'none';
+        eyeClosed.style.display = showing ? 'none' : '';
+      });
+    });
+
+    var form = document.getElementById('setup-form');
+    var submitBtn = document.getElementById('setup-submit');
+    var submitLabel = document.getElementById('setup-submit-label');
+    form.addEventListener('submit', function () {
+      submitBtn.disabled = true;
+      submitLabel.textContent = 'Creating account…';
+    });
+  })();
+</script>
+{% endblock %}

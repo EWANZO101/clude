@@ -1,0 +1,62 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Tickets — Admin{% endblock %}
+{% block admin_content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+  <h1 class="font-display" style="font-size:1.7rem;">Support Tickets</h1>
+</div>
+
+<div class="card">
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Ticket ID</th>
+          <th>Customer</th>
+          <th>Subject</th>
+          <th>Order</th>
+          <th>Status</th>
+          <th>Expires</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tickets %}
+        {% set expired = t.expires_at and t.expires_at < now %}
+        <tr>
+          <td class="font-mono" style="font-size:0.85rem;color:var(--accent);">{{ t.ticket_id }}</td>
+          <td>{{ t.customer_name }}</td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary);">
+            {{ t.subject or '—' }}
+          </td>
+          <td>
+            {% if t.order_id %}
+            <a href="/admin/orders/{{ t.order_id }}" class="font-mono"
+               style="font-size:0.82rem;color:var(--accent);">{{ t.order_id }}</a>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <span class="badge {{ 'badge-accepted' if t.status=='Open' and not expired else 'badge-declined' if expired else 'badge-pending' }}">
+              {{ 'Expired' if expired else t.status }}
+            </span>
+          </td>
+          <td style="font-size:0.82rem;color:{{ 'var(--danger)' if expired else 'var(--text-muted)' }};">
+            {{ t.expires_at.strftime('%b %d %H:%M') if t.expires_at else '—' }}
+          </td>
+          <td style="font-size:0.82rem;color:var(--text-muted);">{{ t.created_at.strftime('%b %d, %H:%M') }}</td>
+          <td><a href="/admin/tickets/{{ t.ticket_id }}" class="btn btn-ghost btn-sm">View</a></td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align:center;color:var(--text-muted);padding:2rem;font-style:italic;">
+            No tickets yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

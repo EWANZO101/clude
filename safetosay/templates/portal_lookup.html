@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Report Lookup — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div style="max-width:680px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="text-align:center;margin-bottom:2rem">
+    <div style="font-size:2.5rem;margin-bottom:.6rem">🔐</div>
+    <h1 style="font-size:1.4rem;font-weight:700;margin:0 0 .35rem">Report Portal</h1>
+    <p style="color:var(--muted);font-size:.9rem">Enter your Report ID to check the status of your submission.</p>
+  </div>
+
+  <!-- Just submitted nudge -->
+  {% if prefill_id %}
+  <div style="padding:1rem 1.2rem;background:rgba(63,185,80,.07);border:1px solid rgba(63,185,80,.25);border-radius:10px;margin-bottom:1.5rem">
+    <p style="font-size:.92rem;font-weight:600;color:var(--success);margin:0 0 .3rem">✓ Your report was submitted successfully!</p>
+    <p style="font-size:.84rem;color:var(--muted);margin:0 0 .75rem">
+      Your Report ID is: <span style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:.9rem;background:rgba(88,166,255,.08);padding:.15rem .5rem;border-radius:4px">{{ prefill_id }}</span>
+      — <strong style="color:var(--text)">Save this ID.</strong> You will need it to check your status and receive admin replies.
+    </p>
+    {% if prefill_token %}
+    <div style="padding:.75rem 1rem;background:rgba(227,179,65,.07);border:1px solid rgba(227,179,65,.2);border-radius:8px">
+      <p style="font-size:.84rem;color:var(--warn);margin:0 0 .5rem">⚠ You submitted without a portal account. To receive admin replies and respond privately, create a free portal account now — it only takes 30 seconds.</p>
+      <a href="{{ url_for('portal_claim', report_id=prefill_id, token=prefill_token) }}" class="btn btn-primary btn-sm">Create Account & Claim Report →</a>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Lookup form -->
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="card-body">
+      <h2 style="font-size:1rem;font-weight:600;margin-bottom:.9rem">Look Up a Report</h2>
+      <form method="POST" style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <input type="text" name="report_id" class="form-input"
+               placeholder="e.g. RP-24AB56EE"
+               style="flex:1;min-width:200px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.04em"
+               value="{{ request.form.get('report_id','') }}"
+               autocomplete="off" spellcheck="false">
+        <button type="submit" class="btn btn-primary">Look Up</button>
+      </form>
+      {% if error %}
+      <div style="margin-top:.75rem;padding:.65rem .85rem;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.25);border-radius:6px;font-size:.84rem;color:var(--danger)">
+        ✕ {{ error }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Result -->
+  {% if report %}
+  <div class="card" style="margin-bottom:1.25rem;border-left:3px solid
+    {% if report.status == 'resolved' %}var(--success)
+    {% elif report.status == 'seen' %}var(--accent)
+    {% elif report.status == 'dismissed' %}var(--border)
+    {% else %}var(--warn){% endif %}">
+    <div class="card-body">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1rem">
+        <div>
+          <span class="post-id" style="font-size:.8rem;margin-bottom:.4rem;display:inline-block">{{ report.report_id }}</span>
+          <p style="font-size:.82rem;color:var(--muted);margin:.25rem 0 0">
+            Submitted {{ report.created_at.strftime('%d %B %Y at %H:%M') }}
+            — Re: post <span style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">{{ report.post_ref_id }}</span>
+          </p>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem">
+          <span class="status-{{ report.status }}" style="font-size:.82rem;padding:.25rem .65rem">{{ report.status.title() }}</span>
+          {% if report.admin_seen %}
+            <span style="font-size:.75rem;color:var(--success)">✓ Seen by admin</span>
+          {% else %}
+            <span style="font-size:.75rem;color:var(--muted)">⏳ Awaiting review</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Status explanation -->
+      <div style="padding:.7rem .9rem;border-radius:7px;font-size:.84rem;margin-bottom:1rem;
+        {% if report.status == 'pending' %}background:rgba(227,179,65,.07);border:1px solid rgba(227,179,65,.18);color:var(--warn)
+        {% elif report.status == 'seen' %}background:rgba(88,166,255,.07);border:1px solid rgba(88,166,255,.18);color:#cce0ff
+        {% elif report.status == 'resolved' %}background:rgba(63,185,80,.07);border:1px solid rgba(63,185,80,.18);color:var(--success)
+        {% else %}background:rgba(139,148,158,.07);border:1px solid rgba(139,148,158,.18);color:var(--muted){% endif %}">
+        {% if report.status == 'pending' %}
+          ⏳ Your report is in the queue. Our admin team reviews reports within <strong>24 hours</strong>.
+        {% elif report.status == 'seen' %}
+          👀 An admin has reviewed your report. They may send you a message via the private ticket below.
+        {% elif report.status == 'resolved' %}
+          ✓ This report has been marked resolved. See the ticket below for details.
+        {% else %}
+          This report has been reviewed and closed. No further action will be taken.
+        {% endif %}
+      </div>
+
+      <!-- Admin reply (legacy single reply) -->
+      {% if report.admin_reply %}
+      <div style="padding:.85rem 1rem;background:rgba(88,166,255,.07);border:1px solid rgba(88,166,255,.2);border-radius:8px;margin-bottom:1rem">
+        <p style="font-size:.77rem;font-weight:600;color:var(--accent);margin:0 0 .35rem">Admin Response:</p>
+        <p style="font-size:.875rem;color:var(--text);white-space:pre-wrap;margin:0">{{ report.admin_reply }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Unread messages count -->
+      {% set unread = report.messages | selectattr('sender','equalto','admin') | selectattr('is_read','equalto',False) | list %}
+      {% if unread %}
+      <div style="padding:.6rem .85rem;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.22);border-radius:7px;font-size:.84rem;color:var(--success);margin-bottom:.85rem">
+        📬 You have <strong>{{ unread|length }} unread message{{ 's' if unread|length != 1 }}</strong> from the admin team in your private ticket.
+      </div>
+      {% elif report.messages %}
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:.85rem">💬 {{ report.messages|length }} message{{ 's' if report.messages|length != 1 }} in your private ticket thread.</div>
+      {% endif %}
+
+      <!-- CTA to view full ticket -->
+      <div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center">
+        {% set portal_uid = session.get('portal_user_id') %}
+        {% if portal_uid and report.portal_user_id == portal_uid %}
+          <a href="{{ url_for('portal_report_view', report_id=report.report_id) }}" class="btn btn-primary">
+            💬 Open Private Ticket
+          </a>
+        {% elif report.claim_token %}
+          <!-- Not claimed yet -->
+          <a href="{{ url_for('portal_claim', report_id=report.report_id, token=report.claim_token) }}" class="btn btn-primary">
+            ✚ Create Account to Access Full Ticket
+          </a>
+          <p style="font-size:.8rem;color:var(--muted);margin:0">Create a free portal account to send and receive private messages with our admin team about this report.</p>
+        {% else %}
+          <a href="{{ url_for('portal_login') }}" class="btn btn-ghost">Log in to Report Portal</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Bottom links -->
+  <div style="display:flex;flex-wrap:wrap;gap:.75rem;justify-content:center;margin-top:1.5rem">
+    {% if session.get('portal_user_id') %}
+      <a href="{{ url_for('portal_my_reports') }}" class="btn btn-ghost btn-sm">← My Reports</a>
+      <a href="{{ url_for('portal_logout') }}" class="btn btn-ghost btn-sm">Logout</a>
+    {% else %}
+      <a href="{{ url_for('portal_login') }}" class="btn btn-ghost btn-sm">Portal Login</a>
+      <a href="{{ url_for('portal_register') }}" class="btn btn-ghost btn-sm">Create Portal Account</a>
+    {% endif %}
+    <a href="{{ url_for('index') }}" class="btn btn-ghost btn-sm">← Back to Site</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}{{ contract.title }} · Ledgerly{% endblock %}
+{% block content %}
+{% set cur = contract.currency_code %}
+
+<div class="flex flex-wrap items-start justify-between gap-4 mb-8">
+  <div>
+    <p class="text-gold text-xs tracking-[0.2em] uppercase mb-1">{{ contract.client.name }}</p>
+    <h1 class="font-display text-4xl tracking-tight">{{ contract.title }}</h1>
+    <div class="flex items-center gap-2 mt-2">
+      <span class="stamp {{ 'text-sage' if contract.status=='signed' else ('text-gold' if contract.status=='sent' else 'text-muted') }}">{{ contract.status }}</span>
+      {% if contract.currency_locked %}
+      <span class="text-xs text-muted">🔒 Currency locked to {{ cur }}</span>
+      {% endif %}
+      {% if contract.pin_code %}
+      <span class="text-xs text-muted">🔑 PIN protected</span>
+      {% endif %}
+      {% if contract.max_payment_months %}
+      <span class="text-xs text-muted">⏱ Max {{ contract.max_payment_months }} months to pay</span>
+      {% endif %}
+    </div>
+    {% if contract.is_signed %}
+    <p class="text-xs text-sage mt-1">Signed by {{ contract.signed_by_name }} on {{ contract.signed_at.strftime('%-d %B %Y') }}</p>
+    {% endif %}
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{{ url_for('contract_pdf', contract_id=contract.id) }}" class="text-sm btn-secondary px-3.5 py-1.5">Download PDF</a>
+    <a href="{{ url_for('contract_agreement', contract_id=contract.id) }}" class="text-sm btn-secondary px-3.5 py-1.5">Agreement & sharing</a>
+    {% if contract.schedule %}
+    <a href="{{ url_for('schedule_builder', contract_id=contract.id) }}" class="text-sm btn-secondary px-3.5 py-1.5">Edit schedule</a>
+    {% endif %}
+    {% if contract.status == 'draft' %}
+    <form method="post" action="{{ url_for('contract_send', contract_id=contract.id) }}">
+      <button class="text-sm btn-primary px-3.5 py-1.5">Send for signing</button>
+    </form>
+    {% endif %}
+    <button type="button" onclick="document.getElementById('delete-confirm').classList.remove('hidden')" class="text-sm btn-danger-outline px-3.5 py-1.5">Delete</button>
+  </div>
+</div>
+
+<div id="delete-confirm" class="hidden bg-brick/10 border border-brick/40 rounded-lg p-4 mb-8 flex flex-wrap items-center justify-between gap-3">
+  <p class="text-sm text-brick">Delete "{{ contract.title }}"? This permanently removes its payment schedule, audit trail, and share link. This can't be undone.</p>
+  <div class="flex items-center gap-2 shrink-0">
+    <button type="button" onclick="document.getElementById('delete-confirm').classList.add('hidden')" class="text-xs btn-secondary px-3 py-1.5">Cancel</button>
+    <form method="post" action="{{ url_for('contract_delete', contract_id=contract.id) }}">
+      <button class="text-xs bg-brick text-parchment font-semibold px-3 py-1.5 rounded-md hover:bg-brick/80 transition">Yes, delete permanently</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  <div class="card p-4">
+    <p class="text-xs text-muted mb-1">Total value</p>
+    <p class="num text-lg">{{ contract.total_amount|money(cur) }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-xs text-muted mb-1">Paid</p>
+    <p class="num text-lg text-sage">{{ contract.amount_paid|money(cur) }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-xs text-muted mb-1">Remaining</p>
+    <p class="num text-lg">{{ contract.amount_remaining|money(cur) }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-xs text-muted mb-1">Overdue</p>
+    <p class="num text-lg {{ 'text-brick' if contract.overdue_amount > 0 else '' }}">{{ contract.overdue_amount|money(cur) }}</p>
+  </div>
+</div>
+
+{% if contract.next_payment %}
+<div class="card p-4 mb-8 flex items-center justify-between">
+  <div>
+    <p class="text-xs text-muted mb-1">Next payment</p>
+    <p class="num">{{ contract.next_payment.amount|money(cur) }} due {{ contract.next_payment.due_date.strftime('%-d %B %Y') }}</p>
+  </div>
+  <p class="text-xs text-muted">{{ contract.remaining_instalments }} instalment(s) remaining</p>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <div class="lg:col-span-2">
+    <p class="font-display text-lg mb-3">Instalments</p>
+    {% if not contract.schedule %}
+    <div class="border border-dashed border-white/10 rounded-2xl p-8 text-center text-muted">
+      No payment schedule yet. <a href="{{ url_for('schedule_builder', contract_id=contract.id) }}" class="text-gold hover:underline">Build one</a>.
+    </div>
+    {% else %}
+    <div class="card overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs text-muted uppercase tracking-wide border-b border-ink-line">
+            <th class="px-4 py-3">#</th>
+            <th class="px-4 py-3">Date</th>
+            <th class="px-4 py-3">Description</th>
+            <th class="px-4 py-3 text-right">Amount</th>
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for p in contract.schedule.payments %}
+          <tr class="border-b border-ink-line last:border-0">
+            <td class="px-4 py-3 text-muted num">{{ p.sequence }}</td>
+            <td class="px-4 py-3 num">{{ p.due_date.strftime('%-d %b %Y') }}</td>
+            <td class="px-4 py-3 text-muted">{{ p.label or 'Instalment' }}</td>
+            <td class="px-4 py-3 text-right num">{{ p.amount|money(cur) }}</td>
+            <td class="px-4 py-3">
+              <span class="stamp {{ 'text-sage' if p.status=='paid' else ('text-brick' if p.status=='overdue' else 'text-gold') }}">{{ p.status }}</span>
+            </td>
+            <td class="px-4 py-3 text-right">
+              {% if p.status != 'paid' %}
+              <form method="post" action="{{ url_for('mark_paid', contract_id=contract.id, payment_id=p.id) }}">
+                <button class="text-xs text-gold hover:underline">Mark paid</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    <a href="{{ url_for('contract_audit', contract_id=contract.id) }}" class="text-xs text-muted hover:text-gold mt-3 inline-block">View audit trail →</a>
+  </div>
+
+  <div>
+    <p class="font-display text-lg mb-3">Share with client</p>
+    <div class="card p-4">
+      <p class="text-xs text-muted mb-2">Anyone with this link can view the schedule and download the PDF — no login required.</p>
+      <div class="flex items-center gap-2">
+        <input readonly value="{{ share_url }}" id="share-url" class="flex-1 input-field px-2.5 py-1.5 text-xs num truncate">
+        <button onclick="navigator.clipboard.writeText(document.getElementById('share-url').value); this.textContent='Copied'" class="text-xs btn-secondary px-2.5 py-1.5 shrink-0">Copy</button>
+      </div>
+      <a href="{{ share_url }}" target="_blank" class="text-xs text-gold hover:underline mt-2 inline-block">Open share page →</a>
+      {% if contract.pin_code %}
+      <div class="mt-3 pt-3 border-t border-ink-line flex items-center justify-between">
+        <span class="text-xs text-muted">PIN to share with them</span>
+        <span class="num text-gold tracking-widest">{{ contract.pin_code }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

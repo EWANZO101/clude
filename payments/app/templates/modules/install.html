@@ -1,0 +1,12 @@
+{% extends "layout/base.html" %}
+{% block title %}Install module{% endblock %}
+{% block content %}
+<div class="max-w-md">
+  <h1 class="text-xl font-semibold mb-4">Install a module</h1>
+  <form method="POST" enctype="multipart/form-data" class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="file" name="module_zip" accept=".zip" class="w-full text-sm text-slate-300">
+    <button class="w-full bg-accent hover:bg-accent-hover text-white text-sm font-medium py-2.5 rounded-lg">Upload & install</button>
+  </form>
+  <a href="{{ url_for('modules.index') }}" class="block text-xs text-slate-500 hover:underline mt-4">Back to modules</a>
+</div>
+{% endblock %}

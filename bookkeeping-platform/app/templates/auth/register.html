@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Sign up{% endblock %}
+{% block content %}
+<div class="card card-padded max-w-sm mx-auto">
+  <h1 class="page-title mb-4">Create your account</h1>
+  <form method="POST" class="space-y-4">
+    {{ form.csrf_token }}
+    <div>
+      <label class="label-field">{{ form.full_name.label }}</label>
+      {{ form.full_name(class_="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700") }}
+    </div>
+    <div>
+      <label class="label-field">{{ form.email.label }}</label>
+      {{ form.email(class_="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700") }}
+    </div>
+    <div>
+      <label class="label-field">{{ form.password.label }}</label>
+      {{ form.password(class_="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700") }}
+    </div>
+    <div>
+      <label class="label-field">{{ form.confirm_password.label }}</label>
+      {{ form.confirm_password(class_="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700") }}
+    </div>
+    <button class="btn btn-primary btn-block">Sign up</button>
+  </form>
+  <p class="text-sm mt-4">Already have an account? <a class="link" href="{{ url_for('auth.login') }}">Log in</a></p>
+</div>
+{% endblock %}

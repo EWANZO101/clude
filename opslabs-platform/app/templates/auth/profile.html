@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Profile — OpsLabs Platform{% endblock %}
+{% block content %}
+<h1>Profile</h1>
+<div class="card" style="max-width:420px;">
+  <form method="POST">
+    <label>Email (not editable yet)</label>
+    <input type="email" value="{{ current_user.email }}" disabled>
+
+    {% if current_user.has_company_role('owner', 'admin') %}
+      <label>{{ 'Company name' if not current_user.company.is_personal else 'Account name' }}</label>
+      <input type="text" name="company_name" value="{{ current_user.company.name }}">
+    {% endif %}
+
+    <label>New password <span style="color:#9aa3af;">(leave blank to keep current)</span></label>
+    <input type="password" name="new_password" minlength="8">
+
+    <button type="submit">Save</button>
+  </form>
+</div>
+{% endblock %}

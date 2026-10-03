@@ -1,0 +1,8 @@
+{% macro shipment_status_badge(status) %}
+{% set v = status.value %}
+{% if v == "delivered" %}<span class="badge-success">{{ status|hwval }}</span>
+{% elif v in ("exception", "returned") %}<span class="badge-danger">{{ status|hwval }}</span>
+{% elif v == "pending" %}<span class="badge-neutral">{{ status|hwval }}</span>
+{% else %}<span class="badge-info">{{ status|hwval }}</span>
+{% endif %}
+{% endmacro %}

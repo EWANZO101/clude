@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Agreement & sharing · {{ contract.title }}{% endblock %}
+{% block content %}
+<p class="text-gold text-xs tracking-[0.2em] uppercase mb-1">{{ contract.title }}</p>
+<h1 class="font-display text-4xl tracking-tight mb-8">Agreement & sharing</h1>
+
+<form method="post" class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+  <div class="lg:col-span-2 space-y-6">
+
+    <div class="card p-6">
+      <div class="flex items-baseline justify-between mb-1">
+        <p class="font-display text-lg">Agreement / terms</p>
+        <span class="text-xs text-muted">shown above the signature block</span>
+      </div>
+      <p class="text-xs text-muted mb-4">Write the contract terms here — headings, bold/italic, and lists are all supported. This appears on the client's share page and in the downloaded PDF.</p>
+      <div class="rich-editor" data-target="agreement_text_hidden" data-preview-target="#agreement-preview" data-placeholder="Write the contract terms here…">
+        <div class="rich-editor-surface"></div>
+      </div>
+      <textarea id="agreement_text_hidden" name="agreement_text" class="hidden">{{ contract.agreement_text or '' }}</textarea>
+    </div>
+
+    <div class="card p-6">
+      <p class="font-display text-lg mb-4">Sharing settings</p>
+      <div class="space-y-3">
+        <label class="flex items-center gap-2 text-sm text-muted">
+          <input type="checkbox" name="client_can_build_schedule" {{ 'checked' if contract.client_can_build_schedule }} class="rounded border-ink-line bg-ink-raised">
+          Let the client set up the schedule themselves via the share link
+        </label>
+
+        <label class="flex items-center gap-2 text-sm text-muted">
+          <input type="checkbox" name="require_pin" id="require_pin" {{ 'checked' if contract.pin_code }} class="rounded border-ink-line bg-ink-raised">
+          Protect the share link with a PIN
+        </label>
+
+        {% if contract.pin_code %}
+        <div class="ml-6 flex items-center gap-3 text-sm">
+          <span class="text-muted">Current PIN:</span>
+          <span class="num text-gold text-lg tracking-widest">{{ contract.pin_code }}</span>
+          <label class="flex items-center gap-1.5 text-xs text-muted">
+            <input type="checkbox" name="regenerate_pin" class="rounded border-ink-line bg-ink-raised">
+            Generate a new PIN
+          </label>
+        </div>
+        {% else %}
+        <p class="ml-6 text-xs text-muted">A 4-digit PIN will be generated automatically when you save with this checked.</p>
+        {% endif %}
+      </div>
+      <div class="mt-4 pt-4 border-t border-ink-line">
+        <label class="block text-xs text-muted mb-1.5">Maximum months to pay off the full balance <span class="text-muted/60">(optional)</span></label>
+        <input type="number" min="1" name="max_payment_months" value="{{ contract.max_payment_months or '' }}" placeholder="e.g. 7 — leave blank for no limit" class="w-full max-w-[220px] input-field px-3 py-2 text-sm num">
+        <p class="text-xs text-muted mt-1.5">The client can spread payments however they like, but the final instalment can't fall later than this many months after the first one.</p>
+      </div>
+    </div>
+
+    <button class="btn-primary px-5 py-2.5 text-sm">Save settings</button>
+    <a href="{{ url_for('contract_view', contract_id=contract.id) }}" class="text-xs text-muted hover:text-gold ml-3 inline-block">← Back to contract</a>
+  </div>
+
+  <!-- Live preview: what the client will actually see -->
+  <div class="lg:sticky lg:top-6">
+    <div class="card card-raised p-5">
+      <p class="text-gold text-xs tracking-[0.2em] uppercase mb-4">Client will see</p>
+      <div id="agreement-preview" class="prose prose-invert prose-sm max-w-none prose-headings:font-display prose-a:text-gold pb-4 mb-4 border-b border-ink-line">
+        {% if contract.agreement_text %}{{ contract.agreement_text|agreement_html|safe }}{% else %}
+        <p class="text-muted italic">Nothing written yet — this section won't appear for the client.</p>
+        {% endif %}
+      </div>
+      <p class="text-xs text-muted mb-2">Signature block</p>
+      <div class="border border-dashed border-ink-line rounded-md p-3 text-xs text-muted">
+        Name, typed signature, and an "I agree" checkbox appear here automatically on the share page.
+      </div>
+    </div>
+  </div>
+</form>
+
+<script src="{{ url_for('static', filename='js/rich-editor.js') }}"></script>
+{% endblock %}

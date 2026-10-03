@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
+  <title>{% block title %}StockTool{% endblock %} — StockTool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    /* ── Reset & base ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background:#111827; color:#f3f4f6; font-family:'Inter',system-ui,sans-serif;
+           margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+
+    /* ── Sidebar — desktop ──────────────────────────────────────── */
+    .sidebar {
+      width:256px; height:100vh; background:#1f2937;
+      border-right:1px solid #374151;
+      position:fixed; top:0; left:0; z-index:40;
+      display:flex; flex-direction:column;
+      transition:transform .25s cubic-bezier(.4,0,.2,1);
+    }
+    .sidebar-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,.6); z-index:39;
+      backdrop-filter:blur(2px);
+    }
+
+    /* ── Nav links ──────────────────────────────────────────────── */
+    .nav-link {
+      display:flex; align-items:center; gap:12px;
+      padding:11px 16px; border-radius:8px;
+      color:#9ca3af; transition:all .15s;
+      font-size:14px; font-weight:500;
+      text-decoration:none; cursor:pointer;
+      min-height:44px; /* touch target */
+    }
+    .nav-link:hover { background:#374151; color:#f9fafb; }
+    .nav-link.active { background:#4f46e5; color:#fff; }
+    .nav-link i { width:18px; text-align:center; flex-shrink:0; }
+    .nav-section-label {
+      font-size:11px; color:#4b5563; font-weight:600;
+      letter-spacing:.08em; text-transform:uppercase;
+      padding:16px 12px 4px;
+    }
+    .nav-section-label:first-child { padding-top:8px; }
+
+    /* ── Main layout ────────────────────────────────────────────── */
+    .main-content {
+      margin-left:256px; min-height:100vh;
+      padding:24px;
+    }
+    .topbar {
+      display:none; /* hidden on desktop */
+      position:sticky; top:0; z-index:30;
+      background:#1f2937; border-bottom:1px solid #374151;
+      padding:0 16px; height:56px;
+      align-items:center; justify-content:space-between;
+    }
+    .hamburger {
+      background:none; border:none; color:#9ca3af;
+      font-size:20px; cursor:pointer; padding:8px;
+      border-radius:8px; display:flex; align-items:center;
+      min-width:44px; min-height:44px; justify-content:center;
+    }
+    .hamburger:hover { background:#374151; color:#f9fafb; }
+
+    /* ── Bottom nav — mobile only ───────────────────────────────── */
+    .bottom-nav {
+      display:none;
+      position:fixed; bottom:0; left:0; right:0; z-index:40;
+      background:#1f2937; border-top:1px solid #374151;
+      padding:0 0 env(safe-area-inset-bottom);
+    }
+    .bottom-nav-inner {
+      display:flex; align-items:stretch;
+      height:56px;
+    }
+    .bottom-nav-item {
+      flex:1; display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      color:#6b7280; text-decoration:none;
+      font-size:10px; font-weight:500; gap:3px;
+      min-height:44px; transition:color .15s;
+      position:relative;
+    }
+    .bottom-nav-item i { font-size:18px; }
+    .bottom-nav-item.active { color:#2563eb; }
+    .bottom-nav-item.active::before {
+      content:''; position:absolute; top:0; left:20%; right:20%;
+      height:2px; background:#2563eb; border-radius:0 0 2px 2px;
+    }
+    .bottom-nav-item:hover { color:#9ca3af; }
+
+    /* ── Cards ──────────────────────────────────────────────────── */
+    .card { background:#1f2937; border:1px solid #374151; border-radius:12px; }
+    .stat-card { background:#1f2937; border:1px solid #374151; border-radius:12px; padding:20px; }
+
+    /* ── Badges ─────────────────────────────────────────────────── */
+    .badge {
+      display:inline-flex; align-items:center;
+      padding:2px 10px; border-radius:9999px;
+      font-size:12px; font-weight:600; white-space:nowrap;
+    }
+
+    /* ── Buttons ────────────────────────────────────────────────── */
+    .btn {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:9px 16px; border-radius:8px;
+      font-size:14px; font-weight:500; cursor:pointer;
+      transition:all .15s; border:none; text-decoration:none;
+      min-height:40px; white-space:nowrap;
+    }
+    .btn-primary   { background:#2563eb; color:#fff; }
+    .btn-primary:hover   { background:#1d4ed8; }
+    .btn-success   { background:#059669; color:#fff; }
+    .btn-success:hover   { background:#047857; }
+    .btn-danger    { background:#dc2626; color:#fff; }
+    .btn-danger:hover    { background:#b91c1c; }
+    .btn-warning   { background:#d97706; color:#fff; }
+    .btn-warning:hover   { background:#b45309; }
+    .btn-secondary { background:#374151; color:#f3f4f6; }
+    .btn-secondary:hover { background:#4b5563; }
+    .btn-sm { padding:6px 12px; font-size:13px; min-height:34px; }
+    .btn-block { width:100%; justify-content:center; }
+
+    /* ── Forms ──────────────────────────────────────────────────── */
+    .form-label {
+      display:block; margin-bottom:6px;
+      font-size:14px; font-weight:500; color:#d1d5db;
+    }
+    .form-input, .form-select, .form-textarea {
+      width:100%; background:#374151;
+      border:1px solid #4b5563; border-radius:8px;
+      padding:10px 12px; color:#f3f4f6;
+      font-size:16px; /* 16px prevents iOS zoom */
+      outline:none; transition:.15s;
+      -webkit-appearance:none;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color:#2563eb;
+      box-shadow:0 0 0 3px rgba(37,99,235,.2);
+    }
+    .form-textarea { resize:vertical; }
+    .form-select {
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%236b7280' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position:right 10px center;
+      background-size:16px;
+      padding-right:36px;
+    }
+    select option { background:#1f2937; }
+
+    /* ── Tables — responsive ────────────────────────────────────── */
+    .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .table-header {
+      background:#111827; color:#9ca3af;
+      font-size:12px; font-weight:600;
+      text-transform:uppercase; letter-spacing:.05em;
+    }
+    .table-row { border-bottom:1px solid #374151; transition:background .1s; }
+    .table-row:hover { background:#374151; }
+
+    /* Mobile card list — replaces table rows on small screens */
+    .mobile-card-list { display:none; }
+    .m-card {
+      background:#1f2937; border:1px solid #374151;
+      border-radius:10px; padding:14px 16px;
+      margin-bottom:10px;
+    }
+    .m-card-row {
+      display:flex; justify-content:space-between;
+      align-items:center; gap:8px; margin-bottom:6px;
+    }
+    .m-card-row:last-child { margin-bottom:0; }
+    .m-label { font-size:11px; color:#6b7280; font-weight:600; text-transform:uppercase; }
+    .m-value { font-size:13px; color:#d1d5db; text-align:right; }
+
+    /* ── Alerts ─────────────────────────────────────────────────── */
+    .alert {
+      border-radius:8px; padding:12px 16px;
+      margin-bottom:16px; font-size:14px;
+      display:flex; align-items:center; gap:10px;
+    }
+    .alert-success { background:#064e3b; border:1px solid #059669; color:#6ee7b7; }
+    .alert-danger  { background:#450a0a; border:1px solid #dc2626; color:#fca5a5; }
+    .alert-warning { background:#451a03; border:1px solid #d97706; color:#fcd34d; }
+    .alert-info    { background:#0c1a4b; border:1px solid #2563eb; color:#93c5fd; }
+
+    /* ── Page header ────────────────────────────────────────────── */
+    .page-header { margin-bottom:20px; }
+    .page-title { font-size:22px; font-weight:700; color:#f9fafb; }
+    .page-subtitle { font-size:13px; color:#6b7280; margin-top:3px; }
+    .page-header-row {
+      display:flex; justify-content:space-between;
+      align-items:flex-start; gap:12px; flex-wrap:wrap;
+    }
+
+    /* ── Scrollbar ──────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width:5px; height:5px; }
+    ::-webkit-scrollbar-track { background:#111827; }
+    ::-webkit-scrollbar-thumb { background:#4b5563; border-radius:3px; }
+
+    /* ── Modal ──────────────────────────────────────────────────── */
+    .modal-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,.75); z-index:50;
+      align-items:center; justify-content:center;
+      padding:16px;
+    }
+    .modal-overlay.open { display:flex; }
+    .modal-box {
+      background:#1f2937; border:1px solid #374151;
+      border-radius:12px; padding:24px;
+      width:100%; max-width:480px;
+      max-height:90vh; overflow-y:auto;
+    }
+
+    /* ── Filter bar ─────────────────────────────────────────────── */
+    .filter-bar {
+      display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;
+    }
+    .filter-bar .filter-field { flex:1; min-width:160px; }
+
+    /* ── 2-col grid for details ─────────────────────────────────── */
+    .detail-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:14px;
+    }
+    .detail-item { }
+    .detail-label { font-size:11px; color:#6b7280; font-weight:600;
+                    text-transform:uppercase; margin-bottom:3px; }
+    .detail-value { font-size:14px; color:#f3f4f6; }
+    .detail-span2 { grid-column:span 2; }
+
+    /* ── Responsive breakpoints ─────────────────────────────────── */
+    @media (max-width:1024px) {
+      /* Tablet: sidebar slides off-canvas, topbar shown */
+      .sidebar { transform:translateX(-100%); }
+      .sidebar.open { transform:translateX(0); box-shadow:4px 0 24px rgba(0,0,0,.5); }
+      .sidebar-overlay.open { display:block; }
+      .main-content { margin-left:0; padding:16px; padding-bottom:80px; }
+      .topbar { display:flex; }
+    }
+
+    @media (max-width:640px) {
+      /* Phone: bottom nav, card lists instead of tables */
+      .bottom-nav { display:block; }
+      .main-content { padding:12px; padding-bottom:76px; }
+      .page-title { font-size:19px; }
+      .page-header { margin-bottom:14px; }
+
+      .desktop-table { display:none !important; }
+      .mobile-card-list { display:block; }
+
+      .detail-grid { grid-template-columns:1fr; }
+      .detail-span2 { grid-column:span 1; }
+
+      .btn { font-size:14px; }
+      .stat-card { padding:14px; }
+
+      /* Stack page header on small screens */
+      .page-header-row { flex-direction:column; align-items:stretch; }
+      .page-header-row .btn { justify-content:center; }
+
+      /* Filter bar vertical stack */
+      .filter-bar { flex-direction:column; }
+      .filter-bar .filter-field { min-width:0; width:100%; }
+      .filter-bar .btn { width:100%; justify-content:center; }
+    }
+
+    @media (min-width:641px) and (max-width:1024px) {
+      /* Tablet: keep table but hide some columns */
+      .hide-tablet { display:none !important; }
+    }
+
+    /* Utility */
+    .overflow-x-auto { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  </style>
+</head>
+<body>
+{% if current_user %}
+
+<!-- Sidebar overlay (mobile/tablet) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div style="padding:18px 20px;border-bottom:1px solid #374151;flex-shrink:0;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="background:#4f46e5;border-radius:8px;padding:8px;flex-shrink:0;">
+        <i class="fas fa-toolbox" style="font-size:18px;color:#fff;"></i>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:16px;color:#f9fafb;">StockTool</div>
+        <div style="font-size:11px;color:#6b7280;">Asset Management</div>
+      </div>
+      <!-- Close button on mobile -->
+      <button onclick="closeSidebar()" class="hamburger" style="margin-left:auto;display:none;" id="sidebarClose">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <nav style="flex:1;padding:8px;overflow-y:auto;">
+    <div class="nav-section-label">Overview</div>
+    <a href="{{ url_for('dashboard.index') }}"
+       class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+      <i class="fas fa-gauge-high"></i> Dashboard
+    </a>
+
+    <div class="nav-section-label">Inventory</div>
+    <a href="{{ url_for('items.index') }}"
+       class="nav-link {% if request.blueprint == 'items' %}active{% endif %}">
+      <i class="fas fa-boxes-stacked"></i> Items
+    </a>
+    <a href="{{ url_for('tools.index') }}"
+       class="nav-link {% if request.blueprint == 'tools' %}active{% endif %}">
+      <i class="fas fa-wrench"></i> Tools
+    </a>
+    <a href="{{ url_for('projects.index') }}"
+       class="nav-link {% if request.blueprint == 'projects' %}active{% endif %}">
+      <i class="fas fa-diagram-project"></i> Projects
+    </a>
+    <a href="{{ url_for('barcode.scan') }}"
+       class="nav-link {% if request.endpoint == 'barcode.scan' %}active{% endif %}">
+      <i class="fas fa-barcode"></i> Scan Barcode
+    </a>
+    {% if current_user.is_admin %}
+    <a href="{{ url_for('categories.index') }}"
+       class="nav-link {% if request.blueprint == 'categories' %}active{% endif %}">
+      <i class="fas fa-tags"></i> Categories
+    </a>
+    {% endif %}
+
+    <div class="nav-section-label">Records</div>
+    <a href="{{ url_for('logs.index') }}"
+       class="nav-link {% if request.endpoint == 'logs.index' %}active{% endif %}">
+      <i class="fas fa-scroll"></i> Audit Log
+    </a>
+    <a href="{{ url_for('logs.tool_history') }}"
+       class="nav-link {% if request.endpoint == 'logs.tool_history' %}active{% endif %}">
+      <i class="fas fa-clock-rotate-left"></i> Tool History
+    </a>
+
+    {% if current_user.is_admin %}
+    <div class="nav-section-label">Administration</div>
+    <a href="{{ url_for('builder.index') }}"
+       class="nav-link {% if request.blueprint == 'builder' %}active{% endif %}">
+      <i class="fas fa-swatchbook"></i> Builder Mode
+    </a>
+    <a href="{{ url_for('admin.index') }}"
+       class="nav-link {% if request.blueprint == 'admin' %}active{% endif %}">
+      <i class="fas fa-users-gear"></i> Users
+    </a>
+    <a href="{{ url_for('settings.index') }}"
+       class="nav-link {% if request.blueprint == 'settings' %}active{% endif %}">
+      <i class="fas fa-gear"></i> Settings
+    </a>
+    {% endif %}
+  </nav>
+
+  <div style="padding:8px;border-top:1px solid #374151;flex-shrink:0;">
+    <div style="padding:8px 12px;display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+      <div style="background:#374151;border-radius:50%;width:34px;height:34px;display:flex;
+                  align-items:center;justify-content:center;font-size:14px;
+                  color:#9ca3af;flex-shrink:0;font-weight:600;">
+        {{ current_user.username[0].upper() }}
+      </div>
+      <div style="overflow:hidden;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:#f3f4f6;
+                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          {{ current_user.username }}
+        </div>
+        <div style="font-size:11px;color:#6b7280;">
+          {{ current_user.role.replace('_',' ').title() }}
+        </div>
+      </div>
+    </div>
+    <a href="{{ url_for('auth.change_password') }}" class="nav-link">
+      <i class="fas fa-key"></i> Change Password
+    </a>
+    <a href="{{ url_for('auth.logout') }}" class="nav-link" style="color:#ef4444;">
+      <i class="fas fa-right-from-bracket"></i> Logout
+    </a>
+  </div>
+</aside>
+
+<!-- Top bar (tablet/phone) -->
+<header class="topbar" id="topbar">
+  <button class="hamburger" onclick="openSidebar()">
+    <i class="fas fa-bars"></i>
+  </button>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div style="background:#2563eb;border-radius:6px;padding:5px 8px;">
+      <i class="fas fa-toolbox" style="font-size:14px;color:#fff;"></i>
+    </div>
+    <span style="font-weight:700;font-size:15px;color:#f9fafb;">StockTool</span>
+  </div>
+  <a href="{{ url_for('auth.logout') }}"
+     style="color:#6b7280;font-size:18px;padding:8px;min-width:44px;min-height:44px;
+            display:flex;align-items:center;justify-content:center;border-radius:8px;"
+     title="Logout">
+    <i class="fas fa-right-from-bracket"></i>
+  </a>
+</header>
+
+<!-- Main -->
+<main class="main-content" id="mainContent">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">
+        <i class="fas {% if category=='success' %}fa-circle-check{% elif category=='danger' %}fa-circle-xmark{% elif category=='warning' %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %}" style="flex-shrink:0;"></i>
+        <span>{{ message }}</span>
+      </div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+
+<!-- Bottom nav (phone) -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <a href="{{ url_for('dashboard.index') }}" class="bottom-nav-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+      <i class="fas fa-gauge-high"></i>
+      <span>Home</span>
+    </a>
+    <a href="{{ url_for('items.index') }}" class="bottom-nav-item {% if request.blueprint == 'items' %}active{% endif %}">
+      <i class="fas fa-boxes-stacked"></i>
+      <span>Items</span>
+    </a>
+    <a href="{{ url_for('tools.index') }}" class="bottom-nav-item {% if request.blueprint == 'tools' %}active{% endif %}">
+      <i class="fas fa-wrench"></i>
+      <span>Tools</span>
+    </a>
+    <a href="{{ url_for('logs.tool_history') }}" class="bottom-nav-item {% if request.endpoint == 'logs.tool_history' %}active{% endif %}">
+      <i class="fas fa-clock-rotate-left"></i>
+      <span>History</span>
+    </a>
+    {% if current_user.is_admin %}
+    <a href="{{ url_for('admin.index') }}" class="bottom-nav-item {% if request.blueprint == 'admin' %}active{% endif %}">
+      <i class="fas fa-users-gear"></i>
+      <span>Admin</span>
+    </a>
+    {% else %}
+    <a href="{{ url_for('logs.index') }}" class="bottom-nav-item {% if request.endpoint == 'logs.index' %}active{% endif %}">
+      <i class="fas fa-scroll"></i>
+      <span>Logs</span>
+    </a>
+    {% endif %}
+  </div>
+</nav>
+
+{% else %}
+  {% block auth_content %}{% endblock %}
+{% endif %}
+
+<script>
+// ── Sidebar open/close ─────────────────────────────────────────────────────
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('open');
+  document.getElementById('sidebarClose').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── Close sidebar on nav link click (mobile) ───────────────────────────────
+document.querySelectorAll('.sidebar .nav-link').forEach(function(link) {
+  link.addEventListener('click', function() {
+    if (window.innerWidth <= 1024) closeSidebar();
+  });
+});
+
+// ── Show sidebar close button based on width ───────────────────────────────
+function updateSidebarClose() {
+  var btn = document.getElementById('sidebarClose');
+  if (btn) btn.style.display = window.innerWidth <= 1024 ? 'flex' : 'none';
+}
+updateSidebarClose();
+window.addEventListener('resize', function() {
+  updateSidebarClose();
+  if (window.innerWidth > 1024) closeSidebar();
+});
+
+// ── Modals ─────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Confirm delete ─────────────────────────────────────────────────────────
+function confirmDelete(formId, name) {
+  if (confirm('Delete "' + name + '"? This cannot be undone.')) {
+    document.getElementById(formId).submit();
+  }
+}
+</script>
+
+<!-- Shared "Scan with Phone" modal — backup scanner when ZEBEX isn't handy.
+     Any page can add a button with class="scan-relay-btn" and
+     data-target="<id of the input to fill>"; see scan-relay.js. -->
+<div class="modal-overlay" id="scanRelayModal">
+  <div class="modal-box" style="max-width:340px;text-align:center;">
+    <div style="font-size:16px;font-weight:700;color:#f9fafb;margin-bottom:6px;">Scan With Your Phone</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:16px;">Open your phone's camera and point it at this code</div>
+    <img id="scanRelayQrImage" src="" alt="Scan QR code"
+         style="width:220px;height:220px;background:#fff;border-radius:12px;padding:10px;margin:0 auto 14px;display:block;" />
+    <div id="scanRelayStatus" style="font-size:13px;color:#6ee7b7;min-height:18px;margin-bottom:14px;"></div>
+    <button type="button" class="btn btn-secondary" style="width:100%;" onclick="closeModal('scanRelayModal')">Cancel</button>
+  </div>
+</div>
+<script>window.API_PUBLIC_URL = {{ api_public_url | tojson }};</script>
+<script src="{{ url_for('static', filename='scan-relay.js') }}"></script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

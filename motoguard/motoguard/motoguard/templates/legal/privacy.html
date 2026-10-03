@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy — MotoGuard{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto legal">
+  <p class="eyebrow mb-1">Legal</p>
+  <h1 class="font-display font-800 text-3xl text-chalk mb-1">Privacy Policy</h1>
+  <p class="text-mute text-sm mb-6">Last updated: 17 June 2026</p>
+
+  <div class="space-y-5 text-sm leading-relaxed text-chalk/90">
+    <p>This policy explains what personal data MotoGuard collects, why, and the rights you have over it. It is written to align with the UK GDPR and the Data Protection Act 2018. <strong>This is a template and should be reviewed by a qualified adviser before you rely on it.</strong></p>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">1. Who we are</h2>
+      <p>MotoGuard is operated by OpsLab Systems ("we", "us"). For any privacy question or to exercise your rights, contact us at <strong>privacy@opslabsystems.cloud</strong> (replace with your real contact address). We are the data controller for the personal data described here.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">2. What we collect</h2>
+      <ul class="list-disc ml-5 space-y-1">
+        <li><strong>Account data:</strong> your username, email address and a securely hashed password.</li>
+        <li><strong>Profile &amp; location:</strong> the town, region and country you enter. We do not require precise GPS coordinates; any coordinates you provide are used only to calculate distance for local alerts and are never shown publicly.</li>
+        <li><strong>Vehicle data:</strong> make, model, year, colour, registration, VIN/frame number, description, photos, and last-seen location.</li>
+        <li><strong>Sightings, messages, forum posts and reports</strong> that you submit.</li>
+        <li><strong>Alert preferences,</strong> including whether you have opted in to stolen-bike email alerts.</li>
+        <li><strong>Technical data:</strong> server logs may record your IP address, browser and timestamps for security and troubleshooting.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">3. Why we use it and our legal basis</h2>
+      <ul class="list-disc ml-5 space-y-1">
+        <li><strong>To provide your account and the service</strong> — performance of a contract with you.</li>
+        <li><strong>To send stolen-bike alerts</strong> — your consent (opt-in), which you can withdraw at any time in your profile.</li>
+        <li><strong>To help recover stolen bikes and keep the community safe</strong> — our legitimate interests and yours.</li>
+        <li><strong>To secure the service and prevent abuse</strong> — legitimate interests.</li>
+        <li><strong>To meet legal obligations</strong> — e.g. responding to lawful requests.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">4. Vehicle look-ups</h2>
+      <p>When you use the registration look-up, the registration you enter is sent to UK government services — the DVSA MOT History API and the DVLA Vehicle Enquiry Service — to retrieve MOT and tax status. Those services process the request under their own terms and privacy notices.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">5. Who we share it with</h2>
+      <ul class="list-disc ml-5 space-y-1">
+        <li><strong>Other users:</strong> when a bike is marked stolen (or set public), limited details — make, model, colour, registration, description and an approximate area — are shown to help recovery. Your precise coordinates and contact details are never published.</li>
+        <li><strong>Service providers (processors):</strong> our email/SMTP provider (to send alerts and password resets), our hosting provider, and Cloudflare (network and security). They process data on our instructions.</li>
+        <li><strong>Government services:</strong> DVSA/DVLA as described above; and police or authorities where lawfully required.</li>
+      </ul>
+      <p class="mt-1">We do not sell your personal data or use it for third-party advertising.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">6. Cookies and third-party content</h2>
+      <p>We use only strictly necessary cookies — a session cookie to keep you logged in and a security (CSRF) token. We do not use advertising or analytics tracking cookies, so no cookie-consent banner is required for these.</p>
+      <p class="mt-1">Some pages load fonts, styles, mapping tiles and scripts from third parties (Google Fonts, the Tailwind CDN, unpkg and OpenStreetMap). These providers may receive your IP address when content loads. If you would prefer these be self-hosted to avoid that, contact us.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">7. How long we keep it</h2>
+      <p>We keep your account data for as long as your account exists. When you delete your account, your personal data is erased and content about other users' bikes is anonymised. Security logs are kept for a limited period and then deleted.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">8. Your rights</h2>
+      <p>Under UK GDPR you have the right to access, rectify, erase, restrict, port and object to processing of your personal data, and to withdraw consent at any time. You can:</p>
+      <ul class="list-disc ml-5 space-y-1 mt-1">
+        <li><strong>Access &amp; portability:</strong> download all your data from your profile ("Download my data").</li>
+        <li><strong>Rectification:</strong> edit your profile, email, password and bikes directly.</li>
+        <li><strong>Erasure:</strong> permanently delete your account and data from your profile ("Delete account").</li>
+        <li><strong>Withdraw consent:</strong> turn off alert emails in your profile at any time.</li>
+      </ul>
+      <p class="mt-1">You also have the right to complain to the UK Information Commissioner's Office (ICO) at <strong>ico.org.uk</strong>.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">9. Security</h2>
+      <p>Passwords are stored only as salted hashes. The service is served over HTTPS with security headers and CSRF protection, and access to data is restricted. No system is perfectly secure, but we take reasonable steps to protect your information.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">10. Children</h2>
+      <p>MotoGuard is not intended for children under 16. We do not knowingly collect data from them.</p>
+    </section>
+
+    <section>
+      <h2 class="font-display font-700 text-chalk text-lg mt-2 mb-1">11. Changes</h2>
+      <p>We may update this policy. Material changes will be highlighted in the service, and the "last updated" date above will change.</p>
+    </section>
+
+    <p class="text-mute pt-2">Questions? Email <strong>privacy@opslabsystems.cloud</strong>. See also our <a href="{{ url_for('main.terms') }}" class="text-link">Terms &amp; Conditions</a>.</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Project{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{{ url_for('projects.index') }}" style="color:#6b7280;font-size:13px;text-decoration:none;
+     display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;">
+    <i class="fas fa-arrow-left"></i> Projects
+  </a>
+  <h1 class="page-title">
+    <i class="fas fa-{% if action=='Add' %}plus{% else %}pen{% endif %}" style="color:#a78bfa;"></i>
+    {{ action }} Project
+  </h1>
+</div>
+
+<div class="card" style="padding:20px;max-width:640px;">
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="grid-column:span 2;">
+        <label class="form-label">Project Name <span style="color:#ef4444;">*</span></label>
+        <input type="text" name="name" class="form-input" required
+               value="{{ project.name if project else '' }}" placeholder="e.g. Warehouse Refit" />
+      </div>
+      <div style="grid-column:span 2;">
+        <label class="form-label">Code</label>
+        <input type="text" name="code" class="form-input"
+               value="{{ project.code if project and project.code else '' }}" placeholder="e.g. PRJ-2026-04" />
+      </div>
+      <div style="grid-column:span 2;">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-textarea" rows="3"
+                  placeholder="Optional notes">{{ project.description if project and project.description else '' }}</textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> {{ action }} Project
+      </button>
+      <a href="{{ url_for('projects.index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

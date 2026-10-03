@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}New Calendar · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center px-4 py-12">
+
+  <div class="mb-8 text-center">
+    <h1 class="font-display text-2xl font-semibold text-ink">Name your calendar</h1>
+    <p class="mt-1.5 text-sm text-ink-muted">You can change this later.</p>
+  </div>
+
+  {% include "partials/flash.html" %}
+
+  <div class="card w-full p-6 sm:p-7">
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="mb-5">
+        <label class="field-label" for="{{ form.name.id }}">Calendar name</label>
+        {{ form.name(class_="field-input", placeholder="e.g. Family Calendar", autofocus=true) }}
+        {% for error in form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <button type="submit" class="btn-primary w-full">Create calendar</button>
+    </form>
+  </div>
+
+  <a href="{{ url_for('calendarmaker.welcome') }}" class="mt-6 text-sm text-ink-muted hover:text-ink">&larr; Back</a>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% from "components/_message_thread.html" import message_thread with context %}
+{% from "components/_form_field.html" import field with context %}
+{% block title %}{{ conversation.subject }} — {{ app_name }}{% endblock %}
+{% block page_title %}{{ conversation.subject }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+  <div class="card p-5 mb-6">
+    {{ message_thread(visible_messages) }}
+  </div>
+  <form method="POST" class="card p-5">
+    {{ form.hidden_tag() }}
+    {{ field(form.body, rows=3, placeholder="Write a message…") }}
+    <button type="submit" class="btn-primary">Send</button>
+  </form>
+</div>
+{% endblock %}

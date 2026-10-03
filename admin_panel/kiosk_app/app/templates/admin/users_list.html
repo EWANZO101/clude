@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Users — {{ tenant_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.index') }}">← Admin Panel</a></p>
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+  <h1 style="margin:0;">Users</h1>
+  <a href="{{ url_for('admin.add_user') }}" class="btn">+ Add User</a>
+</div>
+
+<div class="panel" style="margin-top:16px; padding:0;">
+  <div class="table-scroll">
+  <table style="width:100%; border-collapse:collapse;">
+    <tbody>
+      {% for user in users %}
+        <tr style="border-bottom:1px solid var(--panel-border);">
+          <td style="padding:14px;">
+            <div style="font-weight:600;">
+              {{ user.username }}
+              {% if not user.is_active %}<span class="muted" style="font-weight:400;">(inactive)</span>{% endif %}
+            </div>
+            <div class="muted" style="font-size:12.5px;">
+              {{ user.role }} — badge <code>{{ user.badge_code }}</code>
+              {% if user.password_hash %} — password set{% endif %}
+            </div>
+          </td>
+          <td style="padding:14px;">
+            <div class="row-actions">
+            <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn" style="background:transparent; border:1px solid var(--panel-border); color:var(--text); padding:6px 10px; font-size:12.5px;">Edit</a>
+            <form method="post" action="{{ url_for('admin.regenerate_badge', user_id=user.id) }}" onsubmit="return confirm('Generate a new badge code for ' + '{{ user.username }}' + '?');">
+              <button type="submit" style="background:transparent; border:1px solid var(--panel-border); padding:6px 10px; font-size:12.5px;">New Badge</button>
+            </form>
+            <form method="post" action="{{ url_for('admin.set_password', user_id=user.id) }}" style="display:inline-flex; gap:4px;">
+              <input type="password" name="password" placeholder="new password" style="width:110px; padding:6px;">
+              <button type="submit" style="background:transparent; border:1px solid var(--panel-border); padding:6px 10px; font-size:12.5px;">Set</button>
+            </form>
+            {% if user.is_active %}
+              <form method="post" action="{{ url_for('admin.deactivate_user', user_id=user.id) }}">
+                <button type="submit" style="background:var(--red); padding:6px 10px; font-size:12.5px;">Deactivate</button>
+              </form>
+            {% else %}
+              <form method="post" action="{{ url_for('admin.reactivate_user', user_id=user.id) }}">
+                <button type="submit" class="btn" style="padding:6px 10px; font-size:12.5px;">Reactivate</button>
+              </form>
+              <form method="post" action="{{ url_for('admin.erase_user_personal_data', user_id=user.id) }}" onsubmit="return confirm('Permanently erase ' + '{{ user.username }}' + '\'s username/badge/password? This cannot be undone. Historical checkout/issuance records are kept as a separate business record.');">
+                <button type="submit" style="background:transparent; border:1px solid var(--red); color:var(--red); padding:6px 10px; font-size:12.5px;">Erase personal data</button>
+              </form>
+            {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

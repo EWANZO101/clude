@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Banned IPs — Admin — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div class="admin-layout">
+{% include "admin/_sidebar.html" %}
+<div>
+  <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:1.5rem">Banned IP Addresses</h1>
+
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="card-body">
+      <h2 style="font-size:.9rem;font-weight:600;margin-bottom:.85rem">Add IP Ban</h2>
+      <form method="POST" action="{{ url_for('admin_ban_ip') }}" style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <input type="text" name="ip_address" class="form-input" placeholder="IP address (e.g. 192.168.1.100)" required style="flex:1;min-width:180px">
+        <input type="text" name="reason" class="form-input" placeholder="Reason" style="flex:1;min-width:200px">
+        <button type="submit" class="btn btn-danger">🔒 Ban IP</button>
+      </form>
+    </div>
+  </div>
+
+  {% if ips %}
+  <div class="card">
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:.875rem">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border)">
+            <th style="text-align:left;padding:.75rem 1rem;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em">IP Address</th>
+            <th style="text-align:left;padding:.75rem 1rem;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em">Reason</th>
+            <th style="text-align:left;padding:.75rem 1rem;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em">Banned</th>
+            <th style="text-align:right;padding:.75rem 1rem;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ip in ips %}
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:.75rem 1rem;font-family:'IBM Plex Mono',monospace;color:var(--danger)">{{ ip.ip_address }}</td>
+            <td style="padding:.75rem 1rem;color:var(--muted)">{{ ip.reason or '—' }}</td>
+            <td style="padding:.75rem 1rem;color:var(--muted);font-size:.825rem">{{ ip.created_at.strftime('%d %b %Y') }}</td>
+            <td style="padding:.75rem 1rem;text-align:right">
+              <form method="POST" action="{{ url_for('admin_unban_ip', ip_id=ip.id) }}" onsubmit="return confirm('Unban this IP?')">
+                <button type="submit" class="btn btn-success btn-sm">✓ Unban</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card" style="text-align:center;padding:2.5rem">
+    <p style="color:var(--success)">✓ No IP addresses are currently banned.</p>
+  </div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

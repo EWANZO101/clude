@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Payments — Admin{% endblock %}
+{% block content %}
+<h1>Payments</h1>
+<div class="card">
+  <table>
+    <tr><th>Company</th><th>Amount</th><th>Status</th><th>Refunded</th><th>When</th><th>Reference</th></tr>
+    {% for p in payments %}
+    <tr>
+      <td><a href="{{ url_for('admin.company_detail', company_id=p.company_id) }}" style="color:#e6e8eb;">{{ p.company.name }}</a></td>
+      <td>{{ '%.2f'|format(p.amount_cents / 100) }} {{ p.currency|upper }}</td>
+      <td><span class="badge {{ 'active' if p.status == 'paid' else 'suspended' }}">{{ p.status }}</span></td>
+      <td>{{ '%.2f'|format(p.refunded_amount_cents / 100) if p.refunded_amount_cents else '—' }}</td>
+      <td>{{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td style="font-size:0.78rem;color:#9aa3af;">{{ p.stripe_invoice_id or p.stripe_payment_intent_id or '—' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% if not payments %}<p style="color:#9aa3af;">No payments yet.</p>{% endif %}
+</div>
+{% endblock %}

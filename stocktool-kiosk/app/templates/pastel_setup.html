@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pastel / Sage Active Integration — StockTool Kiosk</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0c1120; --panel: #161d33; --panel-border: #232b45;
+    --text: #e6e9f2; --muted: #8b93a8; --accent: #6d5ef0; --accent-soft: rgba(109,94,240,.15);
+    --green: #22c55e; --green-soft: rgba(34,197,94,.15);
+    --red: #ef4444; --red-soft: rgba(239,68,68,.15);
+  }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--text); }
+  input, select { font-size:0.875rem; border-radius:0.5rem; padding:0.55rem 0.75rem; outline:none; background:var(--bg); border:1px solid var(--panel-border); color:var(--text); width:100%; }
+  input:focus, select:focus { box-shadow:0 0 0 3px var(--accent-soft); border-color:var(--accent); }
+  label { font-size:0.75rem; color:var(--muted); display:block; margin-bottom:0.25rem; }
+  .card { background:var(--panel); border:1px solid var(--panel-border); border-radius:0.85rem; padding:1.25rem; margin-bottom:1rem; }
+  .btn { display:inline-flex; align-items:center; gap:0.4rem; padding:0.55rem 1rem; border-radius:0.6rem; font-size:0.875rem; font-weight:600; cursor:pointer; border:1px solid var(--panel-border); background:var(--bg); color:var(--text); }
+  .btn-accent { background:var(--accent); border-color:var(--accent); color:white; }
+  .btn:hover { filter:brightness(1.1); }
+  .pill { font-size:0.7rem; padding:0.15rem 0.55rem; border-radius:999px; font-weight:600; }
+  .pill-ok { background:var(--green-soft); color:var(--green); }
+  .pill-bad { background:var(--red-soft); color:var(--red); }
+  pre { white-space:pre-wrap; word-break:break-word; font-size:0.75rem; background:var(--bg); border:1px solid var(--panel-border); border-radius:0.5rem; padding:0.75rem; max-height:220px; overflow:auto; }
+</style>
+</head>
+<body class="min-h-screen">
+<div class="max-w-3xl mx-auto px-4 py-8">
+  <h1 class="text-xl font-bold mb-1">Pastel / Sage Active Integration</h1>
+  <p class="text-sm mb-6" style="color:var(--muted)">Configure and run the CloudSolve accounting sync from your browser — no curl needed.</p>
+
+  <!-- Login -->
+  <div class="card" id="loginCard">
+    <h2 class="font-semibold mb-3">1. Log in</h2>
+    <div class="flex gap-2 items-end">
+      <div class="flex-1">
+        <label for="badgeCode">Badge code or username</label>
+        <input id="badgeCode" placeholder="e.g. KIOSK01 or Admin1" />
+      </div>
+      <button class="btn btn-accent" onclick="login()">Log in</button>
+    </div>
+    <p id="loginStatus" class="text-xs mt-2" style="color:var(--muted)"></p>
+  </div>
+
+  <!-- Settings -->
+  <div class="card" id="settingsCard" style="display:none">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold">2. Sage Active credentials</h2>
+      <span id="enabledPill" class="pill pill-bad">disabled</span>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div><label>Legislation (FR / ES / DE / PT)</label><input id="pastel_legislation" /></div>
+      <div><label>API base (no /graphql)</label><input id="pastel_api_base" placeholder="https://api.fr.active.sage.com" /></div>
+      <div><label>Auth URL</label><input id="pastel_auth_url" placeholder=".../connect/authorize" /></div>
+      <div><label>Token URL</label><input id="pastel_token_url" placeholder=".../connect/token" /></div>
+      <div><label>Client ID</label><input id="pastel_client_id" /></div>
+      <div><label>Client secret</label><input id="pastel_client_secret" type="password" /></div>
+      <div><label>Subscription key (x-api-key)</label><input id="pastel_subscription_key" type="password" /></div>
+      <div><label>Redirect URI</label><input id="pastel_redirect_uri" /></div>
+      <div><label>Usage journal code</label><input id="pastel_usage_journal_code" /></div>
+      <div><label>Usage expense account code</label><input id="pastel_usage_expense_account_code" /></div>
+      <div><label>Stock contra account code</label><input id="pastel_stock_contra_account_code" /></div>
+      <div><label>Sync interval (seconds)</label><input id="pastel_sync_interval_seconds" type="number" /></div>
+    </div>
+    <div class="flex items-center gap-2 mt-4">
+      <label class="flex items-center gap-2" style="margin:0"><input type="checkbox" id="pastel_enabled" style="width:auto" /> Enabled</label>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button class="btn btn-accent" onclick="saveSettings()">Save settings</button>
+      <button class="btn" onclick="loadSettings()">Reload from server</button>
+    </div>
+    <p id="settingsStatus" class="text-xs mt-2" style="color:var(--muted)"></p>
+  </div>
+
+  <!-- Connect -->
+  <div class="card" id="connectCard" style="display:none">
+    <h2 class="font-semibold mb-3">3. Connect to Sage Active</h2>
+    <p class="text-xs mb-3" style="color:var(--muted)">Save your redirect URI above to match your Sage Active app's registered callback, then click connect. You'll be sent to Sage's login/consent screen and redirected back here when done.</p>
+    <a id="connectBtn" class="btn btn-accent" href="#" target="_blank" rel="noopener">Connect to Sage Active →</a>
+    <div class="mt-4">
+      <button class="btn" onclick="loadOrgs()">List organizations</button>
+      <div id="orgsList" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- Sync -->
+  <div class="card" id="syncCard" style="display:none">
+    <h2 class="font-semibold mb-3">4. Sync</h2>
+    <button class="btn btn-accent" onclick="runSync()">Run sync now</button>
+    <button class="btn" onclick="loadLog()">View recent log</button>
+    <pre id="syncOutput" class="mt-3"></pre>
+  </div>
+</div>
+
+<script>
+let token = null;
+
+function authHeaders() {
+  return { "Authorization": "Bearer " + token, "Content-Type": "application/json" };
+}
+
+async function login() {
+  const badge_code = document.getElementById("badgeCode").value.trim();
+  const statusEl = document.getElementById("loginStatus");
+  statusEl.textContent = "Logging in...";
+  try {
+    const resp = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ badge_code }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) { statusEl.textContent = "Error: " + (data.error || resp.status); statusEl.style.color = "var(--red)"; return; }
+    if (data.user.role !== "admin" && data.user.role !== "super_admin") {
+      statusEl.textContent = "Logged in, but this account isn't an admin — Pastel settings need the admin role.";
+      statusEl.style.color = "var(--red)";
+      return;
+    }
+    token = data.token;
+    statusEl.textContent = "Logged in as " + data.user.username + " (" + data.user.role + ")";
+    statusEl.style.color = "var(--green)";
+    document.getElementById("settingsCard").style.display = "block";
+    document.getElementById("connectCard").style.display = "block";
+    document.getElementById("syncCard").style.display = "block";
+    await loadSettings();
+  } catch (e) {
+    statusEl.textContent = "Network error: " + e;
+    statusEl.style.color = "var(--red)";
+  }
+}
+
+const FIELDS = [
+  "pastel_legislation", "pastel_api_base", "pastel_auth_url", "pastel_token_url",
+  "pastel_client_id", "pastel_client_secret", "pastel_subscription_key", "pastel_redirect_uri",
+  "pastel_usage_journal_code", "pastel_usage_expense_account_code", "pastel_stock_contra_account_code",
+  "pastel_sync_interval_seconds",
+];
+
+async function loadSettings() {
+  const resp = await fetch("/api/admin/pastel/settings", { headers: authHeaders() });
+  const data = await resp.json();
+  if (!resp.ok) { document.getElementById("settingsStatus").textContent = "Error: " + (data.error || resp.status); return; }
+  FIELDS.forEach(f => { if (data[f] !== undefined && data[f] !== null) document.getElementById(f).value = data[f]; });
+  document.getElementById("pastel_enabled").checked = !!data.pastel_enabled;
+  const pill = document.getElementById("enabledPill");
+  pill.textContent = data.pastel_enabled ? "enabled" : "disabled";
+  pill.className = "pill " + (data.pastel_enabled ? "pill-ok" : "pill-bad");
+  document.getElementById("settingsStatus").textContent = "Loaded (secret fields shown masked — leave as-is to keep, or type a new value to replace).";
+  document.getElementById("connectBtn").href = "/api/admin/pastel/oauth/authorize";
+}
+
+async function saveSettings() {
+  const body = {};
+  FIELDS.forEach(f => { const v = document.getElementById(f).value; if (v !== "") body[f] = v; });
+  body.pastel_enabled = document.getElementById("pastel_enabled").checked;
+  if (body.pastel_sync_interval_seconds) body.pastel_sync_interval_seconds = parseInt(body.pastel_sync_interval_seconds, 10);
+
+  const statusEl = document.getElementById("settingsStatus");
+  statusEl.textContent = "Saving...";
+  const resp = await fetch("/api/admin/pastel/settings", { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
+  const data = await resp.json();
+  if (!resp.ok) { statusEl.textContent = "Error: " + (data.error || resp.status); statusEl.style.color = "var(--red)"; return; }
+  statusEl.textContent = "Saved.";
+  statusEl.style.color = "var(--green)";
+  await loadSettings();
+}
+
+async function loadOrgs() {
+  const el = document.getElementById("orgsList");
+  el.textContent = "Loading...";
+  const resp = await fetch("/api/admin/pastel/organizations", { headers: authHeaders() });
+  const data = await resp.json();
+  if (!resp.ok) { el.innerHTML = "<pre>" + (data.error || resp.status) + "</pre>"; return; }
+  el.innerHTML = (data.organizations || []).map(o =>
+    `<div class="flex items-center justify-between py-1"><span>${o.name} <code style="color:var(--muted)">${o.legislationCode || ""}</code></span>
+     <button class="btn" onclick="useOrg('${o.id}')">Use this org</button></div>`
+  ).join("") || "<span style='color:var(--muted)' class='text-sm'>No organizations returned.</span>";
+}
+
+async function useOrg(id) {
+  const resp = await fetch("/api/admin/pastel/organization", { method: "POST", headers: authHeaders(), body: JSON.stringify({ organization_id: id }) });
+  const data = await resp.json();
+  const el = document.getElementById("orgsList");
+  if (!resp.ok) { alert("Error: " + (data.error || resp.status)); return; }
+  el.insertAdjacentHTML("afterbegin", `<div class="text-xs mb-2" style="color:var(--green)">Using organization ${id}</div>`);
+}
+
+async function runSync() {
+  const out = document.getElementById("syncOutput");
+  out.textContent = "Running...";
+  const resp = await fetch("/api/admin/pastel/sync", { method: "POST", headers: authHeaders() });
+  const data = await resp.json();
+  out.textContent = JSON.stringify(data, null, 2);
+}
+
+async function loadLog() {
+  const out = document.getElementById("syncOutput");
+  out.textContent = "Loading...";
+  const resp = await fetch("/api/admin/pastel/log", { headers: authHeaders() });
+  const data = await resp.json();
+  out.textContent = JSON.stringify(data, null, 2);
+}
+</script>
+</body>
+</html>

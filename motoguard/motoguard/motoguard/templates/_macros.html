@@ -1,0 +1,19 @@
+{# UK number-plate component — the signature element. #}
+{% macro plate(reg, small=false) %}
+<span class="plate {{ 'plate-sm' if small }}"><span class="gb"><span style="font-size:.5em">★</span>GB</span><span class="vrm">{{ (reg or 'NO REG')|upper }}</span></span>
+{% endmacro %}
+
+{# Self-hosted location picker — no external API. Country + region dropdowns
+   (worldwide) and a UK town/city type-ahead, all from bundled data.
+   country/lat/lng names optional (pass '' to omit from submission). #}
+{# Manual location entry — the user just types town / region / country.
+   No coordinates needed: stolen alerts match by town and country text. #}
+{% macro loc_picker(prefix, city_name, region_name, country_name='', lat_name='', lng_name='',
+                    vcity='', vregion='', vcountry='', vlat='', vlng='', small=false) %}
+{% set ncols = 3 if country_name else 2 %}
+<div class="grid grid-cols-{{ ncols }} gap-2">
+  <input name="{{ city_name }}" value="{{ vcity }}" placeholder="Town / city" class="input">
+  <input name="{{ region_name }}" value="{{ vregion }}" placeholder="County / region" class="input">
+  {% if country_name %}<input name="{{ country_name }}" value="{{ vcountry }}" placeholder="Country" class="input">{% endif %}
+</div>
+{% endmacro %}

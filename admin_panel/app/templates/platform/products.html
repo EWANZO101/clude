@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Products — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <h1>Products</h1>
+    <div class="page-sub muted">Every system offered on the platform. A company gets no access to any of these until you approve a request (or grant it directly) from that company's own page.</div>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('products.list_requests') }}" class="btn btn-secondary btn-sm">Access requests{% if pending_total %} ({{ pending_total }}){% endif %} →</a>
+    <a href="{{ url_for('products.new_product') }}" class="btn btn-sm">+ New product</a>
+  </div>
+</div>
+
+<div class="panel" style="padding:8px 22px 20px;">
+  {% if products %}
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Product</th><th>Status</th><th>Approved</th><th>Pending</th><th>Rejected</th><th></th></tr></thead>
+      <tbody>
+        {% for p in products %}
+          <tr>
+            <td>
+              <div style="font-weight:600;">{{ p.name }}</div>
+              <div class="mono muted" style="font-size:11.5px;">{{ p.slug }}</div>
+              {% if p.description %}<div class="muted" style="font-size:12.5px; margin-top:2px;">{{ p.description }}</div>{% endif %}
+            </td>
+            <td>
+              {% if p.is_active %}<span class="pill pill-green">Active</span>
+              {% else %}<span class="pill pill-muted">Inactive</span>{% endif %}
+            </td>
+            <td class="mono muted">{{ counts[p.id].approved }}</td>
+            <td class="mono muted">{{ counts[p.id].pending }}</td>
+            <td class="mono muted">{{ counts[p.id].rejected }}</td>
+            <td style="white-space:nowrap;">
+              <form method="post" action="{{ url_for('products.toggle_active', product_id=p.public_id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-secondary btn-sm">{{ 'Deactivate' if p.is_active else 'Activate' }}</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="empty">No products yet — create the first one.</div>
+  {% endif %}
+</div>
+{% endblock %}

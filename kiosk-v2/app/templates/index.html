@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StockTool Kiosk</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; font-family: system-ui, sans-serif; background:#111827; color:#e5e7eb; }
+  header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:#1f2937; border-bottom:1px solid #374151; }
+  header h1 { font-size:18px; margin:0; }
+  nav { display:flex; gap:6px; padding:10px 20px; background:#1f2937; }
+  nav button { background:#374151; color:#d1d5db; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-size:14px; }
+  nav button.active { background:#2563eb; color:#fff; }
+  main { padding:20px; max-width:900px; margin:0 auto; }
+  .card { background:#1f2937; border:1px solid #374151; border-radius:10px; padding:14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  .card .meta { color:#9ca3af; font-size:13px; }
+  input, select { background:#111827; border:1px solid #374151; color:#e5e7eb; padding:8px 10px; border-radius:6px; font-size:14px; }
+  button.action { background:#2563eb; color:#fff; border:none; padding:8px 14px; border-radius:6px; cursor:pointer; }
+  button.action.danger { background:#b91c1c; }
+  button.action.secondary { background:#374151; color:#d1d5db; }
+  #loginScreen { display:flex; align-items:center; justify-content:center; height:100vh; flex-direction:column; gap:14px; }
+  #loginScreen input { width:260px; text-align:center; font-size:16px; padding:12px; }
+  .hidden { display:none !important; }
+  .msg { padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:14px; }
+  .msg.error { background:#7f1d1d; color:#fecaca; }
+  .msg.ok { background:#065f46; color:#a7f3d0; }
+  .searchbar { margin-bottom:14px; width:100%; box-sizing:border-box; padding:10px; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <h1><i>StockTool Kiosk</i></h1>
+  <p>Scan your badge or type your username</p>
+  <input id="loginInput" autofocus placeholder="Scan badge or type username + Enter" />
+  <div id="loginError" class="msg error hidden"></div>
+</div>
+
+<div id="appScreen" class="hidden">
+  <header>
+    <h1>StockTool Kiosk</h1>
+    <div>
+      <span id="whoami" class="meta"></span>
+      <button class="action secondary" onclick="logout()">Log out</button>
+    </div>
+  </header>
+  <nav>
+    <button data-tab="scan" class="active" onclick="showTab('scan')">Scan</button>
+    <button data-tab="items" onclick="showTab('items')">Items</button>
+    <button data-tab="tools" onclick="showTab('tools')">Tools</button>
+    <button data-tab="projects" onclick="showTab('projects')">Projects</button>
+  </nav>
+  <main>
+    <div id="globalMsg"></div>
+
+    <section id="tab-scan">
+      <input id="scanInput" class="searchbar" placeholder="Scan or type a barcode…" autofocus />
+      <div id="scanResult"></div>
+    </section>
+
+    <section id="tab-items" class="hidden">
+      <input id="itemsSearch" class="searchbar" placeholder="Search items by name or SKU…" oninput="loadItems()" />
+      <div id="itemsList"></div>
+    </section>
+
+    <section id="tab-tools" class="hidden">
+      <div id="toolsList"></div>
+    </section>
+
+    <section id="tab-projects" class="hidden">
+      <div id="projectsList"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+let TOKEN = null;
+
+function api(path, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  if (TOKEN) opts.headers['Authorization'] = 'Bearer ' + TOKEN;
+  return fetch(path, opts).then(async (r) => ({ status: r.status, data: await r.json().catch(() => ({})) }));
+}
+
+function flash(id, text, cls) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'msg ' + cls;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3500);
+}
+
+document.getElementById('loginInput').addEventListener('keydown', async (e) => {
+  if (e.key !== 'Enter') return;
+  const val = e.target.value.trim();
+  e.target.value = '';
+  if (!val) return;
+  const body = /^[0-9A-Fa-f]{6,}$/.test(val) ? { badge_code: val } : { username: val };
+  const { status, data } = await api('/api/auth/login', { method: 'POST', body: JSON.stringify(body) });
+  if (status !== 200) {
+    document.getElementById('loginError').textContent = data.error || 'Login failed.';
+    document.getElementById('loginError').classList.remove('hidden');
+    return;
+  }
+  TOKEN = data.token;
+  document.getElementById('whoami').textContent = data.user.username + ' (' + data.user.role + ')';
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appScreen').classList.remove('hidden');
+  showTab('scan');
+});
+
+function logout() {
+  TOKEN = null;
+  document.getElementById('appScreen').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+}
+
+function showTab(name) {
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  if (name === 'items') loadItems();
+  if (name === 'tools') loadTools();
+  if (name === 'projects') loadProjects();
+}
+
+// ── Scan tab ──────────────────────────────────────────────────────────
+document.getElementById('scanInput').addEventListener('keydown', async (e) => {
+  if (e.key !== 'Enter') return;
+  const code = e.target.value.trim();
+  e.target.value = '';
+  if (!code) return;
+  const { status, data } = await api('/api/barcode/lookup', { method: 'POST', body: JSON.stringify({ code }) });
+  const box = document.getElementById('scanResult');
+  if (status !== 200) {
+    box.innerHTML = `<div class="msg error">${data.error}</div>`;
+    return;
+  }
+  const e2 = data.entity;
+  box.innerHTML = `<div class="card"><div><b>${e2.name}</b><div class="meta">${data.entity_type}${e2.quantity !== undefined ? ' — qty ' + e2.quantity : ''}${e2.status ? ' — ' + e2.status : ''}</div></div></div>`;
+});
+
+// ── Items tab ─────────────────────────────────────────────────────────
+async function loadItems() {
+  const q = document.getElementById('itemsSearch').value;
+  const { data } = await api('/api/items?q=' + encodeURIComponent(q));
+  const list = document.getElementById('itemsList');
+  list.innerHTML = data.map(i => `
+    <div class="card">
+      <div><b>${i.name}</b><div class="meta">${i.sku || ''} — qty ${i.quantity} ${i.unit || ''}</div></div>
+      <div>
+        <button class="action secondary" onclick="adjustItem(${i.id}, -1)">−1</button>
+        <button class="action" onclick="adjustItem(${i.id}, 1)">+1</button>
+      </div>
+    </div>`).join('') || '<p class="meta">No items found.</p>';
+}
+async function adjustItem(id, delta) {
+  const { status, data } = await api(`/api/items/${id}/adjust`, { method: 'POST', body: JSON.stringify({ delta }) });
+  if (status === 200) loadItems(); else flash('globalMsg', data.error, 'error');
+}
+
+// ── Tools tab ─────────────────────────────────────────────────────────
+async function loadTools() {
+  const { data } = await api('/api/tools');
+  const list = document.getElementById('toolsList');
+  list.innerHTML = data.map(t => `
+    <div class="card">
+      <div><b>${t.name}</b><div class="meta">${t.status}${t.checked_out_by_name ? ' — ' + t.checked_out_by_name : ''}</div></div>
+      <div>
+        ${t.status === 'checked_out'
+          ? `<button class="action" onclick="checkinTool(${t.id})">Check In</button>`
+          : `<button class="action" onclick="checkoutTool(${t.id})">Check Out</button>`}
+      </div>
+    </div>`).join('') || '<p class="meta">No tools found.</p>';
+}
+async function checkoutTool(id) {
+  const who = prompt('Your name:');
+  if (!who) return;
+  const { status, data } = await api(`/api/tools/${id}/checkout`, { method: 'POST', body: JSON.stringify({ checked_out_by_name: who }) });
+  if (status === 200) loadTools(); else flash('globalMsg', data.error, 'error');
+}
+async function checkinTool(id) {
+  const { status, data } = await api(`/api/tools/${id}/checkin`, { method: 'POST' });
+  if (status === 200) loadTools(); else flash('globalMsg', data.error, 'error');
+}
+
+// ── Projects tab ──────────────────────────────────────────────────────
+async function loadProjects() {
+  const { data } = await api('/api/projects');
+  const list = document.getElementById('projectsList');
+  list.innerHTML = data.map(p => `
+    <div class="card"><div><b>${p.name}</b><div class="meta">${p.description || ''}</div></div></div>`
+  ).join('') || '<p class="meta">No active projects.</p>';
+}
+</script>
+</body>
+</html>

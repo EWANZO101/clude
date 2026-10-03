@@ -1,0 +1,134 @@
+{% extends "client_portal/_base.html" %}
+{% block title %}Manage {{ item.name }} — {{ instance.display_name() }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('client_portal.inventory_list_type', instance_id=instance.public_id, type_key=item.item_type_key) }}" class="crumb">← {{ item_type.name if item_type else item.item_type_key }}</a>
+    <h1>{{ item.name }}</h1>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1.4fr 1fr; gap:16px; align-items:start;">
+  <div>
+    <div class="panel">
+      <h2>Details</h2>
+      <form method="post" action="{{ url_for('client_portal.inventory_save_item', instance_id=instance.public_id, item_id=item.id) }}">
+        <label>Name</label>
+        <input type="text" name="name" value="{{ item.name }}" required>
+        <label>SKU</label>
+        <input type="text" name="sku" value="{{ item.sku or '' }}">
+        <label>Serial number</label>
+        <input type="text" name="serial_number" value="{{ item.serial_number or '' }}">
+        <label>Status</label>
+        <input type="text" name="status" value="{{ item.status }}">
+        <label>Checked out by (optional)</label>
+        <input type="text" name="checked_out_by_name" value="{{ item.checked_out_by_name or '' }}">
+        <label>Current project (optional)</label>
+        <input type="text" name="current_project" value="{{ item.current_project or '' }}">
+
+        {% if fields %}
+          <h3 style="margin-top:20px;">{{ item_type.name }} fields</h3>
+          {% for f in fields %}
+            <label>{{ f.label }}{% if f.required %} *{% endif %}</label>
+            {% if f.field_type == 'boolean' %}
+              <label class="checkline"><input type="checkbox" name="field_{{ f.key }}" {% if custom_values.get(f.key) %}checked{% endif %}> Yes</label>
+            {% elif f.field_type == 'select' %}
+              <select name="field_{{ f.key }}">
+                <option value="">—</option>
+                {% for opt in f.options %}<option value="{{ opt }}" {% if custom_values.get(f.key) == opt %}selected{% endif %}>{{ opt }}</option>{% endfor %}
+              </select>
+            {% else %}
+              <input type="text" name="field_{{ f.key }}" value="{{ custom_values.get(f.key, '') if custom_values.get(f.key) is not none else '' }}">
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        <button type="submit" style="margin-top:16px;">Save</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>Measurement</h2>
+      <p class="muted" style="font-size:13px;">
+        Current: {{ item.quantity_value if item.quantity_value is not none else '—' }} {{ item.quantity_unit or '' }}
+      </p>
+      <form method="post" action="{{ url_for('client_portal.inventory_set_measurement', instance_id=instance.public_id, item_id=item.id) }}" style="display:flex; gap:8px; align-items:flex-end;">
+        <div style="flex:1;">
+          <label>Change unit</label>
+          <select name="quantity_unit">
+            {% for kind, spec in measurement_kinds.items() %}
+              {% for unit_key, u in spec.units.items() %}
+                <option value="{{ unit_key }}" {% if unit_key == item.quantity_unit %}selected{% endif %}>{{ spec.label }}: {{ u.label }} ({{ unit_key }})</option>
+              {% endfor %}
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit">Convert</button>
+      </form>
+      <p class="muted" style="font-size:12px; margin-top:8px;">
+        Converting within the same kind (e.g. lb → kg) recalculates the value automatically. Switching to a
+        different kind keeps the number as-is rather than losing it.
+      </p>
+    </div>
+
+    <div class="panel">
+      <h2>Type</h2>
+      <p class="muted" style="font-size:13px;">Currently: <strong>{{ item_type.name if item_type else item.item_type_key }}</strong></p>
+      <form method="post" action="{{ url_for('client_portal.inventory_set_type', instance_id=instance.public_id, item_id=item.id) }}" style="display:flex; gap:8px; align-items:flex-end;">
+        <div style="flex:1;">
+          <select name="item_type_key">
+            {% for at in all_types %}<option value="{{ at.key }}" {% if item_type and at.key == item_type.key %}selected{% endif %}>{{ at.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <button type="submit" onclick="return confirm('Change this item\'s type?');">Change Type</button>
+      </form>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>Identifiers</h2>
+      <form method="post" action="{{ url_for('client_portal.inventory_generate_sku', instance_id=instance.public_id, item_id=item.id) }}" style="margin-bottom:10px;">
+        <button type="submit" class="btn-secondary btn-block">Generate new SKU</button>
+      </form>
+      <form method="post" action="{{ url_for('client_portal.inventory_generate_serial', instance_id=instance.public_id, item_id=item.id) }}" style="margin-bottom:10px;">
+        <button type="submit" class="btn-secondary btn-block">Generate new serial number</button>
+      </form>
+      <form method="post" action="{{ url_for('client_portal.inventory_delete_item', instance_id=instance.public_id, item_id=item.id) }}"
+            onsubmit="return confirm('Delete {{ item.name }}?');">
+        <button type="submit" class="btn-danger btn-block">Delete this item</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>Log an event</h2>
+      <form method="post" action="{{ url_for('client_portal.inventory_log_event', instance_id=instance.public_id, item_id=item.id) }}">
+        <label>Event</label>
+        <select name="event_type">
+          {% for et in event_types %}<option value="{{ et }}">{{ et.replace('_', ' ') }}</option>{% endfor %}
+        </select>
+        <label>Project (optional)</label>
+        <input type="text" name="project">
+        <label>Note (optional)</label>
+        <input type="text" name="detail">
+        <button type="submit" style="margin-top:14px;">Log Event</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>History</h2>
+      {% if item.events %}
+        {% for e in item.events %}
+          <div style="padding:8px 0; border-bottom:1px solid var(--border-soft); font-size:13px;">
+            <strong>{{ e.event_type.replace('_', ' ') }}</strong>
+            <span class="muted">{{ e.occurred_at | friendly_dtstr }}</span>
+            {% if e.actor %}<div class="muted" style="font-size:12px;">by {{ e.actor }}{% if e.project %} — {{ e.project }}{% endif %}</div>{% endif %}
+            {% if e.detail %}<div style="font-size:12.5px; margin-top:2px;">{{ e.detail }}</div>{% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="muted" style="font-size:13px;">No events logged yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

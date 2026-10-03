@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Report Portal — Login — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div style="max-width:400px;margin:3rem auto">
+  <div style="text-align:center;margin-bottom:1.75rem">
+    <div style="font-size:2rem;margin-bottom:.5rem">🔐</div>
+    <h1 style="font-size:1.4rem;font-weight:700">Report Portal Login</h1>
+    <p style="color:var(--muted);font-size:.875rem;margin-top:.35rem">Log in to check the status of your submitted reports.</p>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <form method="POST">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" name="username" class="form-input" required autofocus placeholder="Your portal username">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-input" required placeholder="Your password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:.6rem">Log In</button>
+      </form>
+    </div>
+  </div>
+  <p style="text-align:center;margin-top:1rem;font-size:.875rem;color:var(--muted)">
+    New here? <a href="{{ url_for('portal_register') }}" style="color:var(--accent)">Create a portal account</a>
+  </p>
+</div>
+{% endblock %}

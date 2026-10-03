@@ -1,0 +1,10 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.7
+Flask-Login==0.6.3
+python-dotenv==1.0.1
+waitress==3.0.0
+argon2-cffi==23.1.0
+python-barcode==0.15.1  # installs the importable "barcode" module — used by app/barcode_render.py
+reportlab==5.0.1  # PDF export button on the item detail page — imported lazily, see items.py::export_item_pdf
+qrcode==8.2  # QR code alongside the Code128 barcode on the printable label — imported lazily, see app/barcode_render.py::qr_data_uri

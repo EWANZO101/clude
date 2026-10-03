@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Item{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{{ url_for('items.index') }}" style="color:#6b7280;font-size:13px;text-decoration:none;
+     display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;">
+    <i class="fas fa-arrow-left"></i> Items
+  </a>
+  <h1 class="page-title">
+    <i class="fas fa-{% if action=='Add' %}plus{% else %}pen{% endif %}" style="color:#60a5fa;"></i>
+    {{ action }} Item
+  </h1>
+</div>
+
+<div class="card" style="padding:20px;max-width:640px;">
+  <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="grid-column:span 2;">
+        <label class="form-label">Item Name <span style="color:#ef4444;">*</span></label>
+        <input type="text" name="name" class="form-input" required
+               value="{{ item.name if item else '' }}" placeholder="e.g. M8 Hex Bolt" />
+      </div>
+      <div>
+        <label class="form-label">SKU / Part Number</label>
+        <input type="text" name="sku" class="form-input"
+               value="{{ item.sku if item and item.sku else '' }}" placeholder="e.g. BOLT-M8" />
+      </div>
+      <div>
+        <label class="form-label">Category</label>
+        <input type="text" name="category" class="form-input"
+               value="{{ item.category if item and item.category else '' }}"
+               placeholder="e.g. Fasteners" />
+      </div>
+      <div>
+        <label class="form-label">Location</label>
+        <input type="text" name="location" class="form-input"
+               value="{{ item.location if item and item.location else '' }}"
+               placeholder="e.g. Shelf A3" />
+      </div>
+      <div>
+        <label class="form-label">Unit</label>
+        <input type="text" name="unit" class="form-input"
+               value="{{ item.unit if item and item.unit else '' }}"
+               placeholder="e.g. pcs, kg, m" />
+      </div>
+      {% if not item %}
+      <div>
+        <label class="form-label">Initial Quantity</label>
+        <input type="number" name="quantity" class="form-input" min="0" value="0"
+               inputmode="numeric" />
+      </div>
+      {% endif %}
+      <div>
+        <label class="form-label">Low Stock Threshold</label>
+        <input type="number" name="low_stock_threshold" class="form-input" min="0"
+               value="{{ item.low_stock_threshold if item else 5 }}" inputmode="numeric" />
+      </div>
+      <div style="grid-column:span 2;">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-textarea" rows="3"
+                  placeholder="Optional notes">{{ item.description if item and item.description else '' }}</textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> {{ action }} Item
+      </button>
+      <a href="{{ url_for('items.index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

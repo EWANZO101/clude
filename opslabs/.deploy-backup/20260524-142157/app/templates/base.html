@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#05080f">
+<title>{% block title %}OpsLab Systems · Build. Support. Scale. Together.{% endblock %}</title>
+
+<meta name="description" content="OpsLab Systems — custom websites, FiveM scripts, hosting, system setup. One roof, one team, one ticket system. Live sync between web and Discord.">
+<meta property="og:title" content="OpsLab Systems · Build. Support. Scale. Together.">
+<meta property="og:description" content="From custom websites to FiveM scripts, hosting to system setup — under one roof, one team, one ticket system.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Tailwind + Flowbite -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.5.2/flowbite.min.css">
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'], mono: ['"JetBrains Mono"', 'monospace'] },
+        colors: {
+          ink: { 950:'#04070e', 900:'#070b16', 800:'#0b1224', 700:'#111c33', 600:'#1b2a4a', 500:'#2a3d63' },
+          ops: { 50:'#e8f3ff', 100:'#d0e7ff', 200:'#a1cfff', 300:'#71b7ff', 400:'#429fff', 500:'#2196f3', 600:'#1976d2', 700:'#0d47a1', 800:'#0a3782', 900:'#072564' },
+        },
+        boxShadow: {
+          glow:      '0 0 0 1px rgba(33,150,243,.25), 0 12px 40px -8px rgba(33,150,243,.35)',
+          'glow-sm': '0 0 0 1px rgba(33,150,243,.2),  0 6px 20px -4px rgba(33,150,243,.25)',
+        },
+        keyframes: {
+          'fade-up':   { '0%':{opacity:'0', transform:'translateY(8px)'}, '100%':{opacity:'1', transform:'translateY(0)'} },
+          'pulse-soft':{ '0%,100%':{opacity:'1'}, '50%':{opacity:'.5'} },
+        },
+        animation: {
+          'fade-up':    'fade-up .5s ease-out both',
+          'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  html, body { background: #04070e; color: #e6edf7; }
+  body {
+    background-image:
+      radial-gradient(900px 600px at 85% -10%, rgba(33,150,243,.10), transparent 60%),
+      radial-gradient(700px 500px at 10% 20%, rgba(13,71,161,.10), transparent 60%),
+      linear-gradient(180deg, #04070e, #060a14);
+    background-attachment: fixed;
+  }
+  /* Subtle grid overlay */
+  .grid-overlay {
+    background-image: linear-gradient(rgba(33,150,243,.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(33,150,243,.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  }
+  /* Status pills */
+  .pill { display:inline-flex; align-items:center; gap:6px; padding: 3px 10px; border-radius:999px; font-size: 11px; font-weight:700; letter-spacing:.6px; text-transform: uppercase; }
+  .pill-open    { background: rgba(34,197,94,.12);  color: #86efac; border:1px solid rgba(34,197,94,.3);}
+  .pill-pending { background: rgba(245,158,11,.12); color: #fcd34d; border:1px solid rgba(245,158,11,.3);}
+  .pill-closed  { background: rgba(148,163,184,.12);color: #cbd5e1; border:1px solid rgba(148,163,184,.3);}
+  .pill-low     { background: rgba(148,163,184,.12);color: #cbd5e1; border:1px solid rgba(148,163,184,.3);}
+  .pill-normal  { background: rgba(33,150,243,.12); color: #93c5fd; border:1px solid rgba(33,150,243,.3);}
+  .pill-high    { background: rgba(245,158,11,.12); color: #fcd34d; border:1px solid rgba(245,158,11,.3);}
+  .pill-urgent  { background: rgba(239,68,68,.12);  color: #fca5a5; border:1px solid rgba(239,68,68,.3);}
+  .pill-admin   { background: rgba(33,150,243,.15); color: #93c5fd; border:1px solid rgba(33,150,243,.35);}
+  .pill-staff   { background: rgba(168,85,247,.15); color: #d8b4fe; border:1px solid rgba(168,85,247,.35);}
+  .pill-user    { background: rgba(148,163,184,.12);color: #cbd5e1; border:1px solid rgba(148,163,184,.3);}
+
+  /* Card hover gleam */
+  .gleam { position: relative; overflow: hidden; }
+  .gleam::after {
+    content: ''; position: absolute; inset: -1px; border-radius: inherit;
+    background: linear-gradient(120deg, transparent 40%, rgba(33,150,243,.15) 50%, transparent 60%);
+    transform: translateX(-100%); transition: transform .6s ease; pointer-events: none;
+  }
+  .gleam:hover::after { transform: translateX(100%); }
+
+  /* Live indicator */
+  .live-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.25); animation: pulse-soft 2s infinite; }
+
+  /* Conversation bubble styles */
+  .msg { padding: 14px 16px; border-radius: 14px; margin-bottom: 12px; max-width: 80%; border: 1px solid #1b2a4a;}
+  .msg.from-me      { margin-left: auto; background: linear-gradient(135deg, rgba(33,150,243,.18), rgba(33,150,243,.06)); border-color: rgba(33,150,243,.35);}
+  .msg.from-them    { background: #0b1224; }
+  .msg.from-discord { background: linear-gradient(135deg, rgba(88,101,242,.12), transparent); border-color: rgba(88,101,242,.4);}
+  .msg.from-system  { background: transparent; border-style: dashed; color: #8aa0c0; font-size: 13px; max-width: 100%; text-align: center;}
+  .msg.internal     { border-color: rgba(245,158,11,.45); background: rgba(245,158,11,.06);}
+
+  /* Inputs */
+  .form-input, .form-textarea, .form-select { background: #0b1224 !important; border: 1px solid #1b2a4a !important; color: #e6edf7 !important; border-radius: 10px !important;}
+  .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: #2196f3 !important; box-shadow: 0 0 0 3px rgba(33,150,243,.25) !important;}
+
+  /* Scrollbar */
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: #04070e; }
+  *::-webkit-scrollbar-thumb { background: #1b2a4a; border-radius: 5px; }
+  *::-webkit-scrollbar-thumb:hover { background: #2a3d63; }
+
+  /* Selection */
+  ::selection { background: rgba(33,150,243,.4); color: white; }
+</style>
+{% block head_extra %}{% endblock %}
+</head>
+<body class="font-sans antialiased min-h-screen flex flex-col">
+
+<!-- ============ TOP NAV ============ -->
+<nav class="sticky top-0 z-50 border-b border-ink-600/60 backdrop-blur-xl bg-ink-950/70">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <a href="{{ url_for('main.index') }}" class="flex items-center gap-2.5 group">
+        <span class="inline-block">
+          <svg viewBox="0 0 64 64" width="30" height="30" class="transition-transform group-hover:rotate-6">
+            <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="#2196f3" stroke-width="4"/>
+            <polygon points="32,4 56,18 32,32" fill="#2196f3"/>
+            <polygon points="32,32 56,18 56,46 32,60" fill="#ffffff" opacity=".95"/>
+          </svg>
+        </span>
+        <span class="font-extrabold text-base sm:text-lg tracking-tight leading-none">
+          <span class="text-ops-500">OpsLab</span><span class="text-white"> Systems</span>
+        </span>
+      </a>
+
+      <div class="hidden md:flex items-center gap-1">
+        <a href="{{ url_for('main.index') }}" class="px-3 py-2 text-sm text-gray-300 hover:text-white rounded-lg hover:bg-white/5 transition">Home</a>
+        <a href="{{ url_for('main.index') }}#services" class="px-3 py-2 text-sm text-gray-300 hover:text-white rounded-lg hover:bg-white/5 transition">Services</a>
+        <a href="{{ url_for('main.index') }}#how-it-works" class="px-3 py-2 text-sm text-gray-300 hover:text-white rounded-lg hover:bg-white/5 transition">How it works</a>
+        <a href="{{ url_for('main.index') }}#features" class="px-3 py-2 text-sm text-gray-300 hover:text-white rounded-lg hover:bg-white/5 transition">Why us</a>
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('tickets.index') }}" class="px-3 py-2 text-sm text-gray-300 hover:text-white rounded-lg hover:bg-white/5 transition">My Tickets</a>
+          {% if current_user.is_staff %}<a href="{{ url_for('admin.dashboard') }}" class="px-3 py-2 text-sm text-gray-300 hover:text-white rounded-lg hover:bg-white/5 transition">Admin</a>{% endif %}
+        {% endif %}
+      </div>
+
+      <div class="flex items-center gap-2">
+        {% if current_user.is_authenticated %}
+          <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-ink-600">
+            <div class="w-7 h-7 rounded-full bg-gradient-to-br from-ops-400 to-ops-700 flex items-center justify-center text-xs font-bold">{{ current_user.username[0].upper() }}</div>
+            <div class="leading-tight">
+              <div class="text-xs font-semibold">{{ current_user.username }}</div>
+              <div class="text-[10px] text-ops-400 uppercase tracking-wider">{{ current_user.role }}</div>
+            </div>
+          </div>
+          <a href="{{ url_for('tickets.new') }}" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-lg shadow-glow-sm hover:shadow-glow transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            New Ticket
+          </a>
+          <a href="{{ url_for('auth.logout') }}" class="px-3 py-2 text-sm text-gray-400 hover:text-white">Sign out</a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="px-3 py-2 text-sm text-gray-300 hover:text-white">Sign in</a>
+          <a href="{{ url_for('auth.register') }}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-lg shadow-glow-sm hover:shadow-glow transition">Get Started</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ FLASHES ============ -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-4 space-y-2">
+      {% for cat, msg in messages %}
+        <div class="flex items-start gap-3 p-4 rounded-xl border
+          {% if cat == 'success' %}bg-green-500/10 border-green-500/30 text-green-200
+          {% elif cat == 'error' %}bg-red-500/10 border-red-500/30 text-red-200
+          {% elif cat == 'warning' %}bg-yellow-500/10 border-yellow-500/30 text-yellow-200
+          {% else %}bg-ops-500/10 border-ops-500/30 text-ops-200{% endif %}">
+          <span class="text-sm">{{ msg }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ============ PAGE ============ -->
+<main class="flex-1 w-full">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="mt-24 border-t border-ink-600/60 bg-ink-950/50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+    <div class="grid md:grid-cols-4 gap-8">
+      <div class="md:col-span-2">
+        <div class="flex items-center gap-2.5 mb-4">
+          <svg viewBox="0 0 64 64" width="28" height="28">
+            <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="#2196f3" stroke-width="4"/>
+            <polygon points="32,4 56,18 32,32" fill="#2196f3"/>
+            <polygon points="32,32 56,18 56,46 32,60" fill="#ffffff" opacity=".95"/>
+          </svg>
+          <span class="font-extrabold text-lg"><span class="text-ops-500">OpsLab</span><span class="text-white"> Systems</span></span>
+        </div>
+        <p class="text-sm text-gray-400 max-w-md leading-relaxed">
+          Build. Support. Scale. Together.<br>
+          From custom websites to FiveM scripts, hosting to system setup — under one roof, one team, one ticket system.
+        </p>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Platform</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          <li><a href="{{ url_for('main.index') }}#services" class="hover:text-white transition">Services</a></li>
+          <li><a href="{{ url_for('main.index') }}#how-it-works" class="hover:text-white transition">How it works</a></li>
+          <li><a href="{{ url_for('main.index') }}#features" class="hover:text-white transition">Why us</a></li>
+          <li><a href="/api/v1/health" class="hover:text-white transition">API status</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Account</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          {% if current_user.is_authenticated %}
+          <li><a href="{{ url_for('tickets.index') }}" class="hover:text-white transition">My Tickets</a></li>
+          <li><a href="{{ url_for('tickets.new') }}" class="hover:text-white transition">Open a ticket</a></li>
+          <li><a href="{{ url_for('auth.logout') }}" class="hover:text-white transition">Sign out</a></li>
+          {% else %}
+          <li><a href="{{ url_for('auth.login') }}" class="hover:text-white transition">Sign in</a></li>
+          <li><a href="{{ url_for('auth.register') }}" class="hover:text-white transition">Sign up</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+    <div class="mt-10 pt-6 border-t border-ink-600/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
+      <span>© <span id="year"></span> OpsLab Systems. All rights reserved.</span>
+      <span class="flex items-center gap-2"><span class="live-dot"></span> All systems operational</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.5.2/flowbite.min.js"></script>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

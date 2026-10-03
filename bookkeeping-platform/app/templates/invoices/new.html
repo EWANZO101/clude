@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}New invoice{% endblock %}
+{% block content %}
+<h1 class="page-title mb-6">New invoice</h1>
+<form method="POST" class="card card-padded space-y-4 max-w-3xl">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="grid sm:grid-cols-3 gap-4">
+    <div>
+      <label class="label-field">Customer</label>
+      <select name="customer_id" required class="input-field w-full">
+        {% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div><label class="label-field">Invoice number</label><input name="invoice_number" required class="input-field w-full"></div>
+    <div><label class="label-field">Issue date</label><input type="date" name="issue_date" class="input-field w-full"></div>
+  </div>
+  <div><label class="label-field">Due date</label><input type="date" name="due_date" class="input-field w-full"></div>
+
+  <div class="space-y-2">
+    <div class="text-sm font-medium">Line items</div>
+    {% for i in range(3) %}
+    <div class="grid grid-cols-5 gap-2">
+      <input name="line_description" placeholder="Description" class="col-span-2 px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+      <input name="line_quantity" placeholder="Qty" value="1" class="input-field">
+      <input name="line_unit_price" placeholder="Unit price" class="input-field">
+      <select name="line_account_id" class="input-field">
+        {% for a in revenue_accounts %}<option value="{{ a.id }}">{{ a.code }} {{ a.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <input name="line_tax_rate" placeholder="Tax % (optional)" class="w-32 px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+    {% endfor %}
+  </div>
+
+  <button class="btn btn-primary">Save as draft</button>
+</form>
+{% endblock %}

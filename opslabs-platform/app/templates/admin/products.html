@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Products — Admin{% endblock %}
+{% block content %}
+<h1>Products</h1>
+<p><a href="{{ url_for('admin.new_product') }}" class="btn">+ New product</a>
+   <a href="{{ url_for('admin.plans') }}" class="btn secondary">View plans</a></p>
+<div class="card">
+  <table>
+    <tr><th>Name</th><th>Type</th><th>Plans</th><th>Status</th><th>Actions</th></tr>
+    {% for p in products %}
+    <tr>
+      <td>{{ p.name }}</td>
+      <td>{{ p.type }}</td>
+      <td>{{ p.plans|length }}</td>
+      <td><span class="badge {{ 'active' if p.is_active else 'suspended' }}">{{ 'active' if p.is_active else 'inactive' }}</span></td>
+      <td>
+        <a class="btn secondary" style="margin:0;padding:0.3rem 0.6rem;font-size:0.8rem;" href="{{ url_for('admin.edit_product', product_id=p.id) }}">Edit</a>
+        <form class="inline" method="POST" action="{{ url_for('admin.delete_product', product_id=p.id) }}"
+              onsubmit="return confirm('Delete {{ p.name }}? Only possible if it has no plans.');">
+          <button class="danger" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

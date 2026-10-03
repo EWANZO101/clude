@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Audit log — Admin — {{ app_name }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+
+<div class="bg-panel border border-border rounded-lg p-4">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-gray-500 border-b border-border">
+        <th class="py-2">Time</th>
+        <th class="py-2">Action</th>
+        <th class="py-2">Detail</th>
+        <th class="py-2">IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in pagination.items %}
+      <tr class="border-b border-border/50">
+        <td class="py-2 text-gray-500 whitespace-nowrap">{{ log.created_at }}</td>
+        <td class="py-2 text-gray-200">{{ log.action }}</td>
+        <td class="py-2 text-gray-400 break-all">{{ log.detail or "" }}</td>
+        <td class="py-2 text-gray-500">{{ log.ip_address or "" }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="py-4 text-center text-gray-500">No audit events yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if pagination.pages > 1 %}
+<div class="flex items-center justify-center gap-2 mt-4 text-xs">
+  {% if pagination.has_prev %}
+    <a href="{{ url_for('admin.audit_logs', page=pagination.prev_num) }}"
+       class="px-3 py-1.5 rounded-md bg-panel border border-border text-gray-300 hover:text-gray-100">Previous</a>
+  {% endif %}
+  <span class="text-gray-500">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+  {% if pagination.has_next %}
+    <a href="{{ url_for('admin.audit_logs', page=pagination.next_num) }}"
+       class="px-3 py-1.5 rounded-md bg-panel border border-border text-gray-300 hover:text-gray-100">Next</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

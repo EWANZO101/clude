@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Planning - TeamTreck{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Planning &amp; Workload</h1>
+
+<h2 class="text-lg font-semibold mb-3">Project Time Estimates</h2>
+<p class="text-xs text-gray-400 mb-3">Estimated remaining time = average time per completed task × number of open tasks. Needs at least one completed task with tracked time to estimate.</p>
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden mb-8">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-800 text-left text-gray-500 dark:text-gray-400">
+                <th class="px-4 py-3">Project</th>
+                <th class="px-4 py-3">Completed Tasks</th>
+                <th class="px-4 py-3">Avg Time / Task</th>
+                <th class="px-4 py-3">Open Tasks</th>
+                <th class="px-4 py-3">Estimated Remaining</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for est in project_estimates %}
+            <tr class="border-b border-gray-100 dark:border-gray-800/50">
+                <td class="px-4 py-3"><a href="{{ url_for('projects.detail', project_id=est.project.id) }}" class="hover:underline">{{ est.project.name }}</a></td>
+                <td class="px-4 py-3">{{ est.completed_task_count }}</td>
+                <td class="px-4 py-3 font-mono">
+                    {% if est.avg_task_seconds %}{{ (est.avg_task_seconds / 3600) | round(1) }}h{% else %}—{% endif %}
+                </td>
+                <td class="px-4 py-3">{{ est.open_task_count }}</td>
+                <td class="px-4 py-3 font-mono text-brand-600 dark:text-brand-400">
+                    {% if est.estimated_remaining_seconds %}
+                        ~{{ (est.estimated_remaining_seconds / 3600) | round(1) }}h
+                    {% else %}
+                        Not enough data
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No active projects.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h2 class="text-lg font-semibold mb-3">Team Capacity — This Week</h2>
+<p class="text-xs text-gray-400 mb-3">Baseline: {{ capacity_baseline|int }}h/week. {{ week_start }} → {{ week_end }}</p>
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 mb-8 space-y-4">
+    {% for c in capacity %}
+    <div>
+        <div class="flex justify-between text-sm mb-1">
+            <span>{{ c.user.name }}</span>
+            <span class="text-gray-500 dark:text-gray-400">{{ c.hours }}h / {{ capacity_baseline|int }}h {% if c.spare_hours %}· {{ c.spare_hours }}h spare{% endif %}</span>
+        </div>
+        <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5">
+            <div class="h-2.5 rounded-full {{ 'bg-red-500' if c.pct_of_baseline >= 100 else ('bg-yellow-500' if c.pct_of_baseline >= 75 else 'bg-brand-500') }}"
+                 style="width: {{ [c.pct_of_baseline, 100] | min }}%;"></div>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-gray-400 text-sm">No team members yet.</p>
+    {% endfor %}
+</div>
+
+<h2 class="text-lg font-semibold mb-3">Bottlenecks</h2>
+<p class="text-xs text-gray-400 mb-3">Tasks tracking more than 2x their project's average task time.</p>
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-800 text-left text-gray-500 dark:text-gray-400">
+                <th class="px-4 py-3">Task</th>
+                <th class="px-4 py-3">Project</th>
+                <th class="px-4 py-3">Time Spent</th>
+                <th class="px-4 py-3">Project Avg</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in bottlenecks %}
+            <tr class="border-b border-gray-100 dark:border-gray-800/50">
+                <td class="px-4 py-3">{{ b.task.name }}</td>
+                <td class="px-4 py-3">{{ b.project.name }}</td>
+                <td class="px-4 py-3 font-mono text-red-500">{{ (b.seconds / 3600) | round(1) }}h</td>
+                <td class="px-4 py-3 font-mono text-gray-500 dark:text-gray-400">{{ (b.project_avg_seconds / 3600) | round(1) }}h</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">No bottlenecks detected.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

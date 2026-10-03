@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto mt-6">
+  <p class="eyebrow mb-1">Join the network</p>
+  <h1 class="font-display font-800 text-2xl text-chalk mb-5">Create your account</h1>
+  <form method="post" class="space-y-3 card p-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div><label class="label">Username</label><input name="username" placeholder="How riders see you" class="input" required></div>
+    <div><label class="label">Email</label><input name="email" type="email" placeholder="you@example.com" class="input" required></div>
+    <div><label class="label">Password</label><input name="password" type="password" placeholder="8+ characters" class="input" required></div>
+    <input name="website" class="hidden" tabindex="-1" autocomplete="off">
+    <label class="flex items-start gap-2 text-sm text-mute">
+      <input type="checkbox" name="consent" value="1" required class="mt-0.5">
+      <span>I agree to the <a href="{{ url_for('main.terms') }}" target="_blank" class="text-link">Terms &amp; Conditions</a> and <a href="{{ url_for('main.privacy') }}" target="_blank" class="text-link">Privacy Policy</a>.</span>
+    </label>
+    <button class="btn btn-primary btn-block">Create account</button>
+  </form>
+  <p class="text-sm text-mute mt-4 text-center">Already registered? <a href="{{ url_for('auth.login') }}" class="text-link">Log in</a></p>
+</div>
+{% endblock %}

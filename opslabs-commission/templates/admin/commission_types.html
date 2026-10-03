@@ -1,0 +1,420 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Commission Types — Admin{% endblock %}
+{% block head %}
+<style>
+  /* ── Add form ── */
+  .add-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  @media (max-width: 560px) { .add-grid { grid-template-columns: 1fr; } }
+
+  /* ── Type card ── */
+  .type-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .type-card:hover { border-color: var(--accent-dim); }
+  .type-card.inactive { opacity: 0.5; }
+
+  /* Top row: drag + fields + price */
+  .type-top {
+    display: grid;
+    grid-template-columns: 28px 1fr 90px;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.75rem 0.9rem 0.5rem;
+  }
+  @media (max-width: 480px) {
+    .type-top { grid-template-columns: 28px 1fr; }
+    .type-top .col-price { display: none; }
+  }
+
+  /* Edit fields */
+  .type-name-input {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 0.45rem 0.7rem;
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.95rem;
+    width: 100%;
+    transition: border-color .2s;
+  }
+  .type-name-input:focus { outline: none; border-color: var(--accent); }
+
+  .price-badge {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--gold);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* Category tag */
+  .cat-tag {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    padding: 0 0.9rem 0.45rem;
+    font-style: italic;
+  }
+
+  /* ── Action bar ── */
+  .action-bar {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 0.9rem 0.75rem;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+    background: var(--bg-surface);
+  }
+
+  .act-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.42rem 0.85rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .act-btn:hover       { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+  .act-btn.btn-save    { border-color: var(--success); color: var(--success); }
+  .act-btn.btn-save:hover { background: rgba(34,197,94,.12); }
+  .act-btn.btn-ref     { }
+  .act-btn.btn-ref.on  { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+  .act-btn.btn-hide    { }
+  .act-btn.btn-del     { margin-left: auto; }
+  .act-btn.btn-del:hover { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,.1); }
+
+  /* ── Ref expand panel ── */
+  .ref-panel {
+    display: none;
+    padding: 0.85rem 0.9rem;
+    border-top: 1px solid var(--border);
+    background: var(--bg-elevated);
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .ref-panel.open { display: flex; }
+
+  .ref-toggle-wrap {
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .ref-status {
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+  .ref-status.on  { color: var(--success); }
+  .ref-status.off { color: var(--text-muted); }
+
+  .max-wrap {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.85rem; color: var(--text-secondary);
+  }
+  .num-input {
+    width: 60px; text-align: center;
+    background: var(--bg-base); border: 1px solid var(--border);
+    color: var(--text-primary); border-radius: 7px;
+    padding: 0.35rem 0.4rem; font-size: 0.9rem;
+  }
+  .num-input:focus { outline: none; border-color: var(--accent); }
+
+  /* drag handle */
+  .drag-handle {
+    cursor: grab; color: var(--text-muted); font-size: 1.2rem;
+    user-select: none; text-align: center;
+  }
+  .drag-handle:active { cursor: grabbing; }
+
+  /* Category group header */
+  .cat-group-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.5rem 0.5rem 0.35rem;
+    margin-top: 1.25rem; margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .cat-group-header:first-of-type { margin-top: 0; }
+
+  /* Preview grid */
+  .preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+    gap: 0.65rem;
+  }
+  @media (max-width: 480px) { .preview-grid { grid-template-columns: 1fr 1fr; } }
+
+  @keyframes saveFlash { 0%{border-color:var(--success)} 100%{border-color:var(--border)} }
+  .flash-save { animation: saveFlash 1s ease; }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+
+<!-- ── Header ── -->
+<div style="margin-bottom:1.25rem;">
+  <h1 class="font-display" style="font-size:1.6rem;margin-bottom:0.2rem;">Commission Types</h1>
+  <p style="color:var(--text-muted);font-size:0.85rem;font-style:italic;">
+    Changes apply instantly on the public request form.
+  </p>
+</div>
+
+<!-- ── Add new type ── -->
+<div class="card" style="margin-bottom:1.5rem;padding:0;">
+  <div style="padding:0.85rem 1rem;border-bottom:1px solid var(--border);">
+    <div class="font-display" style="font-size:0.78rem;color:var(--accent);letter-spacing:.06em;">+ ADD NEW TYPE</div>
+  </div>
+  <form method="POST" action="/admin/commission-types/add" style="padding:1rem;">
+    <div class="add-grid" style="margin-bottom:0.75rem;">
+      <div>
+        <label class="form-label">Category</label>
+        <select name="category" class="input" id="catSelect" onchange="toggleCustom(this)">
+          <option value="">— Pick or add new below —</option>
+          {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+          {% endfor %}
+          <option value="__new__">✦ New category…</option>
+        </select>
+      </div>
+      <div id="customCatWrap" style="display:none;">
+        <label class="form-label">New Category Name</label>
+        <input type="text" name="custom_category" class="input" placeholder="e.g. Chibi">
+      </div>
+      <div>
+        <label class="form-label">Type Name *</label>
+        <input type="text" name="type_name" class="input" required placeholder="e.g. Chibi - Headshot">
+      </div>
+      <div>
+        <label class="form-label">Price ($) *</label>
+        <input type="number" name="price" class="input" required min="0" step="0.01" placeholder="0.00">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">+ Add Type</button>
+  </form>
+</div>
+
+<!-- ── Type cards grouped by category ── -->
+{% set current_cat = namespace(val='') %}
+{% for t in types %}
+
+  {% if t.category != current_cat.val %}
+    {% set current_cat.val = t.category %}
+    <div class="cat-group-header">
+      <div class="font-display" style="font-size:0.85rem;color:var(--accent);letter-spacing:.05em;">
+        {{ t.category }}
+      </div>
+      <span style="font-size:0.72rem;color:var(--text-muted);">
+        {{ types | selectattr('category','eq',t.category) | list | length }} types
+      </span>
+    </div>
+  {% endif %}
+
+  <div class="type-card {{ 'inactive' if not t.active }}" id="card-{{ t.id }}" data-id="{{ t.id }}" draggable="true">
+
+    <!-- ── Edit form (name + category + price) ── -->
+    <form method="POST" action="/admin/commission-types/{{ t.id }}/update"
+          id="form-{{ t.id }}">
+      <div class="type-top">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <input type="text" name="type_name" value="{{ t.type_name }}"
+               class="type-name-input" required
+               onchange="markDirty({{ t.id }})">
+        <div class="col-price price-badge">${{ "%.2f"|format(t.price) }}</div>
+        <input type="hidden" name="category" value="{{ t.category }}">
+        <input type="hidden" name="price"    value="{{ t.price }}">
+      </div>
+      <div class="cat-tag">
+        {{ t.category }}
+        {% if t.allow_ref_images %}
+        · <span style="color:var(--accent);">📎 Accepts ref images (max {{ t.max_ref_images or 3 }})</span>
+        {% endif %}
+      </div>
+    </form>
+
+    <!-- ── Action bar ── -->
+    <div class="action-bar">
+
+      <!-- Save -->
+      <button class="act-btn btn-save" id="save-{{ t.id }}"
+              onclick="submitRow({{ t.id }})"
+              style="opacity:0.35;pointer-events:none;">
+        💾 Save
+      </button>
+
+      <!-- Ref images -->
+      <button type="button"
+              class="act-btn btn-ref {{ 'on' if t.allow_ref_images }}"
+              onclick="toggleRefPanel({{ t.id }})"
+              id="refbtn-{{ t.id }}">
+        📎 Ref Images {{ '· ON' if t.allow_ref_images else '' }}
+      </button>
+
+      <!-- Hide/Show -->
+      <form method="POST" action="/admin/commission-types/{{ t.id }}/toggle">
+        <button type="submit" class="act-btn btn-hide">
+          {{ '🚫 Hide' if t.active else '👁 Show' }}
+        </button>
+      </form>
+
+      <!-- Delete -->
+      <form method="POST" action="/admin/commission-types/{{ t.id }}/delete"
+            onsubmit="return confirm('Delete {{ t.type_name }}?')">
+        <button type="submit" class="act-btn btn-del">🗑 Delete</button>
+      </form>
+
+    </div>
+
+    <!-- ── Ref images panel ── -->
+    <div class="ref-panel {{ 'open' if t.allow_ref_images }}" id="ref-{{ t.id }}">
+      <form method="POST" action="/admin/commission-types/{{ t.id }}/ref-images"
+            id="refform-{{ t.id }}"
+            style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;width:100%;">
+
+        <div class="ref-toggle-wrap">
+          <label class="toggle">
+            <input type="checkbox" name="allow_ref_images"
+                   {{ 'checked' if t.allow_ref_images }}
+                   onchange="this.form.submit()">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="ref-status {{ 'on' if t.allow_ref_images else 'off' }}">
+            {{ 'Enabled' if t.allow_ref_images else 'Disabled' }}
+          </span>
+        </div>
+
+        {% if t.allow_ref_images %}
+        <div class="max-wrap">
+          <span>Max uploads:</span>
+          <input type="number" name="max_ref_images"
+                 value="{{ t.max_ref_images if t.max_ref_images > 0 else 3 }}"
+                 min="1" max="20" class="num-input"
+                 onchange="this.form.submit()">
+          <span style="color:var(--text-muted);">images</span>
+        </div>
+        <span style="font-size:0.78rem;color:var(--text-muted);font-style:italic;">
+          Customers can upload reference images when ordering this type.
+        </span>
+        {% else %}
+        <span style="font-size:0.85rem;color:var(--text-muted);font-style:italic;">
+          Enable to let customers attach reference images for this commission type.
+        </span>
+        {% endif %}
+
+      </form>
+    </div>
+
+  </div>
+
+{% endfor %}
+
+{% if not types %}
+<div class="card" style="text-align:center;padding:2rem;color:var(--text-muted);font-style:italic;">
+  No commission types yet. Add one above.
+</div>
+{% endif %}
+
+<!-- ── Live price preview ── -->
+<div class="card" style="margin-top:1.75rem;padding:0;">
+  <div style="padding:0.85rem 1rem;border-bottom:1px solid var(--border);">
+    <div class="font-display" style="font-size:0.78rem;color:var(--accent);letter-spacing:.06em;">
+      LIVE PRICE PREVIEW · What customers see
+    </div>
+  </div>
+  <div style="padding:1rem;">
+    <div class="preview-grid">
+      {% for cat, items in types | groupby('category') %}
+      <div style="background:var(--bg-elevated);border-radius:8px;padding:0.75rem;">
+        <div class="font-display" style="font-size:0.72rem;color:var(--accent);margin-bottom:0.5rem;letter-spacing:.04em;">{{ cat }}</div>
+        {% set shown = namespace(n=0) %}
+        {% for item in items %}{% if item.active %}{% set shown.n = shown.n + 1 %}
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.82rem;
+                    padding:0.2rem 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:68%;">
+            {{ item.type_name.split(' - ')[-1] if ' - ' in item.type_name else item.type_name }}
+          </span>
+          <span style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+            <span style="color:var(--gold);font-weight:600;">${{ "%.2f"|format(item.price) }}</span>
+            {% if item.allow_ref_images %}<span style="font-size:0.65rem;opacity:.6;" title="Accepts ref images">📎</span>{% endif %}
+          </span>
+        </div>
+        {% endif %}{% endfor %}
+        {% if shown.n == 0 %}<div style="font-size:0.78rem;color:var(--text-muted);font-style:italic;">All hidden</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleCustom(sel) {
+  const w = document.getElementById('customCatWrap');
+  if (sel.value === '__new__') { w.style.display='block'; sel.value=''; }
+  else w.style.display='none';
+}
+
+function markDirty(id) {
+  const btn = document.getElementById('save-' + id);
+  btn.style.opacity = '1';
+  btn.style.pointerEvents = 'auto';
+}
+
+function submitRow(id) {
+  document.getElementById('card-' + id).classList.add('flash-save');
+  setTimeout(() => document.getElementById('card-' + id).classList.remove('flash-save'), 1000);
+  document.getElementById('form-' + id).submit();
+}
+
+function toggleRefPanel(id) {
+  const panel = document.getElementById('ref-' + id);
+  panel.classList.toggle('open');
+}
+
+// ── Drag-to-reorder ──────────────────────────────────────────────────────────
+let dragging = null, saveTimer = null;
+
+document.querySelectorAll('.type-card').forEach(card => {
+  card.addEventListener('dragstart', e => {
+    dragging = card;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => card.style.opacity = '0.4', 0);
+  });
+  card.addEventListener('dragend', () => {
+    if (dragging) dragging.style.opacity = '';
+    dragging = null;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveOrder, 400);
+  });
+  card.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (!dragging || dragging === card) return;
+    const rect = card.getBoundingClientRect();
+    card.parentNode.insertBefore(dragging, e.clientY > rect.top + rect.height / 2 ? card.nextSibling : card);
+  });
+});
+
+function saveOrder() {
+  const ids = [...document.querySelectorAll('.type-card')].map(c => parseInt(c.dataset.id));
+  fetch('/admin/commission-types/reorder', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({order: ids})
+  });
+}
+</script>
+{% endblock %}

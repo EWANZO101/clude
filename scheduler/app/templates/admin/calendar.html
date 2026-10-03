@@ -1,0 +1,100 @@
+{% extends "layouts/admin.html" %}
+{% block title %}Calendar · {{ app_name }}{% endblock %}
+{% block page_content %}
+
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <h1 class="font-display text-2xl font-semibold text-ink">{{ month_label }}</h1>
+  <div class="flex items-center gap-2 self-start">
+    <a href="{{ url_for('admin.calendar_view', year=prev_year, month=prev_month) }}" class="btn-ghost !px-2" aria-label="Previous month">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
+    <a href="{{ url_for('admin.calendar_view') }}" class="btn-secondary">Today</a>
+    <a href="{{ url_for('admin.calendar_view', year=next_year, month=next_month) }}" class="btn-ghost !px-2" aria-label="Next month">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+  </div>
+</div>
+
+<div class="hidden lg:block card overflow-hidden">
+  <div class="grid grid-cols-7 border-b border-border">
+    {% for label in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+    <div class="px-3 py-2 text-center text-xs font-medium uppercase tracking-wide text-ink-faint">{{ label }}</div>
+    {% endfor %}
+  </div>
+  <div class="grid grid-cols-7">
+    {% for day in days %}
+    <div class="min-h-[120px] border-b border-r border-border p-2 last:border-r-0 {{ 'bg-surface' if not day.in_month }}">
+      <div class="flex items-center justify-between">
+        <span class="flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium
+          {{ 'bg-accent text-base' if day.date == today
+             else 'text-ink' if day.in_month else 'text-ink-faint' }}">
+          {{ day.date.day }}
+        </span>
+        {% if day.in_month and not day.is_working_day %}
+          <span class="text-[10px] text-ink-faint">Off</span>
+        {% endif %}
+      </div>
+
+      {% if day.in_month %}
+        <div class="mt-1.5 space-y-1">
+          {% if day.time_offs %}
+            <div class="truncate rounded bg-status-away/10 px-1.5 py-0.5 text-[11px] text-status-away" title="{{ day.time_offs[0].reason or 'Time off' }}">
+              {{ day.time_offs[0].reason or 'Time off' }}
+            </div>
+          {% endif %}
+          {% for b in day.bookings[:2] %}
+            <div class="truncate rounded bg-status-available/10 px-1.5 py-0.5 text-[11px] text-status-available" title="{{ b.name }} · {{ b.start_datetime.strftime('%H:%M') }}">
+              {{ b.start_datetime.strftime('%H:%M') }} {{ b.name }}
+            </div>
+          {% endfor %}
+          {% if day.bookings|length > 2 %}
+            <div class="px-1.5 text-[11px] text-ink-faint">+{{ day.bookings|length - 2 }} more</div>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="lg:hidden space-y-3">
+  {% for day in days if day.in_month %}
+  <div class="card p-4 {{ 'border-accent/40' if day.date == today }}">
+    <div class="mb-2 flex items-center justify-between">
+      <div>
+        <span class="font-display text-sm font-semibold text-ink">{{ day.date.strftime('%a %d %B') }}</span>
+        {% if day.date == today %}<span class="ml-2 text-[10px] font-medium uppercase tracking-wide text-accent">Today</span>{% endif %}
+      </div>
+      {% if not day.is_working_day %}
+        <span class="text-xs text-ink-faint">Day off</span>
+      {% elif day.working_hours %}
+        <span class="text-xs text-ink-muted">{{ day.working_hours.start_time.strftime('%H:%M') }}-{{ day.working_hours.end_time.strftime('%H:%M') }}</span>
+      {% endif %}
+    </div>
+
+    {% if day.time_offs %}
+      {% for t in day.time_offs %}
+      <div class="mb-1.5 flex items-center gap-2 text-sm text-status-away">
+        <span class="status-dot bg-status-away"></span>
+        {{ t.reason or 'Time off' }}{% if not t.all_day %} · {{ t.start_datetime.strftime('%H:%M') }}-{{ t.end_datetime.strftime('%H:%M') }}{% endif %}
+      </div>
+      {% endfor %}
+    {% endif %}
+
+    {% if day.bookings %}
+      {% for b in day.bookings %}
+      <div class="mb-1.5 flex items-center gap-2 text-sm text-ink">
+        <span class="status-dot bg-status-available"></span>
+        {{ b.start_datetime.strftime('%H:%M') }} {{ b.name }}{% if b.booking_type %} · {{ b.booking_type.name }}{% endif %}
+      </div>
+      {% endfor %}
+    {% endif %}
+
+    {% if not day.time_offs and not day.bookings %}
+      <p class="text-sm text-ink-faint">{{ 'Nothing scheduled' if day.is_working_day else 'No bookings' }}</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

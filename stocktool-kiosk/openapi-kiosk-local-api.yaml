@@ -1,0 +1,310 @@
+openapi: 3.0.3
+info:
+  title: StockTool Kiosk (v2) — Local API
+  description: |
+    The embedded API the kiosk desktop app runs for its own UI. Binds
+    only to 127.0.0.1 — never exposed to the network — so authentication
+    here is intentionally lightweight (a local opaque-token session, not
+    JWT). Perimeter security is the outbound-only connection this device
+    makes to the Cloud API (see openapi-cloud-api.yaml), authenticated
+    with the installation token from registration.
+  version: "1.0.0"
+servers:
+  - url: http://127.0.0.1:8420
+    description: Local embedded server (only reachable from this machine)
+
+tags:
+  - name: Status
+  - name: Auth
+  - name: Items
+  - name: Tools
+  - name: Projects
+  - name: Barcode
+  - name: Sync
+
+paths:
+  /api/status:
+    get:
+      tags: [Status]
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  version: { type: string }
+                  counts:
+                    type: object
+                    properties:
+                      items: { type: integer }
+                      tools: { type: integer }
+                      projects: { type: integer }
+                  cloud_api: { type: string, format: uri }
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Badge-scan or username login
+      description: No password — this is a local kiosk session, not the cloud account. Badge/username data is mirrored from the cloud by the sync engine.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                badge_code: { type: string }
+                username: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      username: { type: string }
+                      role: { type: string }
+                      is_active: { type: boolean }
+        "401": { description: "User not recognised" }
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Current local session
+      security: [{ localToken: [] }]
+      responses:
+        "200": { description: OK }
+        "401": { description: Not logged in }
+
+  /api/items:
+    get:
+      tags: [Items]
+      summary: Search local items
+      parameters: [{ name: q, in: query, schema: { type: string } }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/LocalItem" } }
+
+  /api/items/{item_id}:
+    get:
+      tags: [Items]
+      summary: Get an item
+      parameters: [{ name: item_id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/LocalItem" } } } }
+        "404": { description: Not found }
+
+  /api/items/{item_id}/adjust:
+    post:
+      tags: [Items]
+      summary: Quick stock adjustment (the day-to-day kiosk action)
+      description: Accumulates into pending_delta locally; pushed to the cloud on the next sync cycle.
+      parameters: [{ name: item_id, in: path, required: true, schema: { type: integer } }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, required: [delta], properties: { delta: { type: integer } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/LocalItem" } } } }
+        "400": { description: "delta missing or zero" }
+        "404": { description: Not found }
+
+  /api/tools:
+    get:
+      tags: [Tools]
+      summary: List local tools
+      parameters: [{ name: status, in: query, schema: { type: string } }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/LocalTool" } }
+
+  /api/tools/{tool_id}/checkout:
+    post:
+      tags: [Tools]
+      summary: Check out a tool
+      parameters: [{ name: tool_id, in: path, required: true, schema: { type: integer } }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, required: [checked_out_by_name], properties: { checked_out_by_name: { type: string } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/LocalTool" } } } }
+        "409": { description: Already checked out }
+
+  /api/tools/{tool_id}/checkin:
+    post:
+      tags: [Tools]
+      summary: Check in a tool
+      parameters: [{ name: tool_id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/LocalTool" } } } }
+        "409": { description: Not checked out }
+
+  /api/projects:
+    get:
+      tags: [Projects]
+      summary: List active local projects (read-only — managed in the cloud admin app)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/LocalProject" } }
+
+  /api/projects/{project_id}:
+    get:
+      tags: [Projects]
+      summary: Get a project
+      parameters: [{ name: project_id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/LocalProject" } } } }
+        "404": { description: Not found }
+
+  /api/barcode/lookup:
+    post:
+      tags: [Barcode]
+      summary: Scan-to-search — works for USB keyboard-wedge or camera-decoded codes alike
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, required: [code], properties: { code: { type: string } } }
+      responses:
+        "200":
+          description: Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entity_type: { type: string, enum: [item, tool, project] }
+                  entity: { type: object }
+        "404": { description: No match }
+
+  /api/barcode/register:
+    post:
+      tags: [Barcode]
+      summary: Register a new barcode for an existing item/tool/project
+      description: Permission-gated (role admin/supervisor) — an operational action on cloud-owned data, not a user-management feature.
+      security: [{ localToken: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, entity_type, entity_id]
+              properties:
+                code: { type: string }
+                entity_type: { type: string, enum: [item, tool, project] }
+                entity_id: { type: integer }
+      responses:
+        "201": { description: Registered }
+        "400": { description: Validation error }
+        "403": { description: Insufficient permission }
+        "404": { description: Entity not found }
+        "409": { description: Code already registered }
+
+  /api/sync/status:
+    get:
+      tags: [Sync]
+      summary: Current sync state + recent sync log
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  state:
+                    type: object
+                    properties:
+                      is_registered: { type: boolean }
+                      installation_id: { type: string, nullable: true }
+                      last_pull_at: { type: string, format: date-time, nullable: true }
+                      last_push_at: { type: string, format: date-time, nullable: true }
+                      last_heartbeat_at: { type: string, format: date-time, nullable: true }
+                      sync_interval_seconds: { type: integer }
+                  recent_log:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        direction: { type: string, enum: [pull, push] }
+                        entity_type: { type: string, nullable: true }
+                        status: { type: string, enum: [success, error, conflict] }
+                        message: { type: string, nullable: true }
+                        created_at: { type: string, format: date-time }
+
+  /api/sync/trigger:
+    post:
+      tags: [Sync]
+      summary: Manual "Sync Now" — runs registration (if needed), pull, then push synchronously
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  pull_ok: { type: boolean }
+                  push_ok: { type: boolean }
+        "502": { description: "Could not reach the cloud API" }
+        "503": { description: "Sync engine not initialized" }
+
+components:
+  securitySchemes:
+    localToken:
+      type: http
+      scheme: bearer
+      description: Local session token from POST /api/auth/login
+
+  schemas:
+    LocalItem:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        sku: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        quantity: { type: integer }
+        unit: { type: string, nullable: true }
+        barcode_code: { type: string, nullable: true }
+        updated_at: { type: string, format: date-time }
+
+    LocalTool:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        status: { type: string }
+        checked_out_by_name: { type: string, nullable: true }
+        barcode_code: { type: string, nullable: true }
+        updated_at: { type: string, format: date-time }
+
+    LocalProject:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        is_active: { type: boolean }
+        barcode_code: { type: string, nullable: true }
+        updated_at: { type: string, format: date-time }

@@ -1,0 +1,346 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Settings — Admin{% endblock %}
+{% block admin_content %}
+
+<div style="max-width:700px;">
+  <div style="margin-bottom:1.5rem;">
+    <h1 class="font-display" style="font-size:1.7rem;">Site Settings</h1>
+  </div>
+
+  <!-- Commission Toggle + Schedule -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1rem;">Commission Availability</h2>
+
+    <!-- Manual toggle -->
+    <div class="toggle-wrapper" style="margin-bottom:1.25rem;">
+      <form method="POST" action="/admin/toggle-commissions">
+        <input type="hidden" name="notify_ping_list" value="0">
+        <label class="toggle">
+          <input type="checkbox" onchange="handleCommissionsToggle(this)"
+                 {{ 'checked' if settings.commissions_open else '' }}>
+          <span class="toggle-slider"></span>
+        </label>
+      </form>
+      <div>
+        <div style="font-weight:600;color:{{ 'var(--success)' if settings.commissions_open else 'var(--danger)' }};">
+          Commissions {{ '✓ OPEN' if settings.commissions_open else '✕ CLOSED' }}
+        </div>
+        <div style="font-size:0.85rem;color:var(--text-muted);">
+          Toggle to manually open or close. Use the schedule below to automate it.
+        </div>
+      </div>
+    </div>
+
+    <!-- Schedule section -->
+    <div style="background:var(--bg-elevated);border:1px solid var(--border-accent);
+                border-radius:10px;padding:1rem;">
+      <div class="font-display" style="font-size:0.76rem;color:var(--text-muted);
+           letter-spacing:.07em;text-transform:uppercase;margin-bottom:0.85rem;">
+        📅 Scheduled Open / Close (US Time Format)
+      </div>
+
+      <form method="POST" action="/admin/settings">
+        <!-- Preserve all other settings -->
+        <input type="hidden" name="discord_webhook"         value="{{ settings.discord_webhook }}">
+        <input type="hidden" name="discord_webhook_status"  value="{{ settings.discord_webhook_status }}">
+        <input type="hidden" name="discord_webhook_tickets" value="{{ settings.discord_webhook_tickets }}">
+        <input type="hidden" name="discord_bot_token"       value="{{ settings.discord_bot_token }}">
+        <input type="hidden" name="discord_ticket_channel"  value="{{ settings.discord_ticket_channel }}">
+        <input type="hidden" name="discord_bot_secret"      value="{{ settings.discord_bot_secret }}">
+        <input type="hidden" name="cashapp_api_key"         value="{{ settings.cashapp_api_key }}">
+        <input type="hidden" name="closed_message"          value="{{ settings.closed_message }}">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;margin-bottom:0.85rem;">
+          <div>
+            <label class="form-label" style="color:var(--danger);">🔒 Auto-Close</label>
+            <input type="text" name="close_date" id="close_date" class="input"
+                   value="{{ settings.close_date }}"
+                   placeholder="MM/DD/YYYY HH:MM AM"
+                   style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;">
+            <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.3rem;font-style:italic;">
+              e.g. 03/25/2026 09:00 PM
+            </p>
+          </div>
+          <div>
+            <label class="form-label" style="color:var(--success);">🔓 Auto-Reopen</label>
+            <input type="text" name="reopen_date" id="reopen_date" class="input"
+                   value="{{ settings.reopen_date }}"
+                   placeholder="MM/DD/YYYY HH:MM AM"
+                   style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;">
+            <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.3rem;font-style:italic;">
+              e.g. 04/01/2026 12:00 PM
+            </p>
+          </div>
+        </div>
+
+        {% if settings.close_date or settings.reopen_date %}
+        <div style="background:var(--bg-base);border-radius:8px;padding:0.65rem 0.85rem;
+                    margin-bottom:0.85rem;font-size:0.85rem;display:grid;gap:0.3rem;
+                    border:1px solid var(--border);">
+          {% if settings.close_date %}
+          <div>🔒 Will close: <strong style="color:var(--danger);">{{ settings.close_date }}</strong></div>
+          {% endif %}
+          {% if settings.reopen_date %}
+          <div>🔓 Will reopen: <strong style="color:var(--success);">{{ settings.reopen_date }}</strong></div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+          <button type="submit" class="btn btn-primary btn-sm">💾 Save Schedule</button>
+          <button type="button" class="btn btn-ghost btn-sm"
+                  onclick="document.getElementById('close_date').value='';
+                           document.getElementById('reopen_date').value='';">
+            ✕ Clear Fields
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Settings Form -->
+  <form method="POST" class="card" style="margin-bottom:1.5rem;">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1.25rem;">
+      Discord Webhooks
+    </h2>
+
+    <!-- General webhook -->
+    <div style="margin-bottom:1.25rem;">
+      <label class="form-label">General Webhook URL</label>
+      <input type="url" name="discord_webhook" class="input"
+             value="{{ settings.discord_webhook }}"
+             placeholder="https://discord.com/api/webhooks/...">
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem;font-style:italic;">
+        Used for: new commission requests, new orders, payments received, tickets, ticket replies.
+      </p>
+    </div>
+
+    <!-- Status update webhook -->
+    <div style="margin-bottom:1rem;padding:1rem;background:var(--bg-elevated);
+                border-radius:10px;border:1px solid var(--border-accent);">
+      <label class="form-label" style="color:var(--accent);">
+        Status Update Webhook URL
+      </label>
+      <input type="url" name="discord_webhook_status" class="input"
+             value="{{ settings.discord_webhook_status }}"
+             placeholder="https://discord.com/api/webhooks/...">
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem;font-style:italic;">
+        Used only for: order status changes (e.g. In Progress, Done).
+        Falls back to General webhook if left blank.
+      </p>
+    </div>
+
+    <!-- Ticket webhook -->
+    <div style="margin-bottom:1.5rem;padding:1rem;background:var(--bg-elevated);
+                border-radius:10px;border:1px solid var(--border-accent);">
+      <label class="form-label" style="color:var(--accent);">
+        🎫 Ticket Webhook URL
+      </label>
+      <input type="url" name="discord_webhook_tickets" class="input"
+             value="{{ settings.discord_webhook_tickets }}"
+             placeholder="https://discord.com/api/webhooks/...">
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem;font-style:italic;">
+        Receives rich embeds for: new tickets, customer replies, admin replies, and ticket closures.
+        Point this at a dedicated <strong style="color:var(--text-secondary);">#tickets</strong> channel.
+        Falls back to General webhook if left blank.
+      </p>
+    </div>
+
+    <!-- ── Discord Bot ── -->
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:0.5rem;margin-top:0.5rem;">
+      🤖 Discord Bot — Bi-directional Ticket Sync
+    </h2>
+    <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;font-style:italic;">
+      Required for the ticket button panel and two-way Discord ↔ site reply sync.
+    </p>
+
+    <div style="margin-bottom:1.25rem;padding:1rem;background:var(--bg-elevated);
+                border-radius:10px;border:1px solid var(--border-accent);">
+      <label class="form-label" style="color:var(--accent);">Bot Token</label>
+      <input type="password" name="discord_bot_token" class="input"
+             value="{{ settings.discord_bot_token }}"
+             placeholder="MTQ5M... (Discord Developer Portal → Bot → Token)">
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem;font-style:italic;">
+        Keep this secret. Never share it publicly.
+      </p>
+    </div>
+
+    <div style="margin-bottom:1.25rem;padding:1rem;background:var(--bg-elevated);
+                border-radius:10px;border:1px solid var(--border-accent);">
+      <label class="form-label" style="color:var(--accent);">Ticket Thread Channel ID</label>
+      <input type="text" name="discord_ticket_channel" class="input"
+             value="{{ settings.discord_ticket_channel }}"
+             placeholder="e.g. 1490109811394613380">
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem;font-style:italic;">
+        Must be a <strong style="color:var(--text-secondary);">text channel</strong> (not a category).
+        Right-click the channel in Discord → Copy Channel ID. Ticket threads will be created here.
+      </p>
+    </div>
+
+    <div style="margin-bottom:1.5rem;padding:1rem;background:var(--bg-elevated);
+                border-radius:10px;border:1px solid var(--border-accent);">
+      <label class="form-label" style="color:var(--accent);">Bot Secret</label>
+      <input type="text" name="discord_bot_secret" class="input"
+             value="{{ settings.discord_bot_secret }}"
+             placeholder="Must match DISCORD_BOT_SECRET in your .env file">
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem;font-style:italic;">
+        Must exactly match <code>DISCORD_BOT_SECRET</code> in your server's <code>.env</code> file.
+      </p>
+      {% if settings.discord_bot_secret %}
+        <div style="margin-top:0.4rem;font-size:0.8rem;color:var(--success);">✓ Secret is set</div>
+      {% else %}
+        <div style="margin-top:0.4rem;font-size:0.8rem;color:var(--danger);">✕ Not set — bot calls will be rejected (403)</div>
+      {% endif %}
+    </div>
+
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1rem;">
+      Other Settings
+    </h2>
+
+    <div style="margin-bottom:1rem;">
+      <label class="form-label">Default Max Reference Images</label>
+      <input type="number" name="max_ref_images_default" class="input"
+             value="{{ settings.max_ref_images_default or 3 }}"
+             min="1" max="20" style="max-width:120px;">
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem;font-style:italic;">
+        Default number of reference image uploads allowed per commission type
+        (can be overridden per type in Commission Types).
+      </p>
+    </div>
+
+    <!-- ── Banner ── -->
+    <div style="border:1px solid var(--border);border-radius:10px;padding:1rem;
+                margin-bottom:1.25rem;background:var(--bg-elevated);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.85rem;">
+        <div class="font-display" style="font-size:0.78rem;color:var(--accent);letter-spacing:.06em;">📢 HOMEPAGE BANNER</div>
+        <label class="toggle" title="Enable/disable the banner">
+          <input type="checkbox" name="banner_enabled" {{ 'checked' if settings.banner_enabled }}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+        <div style="grid-column:1/-1;">
+          <label class="form-label">Banner Message</label>
+          <input type="text" name="banner_text" class="input"
+                 value="{{ settings.banner_text or '' }}"
+                 placeholder="e.g. Flash sale this weekend — 20% off!">
+        </div>
+        <div>
+          <label class="form-label">Style</label>
+          <select name="banner_style" class="input">
+            <option value="info"    {{ 'selected' if settings.banner_style == 'info'    }}>ℹ Info (purple)</option>
+            <option value="success" {{ 'selected' if settings.banner_style == 'success' }}>✓ Success (green)</option>
+            <option value="warning" {{ 'selected' if settings.banner_style == 'warning' }}>⚠ Warning (amber)</option>
+            <option value="danger"  {{ 'selected' if settings.banner_style == 'danger'  }}>✕ Danger (red)</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Link URL <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+          <input type="text" name="banner_link" class="input"
+                 value="{{ settings.banner_link or '' }}"
+                 placeholder="https://...">
+        </div>
+        <div>
+          <label class="form-label">Link Text <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+          <input type="text" name="banner_link_text" class="input"
+                 value="{{ settings.banner_link_text or '' }}"
+                 placeholder="e.g. Learn more">
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:1rem;">
+      <label class="form-label">Cash App API Key</label>
+      <input type="text" name="cashapp_api_key" class="input"
+             value="{{ settings.cashapp_api_key }}"
+             placeholder="Your Cash App API key (if applicable)">
+    </div>
+
+    <div style="margin-bottom:1.5rem;">
+      <label class="form-label">Commissions Closed Message</label>
+      <textarea name="closed_message" class="input"
+                style="min-height:80px;">{{ settings.closed_message }}</textarea>
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem;font-style:italic;">
+        Shown to visitors when commissions are closed.
+      </p>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Settings</button>
+  </form>
+
+  <!-- Webhook test / info -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1rem;">
+      Webhook Summary
+    </h2>
+    <div style="display:grid;gap:0.5rem;font-size:0.9rem;">
+      <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border);">
+        <span style="color:var(--text-muted);">New requests &amp; orders</span>
+        <span style="color:{{ 'var(--success)' if settings.discord_webhook else 'var(--danger)' }};">
+          {{ '✓ Set' if settings.discord_webhook else '✕ Not set' }}
+        </span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border);">
+        <span style="color:var(--text-muted);">Payments received</span>
+        <span style="color:{{ 'var(--success)' if settings.discord_webhook else 'var(--danger)' }};">
+          {{ '✓ Set' if settings.discord_webhook else '✕ Not set' }}
+        </span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border);">
+        <span style="color:var(--text-muted);">Tickets &amp; replies</span>
+        <span style="color:{{ 'var(--success)' if settings.discord_webhook else 'var(--danger)' }};">
+          {{ '✓ Set' if settings.discord_webhook else '✕ Not set' }}
+        </span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:0.4rem 0;">
+        <span style="color:var(--text-muted);">Order status updates</span>
+        {% if settings.discord_webhook_status %}
+          <span style="color:var(--accent);">✓ Separate channel</span>
+        {% elif settings.discord_webhook %}
+          <span style="color:var(--text-muted);font-style:italic;">→ Using general webhook</span>
+        {% else %}
+          <span style="color:var(--danger);">✕ Not set</span>
+        {% endif %}
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-top:1px solid var(--border);">
+        <span style="color:var(--text-muted);">Ticket activity</span>
+        {% if settings.discord_webhook_tickets %}
+          <span style="color:var(--accent);">✓ Separate channel</span>
+        {% elif settings.discord_webhook %}
+          <span style="color:var(--text-muted);font-style:italic;">→ Using general webhook</span>
+        {% else %}
+          <span style="color:var(--danger);">✕ Not set</span>
+        {% endif %}
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-top:1px solid var(--border);">
+        <span style="color:var(--text-muted);">Discord bot sync</span>
+        {% if settings.discord_bot_secret and settings.discord_ticket_channel %}
+          <span style="color:var(--success);">✓ Configured</span>
+        {% else %}
+          <span style="color:var(--danger);">✕ Not configured</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Site info -->
+  <div class="card">
+    <h2 class="font-display" style="font-size:1rem;color:var(--accent);margin-bottom:1rem;">Site Info</h2>
+    <div style="display:grid;gap:0.5rem;font-size:0.9rem;">
+      <div style="display:flex;justify-content:space-between;">
+        <span style="color:var(--text-muted);">Admin Username</span>
+        <span class="font-mono">ciodrawz</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="color:var(--text-muted);">Discord DM</span>
+        <span>totallynotcioda</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="color:var(--text-muted);">Support Email</span>
+        <span>cioda@ciodrawz.space</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

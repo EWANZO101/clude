@@ -1,0 +1,35 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Finance settings{% endblock %}
+{% block content %}
+<div class="max-w-md">
+  {{ ui.page_header("Finance settings") }}
+  <form method="POST" class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="space-y-1">
+      <label class="text-sm text-slate-400">Default account</label>
+      <select name="default_account_id" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+        <option value="">None</option>
+        {% for a in accounts %}<option value="{{ a.id }}" {{ 'selected' if settings.default_account_id == a.id }}>{{ a.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="space-y-1">
+      <label class="text-sm text-slate-400">Minimum safe balance</label>
+      <input name="minimum_safe_balance" value="{{ (settings.minimum_safe_balance_minor / 100) | round(2) }}" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    </div>
+    <div class="space-y-1">
+      <label class="text-sm text-slate-400">Monthly savings target</label>
+      <input name="monthly_savings_target" value="{{ (settings.monthly_savings_target_minor / 100) | round(2) }}" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    </div>
+    <div class="space-y-1">
+      <label class="text-sm text-slate-400">Annual savings target</label>
+      <input name="annual_savings_target" value="{{ (settings.annual_savings_target_minor / 100) | round(2) }}" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    </div>
+    <div class="space-y-1">
+      <label class="text-sm text-slate-400">Emergency fund target</label>
+      <input name="emergency_fund_target" value="{{ (settings.emergency_fund_target_minor / 100) | round(2) }}" class="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    </div>
+    {{ ui.button("Save", type="submit", variant="primary", extra="w-full justify-center") }}
+  </form>
+</div>
+{% endblock %}

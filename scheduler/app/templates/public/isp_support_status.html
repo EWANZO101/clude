@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Check your request · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto max-w-md px-4 py-12 sm:py-16">
+  <div class="mb-8 text-center">
+    <h1 class="font-display text-2xl font-semibold text-ink">Check your request</h1>
+    <p class="mt-2 text-sm text-ink-muted">
+      Enter the reference code from your confirmation and the email you submitted the request with.
+    </p>
+  </div>
+
+  {% include "partials/flash.html" %}
+
+  <form method="POST" action="{{ url_for('isp_support.check_status') }}" class="card p-5 sm:p-6 space-y-4">
+    {{ form.hidden_tag() }}
+
+    <div>
+      <label class="field-label" for="{{ form.reference.id }}">{{ form.reference.label.text }}</label>
+      {{ form.reference(class_="field-input font-mono uppercase", placeholder="A1B2C3D4") }}
+      {% for e in form.reference.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+
+    <div>
+      <label class="field-label" for="{{ form.email.id }}">{{ form.email.label.text }}</label>
+      {{ form.email(class_="field-input") }}
+      {% for e in form.email.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+
+    <button type="submit" class="btn-primary w-full">Check status</button>
+  </form>
+
+  {% if searched and result %}
+  <div class="card p-5 sm:p-6 mt-6">
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <p class="font-medium text-ink">{{ result.isp_name }}</p>
+      <span class="status-pill !py-1 !px-2.5 text-xs border-border bg-surface-raised text-ink-muted">{{ result.status_label }}</span>
+    </div>
+    <p class="text-sm text-ink-muted whitespace-pre-line">{{ result.problem_description }}</p>
+    <p class="mt-4 text-xs text-ink-faint">Submitted {{ result.submitted_at.strftime('%d %b %Y at %H:%M') }}</p>
+  </div>
+  {% endif %}
+
+  <p class="mt-6 text-center text-xs text-ink-faint">
+    <a href="{{ url_for('isp_support.request_form') }}" class="underline hover:text-ink-muted">&larr; Back to the request form</a>
+  </p>
+</div>
+{% endblock %}

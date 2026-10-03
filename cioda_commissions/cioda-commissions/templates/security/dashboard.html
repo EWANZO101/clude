@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Security Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#080810;color:#e8e6f0;font-family:'JetBrains Mono',monospace;
+         font-size:.88rem;min-height:100vh;}
+    .grid-bg{position:fixed;inset:0;background-image:
+      linear-gradient(rgba(192,132,252,.02) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(192,132,252,.02) 1px,transparent 1px);
+      background-size:40px 40px;z-index:0;pointer-events:none;}
+
+    /* Nav */
+    nav{position:sticky;top:0;z-index:100;background:#0c0c18;
+        border-bottom:1px solid #2e2e50;padding:0 1.5rem;height:56px;
+        display:flex;align-items:center;justify-content:space-between;}
+    .nav-brand{font-family:'Cinzel',serif;font-size:1rem;color:#c084fc;
+               font-weight:700;letter-spacing:.06em;display:flex;align-items:center;gap:.65rem;}
+    .nav-brand span{color:#f59e0b;}
+    .nav-links{display:flex;gap:.75rem;align-items:center;}
+    .btn{display:inline-flex;align-items:center;padding:.35rem .85rem;border-radius:6px;
+         font-family:'Cinzel',serif;font-size:.75rem;font-weight:600;cursor:pointer;
+         text-decoration:none;border:none;transition:all .2s;letter-spacing:.03em;}
+    .btn-ghost{background:transparent;color:#5f5d72;border:1px solid #2e2e50;}
+    .btn-ghost:hover{border-color:#c084fc;color:#c084fc;}
+    .btn-danger{background:#7f1d1d;color:#fca5a5;}
+    .btn-danger:hover{background:#ef4444;color:#fff;}
+
+    /* Layout */
+    main{position:relative;z-index:1;padding:2rem 1.5rem;max-width:1200px;margin:0 auto;}
+
+    /* Stat cards */
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+           gap:.85rem;margin-bottom:2rem;}
+    .stat{background:#0f0f18;border:1px solid #2e2e50;border-radius:10px;
+          padding:1.1rem;text-align:center;}
+    .stat-val{font-size:2rem;font-family:'Cinzel',serif;font-weight:700;line-height:1;margin-bottom:.3rem;}
+    .stat-lbl{font-size:.65rem;color:#5f5d72;letter-spacing:.1em;text-transform:uppercase;}
+
+    /* Search / filter bar */
+    .toolbar{display:flex;gap:.65rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center;}
+    input[type=text],input[type=search]{background:#0a0a14;border:1px solid #2e2e50;
+      color:#e8e6f0;border-radius:6px;padding:.45rem .75rem;font-family:'JetBrains Mono',monospace;
+      font-size:.82rem;transition:border-color .2s;outline:none;}
+    input:focus{border-color:#c084fc;}
+    select{background:#0a0a14;border:1px solid #2e2e50;color:#e8e6f0;
+           border-radius:6px;padding:.45rem .75rem;font-family:'JetBrains Mono',monospace;
+           font-size:.82rem;outline:none;cursor:pointer;}
+
+    /* Table */
+    .table-wrap{background:#0f0f18;border:1px solid #2e2e50;border-radius:10px;overflow:hidden;}
+    table{width:100%;border-collapse:collapse;}
+    thead th{background:#0c0c18;font-family:'Cinzel',serif;font-size:.65rem;
+             font-weight:700;color:#5f5d72;text-transform:uppercase;letter-spacing:.1em;
+             padding:.7rem 1rem;text-align:left;border-bottom:1px solid #2e2e50;white-space:nowrap;}
+    tbody td{padding:.65rem 1rem;border-bottom:1px solid #17172a;vertical-align:middle;
+             font-size:.8rem;}
+    tbody tr:hover td{background:#12121f;}
+    tbody tr:last-child td{border-bottom:none;}
+
+    /* Badges */
+    .badge{display:inline-flex;align-items:center;padding:.15rem .6rem;border-radius:999px;
+           font-size:.68rem;font-family:'Cinzel',serif;font-weight:700;letter-spacing:.03em;}
+    .badge-ok {background:#14532d22;border:1px solid #166534;color:#86efac;}
+    .badge-fail{background:#450a0a22;border:1px solid #7f1d1d;color:#fca5a5;}
+
+    /* IP highlight */
+    .ip{color:#c084fc;font-family:'JetBrains Mono',monospace;}
+    .ua{color:#5f5d72;font-size:.72rem;max-width:260px;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+    /* Scroll */
+    ::-webkit-scrollbar{width:5px;height:5px;}
+    ::-webkit-scrollbar-track{background:#080810;}
+    ::-webkit-scrollbar-thumb{background:#2e2e50;border-radius:3px;}
+
+    @media(max-width:640px){
+      .hide-sm{display:none;}
+      main{padding:1rem;}
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+
+  <nav>
+    <div class="nav-brand">🔐 Security <span>Portal</span></div>
+    <div class="nav-links">
+      <span style="font-size:.72rem;color:#3d3d5a;letter-spacing:.06em;">RESTRICTED ACCESS</span>
+      <a href="/security/logout" class="btn btn-danger btn-sm">Sign Out</a>
+    </div>
+  </nav>
+
+  <main>
+    <div style="margin-bottom:1.5rem;">
+      <div style="font-family:'Cinzel',serif;font-size:1.3rem;font-weight:700;
+                  color:#e8e6f0;margin-bottom:.25rem;">Login Activity Log</div>
+      <div style="font-size:.72rem;color:#3d3d5a;letter-spacing:.06em;">
+        All admin login attempts — successful and failed
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val" style="color:#c084fc;">{{ total }}</div>
+        <div class="stat-lbl">Total Attempts</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" style="color:#86efac;">{{ successful }}</div>
+        <div class="stat-lbl">Successful</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" style="color:#fca5a5;">{{ failed }}</div>
+        <div class="stat-lbl">Failed</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" style="color:#f59e0b;">{{ unique_ips }}</div>
+        <div class="stat-lbl">Unique IPs</div>
+      </div>
+    </div>
+
+    <!-- Filter toolbar -->
+    <div class="toolbar">
+      <input type="search" id="searchInput" placeholder="🔍 Filter by IP or note…"
+             oninput="filterLogs()" style="flex:1;min-width:180px;">
+      <select id="statusFilter" onchange="filterLogs()">
+        <option value="">All</option>
+        <option value="success">Successful Only</option>
+        <option value="failed">Failed Only</option>
+      </select>
+      <span id="countLabel" style="font-size:.72rem;color:#5f5d72;white-space:nowrap;">
+        {{ logs|length }} entries
+      </span>
+    </div>
+
+    <!-- Log table -->
+    <div class="table-wrap">
+      <div style="overflow-x:auto;">
+        <table id="logTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Timestamp (UTC)</th>
+              <th>IP Address</th>
+              <th>Status</th>
+              <th>Note</th>
+              <th class="hide-sm">User Agent</th>
+            </tr>
+          </thead>
+          <tbody id="logBody">
+            {% for log in logs %}
+            <tr class="log-row"
+                data-search="{{ log.ip_address }} {{ log.note or '' }} {{ 'success' if log.success else 'failed' }}"
+                data-status="{{ 'success' if log.success else 'failed' }}">
+              <td style="color:#3d3d5a;">{{ loop.index }}</td>
+              <td style="white-space:nowrap;color:#5f5d72;">
+                {{ log.logged_at.strftime('%m/%d/%Y %I:%M:%S %p') }}
+              </td>
+              <td><span class="ip">{{ log.ip_address }}</span></td>
+              <td>
+                <span class="badge {{ 'badge-ok' if log.success else 'badge-fail' }}">
+                  {{ '✓ OK' if log.success else '✕ FAIL' }}
+                </span>
+              </td>
+              <td style="color:#9694a8;">{{ log.note or '—' }}</td>
+              <td class="hide-sm"><div class="ua" title="{{ log.user_agent or '' }}">
+                {{ log.user_agent or '—' }}
+              </div></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" style="text-align:center;color:#3d3d5a;padding:2rem;">
+              No login records yet.
+            </td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="margin-top:1rem;font-size:.68rem;color:#2e2e50;text-align:center;
+                letter-spacing:.06em;">
+      SHOWING LAST 200 ENTRIES · CIODA SECURITY PORTAL · ACCESS LOGGED
+    </div>
+  </main>
+
+<script>
+function filterLogs() {
+  const q      = document.getElementById('searchInput').value.toLowerCase();
+  const status = document.getElementById('statusFilter').value;
+  const rows   = document.querySelectorAll('.log-row');
+  let visible  = 0;
+
+  rows.forEach(row => {
+    const matchQ      = !q      || row.dataset.search.toLowerCase().includes(q);
+    const matchStatus = !status || row.dataset.status === status;
+    const show        = matchQ && matchStatus;
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  document.getElementById('countLabel').textContent = `${visible} entries`;
+}
+</script>
+</body>
+</html>

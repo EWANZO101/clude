@@ -1,0 +1,27 @@
+{% extends "layouts/customer_dashboard.html" %}
+{% block title %}My Equipment — {{ app_name }}{% endblock %}
+{% block page_title %}My equipment{% endblock %}
+{% block content %}
+{% if items %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Type</th><th>Manufacturer / Model</th><th>Qty</th><th>Request</th><th></th></tr></thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td class="text-text-secondary">{{ item.equipment_type.name }}</td>
+        <td class="font-medium text-text-primary">{{ item.manufacturer }} {{ item.model }}</td>
+        <td>{{ item.quantity }}</td>
+        <td class="text-text-secondary">{{ item.request.request_number }}</td>
+        <td><a href="{{ url_for('customer.request_detail', request_id=item.request_id) }}" class="text-brand-400 hover:text-brand-300">View request</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card p-10 text-center text-text-secondary">
+  You haven't added any equipment yet. <a href="{{ url_for('customer.requests') }}" class="text-brand-400 hover:text-brand-300">Start a hosting request</a>.
+</div>
+{% endif %}
+{% endblock %}

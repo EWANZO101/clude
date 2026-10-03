@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            surface: '#0f1117',
+            panel: '#161923',
+            border: '#252938',
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.5.1/flowbite.min.css" rel="stylesheet" />
+  {% block head %}{% endblock %}
+</head>
+<body class="bg-surface text-gray-200 min-h-screen flex flex-col">
+
+  <nav class="bg-panel border-b border-border px-4 py-3">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <a href="{{ url_for('main.index') }}" class="text-sm font-semibold tracking-wide text-gray-100">
+        SnailyCAD <span class="text-blue-500">Migrate</span>
+      </a>
+      <div class="flex items-center gap-4 text-sm">
+        <a href="{{ url_for('main.guide') }}" class="text-gray-400 hover:text-gray-100">Guide</a>
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('main.dashboard') }}" class="text-gray-400 hover:text-gray-100">Dashboard</a>
+          <a href="{{ url_for('main.account') }}" class="text-gray-400 hover:text-gray-100">Account</a>
+          <a href="{{ url_for('support.list_tickets') }}" class="text-gray-400 hover:text-gray-100">Support</a>
+          {% if current_user.is_admin() %}
+            <a href="{{ url_for('admin.overview') }}" class="text-gray-400 hover:text-gray-100">Admin</a>
+          {% endif %}
+          <a href="{{ url_for('auth.logout') }}"
+             class="px-3 py-1.5 rounded-md bg-border text-gray-200 hover:bg-gray-700">Log out</a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="text-gray-400 hover:text-gray-100">Log in</a>
+          <a href="{{ url_for('auth.register') }}"
+             class="px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-500">Get started</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <main class="flex-1">
+    <div class="max-w-6xl mx-auto px-4 py-8">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="space-y-2 mb-6">
+            {% for category, message in messages %}
+              {% set colors = {
+                'success': 'bg-green-900/40 border-green-700 text-green-300',
+                'danger': 'bg-red-900/40 border-red-700 text-red-300',
+                'warning': 'bg-yellow-900/40 border-yellow-700 text-yellow-300',
+                'info': 'bg-blue-900/40 border-blue-700 text-blue-300'
+              } %}
+              <div class="border rounded-md px-4 py-3 text-sm break-words {{ colors.get(category, colors['info']) }}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <footer class="border-t border-border px-4 py-4 text-center text-xs text-gray-600">
+    SnailyCAD Migration Platform
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.5.1/flowbite.min.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

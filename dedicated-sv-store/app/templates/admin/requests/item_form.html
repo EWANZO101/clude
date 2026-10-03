@@ -1,0 +1,32 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_form_field.html" import field, checkbox with context %}
+{% block title %}Edit Equipment — Admin{% endblock %}
+{% block page_title %}Edit equipment{% endblock %}
+{% block content %}
+<form method="POST" novalidate class="max-w-3xl">
+  {{ form.hidden_tag() }}
+  <div class="card p-6 mb-6">
+    <div class="grid sm:grid-cols-2 gap-x-4">
+      {% for f in form %}
+        {% if f.name != "csrf_token" %}
+          {% if f.type == "BooleanField" %}
+            <div class="sm:col-span-2">{{ checkbox(f) }}</div>
+          {% elif f.type == "TextAreaField" %}
+            <div class="sm:col-span-2">{{ field(f, rows=3) }}</div>
+          {% else %}
+            {{ field(f) }}
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card p-6 mb-6">
+    <label class="field-label">Reason for change (recorded in equipment history)</label>
+    <input type="text" name="change_reason" class="input-field" placeholder="e.g. Customer confirmation">
+  </div>
+  <div class="flex items-center gap-3">
+    <button type="submit" class="btn-primary">Save changes</button>
+    <a href="{{ url_for('admin.request_detail', request_id=req.id) }}" class="btn-ghost">Cancel</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Settings — Admin — {{ app_name }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+
+<form method="POST" novalidate class="max-w-xl bg-panel border border-border rounded-lg p-6 space-y-5">
+  {{ form.hidden_tag() }}
+  {% include "_form_errors.html" %}
+
+  <div>
+    {{ form.export_retention_days.label(class="block text-sm text-gray-400 mb-1") }}
+    {{ form.export_retention_days(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+    <p class="text-xs text-gray-600 mt-1">Completed exports older than this are marked expired by "Clean up expired".</p>
+  </div>
+
+  <div>
+    {{ form.temp_account_lifetime_hours.label(class="block text-sm text-gray-400 mb-1") }}
+    {{ form.temp_account_lifetime_hours(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+  </div>
+
+  <div class="flex items-center gap-2">
+    {{ form.cleanup_enabled(class="rounded border-border bg-surface") }}
+    {{ form.cleanup_enabled.label(class="text-sm text-gray-400") }}
+  </div>
+
+  <div class="border-t border-border pt-4 space-y-4">
+    <p class="text-sm font-semibold text-gray-300">Email</p>
+    <div>
+      {{ form.mail_server.label(class="block text-sm text-gray-400 mb-1") }}
+      {{ form.mail_server(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+    </div>
+    <div>
+      {{ form.mail_from.label(class="block text-sm text-gray-400 mb-1") }}
+      {{ form.mail_from(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+    </div>
+  </div>
+
+  {{ form.submit(class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md py-2") }}
+</form>
+{% endblock %}

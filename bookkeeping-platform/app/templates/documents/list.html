@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Documents{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Documents</h1>
+  <a href="{{ url_for('documents.upload_document') }}" class="btn btn-primary btn-sm">+ Upload</a>
+</div>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">File</th><th class="p-3">Related to</th><th class="p-3">Uploaded</th><th class="p-3"></th></tr></thead>
+    <tbody>
+      {% for d in documents %}
+      <tr class="row-border">
+        <td class="p-3">{{ d.original_filename }}</td>
+        <td class="p-3">{{ d.related_type or '—' }}</td>
+        <td class="p-3">{{ d.uploaded_at.strftime('%Y-%m-%d') }}</td>
+        <td class="p-3 text-right"><a class="link" href="{{ url_for('documents.download_document', document_id=d.id) }}">Download</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="empty-state">No documents yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

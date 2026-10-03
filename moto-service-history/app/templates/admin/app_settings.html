@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import field, btn_primary, btn_secondary %}
+{% block title %}App settings — Admin{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <h1 class="font-bold text-2xl mb-6">Application settings</h1>
+  <form method="post" class="card p-6 space-y-4">
+    {{ form.hidden_tag() }}
+    {{ field(form.site_name) }}
+    {{ field(form.support_email) }}
+    <div class="flex items-center gap-3 pt-2">
+      {{ btn_primary('Save settings') }}
+      {{ btn_secondary('Back', url_for('admin.dashboard')) }}
+    </div>
+  </form>
+</div>
+{% endblock %}

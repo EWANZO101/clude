@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Register a company · OpsLab Systems{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Register your company</h1>
+  <p class="text-gray-400 mt-2 text-sm">Tell us about your company. After you submit, our team reviews it before it goes live.</p>
+
+  {% for cat, msg in get_flashed_messages(with_categories=true) %}
+    <div class="mt-5 text-sm px-4 py-2.5 rounded-lg {{ 'bg-red-500/10 border border-red-500/30 text-red-200' if cat=='error' else 'bg-green-500/10 border border-green-500/30 text-green-200' }}">{{ msg }}</div>
+  {% endfor %}
+
+  <form method="post" class="mt-6 space-y-5">
+    <div>
+      <label class="block text-sm font-semibold mb-1.5">Company name <span class="text-red-400">*</span></label>
+      <input name="name" required value="{{ form.get('name','') }}" class="form-input w-full" placeholder="e.g. Borders Dev Co">
+    </div>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-semibold mb-1.5">Company type</label>
+        <select name="ctype" class="form-select w-full">
+          {% for t in types %}<option {{ 'selected' if form.get('ctype')==t }}>{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1.5">Legal business status</label>
+        <select name="legal_status" class="form-select w-full">
+          {% for l in legal %}<option {{ 'selected' if form.get('legal_status')==l }}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-semibold mb-1.5">Full legal name of owner</label>
+        <input name="owner_legal_name" value="{{ form.get('owner_legal_name','') }}" class="form-input w-full">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1.5">Country / region</label>
+        <input name="country" value="{{ form.get('country','') }}" class="form-input w-full">
+      </div>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1.5">Description</label>
+      <textarea name="description" rows="3" class="form-textarea w-full" placeholder="What does your company do?">{{ form.get('description','') }}</textarea>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1.5">Services offered</label>
+      <textarea name="services" rows="3" class="form-textarea w-full" placeholder="List your services, one per line">{{ form.get('services','') }}</textarea>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1.5">Pricing / packages <span class="text-gray-500 font-normal">(optional)</span></label>
+      <textarea name="pricing" rows="2" class="form-textarea w-full">{{ form.get('pricing','') }}</textarea>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1.5">External website <span class="text-gray-500 font-normal">(optional)</span></label>
+      <input name="external_url" value="{{ form.get('external_url','') }}" class="form-input w-full" placeholder="https://…">
+    </div>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-semibold mb-1.5">Terms &amp; Conditions <span class="text-gray-500 font-normal">(optional)</span></label>
+        <textarea name="terms" rows="3" class="form-textarea w-full">{{ form.get('terms','') }}</textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1.5">Privacy Policy <span class="text-gray-500 font-normal">(optional)</span></label>
+        <textarea name="privacy" rows="3" class="form-textarea w-full">{{ form.get('privacy','') }}</textarea>
+      </div>
+    </div>
+    <button class="px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow transition">Submit for review</button>
+  </form>
+</div>
+{% endblock %}

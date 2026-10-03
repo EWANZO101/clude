@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto mt-6">
+  <p class="eyebrow mb-1">Account recovery</p>
+  <h1 class="font-display font-800 text-2xl text-chalk mb-2">Reset your password</h1>
+  <p class="text-sm text-mute mb-5">Enter your email and we'll send you a link to set a new password.</p>
+  <form method="post" class="space-y-3 card p-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div><label class="label">Email</label><input name="email" type="email" placeholder="you@example.com" class="input" required></div>
+    <button class="btn btn-primary btn-block">Send reset link</button>
+  </form>
+  <p class="text-sm text-mute mt-4 text-center"><a href="{{ url_for('auth.login') }}" class="text-link">Back to log in</a></p>
+</div>
+{% endblock %}

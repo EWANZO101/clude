@@ -1,0 +1,37 @@
+{
+  "ticket_id": "TICK-0020",
+  "ticket_type": "citizen",
+  "opened_by": "e",
+  "opened_at": "2026-04-02 10:02:22",
+  "closed_by": "e",
+  "closed_at": "2026-04-02 10:02 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-02T10:02:22.393000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1460361220329574521> <@344560012997165057>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:02:30.162000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "Hello",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-02T10:02:31.252000+00:00",
+      "author": "e",
+      "author_id": "344560012997165057",
+      "role": "staff",
+      "content": "jejje",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

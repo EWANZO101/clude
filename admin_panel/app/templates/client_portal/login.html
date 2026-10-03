@@ -1,0 +1,31 @@
+{% extends "client_portal/_base.html" %}
+{% block title %}Log in — Client Portal{% endblock %}
+{% block content %}
+<div class="auth-main">
+  <div class="auth-card">
+    <div class="panel">
+      <h1 style="margin-bottom:2px;">Client login</h1>
+      <p class="muted" style="margin-bottom:18px; font-size:13px;">
+        For clients assigned to operate one or more specific kiosk instances.
+      </p>
+      <form method="post">
+        <label>Email</label>
+        <input type="email" name="email" value="{{ email or '' }}" required autofocus>
+        <label>Password</label>
+        <input type="password" name="password" required>
+        <button type="submit" class="btn-block" style="margin-top:18px;">Log in</button>
+      </form>
+      <p class="muted" style="margin-top:16px; margin-bottom:0; font-size:12.5px; text-align:center;">
+        New here? <a href="{{ url_for('client_portal.signup') }}">Sign up</a>
+      </p>
+    </div>
+
+    <div class="panel" style="margin-top:16px; text-align:center;">
+      <p class="muted" style="margin-bottom:10px; font-size:13px;">
+        Are you OpsLab staff or a company managing a whole fleet of instances?
+      </p>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-secondary btn-block">Go to Staff &amp; Company login →</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "layout/base.html" %}
+{% block title %}System health{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <h1 class="text-xl font-semibold">System health</h1>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+      <p class="text-xs uppercase text-slate-500 mb-2">Database</p>
+      <p class="text-lg font-medium {{ 'text-emerald-400' if db_status == 'ok' else 'text-red-400' }}">{{ db_status }}</p>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+      <p class="text-xs uppercase text-slate-500 mb-2">Background jobs</p>
+      <p class="text-sm text-slate-300">{{ queued_jobs }} queued · {{ failed_jobs }} failed</p>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+      <p class="text-xs uppercase text-slate-500 mb-2">Scheduler</p>
+      <p class="text-sm text-slate-300">{{ scheduled }} active schedules</p>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+      <p class="text-xs uppercase text-slate-500 mb-2">Storage</p>
+      <p class="text-lg font-medium {{ 'text-emerald-400' if storage_ok else 'text-red-400' }}">{{ 'ok' if storage_ok else 'error' }}</p>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+      <p class="text-xs uppercase text-slate-500 mb-2">Last backup</p>
+      <p class="text-sm text-slate-300">{{ last_backup or 'none yet' }}</p>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+      <p class="text-xs uppercase text-slate-500 mb-2">Application version</p>
+      <p class="text-sm text-slate-300">{{ app_version }}</p>
+    </div>
+  </div>
+
+  <h2 class="text-lg font-semibold">Modules</h2>
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    {% for m in modules %}
+      <div class="p-4 flex items-center justify-between text-sm">
+        <span>{{ m.name }} <span class="text-slate-500">v{{ m.version }}</span></span>
+        <span class="{{ 'text-emerald-400' if m.status == 'enabled' else 'text-slate-500' }}">{{ m.status }}</span>
+      </div>
+    {% else %}
+      <p class="p-4 text-sm text-slate-500">No modules installed yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

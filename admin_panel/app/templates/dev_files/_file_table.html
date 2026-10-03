@@ -1,0 +1,28 @@
+{# Expects `files` in context — a list of file-entry dicts for one system. #}
+{% if files %}
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Path</th><th>Size</th><th>Last modified</th><th></th></tr></thead>
+  <tbody class="dev-files-body">
+    {% for f in files %}
+      <tr data-path="{{ f.rel_path|lower }}">
+        <td class="mono">
+          {% if f.editable %}
+            <a href="{{ url_for('dev_files.view_file', path=f.rel_path) }}">{{ f.rel_path }}</a>
+          {% else %}
+            {{ f.rel_path }} <span class="pill pill-muted" style="margin-left:6px;">not editable</span>
+          {% endif %}
+        </td>
+        <td class="muted mono">{{ f.size_display }}</td>
+        <td class="muted">{{ f.mtime | friendly_local_dt if f.mtime else '—' }}</td>
+        <td class="row-actions">
+          <a href="{{ url_for('dev_files.download_file', path=f.rel_path) }}" class="btn btn-secondary btn-sm">Download</a>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="muted" style="margin:0;">No files here yet.</p>
+{% endif %}

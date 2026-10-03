@@ -1,0 +1,41 @@
+{% extends "layouts/admin.html" %}
+{% block title %}ISP Support · {{ app_name }}{% endblock %}
+{% block page_content %}
+
+<div class="mb-8">
+  <h1 class="font-display text-2xl font-semibold text-ink">ISP Support Requests</h1>
+  <p class="mt-1 text-sm text-ink-muted">Customer authorisations to contact their ISP on their behalf.</p>
+</div>
+
+<div class="mb-5 flex flex-wrap gap-2">
+  <a href="{{ url_for('isp_support.admin_list') }}" class="{{ 'btn-secondary' if status_filter else 'btn-primary' }} !py-1.5 !px-3 text-xs">All</a>
+  {% for s in statuses %}
+  <a href="{{ url_for('isp_support.admin_list', status=s) }}" class="{{ 'btn-primary' if status_filter == s else 'btn-secondary' }} !py-1.5 !px-3 text-xs capitalize">{{ s }}</a>
+  {% endfor %}
+</div>
+
+{% if requests %}
+<div class="card divide-y divide-border">
+  {% for r in requests %}
+  <a href="{{ url_for('isp_support.admin_detail', request_id=r.id) }}" class="flex items-center justify-between gap-4 p-4 sm:p-5 hover:bg-surface-raised transition-colors">
+    <div class="min-w-0">
+      <p class="font-medium text-ink truncate">{{ r.full_name }} &middot; {{ r.isp_name }}</p>
+      <p class="mt-0.5 text-xs text-ink-muted truncate">{{ r.problem_description }}</p>
+    </div>
+    <div class="flex items-center gap-3 shrink-0">
+      {% if r.submitted_out_of_hours %}
+      <span class="status-dot bg-status-away" title="Submitted out of hours"></span>
+      {% endif %}
+      <span class="status-pill !py-1 !px-2.5 text-xs border-border bg-surface-raised text-ink-muted">{{ r.status_label }}</span>
+      <span class="text-xs text-ink-faint">{{ r.submitted_at.strftime('%d %b %Y') }}</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card p-8 text-center">
+  <p class="text-sm text-ink-muted">No requests{{ ' with that status' if status_filter else '' }} yet.</p>
+</div>
+{% endif %}
+
+{% endblock %}

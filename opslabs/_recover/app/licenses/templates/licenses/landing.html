@@ -1,0 +1,37 @@
+{% extends "licenses/base.html" %}
+{% block title %}{{ site_name }} — Sign in{% endblock %}
+
+{% block auth_content %}
+<div class="min-h-screen flex items-center justify-center px-4">
+  <div class="max-w-md w-full text-center relative z-10">
+    <div class="inline-flex w-16 h-16 mb-6 rounded-2xl bg-gradient-to-br from-{{ primary_color }}-500 to-{{ primary_color }}-700 items-center justify-center shadow-lg shadow-{{ primary_color }}-500/30">
+      <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+      </svg>
+    </div>
+
+    <h1 class="text-3xl font-extrabold tracking-tight mb-2">{{ site_name }}</h1>
+    <p class="text-gray-400 mb-8">{{ site_tagline }}</p>
+
+    <div class="grid sm:grid-cols-2 gap-3">
+      <a href="{{ url_for('lic_auth.login') }}"
+         class="block p-5 rounded-xl bg-gray-800/50 border border-gray-700 hover:border-{{ primary_color }}-500/50 hover:bg-gray-800 transition group">
+        <div class="text-xs font-bold uppercase tracking-widest text-{{ primary_color }}-400 mb-1">Staff</div>
+        <div class="text-base font-bold text-white">Admin sign-in</div>
+        <p class="text-xs text-gray-500 mt-1">Manage licenses, customers, products</p>
+      </a>
+
+      <a href="{{ url_for('lic_customer.login') }}"
+         class="block p-5 rounded-xl bg-gray-800/50 border border-gray-700 hover:border-{{ primary_color }}-500/50 hover:bg-gray-800 transition group">
+        <div class="text-xs font-bold uppercase tracking-widest text-{{ primary_color }}-400 mb-1">Customers</div>
+        <div class="text-base font-bold text-white">Customer portal</div>
+        <p class="text-xs text-gray-500 mt-1">View and manage your licenses</p>
+      </a>
+    </div>
+
+    <p class="text-[11px] text-gray-600 mt-6">
+      Part of <a href="/" class="text-{{ primary_color }}-400 hover:text-{{ primary_color }}-300 underline">{{ company_name }}</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

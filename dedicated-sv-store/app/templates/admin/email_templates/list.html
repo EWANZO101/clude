@@ -1,0 +1,23 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% block title %}Email Templates — Admin{% endblock %}
+{% block page_title %}Email templates{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Code</th><th>Name</th><th>Subject</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for tmpl in templates %}
+      <tr>
+        <td class="text-text-secondary font-mono text-xs">{{ tmpl.code }}</td>
+        <td class="font-medium text-text-primary">{{ tmpl.name }}</td>
+        <td class="text-text-secondary">{{ tmpl.subject }}</td>
+        <td>{% if tmpl.is_active %}<span class="badge-success">Active</span>{% else %}<span class="badge-neutral">Disabled</span>{% endif %}</td>
+        <td><a href="{{ url_for('admin.email_template_detail', template_id=tmpl.id) }}" class="text-brand-400 hover:text-brand-300">Edit</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-center text-text-muted py-8">No email templates yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

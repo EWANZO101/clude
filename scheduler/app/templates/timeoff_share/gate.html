@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ link.label or 'Time off' }} · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center px-4 py-12">
+
+  <div class="mb-8 text-center">
+    <span class="status-pill border-accent/30 bg-accent-muted text-accent mb-4">
+      <span class="status-dot bg-accent"></span>
+      {{ link.label or 'Time off' }}
+    </span>
+    <h1 class="font-display text-2xl font-semibold text-ink">Enter the PIN</h1>
+    <p class="mt-1.5 text-sm text-ink-muted">This link is protected — ask whoever shared it for the PIN.</p>
+  </div>
+
+  {% include "partials/flash.html" %}
+
+  <div class="card w-full p-6 sm:p-7">
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="mb-5">
+        <label class="field-label" for="{{ form.pin.id }}">PIN</label>
+        {{ form.pin(class_="field-input text-center text-lg tracking-[0.3em]", inputmode="numeric", pattern="[0-9]*", maxlength=6, placeholder="****", autofocus=true) }}
+        {% for error in form.pin.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <button type="submit" class="btn-primary w-full">Unlock</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

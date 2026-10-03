@@ -1,0 +1,55 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}{{ entry.label }} — Admin{% endblock %}
+{% block page_title %}{{ entry.label }}{% endblock %}
+{% block header_actions %}
+<a href="{{ url_for('admin.hardware_new', type_slug=type_slug) }}" class="btn-primary">Add new</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="p-4 border-b border-border flex items-center justify-between gap-3">
+    <form method="GET" class="flex gap-2">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search by model name…" class="input-field max-w-xs">
+      <button type="submit" class="btn-secondary">Search</button>
+    </form>
+    <a href="{{ url_for('admin.hardware_overview') }}" class="text-sm text-text-secondary hover:text-text-primary">&larr; All hardware</a>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="table-base">
+      <thead>
+        <tr>
+          {% for attr, label in entry.columns %}<th>{{ label }}</th>{% endfor %}
+          <th>Brand</th>
+          <th>Price</th>
+          <th>Availability</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in pagination.items %}
+        <tr>
+          {% for attr, label in entry.columns %}
+          <td>{{ item[attr]|hwval }}</td>
+          {% endfor %}
+          <td class="text-text-secondary">{{ item.brand.name if item.brand else "—" }}</td>
+          <td class="text-text-secondary">{{ ("£" ~ item.price) if item.price else "—" }}</td>
+          <td><span class="badge-neutral">{{ item.availability|hwval }}</span></td>
+          <td>{% if item.is_active %}<span class="badge-success">Active</span>{% else %}<span class="badge-danger">Disabled</span>{% endif %}</td>
+          <td class="whitespace-nowrap">
+            <a href="{{ url_for('admin.hardware_edit', type_slug=type_slug, item_id=item.id) }}" class="text-brand-400 hover:text-brand-300 text-sm mr-3">Edit</a>
+            <form method="POST" action="{{ url_for('admin.hardware_toggle', type_slug=type_slug, item_id=item.id) }}" class="inline">
+              {% include "components/_csrf.html" %}
+              <button type="submit" class="text-text-secondary hover:text-text-primary text-sm">{{ "Disable" if item.is_active else "Enable" }}</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="{{ entry.columns|length + 4 }}" class="text-center text-text-muted py-8">No records yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ render_pagination(pagination, "admin.hardware_list", type_slug=type_slug, q=q) }}
+</div>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Users — Admin{% endblock %}
+{% block content %}
+<!-- Mobile admin tabs -->
+<div style="overflow-x:auto;padding-bottom:.5rem;margin-bottom:1.1rem;display:none" class="m-admin-tabs-wrap">
+  <div style="display:flex;gap:.3rem;white-space:nowrap">
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-ghost btn-sm">📊</a>
+    <a href="{{ url_for('admin_users') }}" class="btn btn-primary btn-sm">👤 Users</a>
+    <a href="{{ url_for('admin_posts') }}" class="btn btn-ghost btn-sm">📋 Posts</a>
+    <a href="{{ url_for('admin_reports') }}" class="btn btn-ghost btn-sm">⚑ Reports</a>
+    <a href="{{ url_for('admin_announcements') }}" class="btn btn-ghost btn-sm">📢</a>
+    <a href="{{ url_for('admin_site_text') }}" class="btn btn-ghost btn-sm">✎</a>
+    <a href="{{ url_for('admin_banned_ips') }}" class="btn btn-ghost btn-sm">🔒 IPs</a>
+    <a href="{{ url_for('index') }}" class="btn btn-ghost btn-sm">← Site</a>
+  </div>
+</div>
+
+<div class="admin-layout">
+{% include "admin/_sidebar.html" %}
+<div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+    <h1 style="font-size:1.35rem;font-weight:700;margin:0">Users</h1>
+    <span style="color:var(--muted);font-size:.84rem">{{ users.total }} total</span>
+  </div>
+
+  <form method="GET" style="margin-bottom:1rem;display:flex;gap:.45rem;flex-wrap:wrap">
+    <input type="text" name="q" value="{{ q }}" class="form-input" placeholder="Search username, email or IP…" style="flex:1;min-width:200px">
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if q %}<a href="{{ url_for('admin_users') }}" class="btn btn-ghost">Clear</a>{% endif %}
+  </form>
+
+  <details style="margin-bottom:1rem">
+    <summary style="cursor:pointer;font-size:.85rem;color:var(--muted);padding:.48rem .8rem;background:var(--card);border:1px solid var(--border);border-radius:7px">🔒 Quick Ban IP</summary>
+    <form method="POST" action="{{ url_for('admin_ban_ip') }}" style="display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap">
+      <input type="text" name="ip_address" class="form-input" placeholder="IP address" required style="flex:1;min-width:150px">
+      <input type="text" name="reason" class="form-input" placeholder="Reason" style="flex:1;min-width:150px">
+      <button type="submit" class="btn btn-danger">Ban IP</button>
+    </form>
+  </details>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>IP Address</th>
+            <th>Status</th>
+            <th>Joined</th>
+            <th style="text-align:right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users.items %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:.55rem">
+                <div style="width:28px;height:28px;border-radius:50%;background:rgba(88,166,255,.15);border:1px solid rgba(88,166,255,.25);display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--accent);flex-shrink:0">{{ user.username[0].upper() }}</div>
+                <div>
+                  <div style="color:var(--text);font-weight:500;font-size:.875rem">{{ user.username }}</div>
+                  <div style="font-size:.72rem;color:var(--muted)">{% if user.is_admin %}<span style="color:var(--accent)">admin</span> {% endif %}{% if user.proof_file %}<span style="color:var(--success)">✓proof</span>{% endif %}</div>
+                </div>
+              </div>
+            </td>
+            <td style="font-size:.82rem;color:var(--muted)">{{ user.email }}</td>
+            <td style="font-family:'IBM Plex Mono',monospace;font-size:.76rem;color:var(--muted)">{{ user.ip_address or '—' }}</td>
+            <td>
+              {% if user.is_banned %}<span class="status-badge badge-removed">Banned</span>
+              {% else %}<span class="status-badge badge-active">Active</span>{% endif %}
+            </td>
+            <td style="font-size:.82rem;color:var(--muted)">{{ user.created_at.strftime('%d %b %Y') }}</td>
+            <td style="text-align:right"><a href="{{ url_for('admin_user_detail', user_id=user.id) }}" class="btn btn-ghost btn-sm">View →</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if users.pages > 1 %}
+  <div class="pagination">
+    {% if users.has_prev %}<a href="{{ url_for('admin_users', page=users.prev_num, q=q) }}" class="page-btn">← Prev</a>{% endif %}
+    {% for p in users.iter_pages(left_edge=1,right_edge=1,left_current=2,right_current=2) %}
+      {% if p %}<a href="{{ url_for('admin_users', page=p, q=q) }}" class="page-btn {% if p==users.page %}active{% endif %}">{{ p }}</a>
+      {% else %}<span class="page-btn">…</span>{% endif %}
+    {% endfor %}
+    {% if users.has_next %}<a href="{{ url_for('admin_users', page=users.next_num, q=q) }}" class="page-btn">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+</div>
+<style>@media(max-width:1024px){.m-admin-tabs-wrap{display:block!important}}</style>
+{% endblock %}

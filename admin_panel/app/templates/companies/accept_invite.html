@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Accept invite — OpsLab Admin Panel{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:460px;">
+  <h1 style="margin-bottom:8px;">Join {{ invite.company.name }}</h1>
+  <p class="muted" style="margin-bottom:18px;">You've been invited as <span class="badge badge-{{ invite.role }}">{{ invite.role }}</span>.</p>
+  <form method="post">
+    <button type="submit" class="btn-block">Accept invite</button>
+  </form>
+</div>
+{% endblock %}

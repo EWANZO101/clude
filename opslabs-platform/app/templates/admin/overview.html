@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Admin — OpsLabs Platform{% endblock %}
+{% block content %}
+<h1>Platform Admin</h1>
+<div class="card">
+  <p>{{ user_count }} users across {{ company_count }} companies.</p>
+</div>
+
+<div class="card">
+  <h2>Accounts</h2>
+  <p><a href="{{ url_for('admin.users') }}" class="btn secondary">Users</a>
+     <a href="{{ url_for('admin.companies') }}" class="btn secondary">Companies</a></p>
+</div>
+
+<div class="card">
+  <h2>Catalog & Billing</h2>
+  <p><a href="{{ url_for('admin.products') }}" class="btn secondary">Products</a>
+     <a href="{{ url_for('admin.plans') }}" class="btn secondary">Plans</a>
+     <a href="{{ url_for('admin.subscriptions') }}" class="btn secondary">Subscriptions</a>
+     <a href="{{ url_for('admin.payments') }}" class="btn secondary">Payments</a>
+     <a href="{{ url_for('admin.usage_rules') }}" class="btn secondary">Usage Rules</a></p>
+  <p style="font-size:0.8rem;color:#9aa3af;margin-top:0.75rem;">
+    Credits and feature grants are managed per-company from each company's detail page.
+  </p>
+</div>
+
+<div class="card">
+  <h2>Infrastructure</h2>
+  <p><a href="{{ url_for('admin.domains') }}" class="btn secondary">Domains</a>
+     <a href="{{ url_for('admin.system') }}" class="btn secondary">System</a></p>
+</div>
+
+<div class="card">
+  <h2>Activity</h2>
+  <p><a href="{{ url_for('admin.activity') }}" class="btn secondary">Activity log</a></p>
+</div>
+{% endblock %}

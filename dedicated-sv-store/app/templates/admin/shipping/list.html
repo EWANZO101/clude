@@ -1,0 +1,27 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_shipment_badge.html" import shipment_status_badge with context %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}Shipments — Admin{% endblock %}
+{% block page_title %}Shipments{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Shipment #</th><th>Request</th><th>Carrier</th><th>Tracking</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for shipment in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ shipment.shipment_number }}</td>
+        <td class="text-text-secondary">{{ shipment.request.request_number }}</td>
+        <td class="text-text-secondary">{{ shipment.carrier }}</td>
+        <td class="text-text-secondary font-mono text-xs">{{ shipment.tracking_number or "—" }}</td>
+        <td>{{ shipment_status_badge(shipment.status) }}</td>
+        <td><a href="{{ url_for('admin.shipment_detail', shipment_id=shipment.id) }}" class="text-brand-400 hover:text-brand-300">View</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-text-muted py-8">No shipments yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.shipments") }}
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Trial balance{% endblock %}
+{% block content %}
+<h1 class="page-title mb-6">Trial balance</h1>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row">
+      <tr><th class="p-3">Account</th><th class="p-3 text-right">Debit</th><th class="p-3 text-right">Credit</th></tr>
+    </thead>
+    <tbody>
+      {% for account, balance in rows %}
+      <tr class="row-border">
+        <td class="p-3">{{ account.code }} — {{ account.name }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(balance) if balance >= 0 else "" }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(-balance) if balance < 0 else "" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="table-foot-total">
+        <td class="p-3">Total</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(total_debit) }}</td>
+        <td class="p-3 text-right">{{ "%.2f"|format(total_credit) }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% endblock %}

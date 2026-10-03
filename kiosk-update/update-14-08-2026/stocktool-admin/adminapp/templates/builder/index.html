@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Builder Mode{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <div>
+      <h1 class="page-title"><i class="fas fa-swatchbook" style="color:#a78bfa;"></i> Builder Mode</h1>
+      <p class="page-subtitle">Design the kiosk dashboard — no code needed.</p>
+    </div>
+    <button class="btn btn-secondary" onclick="BuilderUI.openHelp()"><i class="fas fa-circle-question"></i> Help</button>
+  </div>
+</div>
+
+<!-- Layout toolbar -->
+<div class="card builder-toolbar">
+  <div class="builder-toolbar-row">
+    <select id="layoutSelect" class="form-select" style="max-width:240px;"></select>
+    <span id="layoutStatusBadge" class="b-status-badge">—</span>
+    <div style="flex:1;"></div>
+    <button class="btn btn-secondary btn-sm" id="undoBtn" title="Undo"><i class="fas fa-rotate-left"></i></button>
+    <button class="btn btn-secondary btn-sm" id="redoBtn" title="Redo"><i class="fas fa-rotate-right"></i></button>
+    <button class="btn btn-secondary btn-sm" onclick="BuilderUI.newLayout()"><i class="fas fa-plus"></i> New</button>
+    <button class="btn btn-secondary btn-sm" onclick="BuilderUI.duplicateLayout()"><i class="fas fa-clone"></i> Duplicate</button>
+    <button class="btn btn-secondary btn-sm" onclick="BuilderUI.resetLayout()"><i class="fas fa-arrow-rotate-left"></i> Reset</button>
+    <button class="btn btn-secondary btn-sm" style="color:#fca5a5;" onclick="BuilderUI.deleteLayout()"><i class="fas fa-trash"></i></button>
+  </div>
+  <div class="builder-toolbar-row">
+    <button class="btn btn-secondary" onclick="BuilderUI.openPreview()"><i class="fas fa-eye"></i> Live Preview</button>
+    <div style="flex:1;"></div>
+    <button class="btn btn-secondary" onclick="BuilderUI.saveDraft()"><i class="fas fa-floppy-disk"></i> Save Draft</button>
+    <button class="btn btn-primary" onclick="BuilderUI.publish()"><i class="fas fa-cloud-arrow-up"></i> Publish</button>
+  </div>
+  <div id="builderMessage" class="builder-message" style="display:none;"></div>
+</div>
+
+<!-- Main builder layout -->
+<div class="builder-grid">
+  <!-- Palette -->
+  <div class="card builder-panel">
+    <div class="builder-panel-title">Add a Section</div>
+    <div id="palette" class="palette-list"></div>
+  </div>
+
+  <!-- Canvas -->
+  <div class="card builder-panel">
+    <div class="builder-panel-title">Dashboard Layout <span style="font-weight:400;color:#6b7280;">(drag to reorder)</span></div>
+    <div id="canvas" class="canvas-list"></div>
+  </div>
+
+  <!-- Property panel -->
+  <div class="card builder-panel">
+    <div class="builder-panel-title">Section Settings</div>
+    <div id="propertyPanel" class="property-panel">
+      <div class="property-empty">Select a section on the left to edit it.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Preview modal -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal-box" style="max-width:420px;padding:0;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #374151;">
+      <div style="font-weight:700;color:#f9fafb;font-size:14px;"><i class="fas fa-mobile-screen"></i> Live Preview</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="BuilderUI.refreshPreview()"><i class="fas fa-rotate"></i></button>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('previewModal')"><i class="fas fa-xmark"></i></button>
+      </div>
+    </div>
+    <iframe id="previewFrame" style="width:100%;height:70vh;border:none;background:#0b1120;"></iframe>
+  </div>
+</div>
+
+<!-- Help / README modal -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal-box" style="max-width:560px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-weight:700;color:#f9fafb;font-size:16px;"><i class="fas fa-circle-question"></i> Builder Mode — How It Works</div>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('helpModal')"><i class="fas fa-xmark"></i></button>
+    </div>
+    {% include "builder/help.html" %}
+  </div>
+</div>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='builder.css') }}" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<script src="{{ url_for('static', filename='builder.js') }}"></script>
+<script>
+  window.API_PUBLIC_URL = {{ api_public_url | tojson }};
+  document.addEventListener('DOMContentLoaded', () => BuilderUI.init());
+</script>
+{% endblock %}

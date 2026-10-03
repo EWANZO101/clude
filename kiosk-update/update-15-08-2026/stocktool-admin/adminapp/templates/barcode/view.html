@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Barcode — {{ barcode.entity_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><i class="fas fa-barcode" style="color:#60a5fa;"></i> Barcode</h1>
+  <p class="page-subtitle">{{ barcode.entity_type.title() }}: {{ barcode.entity_name }}</p>
+</div>
+<div class="card" style="padding:28px;text-align:center;max-width:360px;margin:0 auto;">
+  {% if barcode.image_path %}
+  <img src="{{ api_public_url }}/api/barcodes/image/{{ barcode.code }}"
+       alt="Barcode" style="max-width:280px;width:100%;border-radius:8px;background:#fff;padding:10px;margin:0 auto;display:block;image-rendering:crisp-edges;image-rendering:pixelated;" />
+  {% endif %}
+  <div style="margin-top:16px;">
+    <div style="font-size:16px;font-weight:600;color:#f9fafb;">{{ barcode.entity_name }}</div>
+    <div style="font-size:13px;color:#6b7280;margin-top:2px;">{{ barcode.entity_type.title() }}</div>
+    <div style="font-size:12px;color:#4b5563;margin-top:6px;font-family:monospace;letter-spacing:1px;">{{ barcode.code }}</div>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+    {% if barcode.tool_id %}
+    <a href="{{ url_for('tools.view', tool_id=barcode.tool_id) }}" class="btn btn-primary">
+      <i class="fas fa-wrench"></i> View Tool
+    </a>
+    {% elif barcode.item_id %}
+    <a href="{{ url_for('items.view', item_id=barcode.item_id) }}" class="btn btn-primary">
+      <i class="fas fa-box"></i> View Item
+    </a>
+    {% elif barcode.project_id %}
+    <a href="{{ url_for('projects.view', project_id=barcode.project_id) }}" class="btn btn-primary">
+      <i class="fas fa-diagram-project"></i> View Project
+    </a>
+    {% elif barcode.user_id %}
+    <a href="{{ url_for('admin.edit_user', user_id=barcode.user_id) }}" class="btn btn-primary">
+      <i class="fas fa-id-badge"></i> View User
+    </a>
+    {% endif %}
+    {% if barcode.image_path %}
+    <a href="{{ api_public_url }}/api/barcodes/image/{{ barcode.code }}" download class="btn btn-secondary">
+      <i class="fas fa-download"></i> Download
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

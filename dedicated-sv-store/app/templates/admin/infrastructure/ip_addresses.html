@@ -1,0 +1,24 @@
+{% extends "layouts/admin_dashboard.html" %}
+{% from "components/_pagination.html" import pagination as render_pagination with context %}
+{% block title %}IP Addresses — Admin{% endblock %}
+{% block page_title %}IP addresses{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table-base">
+    <thead><tr><th>Equipment</th><th>Management IP</th><th>Public IPv4</th><th>Public IPv6</th></tr></thead>
+    <tbody>
+      {% for na in pagination.items %}
+      <tr>
+        <td class="font-medium text-text-primary">{{ na.equipment_item.manufacturer }} {{ na.equipment_item.model }}</td>
+        <td class="text-text-secondary font-mono text-xs">{{ na.management_ip or "—" }}</td>
+        <td class="text-text-secondary font-mono text-xs">{{ na.public_ipv4 or "—" }}</td>
+        <td class="text-text-secondary font-mono text-xs">{{ na.public_ipv6 or "—" }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="text-center text-text-muted py-8">No IP addresses assigned yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ render_pagination(pagination, "admin.ip_addresses") }}
+</div>
+{% endblock %}

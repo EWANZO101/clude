@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Users — Admin — {{ app_name }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+
+<form method="GET" class="mb-4">
+  <input type="text" name="q" value="{{ q }}" placeholder="Search by email..."
+         class="w-full max-w-sm bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200" />
+</form>
+
+<div class="bg-panel border border-border rounded-lg p-4">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-gray-500 border-b border-border">
+        <th class="py-2">Email</th>
+        <th class="py-2">Role</th>
+        <th class="py-2">Type</th>
+        <th class="py-2">Status</th>
+        <th class="py-2">Created</th>
+        <th class="py-2"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr class="border-b border-border/50">
+        <td class="py-2 text-gray-200">{{ user.email }}</td>
+        <td class="py-2 text-gray-400">{{ user.role }}</td>
+        <td class="py-2 text-gray-400">{{ "Temporary" if user.is_temporary else "Permanent" }}</td>
+        <td class="py-2">
+          {% if user.is_suspended %}
+            <span class="text-red-400 text-xs">Suspended</span>
+          {% elif user.is_expired %}
+            <span class="text-gray-500 text-xs">Expired</span>
+          {% else %}
+            <span class="text-green-400 text-xs">Active</span>
+          {% endif %}
+        </td>
+        <td class="py-2 text-gray-500">{{ user.created_at }}</td>
+        <td class="py-2 text-right">
+          <a href="{{ url_for('admin.user_detail', user_id=user.id) }}"
+             class="text-blue-400 hover:text-blue-300 text-xs">Manage</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="py-4 text-center text-gray-500">No users found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

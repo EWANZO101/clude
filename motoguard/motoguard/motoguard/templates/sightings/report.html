@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import loc_picker, plate with context %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+<div class="rounded-2xl border border-stolen/40 bg-stolen/10 p-4 mb-5 flex items-center gap-3">
+  <span class="w-2.5 h-2.5 rounded-full bg-stolen pulse"></span>
+  <div class="flex items-center gap-2 flex-wrap"><span class="text-sm text-[#FF8A82]">Sighting for</span> {{ plate(v.reg_number, true) }} <span class="text-sm text-mute">{{ v.title }}</span></div>
+</div>
+<h1 class="font-display font-800 text-2xl text-chalk mb-1">You've seen this bike?</h1>
+<p class="text-mute text-sm mb-5">Anything helps — even a rough area and time. The owner gets it instantly.</p>
+<form method="post" enctype="multipart/form-data" class="space-y-4 card p-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div><label class="label">Where did you see it?</label>{{ loc_picker('seen', 'seen_city', 'seen_region') }}</div>
+  <div><label class="label">When (roughly)</label><input name="seen_at" type="datetime-local" class="input"></div>
+  <div><label class="label">What did you see?</label><textarea name="notes" rows="3" placeholder="Direction of travel, who was on it, condition…" class="input"></textarea></div>
+  <div><label class="label">Photo (optional)</label><input type="file" name="photo" accept="image/*" class="text-sm text-mute file:btn file:btn-ghost file:btn-sm file:mr-3"></div>
+  <div><label class="label">Contact</label>
+    <select name="contact_pref" class="input">
+      <option value="anonymous">Report anonymously</option>
+      <option value="direct">Owner may message me through the platform</option>
+    </select>
+  </div>
+  <input name="website" class="hidden" tabindex="-1" autocomplete="off">
+  <button class="btn btn-recover btn-block">Send sighting to owner</button>
+</form>
+</div>
+{% endblock %}

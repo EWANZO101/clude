@@ -1,0 +1,172 @@
+{
+  "ticket_id": "TICK-0035",
+  "ticket_type": "whitelist",
+  "opened_by": "TsitsosMowete",
+  "opened_at": "2026-04-19 18:01:14",
+  "closed_by": "IMPI CHAPLIN",
+  "closed_at": "2026-04-20 14:53 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-19T18:01:14.990000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1329911018645880976> <@1494833096082718812>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T18:01:15.590000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T18:02:33.234000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "hello <@1494833096082718812> if youre ready jump in to a interview",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T18:05:22.976000+00:00",
+      "author": "TsitsosMowete",
+      "author_id": "1494833096082718812",
+      "role": "",
+      "content": "CAN YOU PLZ HELP",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T18:05:38.292000+00:00",
+      "author": "TsitsosMowete",
+      "author_id": "1494833096082718812",
+      "role": "",
+      "content": "I AMREADY",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T18:05:42.566000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "",
+      "content": "wat is rong",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T18:06:08.397000+00:00",
+      "author": "TsitsosMowete",
+      "author_id": "1494833096082718812",
+      "role": "",
+      "content": "am unable tp apply",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T18:06:35.102000+00:00",
+      "author": "TsitsosMowete",
+      "author_id": "1494833096082718812",
+      "role": "",
+      "content": "anyone who can help",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T18:07:09.118000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "we will be gladly to help you did you create a whitelist application?",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T18:08:03.558000+00:00",
+      "author": "IMPI CHAPLIN",
+      "author_id": "580405393650483232",
+      "role": "staff",
+      "content": "https://web.cfrp.co.za/applications/ use this link to apply",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T18:34:12.639000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "",
+      "content": "<@1494833096082718812> are you win",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T18:37:02.332000+00:00",
+      "author": "TsitsosMowete",
+      "author_id": "1494833096082718812",
+      "role": "",
+      "content": "no am unable to",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T18:39:52.884000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T18:49:02.120000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "",
+      "content": "<@1494833096082718812> call me the i will help",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T19:54:19.162000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "",
+      "content": "hi you app is accepted you can fly in <@1494833096082718812>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T19:58:42.990000+00:00",
+      "author": "TsitsosMowete",
+      "author_id": "1494833096082718812",
+      "role": "",
+      "content": "you saying that am accepted i can start playing",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-19T19:59:04.944000+00:00",
+      "author": "Alex Bento | Pierre jordaan",
+      "author_id": "842719474405998612",
+      "role": "",
+      "content": "yes",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-20T14:53:05.550000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

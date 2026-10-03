@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Edit Site Text — Admin — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<div class="admin-layout">
+{% include "admin/_sidebar.html" %}
+<div>
+  <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:.4rem">Edit Site Text</h1>
+  <p style="color:var(--muted);font-size:.875rem;margin-bottom:1.5rem">Customise all text across the platform. Changes take effect immediately.</p>
+
+  <form method="POST">
+    {% set sections = {
+      'Global Settings': [
+        ('global','site_name','Site Name','text','The name shown in the header and browser tab'),
+        ('global','site_tagline','Site Tagline','text','Shown in metadata'),
+        ('global','footer_text','Footer Text','text','Text shown at the bottom of every page'),
+      ],
+      'Home Page': [
+        ('index','hero_title','Hero Title','text','Main heading on the Stories forum'),
+        ('index','hero_subtitle','Hero Subtitle','text','Subheading on the Stories forum'),
+        ('index','intro_text','Intro Text','textarea','Paragraph below the hero'),
+      ],
+      'Advice Forum': [
+        ('advice','hero_title','Hero Title','text','Main heading on the Advice forum'),
+        ('advice','hero_subtitle','Hero Subtitle','text','Subheading on the Advice forum'),
+        ('advice','intro_text','Intro Text','textarea','Paragraph below the advice hero'),
+      ],
+      'Community Rules': [
+        ('rules','title','Rules Popup Title','text','Heading of the rules popup'),
+        ('rules','body','Rules Body','textarea','Full rules text. Use \\n for new lines.'),
+      ],
+      'Auth Pages': [
+        ('register','intro','Register Page Intro','textarea','Text shown on the register page'),
+        ('login','intro','Login Page Intro','text','Text shown on the login page'),
+      ],
+      'Report System': [
+        ('report','popup_intro','Report Popup Intro','textarea','Text shown at the top of the report popup'),
+      ],
+    } %}
+
+    {% for section_title, fields in sections.items() %}
+    <div class="card" style="margin-bottom:1.25rem">
+      <div style="padding:.85rem 1.25rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)">
+        <h2 style="font-size:.9rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">{{ section_title }}</h2>
+      </div>
+      <div class="card-body">
+        {% for page, key, label, input_type, hint in fields %}
+        <div class="form-group">
+          <label class="form-label">{{ label }}</label>
+          {% set field_name = page + '__' + key %}
+          {% set current_val = texts.get(field_name, '') %}
+          {% if input_type == 'textarea' %}
+          <textarea name="{{ field_name }}" class="form-input" rows="{% if 'body' in key or 'rules' in key %}8{% else %}3{% endif %}">{{ current_val }}</textarea>
+          {% else %}
+          <input type="text" name="{{ field_name }}" class="form-input" value="{{ current_val }}">
+          {% endif %}
+          {% if hint %}
+          <p style="font-size:.78rem;color:var(--muted);margin-top:.25rem">{{ hint }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1rem">
+      <a href="{{ url_for('index') }}" class="btn btn-ghost" target="_blank">↗ Preview Site</a>
+      <button type="submit" class="btn btn-primary">💾 Save All Changes</button>
+    </div>
+  </form>
+</div>
+</div>
+{% endblock %}

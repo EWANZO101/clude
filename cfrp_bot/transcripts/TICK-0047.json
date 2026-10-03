@@ -1,0 +1,28 @@
+{
+  "ticket_id": "TICK-0047",
+  "ticket_type": "whitelist",
+  "opened_by": "e",
+  "opened_at": "2026-04-20 19:12:02",
+  "closed_by": "e",
+  "closed_at": "2026-04-20 19:15 UTC",
+  "messages": [
+    {
+      "ts": "2026-04-20T19:12:02.268000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "<@&1329911018645880976> <@344560012997165057>",
+      "attachments": [],
+      "system": false
+    },
+    {
+      "ts": "2026-04-20T19:12:02.821000+00:00",
+      "author": "CFRP AI",
+      "author_id": "1486786779708260382",
+      "role": "bot",
+      "content": "",
+      "attachments": [],
+      "system": false
+    }
+  ]
+}

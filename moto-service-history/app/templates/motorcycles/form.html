@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import field, btn_primary, btn_secondary %}
+{% block title %}{{ 'Add motorcycle' if mode == 'new' else 'Edit ' + m.display_name }} — {{ site_name|default('Moto Service History') }}{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <h1 class="font-bold text-2xl mb-6">{{ 'Add a motorcycle' if mode == 'new' else 'Edit ' + m.display_name }}</h1>
+  <form method="post" enctype="multipart/form-data" class="card p-6 space-y-8">
+    {{ form.hidden_tag() }}
+
+    <div>
+      <h2 class="font-semibold text-sm uppercase tracking-wide text-ink-faint mb-4">Identity</h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        {{ field(form.registration, help="UK registration, e.g. SB26 CBK") }}
+        {{ field(form.make) }}
+        {{ field(form.model) }}
+        {{ field(form.year) }}
+        {{ field(form.engine_info, wide=True) }}
+        {{ field(form.vin) }}
+        {{ field(form.colour) }}
+        {{ field(form.mileage, help="Current odometer reading (miles)") }}
+      </div>
+    </div>
+
+    <div>
+      <h2 class="font-semibold text-sm uppercase tracking-wide text-ink-faint mb-4">Ownership</h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        {{ field(form.purchase_date) }}
+        {{ field(form.purchase_price) }}
+        {{ field(form.previous_owners, wide=True, help="Names, dates, or notes on prior ownership if known") }}
+      </div>
+    </div>
+
+    <div>
+      <h2 class="font-semibold text-sm uppercase tracking-wide text-ink-faint mb-4">Notes & photos</h2>
+      <div class="grid sm:grid-cols-1 gap-4">
+        {{ field(form.notes) }}
+        {{ field(form.photos, help="You can select multiple images") }}
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 pt-2 border-t border-asphalt-border">
+      {{ btn_primary('Save motorcycle') }}
+      {{ btn_secondary('Cancel', url_for('moto.view', moto_id=m.id) if mode == 'edit' else url_for('main.dashboard')) }}
+    </div>
+  </form>
+</div>
+{% endblock %}

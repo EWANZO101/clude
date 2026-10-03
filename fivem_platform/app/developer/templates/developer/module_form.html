@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit module' if module else 'New module' }} — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-6">{{ 'Edit module' if module else 'New module' }}</h1>
+
+  <form method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Display name</label>
+        <input type="text" name="display_name" required value="{{ display_name or '' }}" placeholder="Test Menu"
+          class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+      </div>
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Version</label>
+        <input type="text" name="version" value="{{ version or '1.0.0' }}"
+          class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+      </div>
+    </div>
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Side</label>
+      <select name="side" class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+        <option value="server" {{ 'selected' if side == 'server' }}>Server</option>
+        <option value="client" {{ 'selected' if side == 'client' }}>Client</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Channel</label>
+      {% if module %}
+        <div class="text-sm text-gray-300 bg-surface-card border border-surface-border rounded-md px-3 py-2">
+          {{ 'Beta' if channel == 'beta' else 'Stable' }}
+          <span class="text-xs text-gray-500">(can't be changed after creation — delete and recreate on the other channel instead)</span>
+        </div>
+      {% else %}
+        <select name="channel" class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+          <option value="stable" {{ 'selected' if channel == 'stable' or not channel }}>Stable — everyone gets this</option>
+          <option value="beta" {{ 'selected' if channel == 'beta' }}>Beta — only servers opted into beta for this product</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Beta customers automatically fall back to the stable version of anything without a beta override.</p>
+      {% endif %}
+    </div>
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Lua code</label>
+      <textarea name="code" rows="16" required spellcheck="false"
+        class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
+        placeholder="RegisterCommand('lka', function()
+    print('--------------------------------')
+    print('        Test Script')
+    print('        Licensed Successfully')
+    print('        Hello from Cloud API')
+    print('--------------------------------')
+end, false)">{{ code or '' }}</textarea>
+      <p class="text-xs text-gray-500 mt-1">This runs inside CloudLoader's sandboxed environment on a licensed customer's server — write it like any other resource script.</p>
+    </div>
+    <button type="submit" class="bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition">
+      {{ 'Save changes' if module else 'Create module' }}
+    </button>
+  </form>
+</div>
+{% endblock %}

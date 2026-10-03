@@ -1,0 +1,23 @@
+{% extends "layout/base.html" %}
+{% from "layout/_macros.html" import field %}
+{% block title %}Log in{% endblock %}
+{% block auth_content %}
+<div class="w-full max-w-sm bg-surface-card border border-surface-border rounded-2xl p-6 md:p-8">
+  <h1 class="text-xl font-semibold mb-1">Welcome back</h1>
+  <p class="text-sm text-slate-400 mb-6">Log in to your account.</p>
+  <form method="POST" class="space-y-4">{{ form.hidden_tag() }}
+    {{ field(form.email) }}
+    {{ field(form.password) }}
+    <div class="flex items-center justify-between text-sm">
+      <label class="flex items-center gap-2 text-slate-400">
+        {{ form.remember(class="rounded border-surface-border bg-surface") }} Remember me
+      </label>
+      <a href="{{ url_for('auth.forgot_password') }}" class="text-accent hover:underline">Forgot password?</a>
+    </div>
+    {{ form.submit(class="w-full bg-accent hover:bg-accent-hover text-white text-sm font-medium py-2.5 rounded-lg transition") }}
+  </form>
+  <p class="text-sm text-slate-400 mt-6 text-center">
+    No account? <a href="{{ url_for('auth.signup') }}" class="text-accent hover:underline">Sign up</a>
+  </p>
+</div>
+{% endblock %}

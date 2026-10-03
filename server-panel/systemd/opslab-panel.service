@@ -1,0 +1,18 @@
+[Unit]
+Description=OpsLab Server Panel
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/opslab-panel
+Environment="PATH=/opt/opslab-panel/venv/bin"
+EnvironmentFile=/opt/opslab-panel/.env
+# async_mode is "threading" in app.py, so run via socketio.run (not gunicorn -k eventlet,
+# which would mismatch). Swap to gunicorn -k eventlet only if you also switch app.py's
+# socketio.init_app(async_mode=...) to "eventlet".
+ExecStart=/opt/opslab-panel/venv/bin/python app.py
+Restart=always
+RestartSec=3
+User=root
+
+[Install]
+WantedBy=multi-user.target

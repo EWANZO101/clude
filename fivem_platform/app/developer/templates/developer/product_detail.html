@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div>
+  <div class="flex items-center justify-between mb-1">
+    <h1 class="text-xl font-semibold text-white">{{ product.name }}</h1>
+    <span class="text-xs px-2 py-1 rounded-full {{ 'bg-emerald-950 text-emerald-400' if product.is_active else 'bg-gray-800 text-gray-500' }}">
+      {{ 'active' if product.is_active else 'disabled' }}
+    </span>
+  </div>
+  <p class="text-sm text-gray-500 font-mono mb-3">{{ product.product_id }} · v{{ product.version }} · {{ product.product_type }}</p>
+  <div class="flex items-center gap-3 mb-6 text-xs">
+    <a href="{{ url_for('developer.edit_product', product_id=product.product_id) }}" class="text-brand hover:text-brand-hover">Edit product</a>
+    <span class="text-gray-600">·</span>
+    <a href="{{ url_for('marketplace.manage_listing', product_id=product.product_id) }}" class="text-brand hover:text-brand-hover">Marketplace listing</a>
+    {% if product.marketplace_listed %}
+      <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400">listed</span>
+    {% endif %}
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">API Key</div>
+      <div class="font-mono text-sm text-gray-300 break-all">{{ product.api_key }}</div>
+    </div>
+    <div class="bg-surface-card border border-surface-border rounded-lg p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">Secret Key</div>
+      <div class="text-sm text-gray-500 mb-2 break-all">•••••••••••••••••••••••• (hidden)</div>
+      <form method="POST" action="{{ url_for('developer.regenerate_secret', product_id=product.product_id) }}"
+            onsubmit="return confirm('This invalidates the current secret key immediately. Continue?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="text-xs text-amber-400 hover:text-amber-300">Regenerate secret key</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="bg-surface-card border border-surface-border rounded-lg p-4 mb-4">
+    <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">License Endpoint</div>
+    <div class="font-mono text-xs text-gray-300 break-all">{{ product.license_endpoint }}</div>
+  </div>
+
+  <a href="{{ url_for('developer.product_servers', product_id=product.product_id) }}"
+     class="inline-flex items-center justify-between w-full bg-surface-card border border-surface-border rounded-lg p-4 mb-4 hover:border-brand transition">
+    <span class="text-sm text-gray-300">Servers</span>
+    <span class="text-xs text-gray-500">monitoring →</span>
+  </a>
+
+  <a href="{{ url_for('developer.remote_config', product_id=product.product_id) }}"
+     class="inline-flex items-center justify-between w-full bg-surface-card border border-surface-border rounded-lg p-4 mb-4 hover:border-brand transition">
+    <span class="text-sm text-gray-300">Remote Config</span>
+    <span class="text-xs text-gray-500">{{ 'set' if product.remote_config else 'not set' }}</span>
+  </a>
+
+  <a href="{{ url_for('developer.analytics', product_id=product.product_id) }}"
+     class="inline-flex items-center justify-between w-full bg-surface-card border border-surface-border rounded-lg p-4 mb-4 hover:border-brand transition">
+    <span class="text-sm text-gray-300">Analytics</span>
+    <span class="text-xs text-gray-500">last 14 days →</span>
+  </a>
+
+  <a href="{{ url_for('developer.modules', product_id=product.product_id) }}"
+     class="inline-flex items-center justify-between w-full bg-surface-card border border-surface-border rounded-lg p-4 mb-4 hover:border-brand transition">
+    <span class="text-sm text-gray-300">Modules</span>
+    <span class="text-xs text-gray-500">{{ product.modules|length }} module(s)</span>
+  </a>
+
+  <a href="{{ url_for('developer.scripts', product_id=product.product_id) }}"
+     class="inline-flex items-center justify-between w-full bg-surface-card border border-surface-border rounded-lg p-4 mb-4 hover:border-brand transition">
+    <span class="text-sm text-gray-300">Scripts</span>
+    <span class="text-xs text-gray-500">{{ product.script_uploads|length }} upload(s)</span>
+  </a>
+
+  <a href="{{ url_for('developer.tebex_settings', product_id=product.product_id) }}"
+     class="inline-flex items-center justify-between w-full bg-surface-card border border-surface-border rounded-lg p-4 mb-8 hover:border-brand transition">
+    <span class="text-sm text-gray-300">Tebex integration</span>
+    <span class="text-xs px-2 py-0.5 rounded-full {{ 'bg-emerald-950 text-emerald-400' if product.tebex_integration and product.tebex_integration.is_active else 'bg-gray-800 text-gray-500' }}">
+      {{ 'connected' if product.tebex_integration else 'not connected' }}
+    </span>
+  </a>
+
+  <form method="POST" action="{{ url_for('developer.toggle_product_active', product_id=product.product_id) }}" class="inline-block mb-8 mr-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="text-sm text-gray-400 hover:text-white border border-surface-border rounded-md px-3 py-1.5 transition">
+      {{ 'Disable product' if product.is_active else 'Enable product' }}
+    </button>
+  </form>
+  <a href="{{ url_for('developer.delete_product', product_id=product.product_id) }}" class="inline-block mb-8 text-sm text-red-400 hover:text-red-300">
+    Delete product
+  </a>
+
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-sm font-medium text-gray-400">Licenses ({{ licenses|length }})</h2>
+    {% if licenses %}
+      <a href="{{ url_for('developer.export_product_licenses', product_id=product.product_id) }}" class="text-xs text-brand hover:text-brand-hover">
+        Export CSV
+      </a>
+    {% endif %}
+  </div>
+
+  <form method="POST" action="{{ url_for('developer.new_license', product_id=product.product_id) }}"
+        class="flex flex-wrap items-end gap-3 bg-surface-card border border-surface-border rounded-lg p-4 mb-6">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label class="block text-xs text-gray-500 mb-1">Quantity</label>
+      <input type="number" name="quantity" value="1" min="1" max="500"
+        class="w-24 bg-surface border border-surface-border rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+    </div>
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-xs text-gray-500 mb-1">Customer email (optional)</label>
+      <input type="email" name="customer_email" placeholder="customer@example.com"
+        class="w-full bg-surface border border-surface-border rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+    </div>
+    <button type="submit" class="bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-1.5 text-sm font-medium transition">
+      Generate
+    </button>
+  </form>
+
+  {% if licenses %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-gray-500 text-xs uppercase tracking-wide border-b border-surface-border">
+            <th class="py-2 pr-4">License key</th>
+            <th class="py-2 pr-4">Customer</th>
+            <th class="py-2 pr-4">Status</th>
+            <th class="py-2 pr-4">Last check</th>
+            <th class="py-2 pr-4"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lic in licenses %}
+          <tr class="border-b border-surface-border/50">
+            <td class="py-2 pr-4 font-mono text-gray-300">{{ lic.license_key }}</td>
+            <td class="py-2 pr-4 text-gray-400">{{ lic.customer_email or '—' }}</td>
+            <td class="py-2 pr-4">
+              <span class="text-xs px-2 py-0.5 rounded-full
+                {% if lic.status == 'active' %} bg-emerald-950 text-emerald-400
+                {% elif lic.status == 'suspended' %} bg-amber-950 text-amber-400
+                {% else %} bg-red-950 text-red-400 {% endif %}">
+                {{ lic.status }}
+              </span>
+            </td>
+            <td class="py-2 pr-4 text-gray-500 text-xs">{{ lic.last_checked_at.strftime('%Y-%m-%d %H:%M') if lic.last_checked_at else 'never' }}</td>
+            <td class="py-2 pr-4 text-right whitespace-nowrap">
+              {% if lic.status == 'active' %}
+                <form method="POST" action="{{ url_for('developer.suspend_license', license_id=lic.id) }}" class="inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="text-xs text-amber-400 hover:text-amber-300 mr-2">Suspend</button>
+                </form>
+                <form method="POST" action="{{ url_for('developer.revoke_license', license_id=lic.id) }}" class="inline"
+                      onsubmit="return confirm('Revoke this license permanently?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="text-xs text-red-400 hover:text-red-300">Revoke</button>
+                </form>
+              {% elif lic.status == 'suspended' %}
+                <form method="POST" action="{{ url_for('developer.reactivate_license', license_id=lic.id) }}" class="inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="text-xs text-emerald-400 hover:text-emerald-300 mr-2">Reactivate</button>
+                </form>
+                <form method="POST" action="{{ url_for('developer.revoke_license', license_id=lic.id) }}" class="inline"
+                      onsubmit="return confirm('Revoke this license permanently?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="text-xs text-red-400 hover:text-red-300">Revoke</button>
+                </form>
+              {% else %}
+                <span class="text-xs text-gray-600">revoked</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500">No licenses yet — generate some above.</p>
+  {% endif %}
+</div>
+{% endblock %}

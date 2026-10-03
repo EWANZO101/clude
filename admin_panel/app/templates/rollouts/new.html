@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}New staged rollout — {{ company.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="titles">
+    <a href="{{ url_for('rollouts.list_rollouts', company_id=company.public_id) }}" class="crumb">← Staged rollouts</a>
+    <h1>New staged rollout</h1>
+  </div>
+</div>
+
+<div class="panel">
+  {% if not packages %}
+    <div class="empty">No validated packages available yet.</div>
+  {% elif not instances %}
+    <div class="empty">No instances registered yet.</div>
+  {% else %}
+    <form method="post">
+      <label>Package</label>
+      <select name="package_id">
+        {% for p in packages %}
+          <option value="{{ p.public_id }}">v{{ p.version }} ({{ p.supported_os_list()|join(', ') }})</option>
+        {% endfor %}
+      </select>
+
+      <label>Batch size</label>
+      <input type="text" name="batch_size" value="1" placeholder="e.g. 2">
+      <p class="field-hint">
+        Instances are grouped into batches in the order you tick them below.
+        Batch 1 pushes immediately when you create the rollout; you advance to
+        each next batch manually after checking the previous one worked.
+      </p>
+
+      <label>When (applies to every batch)</label>
+      <select name="mode">
+        <option value="now">Update now</option>
+        <option value="schedule" selected>Use each instance's configured schedule</option>
+      </select>
+
+      <label>Instances, in rollout order</label>
+      <div class="checklist">
+        {% for i in instances %}
+          <label>
+            <input type="checkbox" name="instance_ids" value="{{ i.public_id }}">
+            {{ i.display_name() }} <span class="muted">({{ i.os }})</span>
+          </label>
+        {% endfor %}
+      </div>
+
+      <button type="submit" style="margin-top:16px;">Create rollout &amp; push batch 1</button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

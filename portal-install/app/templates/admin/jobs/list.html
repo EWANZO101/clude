@@ -1,0 +1,56 @@
+{% extends "admin/_layout.html" %}
+{% block admin_title %}Quick Jobs{% endblock %}
+{% block admin_content %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+  <div>
+    <div class="text-xs font-bold uppercase tracking-widest text-ops-400 mb-1">Work</div>
+    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Quick Jobs</h1>
+    <p class="text-sm text-gray-400 mt-1">{{ jobs|length }} job{{ '' if jobs|length==1 else 's' }} · create one, then share the link.</p>
+  </div>
+  <a href="{{ url_for('quickjobs.admin_new') }}" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow hover:scale-[1.02] transition self-start sm:self-auto">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    New job
+  </a>
+</div>
+
+<div class="flex flex-wrap gap-2 mb-5 text-sm">
+  <a href="{{ url_for('quickjobs.admin_list') }}" class="px-3 py-1.5 rounded-lg border {{ 'border-ops-500 text-ops-300 bg-ops-500/10' if not status else 'border-ink-600 text-gray-400 hover:text-white' }}">All</a>
+  {% for key, meta in status_meta.items() %}
+  <a href="{{ url_for('quickjobs.admin_list', status=key) }}" class="px-3 py-1.5 rounded-lg border {{ 'border-ops-500 text-ops-300 bg-ops-500/10' if status==key else 'border-ink-600 text-gray-400 hover:text-white' }}">{{ meta.label }}</a>
+  {% endfor %}
+</div>
+
+{% if jobs %}
+<div class="rounded-2xl border border-ink-600 overflow-hidden bg-ink-800/40">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-ink-900/60 text-gray-400 text-[11px] uppercase tracking-widest">
+        <tr>
+          <th class="text-left px-5 py-3">Job</th>
+          <th class="text-left px-5 py-3 hidden sm:table-cell">Client</th>
+          <th class="text-left px-5 py-3">Status</th>
+          <th class="text-left px-5 py-3 hidden md:table-cell">Scheduled</th>
+          <th class="px-5 py-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for j in jobs %}
+        <tr class="border-t border-ink-600/40 hover:bg-white/[.02]">
+          <td class="px-5 py-3 font-semibold">{{ j.title }}</td>
+          <td class="px-5 py-3 text-gray-400 hidden sm:table-cell">{{ j.client_name or '—' }}</td>
+          <td class="px-5 py-3"><span class="pill" style="background:{{ j.status_meta.color }}1f;color:{{ j.status_meta.color }};border:1px solid {{ j.status_meta.color }}55;">{{ j.status_meta.label }}</span></td>
+          <td class="px-5 py-3 text-gray-400 hidden md:table-cell">{{ j.scheduled_day.strftime('%d %b %Y') if j.scheduled_day else '—' }}{{ ' · ' ~ j.scheduled_time if j.scheduled_time else '' }}</td>
+          <td class="px-5 py-3 text-right"><a href="{{ url_for('quickjobs.admin_detail', job_id=j.id) }}" class="text-ops-400 hover:text-ops-300 font-semibold">Open →</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="rounded-2xl border border-ink-600 bg-ink-800/40 p-12 text-center">
+  <p class="text-gray-400">No jobs yet.</p>
+  <a href="{{ url_for('quickjobs.admin_new') }}" class="mt-4 inline-flex px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl">Create your first job</a>
+</div>
+{% endif %}
+{% endblock %}

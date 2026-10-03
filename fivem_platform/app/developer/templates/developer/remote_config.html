@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Remote Config — {{ product.name }} — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-1">Remote Config</h1>
+  <p class="text-sm text-gray-500 mb-6">
+    {{ product.name }} · {{ product.product_id }} — tune values live, no
+    code redeploy needed. Modules on this product can read these at
+    runtime.
+  </p>
+
+  <form method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Config (JSON object)</label>
+      <textarea name="config_json" rows="14" spellcheck="false"
+        class="w-full bg-surface-card border border-surface-border rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
+        placeholder='{
+  "maxCalls": 10,
+  "cooldownSeconds": 30,
+  "featureFlags": {
+    "newMenu": true
+  }
+}'>{{ config_json }}</textarea>
+      <p class="text-xs text-gray-500 mt-1">Must be a JSON object (key/value pairs). Leave empty and save to clear it entirely.</p>
+    </div>
+    <button type="submit" class="bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition">
+      Save config
+    </button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+  <h1 class="text-xl font-semibold text-white mb-2">
+    {{ 'Secret key regenerated' if regenerated else product.name + ' created' }}
+  </h1>
+  <p class="text-sm text-gray-400 mb-6">
+    Save the secret key now — it won't be shown again. Your loader/site code
+    needs the API key and secret key together to validate licenses.
+  </p>
+
+  <div class="bg-surface-card border border-surface-border rounded-lg p-5 space-y-4">
+    <div>
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">Product ID</div>
+      <div class="font-mono text-white">{{ product.product_id }}</div>
+    </div>
+    <div>
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">API Key</div>
+      <div class="font-mono text-white break-all">{{ product.api_key }}</div>
+    </div>
+    <div class="border-t border-surface-border pt-4">
+      <div class="text-xs uppercase tracking-wide text-amber-400 mb-1">Secret Key — shown once</div>
+      <div class="font-mono text-sm text-amber-300 break-all">{{ secret_key }}</div>
+    </div>
+    <div>
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">License Endpoint</div>
+      <div class="font-mono text-xs text-gray-300 break-all">{{ product.license_endpoint }}</div>
+    </div>
+  </div>
+
+  <a href="{{ url_for('developer.product_detail', product_id=product.product_id) }}" class="inline-block mt-6 bg-brand hover:bg-brand-hover text-white rounded-md px-4 py-2 text-sm font-medium transition">
+    Go to product
+  </a>
+</div>
+{% endblock %}

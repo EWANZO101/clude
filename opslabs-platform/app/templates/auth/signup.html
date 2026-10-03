@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Sign up — OpsLabs Platform{% endblock %}
+{% block content %}
+<div class="card" style="max-width:420px;margin:2rem auto;">
+  <h1>Create your account</h1>
+  <form method="POST">
+    <label>Account type</label>
+    <select name="account_type" id="account_type" onchange="document.getElementById('company_name_wrap').style.display = this.value === 'company' ? 'block' : 'none';">
+      <option value="individual" {{ 'selected' if account_type == 'individual' }}>Individual</option>
+      <option value="company" {{ 'selected' if account_type == 'company' }}>Company</option>
+    </select>
+
+    <div id="company_name_wrap" style="display:{{ 'block' if account_type == 'company' else 'none' }};">
+      <label>Company name</label>
+      <input type="text" name="company_name" value="{{ company_name }}">
+    </div>
+
+    <label>Email</label>
+    <input type="email" name="email" value="{{ email }}" required>
+    <label>Password</label>
+    <input type="password" name="password" required minlength="8">
+    <button type="submit">Create account</button>
+  </form>
+  <p style="margin-top:1.25rem;font-size:0.85rem;color:#9aa3af;">
+    Already have an account? <a href="{{ url_for('auth.login') }}" style="color:#8b93ff;">Log in</a>
+  </p>
+</div>
+{% endblock %}

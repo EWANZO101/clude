@@ -1,0 +1,55 @@
+{% extends "layout/base.html" %}
+{% import "layout/_macros.html" as ui %}
+{% block title %}Bills{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  {{ ui.page_header("Bills") }}
+
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+    {{ ui.stat_tile("Current money", safe_balance.current_money_minor | money) }}
+    {{ ui.stat_tile("Upcoming bills", "-" ~ (safe_balance.upcoming_bills_minor | money)) }}
+    {{ ui.stat_tile("Subscriptions", "-" ~ (safe_balance.upcoming_subscriptions_minor | money)) }}
+    {{ ui.stat_tile("Planned purchases", "-" ~ (safe_balance.planned_purchases_minor | money)) }}
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-4 hover:border-slate-700 transition-colors">
+      <p class="text-xs text-slate-500 mb-1.5">Safe to spend</p>
+      <p class="text-lg font-semibold tabular-nums {{ 'text-red-400' if safe_balance.safe_discretionary_minor < 0 else 'text-emerald-400' }}">{{ safe_balance.safe_discretionary_minor | money }}</p>
+    </div>
+  </div>
+
+  <form method="POST" action="{{ url_for('finance.new_bill') }}" class="bg-surface-card border border-surface-border rounded-2xl p-4 flex flex-wrap gap-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input name="name" placeholder="Bill name" required class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    <input name="amount" placeholder="Amount" class="w-24 bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    <input name="due_day" placeholder="Due day (1-28)" class="w-32 bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+    <select name="frequency" class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      <option value="monthly">Monthly</option>
+      <option value="weekly">Weekly</option>
+      <option value="annual">Annual</option>
+    </select>
+    <select name="category_id" class="bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+      <option value="">Category…</option>
+      {% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+    </select>
+    {{ ui.button("Add bill", type="submit", variant="primary") }}
+  </form>
+
+  <div class="bg-surface-card border border-surface-border rounded-2xl divide-y divide-surface-border">
+    {% for b in bills %}
+      <div class="p-4 flex items-center justify-between gap-3 text-sm hover:bg-surface-hover/40 transition-colors {{ 'opacity-50' if not b.active }}">
+        <div>
+          <p class="text-slate-100 font-medium">{{ b.name }}</p>
+          <p class="text-xs text-slate-500">{{ b.frequency }} · due {{ b.next_due_date }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-slate-200 font-semibold tabular-nums">{{ b.amount_minor | money }}</span>
+          <form method="POST" action="{{ url_for('finance.mark_bill_paid', bill_id=b.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-xs text-accent hover:text-accent-hover">Mark paid</button></form>
+          <form method="POST" action="{{ url_for('finance.toggle_bill_active', bill_id=b.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-xs text-slate-400 hover:text-slate-200">{{ 'Reactivate' if not b.active else 'Pause' }}</button></form>
+          <form method="POST" action="{{ url_for('finance.delete_bill', bill_id=b.id) }}" onsubmit="return confirm('Delete this bill?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-xs text-red-400 hover:text-red-300">Delete</button></form>
+        </div>
+      </div>
+    {% else %}
+      {% call ui.empty_state("No bills yet", "Add a recurring bill above to start tracking it.", "receipt") %}{% endcall %}
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

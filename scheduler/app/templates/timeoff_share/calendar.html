@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}{{ link.label or 'Time off' }} · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="mx-auto max-w-3xl px-4 py-8 sm:py-12">
+
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="font-display text-2xl font-semibold text-ink">{{ link.label or 'Time off' }}</h1>
+      <p class="mt-1 text-sm text-ink-muted">Add days {{ owner.name }} is unavailable.</p>
+    </div>
+    {% if link.pin_protected %}
+    <form method="POST" action="{{ url_for('timeoff_share.lock', token=link.token) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn-secondary">Lock</button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% include "partials/flash.html" %}
+
+  <div class="mb-6 flex items-center justify-between">
+    <h2 class="font-display text-lg font-semibold text-ink">{{ month_label }}</h2>
+    <div class="flex items-center gap-2">
+      <a href="{{ url_for('timeoff_share.calendar_view', token=link.token, year=prev_year, month=prev_month) }}" class="btn-ghost !px-2" aria-label="Previous month">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </a>
+      <a href="{{ url_for('timeoff_share.calendar_view', token=link.token) }}" class="btn-secondary">Today</a>
+      <a href="{{ url_for('timeoff_share.calendar_view', token=link.token, year=next_year, month=next_month) }}" class="btn-ghost !px-2" aria-label="Next month">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="hidden sm:block card mb-8 overflow-hidden">
+    <div class="grid grid-cols-7 border-b border-border">
+      {% for label in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+      <div class="px-3 py-2 text-center text-xs font-medium uppercase tracking-wide text-ink-faint">{{ label }}</div>
+      {% endfor %}
+    </div>
+    <div class="grid grid-cols-7">
+      {% for day in days %}
+      <div class="min-h-[92px] border-b border-r border-border p-2 last:border-r-0 {{ 'bg-surface' if not day.in_month }}">
+        <span class="flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium
+          {{ 'bg-accent text-base' if day.date == today
+             else 'text-ink' if day.in_month else 'text-ink-faint' }}">
+          {{ day.date.day }}
+        </span>
+        {% if day.in_month and day.time_offs %}
+          <div class="mt-1.5 space-y-1">
+            {% for t in day.time_offs[:2] %}
+            <div class="truncate rounded bg-status-away/10 px-1.5 py-0.5 text-[11px] text-status-away" title="{{ t.reason or 'Time off' }}">
+              {{ t.reason or 'Time off' }}
+            </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="sm:hidden mb-8 space-y-2">
+    {% for day in days if day.in_month %}
+    <div class="card p-3 {{ 'border-accent/40' if day.date == today }}">
+      <div class="mb-1 flex items-center justify-between">
+        <span class="font-display text-sm font-semibold text-ink">{{ day.date.strftime('%a %d %b') }}</span>
+        {% if day.date == today %}<span class="text-[10px] font-medium uppercase tracking-wide text-accent">Today</span>{% endif %}
+      </div>
+      {% if day.time_offs %}
+        {% for t in day.time_offs %}
+        <div class="flex items-center gap-2 text-sm text-status-away">
+          <span class="status-dot bg-status-away"></span>
+          {{ t.reason or 'Time off' }}{% if not t.all_day %} · {{ t.start_datetime.strftime('%H:%M') }}-{{ t.end_datetime.strftime('%H:%M') }}{% endif %}
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card mb-8 p-5 sm:p-6">
+    <h2 class="font-display text-base font-semibold text-ink mb-4">Quick add</h2>
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="mb-4 grid grid-cols-2 gap-3">
+        <div>
+          <label class="field-label" for="{{ form.start_date.id }}">Start date</label>
+          {{ form.start_date(class_="field-input") }}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.end_date.id }}">End date</label>
+          {{ form.end_date(class_="field-input") }}
+        </div>
+      </div>
+      {% for error in form.start_date.errors + form.end_date.errors %}
+        <p class="field-error -mt-2 mb-3">{{ error }}</p>
+      {% endfor %}
+
+      <label class="mb-4 flex items-center gap-2 text-sm text-ink-muted">
+        {{ form.all_day(class_="rounded border-border bg-surface-raised text-accent focus:ring-accent focus:ring-offset-base", id="ts-all-day-toggle") }}
+        All day
+      </label>
+
+      <div id="ts-partial-day-fields" class="mb-4 grid grid-cols-2 gap-3">
+        <div>
+          <label class="field-label" for="{{ form.start_time.id }}">Starts</label>
+          {{ form.start_time(class_="field-input") }}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.end_time.id }}">Ends</label>
+          {{ form.end_time(class_="field-input") }}
+        </div>
+      </div>
+      {% for error in form.end_time.errors %}
+        <p class="field-error -mt-2 mb-3">{{ error }}</p>
+      {% endfor %}
+
+      <div class="mb-5">
+        <label class="field-label" for="{{ form.reason.id }}">Reason (optional)</label>
+        {{ form.reason(class_="field-input", placeholder="e.g. Doctor's appointment") }}
+      </div>
+
+      <button type="submit" class="btn-primary w-full">Add</button>
+    </form>
+  </div>
+
+  <h2 class="font-display text-base font-semibold text-ink mb-3">Recent entries</h2>
+  <div class="card divide-y divide-border">
+    {% if entries %}
+      {% for entry in entries %}
+      <div class="flex items-center justify-between gap-4 p-4">
+        <div class="min-w-0">
+          <p class="font-medium text-ink">
+            {% if entry.start_datetime.date() == entry.end_datetime.date() %}
+              {{ entry.start_datetime.strftime('%a %d %b %Y') }}
+            {% else %}
+              {{ entry.start_datetime.strftime('%a %d %b') }} – {{ entry.end_datetime.strftime('%a %d %b %Y') }}
+            {% endif %}
+          </p>
+          <p class="mt-0.5 text-sm text-ink-muted">
+            {% if entry.all_day %}All day{% else %}{{ entry.start_datetime.strftime('%H:%M') }} – {{ entry.end_datetime.strftime('%H:%M') }}{% endif %}
+            {% if entry.reason %} · {{ entry.reason }}{% endif %}
+          </p>
+        </div>
+        <form method="POST" action="{{ url_for('timeoff_share.delete_entry', token=link.token, time_off_id=entry.id) }}" class="shrink-0">
+          {{ delete_form.hidden_tag() }}
+          <button type="submit" class="btn-ghost !px-2" aria-label="Remove">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
+          </button>
+        </form>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="p-8 text-center">
+        <p class="text-sm text-ink-muted">No time off added yet.</p>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+  const tsToggle = document.getElementById("ts-all-day-toggle");
+  const tsPartialFields = document.getElementById("ts-partial-day-fields");
+  function tsSyncPartialFields() {
+    tsPartialFields.classList.toggle("hidden", tsToggle.checked);
+  }
+  tsToggle.addEventListener("change", tsSyncPartialFields);
+  tsSyncPartialFields();
+</script>
+{% endblock %}

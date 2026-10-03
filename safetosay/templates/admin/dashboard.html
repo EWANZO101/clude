@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Admin — {{ get_text('global','site_name','ClearVoice') }}{% endblock %}
+{% block content %}
+<!-- Mobile admin nav (tablet/mobile only) -->
+<div style="display:none" class="mobile-admin-nav" id="mobile-admin-nav">
+  <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:.5rem;margin-bottom:1.2rem">
+    <div style="display:flex;gap:.35rem;white-space:nowrap;min-width:max-content">
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary btn-sm">📊 Dashboard</a>
+      <a href="{{ url_for('admin_users') }}" class="btn btn-ghost btn-sm">👤 Users</a>
+      <a href="{{ url_for('admin_posts') }}" class="btn btn-ghost btn-sm">📋 Posts</a>
+      <a href="{{ url_for('admin_reports') }}" class="btn btn-ghost btn-sm">⚑ Reports</a>
+      <a href="{{ url_for('admin_announcements') }}" class="btn btn-ghost btn-sm">📢 Announce</a>
+      <a href="{{ url_for('admin_site_text') }}" class="btn btn-ghost btn-sm">✎ Text</a>
+      <a href="{{ url_for('admin_banned_ips') }}" class="btn btn-ghost btn-sm">🔒 IPs</a>
+      <a href="{{ url_for('index') }}" class="btn btn-ghost btn-sm">← Site</a>
+    </div>
+  </div>
+</div>
+
+<div class="admin-layout">
+{% include "admin/_sidebar.html" %}
+<div>
+  <h1 style="font-size:1.35rem;font-weight:700;margin-bottom:1.35rem">Dashboard</h1>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.85rem;margin-bottom:1.75rem">
+    {% for label,value,color,icon in [
+      ('Total Users',stats.users,'var(--accent)','👤'),
+      ('Total Posts',stats.posts,'var(--success)','📋'),
+      ('Total Reports',stats.reports,'var(--warn)','⚑'),
+      ('Pending Reports',stats.pending,'var(--danger)','🔔'),
+      ('Banned Users',stats.banned,'var(--danger)','🚫'),
+      ('Banned IPs',stats.banned_ips,'var(--muted)','🔒'),
+    ] %}
+    <div class="card">
+      <div class="card-body" style="display:flex;align-items:center;gap:.75rem;padding:1rem">
+        <div style="font-size:1.35rem">{{ icon }}</div>
+        <div>
+          <div style="font-size:1.5rem;font-weight:700;color:{{ color }};line-height:1.1">{{ value }}</div>
+          <div style="font-size:.74rem;color:var(--muted)">{{ label }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+  <div>
+    <h2 style="font-size:.95rem;font-weight:600;margin-bottom:.75rem;display:flex;align-items:center;gap:.45rem">
+      🔔 Unseen Reports
+      {% if recent_reports %}<span style="background:var(--danger);color:white;border-radius:10px;padding:.08rem .42rem;font-size:.72rem">{{ recent_reports|length }}</span>{% endif %}
+    </h2>
+    {% if recent_reports %}
+    <div style="display:flex;flex-direction:column;gap:.5rem">
+      {% for r in recent_reports %}
+      <a href="{{ url_for('admin_report_detail', report_id=r.report_id) }}" style="text-decoration:none">
+        <div class="card" style="padding:.7rem .9rem;border-left:3px solid var(--danger)">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:.45rem">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--muted)">{{ r.report_id }}</span>
+            <span style="font-size:.72rem;color:var(--muted)">{{ r.created_at.strftime('%d %b') }}</span>
+          </div>
+          <div style="font-size:.84rem;color:var(--text);margin-top:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.description[:80] }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    <a href="{{ url_for('admin_reports') }}" style="font-size:.79rem;color:var(--accent);display:block;margin-top:.65rem">View all →</a>
+    {% else %}
+    <div class="card" style="padding:1.5rem;text-align:center"><p style="color:var(--success);font-size:.87rem">✓ No pending reports</p></div>
+    {% endif %}
+  </div>
+  <div>
+    <h2 style="font-size:.95rem;font-weight:600;margin-bottom:.75rem">📋 Recent Posts</h2>
+    <div style="display:flex;flex-direction:column;gap:.5rem">
+      {% for post in recent_posts %}
+      <a href="{{ url_for('admin_posts') }}?q={{ post.post_id }}" style="text-decoration:none">
+        <div class="card" style="padding:.7rem .9rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:.45rem">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:.74rem;color:var(--muted)">{{ post.post_id }}</span>
+            <span class="status-badge {% if post.status=='active' %}badge-active{% elif post.status=='hidden' %}badge-hidden{% elif post.status=='removed' %}badge-removed{% else %}badge-verified{% endif %}" style="font-size:.7rem">{{ post.status }}</span>
+          </div>
+          <div style="font-size:.84rem;color:var(--text);margin-top:.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ post.title }}</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:.12rem">{{ post.author.username }} · {{ post.created_at.strftime('%d %b') }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    <a href="{{ url_for('admin_posts') }}" style="font-size:.79rem;color:var(--accent);display:block;margin-top:.65rem">View all →</a>
+  </div>
+  </div>
+</div>
+</div>
+
+<style>
+@media(max-width:1024px){
+  #mobile-admin-nav{display:block!important}
+  .grid-2-admin{grid-template-columns:1fr!important}
+}
+@media(max-width:640px){
+  .admin-layout > div:last-child .grid-2-admin,
+  .admin-layout > div:last-child [style*="grid-template-columns:1fr 1fr"]{
+    grid-template-columns:1fr!important
+  }
+}
+</style>
+{% endblock %}

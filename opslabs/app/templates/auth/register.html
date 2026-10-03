@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="relative min-h-[calc(100vh-3.5rem)] flex items-center justify-center py-16 px-4">
+  <div class="absolute inset-0 grid-overlay pointer-events-none opacity-70"></div>
+  <div class="relative w-full max-w-[400px] animate-fade-up">
+    <div class="flex justify-center mb-6"><svg viewBox="0 0 64 64" width="40" height="40" aria-hidden="true">
+        <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="#fafafa" stroke-width="5" stroke-linejoin="round"/>
+        <polygon points="32,4 56,18 32,32" fill="#3b82f6"/>
+        <polygon points="32,32 56,18 56,46 32,60" fill="#fafafa"/>
+      </svg></div>
+    <h1 class="text-2xl font-semibold text-center tracking-tight text-white">Create your account</h1>
+    <p class="text-center text-sm text-gray-400 mt-2">Free forever. Takes less than a minute.</p>
+    <div class="mt-8 rounded-xl border border-white/[.08] bg-ink-900 p-6 sm:p-7">
+      <form method="post" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1.5" for="username">Username</label>
+          <input id="username" type="text" name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9_.\-]{3,32}" title="3–32 characters: letters, numbers, dot, dash or underscore" autofocus autocomplete="username" class="form-input w-full px-3 h-10 text-sm" placeholder="yourname">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1.5" for="email">Email</label>
+          <input id="email" type="email" name="email" required autocomplete="email" class="form-input w-full px-3 h-10 text-sm" placeholder="you@example.com">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1.5" for="password">Password</label>
+            <input id="password" type="password" name="password" required minlength="8" title="At least 8 characters, mixing letters with numbers or symbols" autocomplete="new-password" class="form-input w-full px-3 h-10 text-sm" placeholder="••••••••">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1.5" for="confirm">Confirm</label>
+            <input id="confirm" type="password" name="confirm" required autocomplete="new-password" class="form-input w-full px-3 h-10 text-sm" placeholder="••••••••">
+          </div>
+        </div>
+        <p class="text-xs text-gray-500">At least 8 characters, mixing letters with numbers or symbols.</p>
+        <button type="submit" class="ui-btn ui-btn-primary w-full !h-10">Create account</button>
+      </form>
+    </div>
+    <p class="text-center text-sm text-gray-400 mt-6">Already have an account? <a href="{{ url_for('auth.login') }}" class="text-white font-medium hover:underline underline-offset-4">Sign in</a></p>
+  </div>
+</section>
+{% endblock %}

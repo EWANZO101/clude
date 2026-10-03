@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="relative min-h-[calc(100vh-4rem)] flex items-center justify-center py-16 px-4 overflow-hidden">
+  <!-- Ambient background -->
+  <div class="absolute inset-0 grid-overlay pointer-events-none opacity-40"></div>
+  <div class="absolute top-1/4 -left-32 w-[500px] h-[500px] bg-ops-700/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute bottom-1/4 -right-32 w-[500px] h-[500px] bg-ops-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+  <div class="relative w-full max-w-md animate-fade-up">
+    <!-- Card -->
+    <div class="relative">
+      <div class="absolute -inset-2 bg-gradient-to-tr from-ops-700/30 to-ops-400/20 rounded-3xl blur-2xl opacity-50"></div>
+      <div class="relative bg-ink-800/80 backdrop-blur-xl border border-ink-600 rounded-2xl p-8 shadow-2xl">
+
+        <!-- Logo -->
+        <div class="flex justify-center mb-6">
+          <svg viewBox="0 0 64 64" width="48" height="48">
+            <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="#2196f3" stroke-width="4"/>
+            <polygon points="32,4 56,18 32,32" fill="#2196f3"/>
+            <polygon points="32,32 56,18 56,46 32,60" fill="#ffffff" opacity=".95"/>
+          </svg>
+        </div>
+
+        <h1 class="text-3xl font-extrabold text-center tracking-tight">Welcome back</h1>
+        <p class="text-center text-sm text-gray-400 mt-2">Sign in to your Ops Labs account</p>
+
+        <form method="post" class="mt-8 space-y-5">
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1.5 uppercase tracking-wider">Username or Email</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              </div>
+              <input type="text" name="identifier" required autofocus
+                class="form-input w-full pl-10 pr-4 py-2.5 text-sm"
+                placeholder="admin or admin@opslabs.local">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider">Password</label>
+              <a href="{{ url_for('auth.forgot') }}" class="text-xs text-ops-400 hover:text-ops-300">Forgot?</a>
+            </div>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              </div>
+              <input type="password" name="password" required
+                class="form-input w-full pl-10 pr-4 py-2.5 text-sm"
+                placeholder="••••••••">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full inline-flex justify-center items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-ops-500 to-ops-700 rounded-xl shadow-glow-sm hover:shadow-glow hover:scale-[1.01] transition">
+            Sign in
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </button>
+        </form>
+
+        {% if sso_providers %}
+        <div class="my-6 flex items-center gap-4">
+          <div class="flex-1 h-px bg-ink-600"></div>
+          <span class="text-xs text-gray-500 uppercase tracking-widest">or continue with</span>
+          <div class="flex-1 h-px bg-ink-600"></div>
+        </div>
+        <div class="grid grid-cols-1 {{ 'sm:grid-cols-2' if sso_providers|length > 1 }} gap-3">
+          {% for pid, p in sso_providers.items() %}
+          <a href="{{ url_for('sso.start', provider=pid, next=request.args.get('next','')) }}"
+             class="inline-flex items-center justify-center gap-2.5 px-4 py-2.5 text-sm font-semibold rounded-xl border border-ink-600 hover:opacity-90 transition"
+             style="background:{{ p.color }};color:{{ p.text }};">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="{{ p.icon }}"/></svg>
+            {{ p.label }}
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Divider -->
+        <div class="my-6 flex items-center gap-4">
+          <div class="flex-1 h-px bg-ink-600"></div>
+          <span class="text-xs text-gray-500 uppercase tracking-widest">or</span>
+          <div class="flex-1 h-px bg-ink-600"></div>
+        </div>
+
+        <a href="{{ url_for('auth.register') }}" class="w-full inline-flex justify-center items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-white/5 border border-ink-600 rounded-xl hover:bg-white/10 transition">
+          Create an account
+        </a>
+      </div>
+    </div>
+
+    <p class="text-center text-xs text-gray-500 mt-6">By signing in you agree to Ops Labs' terms of service.</p>
+  </div>
+</section>
+{% endblock %}

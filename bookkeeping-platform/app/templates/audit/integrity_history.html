@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Self-audit{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Self-audit / integrity checks</h1>
+  <form method="POST" action="{{ url_for('audit.integrity_run') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-primary btn-sm">Run check now</button>
+  </form>
+</div>
+<div class="card card-table">
+  <table class="w-full text-sm">
+    <thead class="table-head-row"><tr><th class="p-3">Run</th><th class="p-3">Issues found</th></tr></thead>
+    <tbody>
+      {% for r in runs %}
+      <tr class="row-border">
+        <td class="p-3"><a class="link" href="{{ url_for('audit.integrity_detail', run_id=r.id) }}">{{ r.started_at.strftime('%Y-%m-%d %H:%M:%S') }}</a></td>
+        <td class="p-3">
+          {% if r.issue_count %}<span class="text-negative">{{ r.issue_count }}</span>{% else %}<span class="text-positive">0</span>{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="2" class="empty-state">No checks run yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

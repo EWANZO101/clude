@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Set up 2FA — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto bg-panel border border-border rounded-lg p-6">
+  <h1 class="text-lg font-semibold text-gray-100 mb-4">Set up two-factor authentication</h1>
+  <p class="text-sm text-gray-400 mb-2">Scan this into your authenticator app, or enter the secret manually:</p>
+  <code class="block bg-surface border border-border rounded-md px-3 py-2 text-xs text-gray-300 mb-4 break-all">{{ secret }}</code>
+  <p class="text-xs text-gray-500 mb-4 break-all">{{ provisioning_uri }}</p>
+
+  <form method="POST" novalidate class="space-y-4">
+    {{ form.hidden_tag() }}
+    <div>
+      {{ form.totp_code.label(class="block text-sm text-gray-400 mb-1") }}
+      {{ form.totp_code(class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm text-gray-200") }}
+    </div>
+    {{ form.submit(class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md py-2 mt-2") }}
+  </form>
+</div>
+{% endblock %}

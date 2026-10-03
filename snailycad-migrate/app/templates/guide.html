@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}How to use this — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <h1 class="text-2xl font-semibold text-gray-100 mb-2">How to use this platform</h1>
+  <p class="text-sm text-gray-500 mb-8">
+    A SnailyCAD install is really just two things: some files (config, uploaded assets)
+    and a database. <strong class="text-gray-300">Exports</strong> package those up into one
+    file. <strong class="text-gray-300">Imports</strong> take that file and restore it
+    somewhere else. Everything else on this platform exists to make that packaging/restoring
+    step happen safely.
+  </p>
+
+  <!-- table of contents -->
+  <div class="bg-panel border border-border rounded-lg p-4 mb-8">
+    <p class="text-xs font-semibold text-gray-400 mb-2">On this page</p>
+    <div class="grid sm:grid-cols-2 gap-1 text-sm">
+      <a href="#three-ways" class="text-blue-400 hover:text-blue-300">The three connection methods</a>
+      <a href="#agent-export" class="text-blue-400 hover:text-blue-300">Step by step: Export via Agent (recommended)</a>
+      <a href="#agent-import" class="text-blue-400 hover:text-blue-300">Step by step: Import via Agent</a>
+      <a href="#local-ssh" class="text-blue-400 hover:text-blue-300">Local and SSH export/import</a>
+      <a href="#db-only" class="text-blue-400 hover:text-blue-300">Database-only mode &amp; auto-detect</a>
+      <a href="#sharing" class="text-blue-400 hover:text-blue-300">Sharing an export</a>
+      <a href="#retention" class="text-blue-400 hover:text-blue-300">How long exports are kept</a>
+      <a href="#troubleshooting" class="text-blue-400 hover:text-blue-300">If something goes wrong</a>
+    </div>
+  </div>
+
+  <!-- three ways -->
+  <section id="three-ways" class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-100 mb-3">The three connection methods</h2>
+    <p class="text-sm text-gray-400 mb-4">
+      Every export or import needs to reach the machine that has (or will have) the SnailyCAD
+      install. There are three ways to make that connection — pick based on where that machine is.
+    </p>
+
+    <div class="space-y-3">
+      <div class="bg-panel border border-border rounded-lg p-4">
+        <p class="text-sm font-semibold text-gray-200 mb-1">🖥️ Local</p>
+        <p class="text-sm text-gray-400">
+          The SnailyCAD install is on <em>this same server</em> — the one running this migration
+          platform. Just type the folder path directly. Simplest option, but only works if
+          everything's on one box.
+        </p>
+      </div>
+
+      <div class="bg-panel border border-border rounded-lg p-4">
+        <p class="text-sm font-semibold text-gray-200 mb-1">🔐 SSH</p>
+        <p class="text-sm text-gray-400">
+          This platform connects <em>out</em> to another server over SSH (password login, no
+          key needed). Works great between servers you control — but the target machine's SSH
+          port needs to be reachable from here, which often means opening a port or setting up
+          port forwarding on a router/firewall.
+        </p>
+      </div>
+
+      <div class="bg-panel border border-border rounded-lg p-4 border-blue-800">
+        <p class="text-sm font-semibold text-gray-200 mb-1">📡 Agent <span class="text-xs text-blue-400 font-normal">— recommended for most people</span></p>
+        <p class="text-sm text-gray-400">
+          This is the <em>reverse</em> of SSH: you download a small script and run it directly
+          on the SnailyCAD machine. It connects <em>out</em> to this platform on its own — the
+          same direction as just browsing a website. <strong class="text-gray-300">No port
+          forwarding, no firewall changes, works behind NAT</strong> — this is the right choice
+          if the target machine is a home PC, a machine you don't control the network for, or
+          you just don't want to mess with firewall rules.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- agent export -->
+  <section id="agent-export" class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-100 mb-3">Step by step: Export via Agent</h2>
+    <ol class="space-y-3 text-sm text-gray-400 list-decimal list-inside">
+      <li>Go to <a href="{{ url_for('agent.new_export') }}" class="text-blue-400 hover:text-blue-300">Agent export</a> (also linked from the dashboard).</li>
+      <li>Fill in the <strong class="text-gray-300">install path</strong> — the folder SnailyCAD lives in on the machine that will run the agent (e.g. <code class="text-xs bg-surface px-1 rounded">D:\SnailyCAD</code>). This is the folder itself, not a file inside it.</li>
+      <li>Fill in database details, or just <strong class="text-gray-300">leave the DB name blank</strong> — the agent reads the real one straight out of that install's own settings file automatically.</li>
+      <li>Click <strong class="text-gray-300">Generate agent token</strong>. You'll land on a status page with a one-time download.</li>
+      <li>Download the <strong class="text-gray-300">Windows</strong> or <strong class="text-gray-300">Linux</strong> version, whichever matches the target machine.</li>
+      <li>On that machine: unzip it, then just run it —
+        Windows: double-click <code class="text-xs bg-surface px-1 rounded">Start Agent.bat</code>.
+        Linux: <code class="text-xs bg-surface px-1 rounded">./start-agent.sh</code>.
+        No typing, no command-line arguments — everything needed is already baked in.</li>
+      <li>Watch it happen live on the status page — plain-English progress, a progress bar, and
+        file sizes as it collects, packages, and uploads.</li>
+      <li>Once it says complete, the export shows up on your <a href="{{ url_for('main.dashboard') }}" class="text-blue-400 hover:text-blue-300">dashboard</a> — ready to download, share, or restore elsewhere.</li>
+    </ol>
+  </section>
+
+  <!-- agent import -->
+  <section id="agent-import" class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-100 mb-3">Step by step: Import (restore) via Agent</h2>
+    <ol class="space-y-3 text-sm text-gray-400 list-decimal list-inside">
+      <li>Go to <a href="{{ url_for('agent.new_import') }}" class="text-blue-400 hover:text-blue-300">Agent import</a>. You need at least one completed export to restore from.</li>
+      <li>Pick which export to restore from the dropdown.</li>
+      <li>Fill in the <strong class="text-gray-300">target path</strong> — where files should land on the machine that will run the agent. Leave it blank (and uncheck "Restore files") for a database-only restore.</li>
+      <li>Fill in the target database details, or leave the name blank if there's already a
+        SnailyCAD install at the target path with its own settings file — it'll be read
+        automatically the same way exports work.</li>
+      <li>Generate the token, download for the target machine's OS, run it — same
+        double-click-and-done experience as export.</li>
+      <li>Watch it download, verify, and restore live on the status page. It checks every file's
+        integrity before touching anything, so a corrupted or incomplete download gets caught
+        and reported instead of silently restoring bad data.</li>
+    </ol>
+  </section>
+
+  <!-- local/ssh -->
+  <section id="local-ssh" class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-100 mb-3">Local and SSH export/import</h2>
+    <p class="text-sm text-gray-400 mb-3">
+      These work the same way as Agent, minus the download-and-run step — you fill in
+      connection details directly in the form (<a href="{{ url_for('exports.new') }}" class="text-blue-400 hover:text-blue-300">New export</a> /
+      <a href="{{ url_for('imports.new') }}" class="text-blue-400 hover:text-blue-300">New import</a>) and it runs immediately from this server.
+    </p>
+    <p class="text-sm text-gray-400">
+      Pick <strong class="text-gray-300">Local</strong> if SnailyCAD is on this same box.
+      Pick <strong class="text-gray-300">Remote over SSH</strong> and fill in host/username/password
+      if it's on another server you control and can reach — remember, this needs that
+      server's SSH port to be reachable from here. If it isn't (or you're not sure), use
+      Agent mode instead.
+    </p>
+  </section>
+
+  <!-- db only -->
+  <section id="db-only" class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-100 mb-3">Database-only mode &amp; auto-detect</h2>
+    <p class="text-sm text-gray-400 mb-3">
+      Sometimes you only want the database, not the files (or vice versa). Every export/import
+      form has a checkbox for this — uncheck "Include files" (export) or "Restore files"
+      (import) and it'll only handle the database.
+    </p>
+    <p class="text-sm text-gray-400 mb-3">
+      <strong class="text-gray-300">Auto-detect:</strong> if you fill in the install/target
+      path but leave the database name blank, the tool reads the real database name (and
+      host/user/password) straight out of that install's own settings file — so you never
+      have to guess or manually type it in. If you do type a name and it turns out not to
+      match what's actually there, you'll get a clear warning telling you the real one instead
+      of a confusing database-not-found error.
+    </p>
+  </section>
+
+  <!-- sharing -->
+  <section id="sharing" class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-100 mb-3">Sharing an export</h2>
+    <p class="text-sm text-gray-400">
+      Open any completed export and use <strong class="text-gray-300">Share this export</strong>
+      to hand it off to a hosting provider or someone helping with the migration — they don't
+      need an account here. You'll get a link and a one-time PIN; they need both. Pick how long
+      the link stays active (30 minutes up to 7 days activates immediately; longer needs admin
+      approval). You can turn a link off early at any time from the same page.
+    </p>
+  </section>
+
+  <!-- retention -->
+  <section id="retention" class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-100 mb-3">How long exports are kept</h2>
+    <p class="text-sm text-gray-400">
+      Exports are automatically kept for 7 days, then removed. If you need one to stick around
+      longer, open it and use <strong class="text-gray-300">Request longer retention</strong> —
+      give a reason, how many days, and accept the data retention terms. Requests beyond
+      standard always need admin approval.
+    </p>
+  </section>
+
+  <!-- troubleshooting -->
+  <section id="troubleshooting" class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-100 mb-3">If something goes wrong</h2>
+    <p class="text-sm text-gray-400 mb-3">
+      The status page and the downloaded agent's output both explain what happened in plain
+      English — read what it actually says first, it's usually specific (e.g. which file
+      didn't match, which folder it couldn't find, which database tool wasn't installed).
+    </p>
+    <p class="text-sm text-gray-400 mb-3">
+      Still stuck? <a href="{{ url_for('support.new_ticket') if current_user.is_authenticated else url_for('auth.login') }}" class="text-blue-400 hover:text-blue-300">Open a support ticket</a> — include what the status page or agent output said, that's the fastest way to get it sorted.
+    </p>
+    <p class="text-sm text-gray-400">
+      Don't want to deal with install paths or database details at all?
+      <a href="{{ url_for('agent.request_assist') if current_user.is_authenticated else url_for('auth.login') }}" class="text-blue-400 hover:text-blue-300">Let an admin do it for you</a> —
+      you just download and run the agent, and an admin fills in the technical details remotely
+      within a 12-hour window. Nothing happens until they do.
+    </p>
+  </section>
+</div>
+{% endblock %}

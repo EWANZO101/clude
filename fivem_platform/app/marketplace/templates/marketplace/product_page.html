@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} — {{ config.SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <a href="{{ url_for('marketplace.browse') }}" class="text-xs text-gray-500 hover:text-white">← Marketplace</a>
+
+  <h1 class="text-2xl font-semibold text-white mt-3 mb-1">{{ product.name }}</h1>
+  <p class="text-sm text-gray-500 mb-6">by {{ product.developer.username }} · v{{ product.version }} · {{ product.product_type }}</p>
+
+  {% if product.description %}
+    <div class="bg-surface-card border border-surface-border rounded-lg p-5 mb-6">
+      <p class="text-sm text-gray-300 whitespace-pre-wrap">{{ product.description }}</p>
+    </div>
+  {% endif %}
+
+  {% if product.purchase_url %}
+    <a href="{{ product.purchase_url }}" target="_blank" rel="noopener noreferrer"
+       class="inline-block bg-brand hover:bg-brand-hover text-white rounded-md px-5 py-2.5 text-sm font-medium transition">
+      Buy this product →
+    </a>
+    <p class="text-xs text-gray-500 mt-2">Opens the developer's store in a new tab.</p>
+  {% endif %}
+</div>
+{% endblock %}

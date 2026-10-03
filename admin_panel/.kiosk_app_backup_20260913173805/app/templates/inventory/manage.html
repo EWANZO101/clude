@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Manage {{ item.name }} — {{ tenant_name }}{% endblock %}
+{% block content %}
+<style>
+  .inv-select { width:100%; padding:10px 12px; border-radius:7px; border:1px solid var(--panel-border); background:var(--bg); color:var(--text); font-size:14px; font-family:inherit; }
+  .inv-checkline { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13.5px; color:var(--muted); }
+  .inv-checkline input { width:auto; }
+  .event-row { padding:8px 0; border-bottom:1px solid var(--panel-border); font-size:13px; }
+  .event-row:last-child { border-bottom:none; }
+</style>
+
+<p><a href="{{ url_for('inventory.list_type_items', type_key=item_type.key) }}">← {{ item_type.name }}</a></p>
+<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+  <h1 style="margin:0;">{{ item.name }}</h1>
+  {% if barcode_data_uri %}<img src="{{ barcode_data_uri }}" alt="barcode" style="height:44px;">{% endif %}
+</div>
+
+<div style="display:grid; grid-template-columns:1.4fr 1fr; gap:16px; align-items:start;">
+  <div>
+    <div class="panel">
+      <h2 style="margin-top:0; font-size:15px;">Details</h2>
+      <form method="post" action="{{ url_for('inventory.save_item', item_id=item.id) }}">
+        <label>Name</label>
+        <input type="text" name="name" value="{{ item.name }}" required>
+        <label>SKU</label>
+        <div style="display:flex; gap:8px; align-items:flex-end;">
+          <input type="text" name="sku" value="{{ item.sku or '' }}" style="flex:1;">
+        </div>
+        <label>Serial number</label>
+        <input type="text" name="serial_number" value="{{ item.serial_number or '' }}">
+        <label>Status</label>
+        <input type="text" name="status" value="{{ item.status }}">
+        <label>Checked out by (optional)</label>
+        <input type="text" name="checked_out_by_name" value="{{ item.checked_out_by_name or '' }}">
+        <label>Current project (optional)</label>
+        <input type="text" name="current_project" value="{{ item.current_project or '' }}">
+
+        {% if fields %}
+          <h3 style="font-size:13px; text-transform:uppercase; color:var(--muted); margin:20px 0 6px;">{{ item_type.name }} fields</h3>
+          {% for f in fields %}
+            <label>{{ f.label }}{% if f.required %} *{% endif %}</label>
+            {% if f.field_type == 'boolean' %}
+              <div class="inv-checkline"><input type="checkbox" name="field_{{ f.key }}" {% if custom_values.get(f.key) %}checked{% endif %}></div>
+            {% elif f.field_type == 'select' %}
+              <select name="field_{{ f.key }}" class="inv-select">
+                <option value="">—</option>
+                {% for opt in f.options %}<option value="{{ opt }}" {% if custom_values.get(f.key) == opt %}selected{% endif %}>{{ opt }}</option>{% endfor %}
+              </select>
+            {% else %}
+              <input type="text" name="field_{{ f.key }}" value="{{ custom_values.get(f.key, '') if custom_values.get(f.key) is not none else '' }}">
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        <button type="submit" style="margin-top:16px;">Save</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin-top:0; font-size:15px;">Measurement</h2>
+      <p class="muted" style="font-size:13px;">
+        Current: {{ item.quantity_value if item.quantity_value is not none else '—' }} {{ item.quantity_unit or '' }}
+      </p>
+      <form method="post" action="{{ url_for('inventory.set_measurement', item_id=item.id) }}" style="display:flex; gap:8px; align-items:flex-end;">
+        <div style="flex:1;">
+          <label>Change unit</label>
+          <select name="quantity_unit" class="inv-select">
+            {% for kind, spec in measurement_kinds.items() %}
+              {% for unit_key, u in spec.units.items() %}
+                <option value="{{ unit_key }}" {% if unit_key == item.quantity_unit %}selected{% endif %}>{{ spec.label }}: {{ u.label }} ({{ unit_key }})</option>
+              {% endfor %}
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit">Convert</button>
+      </form>
+      <p class="muted" style="font-size:12px; margin-top:8px;">
+        Converting within the same kind (e.g. lb → kg) recalculates the value automatically.
+        Switching to a different kind (e.g. count → weight) keeps the number as-is rather than losing it.
+      </p>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin-top:0; font-size:15px;">Type</h2>
+      <p class="muted" style="font-size:13px;">Currently: <strong>{{ item_type.name }}</strong></p>
+      <form method="post" action="{{ url_for('inventory.set_type', item_id=item.id) }}" style="display:flex; gap:8px; align-items:flex-end;">
+        <div style="flex:1;">
+          <select name="item_type_key" class="inv-select">
+            {% for at in all_types %}<option value="{{ at.key }}" {% if at.key == item_type.key %}selected{% endif %}>{{ at.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <button type="submit" onclick="return confirm('Change this item\'s type? Its data is kept but fields that don\'t apply to the new type stay hidden.');">Change Type</button>
+      </form>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2 style="margin-top:0; font-size:15px;">Identifiers</h2>
+      <form method="post" action="{{ url_for('inventory.generate_sku', item_id=item.id) }}" style="margin-bottom:10px;">
+        <button type="submit" style="background:transparent; border:1px solid var(--panel-border); width:100%;">Generate new SKU</button>
+      </form>
+      <form method="post" action="{{ url_for('inventory.generate_serial', item_id=item.id) }}" style="margin-bottom:10px;">
+        <button type="submit" style="background:transparent; border:1px solid var(--panel-border); width:100%;">Generate new serial number</button>
+      </form>
+      <form method="post" action="{{ url_for('inventory.delete_item', item_id=item.id) }}"
+            onsubmit="return confirm('Delete {{ item.name }}? This can\'t be undone.');">
+        <button type="submit" style="background:var(--red); width:100%;">Delete this item</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin-top:0; font-size:15px;">Log an event</h2>
+      <form method="post" action="{{ url_for('inventory.log_event', item_id=item.id) }}">
+        <label>Event</label>
+        <select name="event_type" class="inv-select">
+          {% for et in event_types %}<option value="{{ et }}">{{ et.replace('_', ' ') }}</option>{% endfor %}
+        </select>
+        <label>Project (optional)</label>
+        <input type="text" name="project">
+        <label>Note (optional)</label>
+        <input type="text" name="detail">
+        <button type="submit" style="margin-top:14px;">Log Event</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin-top:0; font-size:15px;">History</h2>
+      {% if item.events %}
+        {% for e in item.events %}
+          <div class="event-row">
+            <strong>{{ e.event_type.replace('_', ' ') }}</strong>
+            <span class="muted">{{ e.occurred_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            {% if e.actor %}<div class="muted" style="font-size:12px;">by {{ e.actor }}{% if e.project %} — {{ e.project }}{% endif %}</div>{% endif %}
+            {% if e.detail %}<div style="font-size:12.5px; margin-top:2px;">{{ e.detail }}</div>{% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="muted" style="font-size:13px;">No events logged yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

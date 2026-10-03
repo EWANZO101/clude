@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Logs: {{ service_name }} — {{ panel_name }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p class="page-eyebrow"><span class="status-dot ok live"></span>Live log stream</p>
+    <h1 class="page-title mono">{{ service_name }}</h1>
+  </div>
+</div>
+
+<div class="card flush">
+  <pre id="log-window" class="mono console-pane" style="height:520px;"></pre>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const serviceName = {{ service_name | tojson }};
+  const logWindow = document.getElementById('log-window');
+  const socket = io('/logs');
+
+  socket.on('connect', () => {
+    socket.emit('subscribe', { service: serviceName });
+  });
+
+  socket.on('log_line', (data) => {
+    const atBottom = logWindow.scrollTop + logWindow.clientHeight >= logWindow.scrollHeight - 10;
+    logWindow.textContent += data.line + "\n";
+    if (atBottom) logWindow.scrollTop = logWindow.scrollHeight;
+  });
+
+  window.addEventListener('beforeunload', () => {
+    socket.emit('unsubscribe', { service: serviceName });
+  });
+</script>
+{% endblock %}
