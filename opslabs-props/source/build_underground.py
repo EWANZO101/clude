@@ -17,6 +17,8 @@ Every origin is on the road surface (z = 0) and the structure hangs below it.
   opslabs_ug_entrance    street access: 2.0 x 2.0 x 2.4 green GRP kiosk (door -Y, x +-0.45, z 0.05 .. 2.05) over a
                          chamber-sized stairwell (one 2.0 x 2.2 opening in +Y); stair x -1.4 .. -0.4 from the top landing
                          (z -0.30, y -1.6 .. -1.35) down to the floor at y +0.60; landing clear round (-0.9, +1.0).
+  opslabs_ug_tunnel_tee  the tunnel section with a 2.0 x 2.2 side opening through the +X wall (y +-1.0, z -3.00 .. -0.80);
+                         +X tray cables turn up and cross the opening just under the ceiling (z -0.82 .. -0.895).
 blender -b --python build_underground.py -- <out_dir>
 """
 import math
@@ -487,73 +489,106 @@ add(finish('opslabs_ug_hatch_lid', bm, [mat('opslabs_ug_chequer'), mat('opslabs_
     colmesh('opslabs_ug_hatch_lid', cb))
 
 # ================================================================ 3. tunnel section
-bm = bmesh.new(); uv = bm.loops.layers.uv.new('UVMap 0'); cb = bmesh.new()
 L2, TI, TO, TC, TR, TF, TB = 2.0, 1.0, 1.2, -0.80, -0.55, -3.00, -3.20
 
 
-def tbox(x0, y0, z0, x1, y1, z1, mi=CON, colm=0):
-    box(bm, uv, x0, y0, z0, x1, y1, z1, mi=mi, tile=WT, skip=('front', 'back'))      # open ends: no end caps
-    cbox(cb, x0, y0, z0, x1, y1, z1, colm)
+def build_tunnel(name, tee=False):
+    """straight section; tee = 2.0 x 2.2 side opening through the +X wall centred at y = 0"""
+    bm = bmesh.new(); uv = bm.loops.layers.uv.new('UVMap 0'); cb = bmesh.new()
+
+    def tbox(x0, y0, z0, x1, y1, z1, mi=CON, colm=0):
+        box(bm, uv, x0, y0, z0, x1, y1, z1, mi=mi, tile=WT, skip=('front', 'back'))      # open ends: no end caps
+        cbox(cb, x0, y0, z0, x1, y1, z1, colm)
 
 
-tbox(-TO, -L2, TB, TO, L2, TF, mi=FLR)
-tbox(-TO, -L2, TC, TO, L2, TR)
-tbox(-TO, -L2, TF, -TI, L2, TC); tbox(TI, -L2, TF, TO, L2, TC)
-# end faces of the slabs / walls (the cut concrete ring) so a lone section reads solid
-for x0, z0, x1, z1 in ((-TO, TB, TO, TF), (-TO, TC, TO, TR), (-TO, TF, -TI, TC), (TI, TF, TO, TC)):
-    for y in (-L2, L2):
-        quad(bm, uv, [(x0, y, z0), (x1, y, z0), (x1, y, z1), (x0, y, z1)] if y < 0 else [(x1, y, z0), (x0, y, z0), (x0, y, z1), (x1, y, z1)], mi=CON, tile=WT, axes=(0, 2))
-# faint joint lines at both ends (adjacent sections give one 4 cm mortar joint)
-for ya, yb in ((-L2, -L2 + 0.02), (L2 - 0.02, L2)):
-    box(bm, uv, -TI, ya, TF, TI, yb, TF + 0.002, mi=JOINT, skip=('front', 'back'))
-    box(bm, uv, -TI, ya, TC - 0.002, TI, yb, TC, mi=JOINT, skip=('front', 'back'))
+    tbox(-TO, -L2, TB, TO, L2, TF, mi=FLR)
+    tbox(-TO, -L2, TC, TO, L2, TR)
+    tbox(-TO, -L2, TF, -TI, L2, TC)
+    if tee:                                                                                  # +X wall with the 2.0 x 2.2 side opening
+        tbox(TI, -L2, TF, TO, -1.0, TC); tbox(TI, 1.0, TF, TO, L2, TC)
+        for y, fl in ((-1.0, 1), (1.0, 0)):                                                  # opening reveals
+            vs = [(TI, y, TF), (TO, y, TF), (TO, y, TC), (TI, y, TC)]
+            quad(bm, uv, vs if fl else list(reversed(vs)), mi=CON, tile=WT, axes=(0, 2))
+    else:
+        tbox(TI, -L2, TF, TO, L2, TC)
+    # end faces of the slabs / walls (the cut concrete ring) so a lone section reads solid
+    for x0, z0, x1, z1 in ((-TO, TB, TO, TF), (-TO, TC, TO, TR), (-TO, TF, -TI, TC), (TI, TF, TO, TC)):
+        for y in (-L2, L2):
+            quad(bm, uv, [(x0, y, z0), (x1, y, z0), (x1, y, z1), (x0, y, z1)] if y < 0 else [(x1, y, z0), (x0, y, z0), (x0, y, z1), (x1, y, z1)], mi=CON, tile=WT, axes=(0, 2))
+    # faint joint lines at both ends (adjacent sections give one 4 cm mortar joint)
+    for ya, yb in ((-L2, -L2 + 0.02), (L2 - 0.02, L2)):
+        box(bm, uv, -TI, ya, TF, TI, yb, TF + 0.002, mi=JOINT, skip=('front', 'back'))
+        box(bm, uv, -TI, ya, TC - 0.002, TI, yb, TC, mi=JOINT, skip=('front', 'back'))
+        for sx in (-1, 1):
+            box(bm, uv, sx * TI - (0.002 if sx > 0 else 0), ya, TF, sx * TI + (0.002 if sx < 0 else 0), yb, TC, mi=JOINT, skip=('front', 'back'))
+    # cable trays on both walls at z -1.40 / -2.00: perforated galv ladder tray |x| 0.70 .. 0.98 on cantilever arms
+    TRAY_CABLES = [  # (|x|, mat, r, z above the tray bottom): two layers, black / yellow / grey
+        (0.735, CBK, 0.026, 0.026), (0.785, CYL, 0.022, 0.022), (0.83, CBK, 0.024, 0.024), (0.875, CGR, 0.02, 0.02), (0.915, CBK, 0.022, 0.022),
+        (0.952, CYL, 0.016, 0.016), (0.76, CGR, 0.018, 0.064), (0.805, CBK, 0.02, 0.062), (0.85, CYL, 0.016, 0.058), (0.895, CBK, 0.02, 0.058),
+        (0.935, CGR, 0.015, 0.048)]
     for sx in (-1, 1):
-        box(bm, uv, sx * TI - (0.002 if sx > 0 else 0), ya, TF, sx * TI + (0.002 if sx < 0 else 0), yb, TC, mi=JOINT, skip=('front', 'back'))
-# cable trays on both walls at z -1.40 / -2.00: perforated galv ladder tray |x| 0.70 .. 0.98 on cantilever arms
-TRAY_CABLES = [  # (|x|, mat, r, z above the tray bottom): two layers, black / yellow / grey
-    (0.735, CBK, 0.026, 0.026), (0.785, CYL, 0.022, 0.022), (0.83, CBK, 0.024, 0.024), (0.875, CGR, 0.02, 0.02), (0.915, CBK, 0.022, 0.022),
-    (0.952, CYL, 0.016, 0.016), (0.76, CGR, 0.018, 0.064), (0.805, CBK, 0.02, 0.062), (0.85, CYL, 0.016, 0.058), (0.895, CBK, 0.02, 0.058),
-    (0.935, CGR, 0.015, 0.048)]
-for sx in (-1, 1):
-    for zt in (-1.40, -2.00):
-        def X(a, b):
-            return (min(sx * a, sx * b), max(sx * a, sx * b))
-        xa, xb = X(0.70, 0.98)
-        box(bm, uv, xa, -L2, zt - 0.006, xb, L2, zt, mi=GALV, skip=('front', 'back'))
-        for a, b in ((0.70, 0.706), (0.974, 0.98)):
-            xa, xb = X(a, b)
-            box(bm, uv, xa, -L2, zt - 0.006, xb, L2, zt + 0.045, mi=GALV, skip=('front', 'back'))
-        for y in (-1.5, -0.5, 0.5, 1.5):
-            xa, xb = X(0.69, TI)
-            box(bm, uv, xa, y - 0.02, zt - 0.045, xb, y + 0.02, zt - 0.006, mi=GALV)
-            xa, xb = X(0.975, TI)
-            box(bm, uv, xa, y - 0.022, zt - 0.20, xb, y + 0.022, zt + 0.08, mi=GALV)
-        xa, xb = X(0.70, 0.98)
-        cbox(cb, xa, -L2, zt - 0.045, xb, L2, zt + 0.06, 1)
-        for tc in TRAY_CABLES:
-            x, mi, r = tc[:3]
-            z = zt + tc[3]
-            cyl(bm, uv, (sx * x, -L2, z), (sx * x, L2, z), r, sides=8, mi=mi, vrep=8, caps=False)
-# ceiling LED battens centred y -1.0 / +1.0 (x 0), diffuser emissive; conduit along the ceiling
-for yc in (-1.0, 1.0):
-    box(bm, uv, -0.045, yc - 0.6, TC - 0.05, 0.045, yc + 0.6, TC, mi=LAMP)
-    box(bm, uv, -0.035, yc - 0.58, TC - 0.065, 0.035, yc + 0.58, TC - 0.05, mi=GLOW)
-cyl(bm, uv, (0.15, -L2, TC - 0.015), (0.15, L2, TC - 0.015), 0.012, sides=8, mi=GALV, vrep=4, caps=False)
-for y in (-1.5, -0.5, 0.5, 1.5):
-    box(bm, uv, 0.13, y - 0.012, TC - 0.03, 0.17, y + 0.012, TC, mi=GALV)
-for yc in (-1.0, 1.0):
-    cable(bm, uv, [(0.15, yc + 0.62, TC - 0.015), (0.045, yc + 0.62, TC - 0.03)], 0.008, GALV, sides=6)
-# pipes along the -X floor edge, saddles every 2 m
-for x, z, r, mi in ((-0.90, TF + 0.06, 0.06, BLK), (-0.76, TF + 0.05, 0.05, CGR), (-0.88, TF + 0.17, 0.045, DUCT)):
-    cyl(bm, uv, (x, -L2, z), (x, L2, z), r, sides=14, mi=mi, vrep=4, caps=False)
-for y in (-1.0, 1.0):
-    box(bm, uv, -TI, y - 0.03, TF, -0.69, y + 0.03, TF + 0.015, mi=GALV)
-    box(bm, uv, -0.71, y - 0.03, TF, -0.69, y + 0.03, TF + 0.24, mi=GALV)
-cbox(cb, -TI, -L2, TF, -0.70, L2, TF + 0.22, 1)
-add(finish('opslabs_ug_tunnel', bm, [mat('opslabs_ug_wall'), mat('opslabs_ug_floor'), mat('opslabs_ug_galv'), mat('opslabs_ug_cable_black'),
-                                     mat('opslabs_ug_cable_yellow'), mat('opslabs_ug_cable_grey'), mat('opslabs_ug_black'), mat('opslabs_ug_lampbody'),
-                                     mat('opslabs_ug_glow_cool', 'emissive.sps'), mat('opslabs_ug_wall'), mat('opslabs_ug_wall'), mat('opslabs_ug_joint'),
-                                     mat('opslabs_ug_duct'), mat('opslabs_ug_wall')]), colmesh('opslabs_ug_tunnel', cb))
+        YR = [(-L2, -1.05), (1.05, L2)] if (tee and sx > 0) else [(-L2, L2)]
+        for zt in (-1.40, -2.00):
+          for ya_, yb_ in YR:
+            def X(a, b):
+                return (min(sx * a, sx * b), max(sx * a, sx * b))
+            xa, xb = X(0.70, 0.98)
+            box(bm, uv, xa, ya_, zt - 0.006, xb, yb_, zt, mi=GALV, skip=('front', 'back'))
+            for a, b in ((0.70, 0.706), (0.974, 0.98)):
+                xa, xb = X(a, b)
+                box(bm, uv, xa, ya_, zt - 0.006, xb, yb_, zt + 0.045, mi=GALV, skip=('front', 'back'))
+            for y in [y for y in (-1.5, -0.5, 0.5, 1.5) if ya_ < y < yb_]:
+                xa, xb = X(0.69, TI)
+                box(bm, uv, xa, y - 0.02, zt - 0.045, xb, y + 0.02, zt - 0.006, mi=GALV)
+                xa, xb = X(0.975, TI)
+                box(bm, uv, xa, y - 0.022, zt - 0.20, xb, y + 0.022, zt + 0.08, mi=GALV)
+            xa, xb = X(0.70, 0.98)
+            cbox(cb, xa, ya_, zt - 0.045, xb, yb_, zt + 0.06, 1)
+            for tc in TRAY_CABLES:
+                x, mi, r = tc[:3]
+                z = zt + tc[3]
+                cyl(bm, uv, (sx * x, ya_, z), (sx * x, yb_, z), r, sides=8, mi=mi, vrep=(yb_ - ya_) * 2, caps=tee and sx > 0)
+    # tee: the +X tray cables turn up at the opening and cross above it just under the ceiling (all above z -0.9)
+    if tee:
+        k = 0
+        for zt in (-1.40, -2.00):
+            for tc in TRAY_CABLES:
+                x, mi, r = tc[:3]
+                z = zt + tc[3]
+                xo = 0.72 + (k % 11) * 0.025
+                zo = -0.835 if k < 11 else -0.868
+                for sy in (-1, 1):
+                    cable(bm, uv, [(x, sy * 1.06, z), (x, sy * 1.03, z + 0.04), (xo, sy * 1.03, zo - 0.04), (xo, sy * 1.0, zo)], min(r, 0.016), mi)
+                cyl(bm, uv, (xo, -1.0, zo), (xo, 1.0, zo), min(r, 0.016), sides=8, mi=mi, vrep=4, caps=False)
+                k += 1
+        for y in (-0.6, 0.0, 0.6):                                                           # ceiling hangers + support bars
+            box(bm, uv, 0.70, y - 0.02, -0.895, 0.99, y + 0.02, -0.887, mi=GALV)
+            for x in (0.71, 0.98):
+                box(bm, uv, x - 0.005, y - 0.005, -0.895, x + 0.005, y + 0.005, TC, mi=GALV)
+    # ceiling LED battens centred y -1.0 / +1.0 (x 0), diffuser emissive; conduit along the ceiling
+    for yc in (-1.0, 1.0):
+        box(bm, uv, -0.045, yc - 0.6, TC - 0.05, 0.045, yc + 0.6, TC, mi=LAMP)
+        box(bm, uv, -0.035, yc - 0.58, TC - 0.065, 0.035, yc + 0.58, TC - 0.05, mi=GLOW)
+    cyl(bm, uv, (0.15, -L2, TC - 0.015), (0.15, L2, TC - 0.015), 0.012, sides=8, mi=GALV, vrep=4, caps=False)
+    for y in (-1.5, -0.5, 0.5, 1.5):
+        box(bm, uv, 0.13, y - 0.012, TC - 0.03, 0.17, y + 0.012, TC, mi=GALV)
+    for yc in (-1.0, 1.0):
+        cable(bm, uv, [(0.15, yc + 0.62, TC - 0.015), (0.045, yc + 0.62, TC - 0.03)], 0.008, GALV, sides=6)
+    # pipes along the -X floor edge, saddles every 2 m
+    for x, z, r, mi in ((-0.90, TF + 0.06, 0.06, BLK), (-0.76, TF + 0.05, 0.05, CGR), (-0.88, TF + 0.17, 0.045, DUCT)):
+        cyl(bm, uv, (x, -L2, z), (x, L2, z), r, sides=14, mi=mi, vrep=4, caps=False)
+    for y in (-1.0, 1.0):
+        box(bm, uv, -TI, y - 0.03, TF, -0.69, y + 0.03, TF + 0.015, mi=GALV)
+        box(bm, uv, -0.71, y - 0.03, TF, -0.69, y + 0.03, TF + 0.24, mi=GALV)
+    cbox(cb, -TI, -L2, TF, -0.70, L2, TF + 0.22, 1)
+    add(finish(name, bm, [mat('opslabs_ug_wall'), mat('opslabs_ug_floor'), mat('opslabs_ug_galv'), mat('opslabs_ug_cable_black'),
+                                         mat('opslabs_ug_cable_yellow'), mat('opslabs_ug_cable_grey'), mat('opslabs_ug_black'), mat('opslabs_ug_lampbody'),
+                                         mat('opslabs_ug_glow_cool', 'emissive.sps'), mat('opslabs_ug_wall'), mat('opslabs_ug_wall'), mat('opslabs_ug_joint'),
+                                         mat('opslabs_ug_duct'), mat('opslabs_ug_wall')]), colmesh(name, cb))
+
+
+build_tunnel('opslabs_ug_tunnel')
+build_tunnel('opslabs_ug_tunnel_tee', tee=True)
 
 # ================================================================ 4. tunnel end wall (origin at the y = 0 face)
 bm = bmesh.new(); uv = bm.loops.layers.uv.new('UVMap 0'); cb = bmesh.new()

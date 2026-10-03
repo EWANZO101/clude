@@ -53,7 +53,8 @@ real collision, furniture, lights that come on inside, and doors.
   - **Chambers along the line:** none, back to back (chambers only), or one after every 1 / 2 / 3 / 5 tunnel sections.
   - **Sealed walls:** any opening with nothing joined to it shows a concrete wall automatically; join another piece on and that wall
     goes — so a line can always be extended later. Opening the hatch shows the shaft going down (the road itself can't have a hole cut in it).
-  - **Dig forward** (`/dig`, or the menu): stand underground by an open end — the wall goes and a highlighted, walkable section waits
+  - **Dig forward** (`/dig`, or the menu) from anywhere underground: face along the tunnel and it digs on from the open end ahead
+    (up to 80 m away); face a tunnel wall and that section becomes a **T-junction** opening on your side so you branch off there. The wall goes and a highlighted, walkable section waits
     in front of you; walk into it and it's built, then the next one appears ahead, so you dig as you walk. **G** swaps the next piece
     between a tunnel section and a chamber; Backspace stops (the end seals itself again). It stops by itself if you break through into
     another tunnel.

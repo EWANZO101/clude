@@ -159,6 +159,7 @@ Config.Cabling = {
         { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Underground chamber (walk-in, access hatch)', model = 'opslabs_ug_chamber', underground = true },
         { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Cable tunnel section 4 m', model = 'opslabs_ug_tunnel', underground = true },
         { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Tunnel end wall', model = 'opslabs_ug_tunnel_end', underground = true },
+        { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Tunnel T-junction 4 m (side opening)', model = 'opslabs_ug_tunnel_tee', underground = true },
         { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Street entrance (kiosk, stairs down)', model = 'opslabs_ug_entrance', underground = true },
         { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Riser pipe · goose-neck', model = 'opslabs_ug_riser', underground = true },
         { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Riser pipe · flush cap', model = 'opslabs_ug_riser_flush', underground = true },
@@ -508,6 +509,7 @@ Config.Buildings = {
         doors = { { label = 'Access hatch', leaves = { { hinge = { -1.4, -1.15 }, z = 0.0, h = 0, w = 0.8, kind = 'opslabs_ug_hatch_lid', lift = 100 } } } },
     },
     opslabs_ug_entrance = { lights = { z = -0.55, rgb = { 255, 240, 215 }, range = 5.5, power = 1.6, pts = { { 0.6, 0.6 } } } },
+    opslabs_ug_tunnel_tee = { lights = { z = -0.95, rgb = { 235, 242, 255 }, range = 5.0, power = 1.5, pts = { { 0.0, -1.0 }, { 0.0, 1.0 } } } },
     opslabs_ug_tunnel = { lights = { z = -0.95, rgb = { 235, 242, 255 }, range = 5.0, power = 1.5, pts = { { 0.0, -1.0 }, { 0.0, 1.0 } } } },
     opslabs_exchange_building = {
         lights = { z = 4.6, rgb = { 255, 250, 235 }, range = 7.0, power = 1.6,

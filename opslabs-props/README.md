@@ -55,6 +55,7 @@ Streamed props used by opslabs-towers.
 | `opslabs_rw_barrier_red` | Red interlocking pedestrian barrier, 1 m long × 1 m tall: grid panel, white reflective plate, rubber feet, pegs / hooks with yellow clips — laid end to end every 1 m |
 | `opslabs_ug_entrance` | Street entrance to the tunnels: green GRP access kiosk with a steel door and keypad, over a stairwell (concrete stair flight, handrails, lamp) with one tunnel opening in its +Y wall |
 | `opslabs_ug_riser`, `opslabs_ug_riser_flush` | Cable duct riser pipe from a tunnel / chamber ceiling up through the ground: goose-neck with capped gland, or flush duct cap — concrete collar at ground level |
+| `opslabs_ug_tunnel_tee` | Tunnel T-junction: a 4 m tunnel section with a 2.0 × 2.2 m side opening in its +X wall (cables arch over it) for branching off |
 
 Access point: white matte body + glowing blue LED ring. Gateways: detailed front/back panel textures and glowing screens (emissive). All have embedded textures and collision (plastic / metal); fronts face the player when placed. No logos or text.
 

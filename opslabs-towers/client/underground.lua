@@ -11,8 +11,9 @@ local FLOOR = U.Floor or -3.0
 local IRONS = { HATCH[1], -1.0 }                   -- where you stand at the foot of the step irons
 local CHAMBER, TUNNEL, ENDWALL = 'opslabs_ug_chamber', 'opslabs_ug_tunnel', 'opslabs_ug_tunnel_end'
 local ENTRANCE, RISER, RISER_FLUSH = 'opslabs_ug_entrance', 'opslabs_ug_riser', 'opslabs_ug_riser_flush'
+local TEE = 'opslabs_ug_tunnel_tee'                    -- tunnel section with a side opening on its +X wall
 local LABEL = { [CHAMBER] = 'underground chamber', [TUNNEL] = 'tunnel section', [ENDWALL] = 'tunnel end wall',
-    [ENTRANCE] = 'street entrance', [RISER] = 'riser pipe', [RISER_FLUSH] = 'flush riser pipe' }
+    [ENTRANCE] = 'street entrance', [RISER] = 'riser pipe', [RISER_FLUSH] = 'flush riser pipe', [TEE] = 'tunnel T-junction' }
 local ENT_DOOR = U.EntranceDoor or { 0.0, -1.0 }       -- outside the kiosk door (entrance frame)
 local ENT_LAND = U.EntranceLanding or { -0.9, 1.0 }    -- foot of the stairs, below
 
@@ -33,7 +34,7 @@ local function connections()
     local pts = {}
     for _, f in pairs(fixtures()) do
         local list = f.model == CHAMBER and { { CH, 0 }, { -CH, 0 }, { 0, CH }, { 0, -CH } } or f.model == TUNNEL and { { 0, SEG / 2 }, { 0, -SEG / 2 } }
-            or f.model == ENTRANCE and { { 0, CH } } or nil
+            or f.model == ENTRANCE and { { 0, CH } } or f.model == TEE and { { 0, SEG / 2 }, { 0, -SEG / 2 }, { 1.2, 0 } } or nil
         for _, p in ipairs(list or {}) do
             local x, y = toWorld(f, p[1], p[2])
             local len = math.sqrt(p[1] * p[1] + p[2] * p[2])
@@ -70,7 +71,7 @@ local function groundAt(x, y, z)
 end
 
 --- outline a piece's footprint on the road (the structure itself is out of sight below)
-local FOOT = { [CHAMBER] = { CH, CH }, [TUNNEL] = { 1.2, SEG / 2 }, [ENDWALL] = { 1.2, 0.1 }, [ENTRANCE] = { CH, CH }, [RISER] = { 0.15, 0.15 }, [RISER_FLUSH] = { 0.15, 0.15 } }
+local FOOT = { [CHAMBER] = { CH, CH }, [TUNNEL] = { 1.2, SEG / 2 }, [ENDWALL] = { 1.2, 0.1 }, [ENTRANCE] = { CH, CH }, [RISER] = { 0.15, 0.15 }, [RISER_FLUSH] = { 0.15, 0.15 }, [TEE] = { 1.2, SEG / 2 } }
 local function footprint(model, x, y, z, heading, r, g, b)
     local e = FOOT[model]
     local c = {}
@@ -87,7 +88,7 @@ end
 
 --- where a piece goes when built onto an open end
 local function snapped(model, p)
-    local off = (model == CHAMBER or model == ENTRANCE) and CH or model == TUNNEL and SEG / 2 or 0.0
+    local off = (model == CHAMBER or model == ENTRANCE) and CH or (model == TUNNEL or model == TEE) and SEG / 2 or 0.0
     -- an entrance has its one opening on its +Y side: that side faces back on to the open end
     local heading = model == ENTRANCE and headingOf(-p.dx, -p.dy) or headingOf(p.dx, p.dy)
     return { x = p.x + p.dx * off, y = p.y + p.dy * off, z = p.z, heading = heading }
@@ -256,7 +257,7 @@ function UndergroundMenu()
     local options = {
         { title = 'Lay a tunnel line', description = 'Click the start, aim at the end · chambers at the ends, a section every 4 m, level all the way', icon = 'route', iconColor = '#30d158',
           onSelect = function() tunnelLine() UndergroundMenu() end },
-        { title = 'Dig forward from here (inside)', description = 'Stand by an open end underground · walk into the highlighted section and it\'s built, the next one appears ahead · G tunnel / chamber',
+        { title = 'Dig forward from here (inside)', description = 'Underground: face an open end, or face a tunnel wall to branch off · walk into the highlighted section and it\'s built · G tunnel / chamber',
           icon = 'person-digging', iconColor = '#30d158', onSelect = function() if DigForward then DigForward() end end },
         { title = 'Place chambers one by one', description = '3.2 × 3.2 m walk-in chamber with an access hatch (PIN lock) and step irons', icon = 'square', iconColor = '#8e8e93',
           onSelect = function() placeOne(CHAMBER) UndergroundMenu() end },
@@ -332,15 +333,61 @@ local function pieceAt(model, spot)
     end
 end
 
+--- where to dig from: an open end in front of you (up to 80 m along the tunnel), or — facing a tunnel wall — a new
+--- side opening: the section you're in becomes a T-junction opening on your side
+local function digStart(ped)
+    local pos = GetEntityCoords(ped)
+    local rz = math.rad(GetGameplayCamRot(2).z)
+    local fx, fy = -math.sin(rz), math.cos(rz)
+    local best, bd
+    for _, p in ipairs(connections()) do
+        local vx, vy = p.x - pos.x, p.y - pos.y
+        local d = math.sqrt(vx * vx + vy * vy)
+        local level = pos.z < p.z - 0.8 and pos.z > p.z + FLOOR - 0.5
+        local ahead = d < 2.5 or (vx * fx + vy * fy) / math.max(d, 0.01) > 0.75
+        if level and ahead and d < (bd or 80.0) then best, bd = p, d end
+    end
+    if best then return best end
+    -- inside a tunnel section, facing one of its walls?
+    for _, f in pairs(fixtures()) do
+        if f.model == TUNNEL or f.model == TEE then
+            local h = math.rad(f.heading or 0.0)
+            local ax, ay = -math.sin(h), math.cos(h)            -- along the tunnel
+            local sx, sy = math.cos(h), math.sin(h)             -- its +X side
+            local vx, vy = pos.x - f.x, pos.y - f.y
+            local lx, ly = vx * sx + vy * sy, vx * ax + vy * ay
+            if math.abs(lx) < 1.1 and math.abs(ly) < SEG / 2 and pos.z < f.z - 0.8 and pos.z > f.z + FLOOR - 0.5 then
+                local side = fx * sx + fy * sy
+                if math.abs(fx * ax + fy * ay) > 0.7 then return nil, 'That way is already built — face a wall to branch off' end
+                if f.model == TEE and side > 0 then return nil, 'There\'s already an opening on this side — walk to it' end
+                -- swap the section for a T-junction opening on the side you face (put the new one in before taking the old one out)
+                local heading = side > 0 and (f.heading or 0.0) or ((f.heading or 0.0) + 180.0) % 360
+                if not lib.progressBar({ duration = 3000, label = 'Breaking out the tunnel wall', canCancel = true, disable = { move = true, combat = true } }) then return nil, 'Stopped' end
+                local r = lib.callback.await('opslabs-towers:fixture:save', false, { model = TEE, x = f.x, y = f.y, z = f.z, heading = heading })
+                if not (r and r.ok) then return nil, (r and r.error) or 'Could not break out the wall' end
+                lib.callback.await('opslabs-towers:fixture:delete', false, f.id)
+                local t = { model = TEE, x = f.x, y = f.y, z = f.z, heading = heading }
+                local wait = GetGameTimer() + 4000
+                while GetGameTimer() < wait do
+                    local found = false
+                    for _, g in pairs(fixtures()) do if g.model == TEE and math.abs(g.x - t.x) < 0.2 and math.abs(g.y - t.y) < 0.2 then found = true end end
+                    if found then break end
+                    Wait(100)
+                end
+                local ox, oy = toWorld(t, 1.2, 0)
+                local dx, dy = dirOf(heading, 1, 0)
+                return { x = ox, y = oy, z = f.z, dx = dx, dy = dy }
+            end
+        end
+    end
+    return nil, 'Go underground: face an open end, or stand in a tunnel and face its wall'
+end
+
 function DigForward()
     local ped = PlayerPedId()
     local pos = GetEntityCoords(ped)
-    local target, bd
-    for _, p in ipairs(connections()) do
-        local d = math.sqrt((p.x - pos.x) ^ 2 + (p.y - pos.y) ^ 2)
-        if pos.z < p.z - 0.8 and pos.z > p.z + FLOOR - 0.5 and d < (bd or 4.5) then target, bd = p, d end
-    end
-    if not target then return lib.notify({ type = 'error', description = 'Go underground and stand by an open end (a plain concrete wall) of a tunnel or chamber' }) end
+    local target, why = digStart(ped)
+    if not target then return lib.notify({ type = 'error', description = why }) end
     local model = TUNNEL
     local ghost, ghostModel, spot
     local function dropGhost() if ghost and DoesEntityExist(ghost) then DeleteEntity(ghost) end ghost = nil end
