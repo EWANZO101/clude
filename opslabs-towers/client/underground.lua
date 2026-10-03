@@ -333,6 +333,24 @@ local function pieceAt(model, spot)
     end
 end
 
+--- the real piece is in the world with its collision (not just saved) — only then can anything under your feet go
+local function pieceReady(model, spot)
+    local f = pieceAt(model, spot)
+    local ents = f and CablingEntities and CablingEntities('f' .. f.id)
+    local e = ents and ents[1]
+    return e and DoesEntityExist(e) and HasCollisionLoadedAroundEntity(PlayerPedId())
+end
+
+--- wait (up to ms) for a piece to be really there
+local function awaitPiece(model, spot, ms)
+    local t = GetGameTimer() + (ms or 6000)
+    while GetGameTimer() < t do
+        if pieceReady(model, spot) then Wait(250) return true end
+        Wait(50)
+    end
+    return false
+end
+
 --- where to dig from: an open end in front of you (up to 80 m along the tunnel), or — facing a tunnel wall — a new
 --- side opening: the section you're in becomes a T-junction opening on your side
 local function digStart(ped)
@@ -365,15 +383,9 @@ local function digStart(ped)
                 if not lib.progressBar({ duration = 3000, label = 'Breaking out the tunnel wall', canCancel = true, disable = { move = true, combat = true } }) then return nil, 'Stopped' end
                 local r = lib.callback.await('opslabs-towers:fixture:save', false, { model = TEE, x = f.x, y = f.y, z = f.z, heading = heading })
                 if not (r and r.ok) then return nil, (r and r.error) or 'Could not break out the wall' end
-                lib.callback.await('opslabs-towers:fixture:delete', false, f.id)
                 local t = { model = TEE, x = f.x, y = f.y, z = f.z, heading = heading }
-                local wait = GetGameTimer() + 4000
-                while GetGameTimer() < wait do
-                    local found = false
-                    for _, g in pairs(fixtures()) do if g.model == TEE and math.abs(g.x - t.x) < 0.2 and math.abs(g.y - t.y) < 0.2 then found = true end end
-                    if found then break end
-                    Wait(100)
-                end
+                if not awaitPiece(TEE, t, 6000) then return nil, 'The new section didn\'t appear — try again' end
+                lib.callback.await('opslabs-towers:fixture:delete', false, f.id)
                 local ox, oy = toWorld(t, 1.2, 0)
                 local dx, dy = dirOf(heading, 1, 0)
                 return { x = ox, y = oy, z = f.z, dx = dx, dy = dy }
@@ -412,51 +424,71 @@ function DigForward()
         if e and DoesEntityExist(e) then DeleteEntity(e) end
         seals[DigKey] = nil
     end
+    -- anything already at an end (other than the piece just dug)? then we've broken through
+    local function occupied(p, except)
+        for _, f in pairs(fixtures()) do
+            if not (except and math.abs(f.x - except.x) < 0.2 and math.abs(f.y - except.y) < 0.2) then
+                local list = f.model == CHAMBER and { { CH, 0 }, { -CH, 0 }, { 0, CH }, { 0, -CH } } or (f.model == TUNNEL or f.model == TEE) and { { 0, SEG / 2 }, { 0, -SEG / 2 } }
+                    or f.model == ENTRANCE and { { 0, CH } } or f.model == ENDWALL and { { 0, 0 } } or {}
+                for _, q in ipairs(list) do
+                    local x, y = toWorld(f, q[1], q[2])
+                    if math.abs(x - p.x) < 0.3 and math.abs(y - p.y) < 0.3 and math.abs(f.z - p.z) < 0.5 then return true end
+                end
+            end
+        end
+        return false
+    end
     openUp()
     makeGhost()
     local sf2 = PlaceHud.buttons({ { 'Walk forward to dig', 32 }, { 'Tunnel / chamber', 47 }, { 'Stop', { 177, 200 } } })
-    local built, pending = 0, nil
-    while true do
+    local built, holds = 0, {}         -- holds: dug pieces whose highlighted copy stays under you until the real one is in
+    local done = false
+    while not done do
         Wait(0)
         for _, c in ipairs({ 47, 177, 199, 200 }) do DisableControlAction(0, c, true) end
-        if IsDisabledControlJustPressed(0, 47) and not pending then
+        for i = #holds, 1, -1 do
+            local h = holds[i]
+            if pieceReady(h.model, h.spot) then
+                if DoesEntityExist(h.ent) then DeleteEntity(h.ent) end
+                table.remove(holds, i)
+            end
+        end
+        if IsDisabledControlJustPressed(0, 47) then
             model = model == TUNNEL and CHAMBER or TUNNEL
             makeGhost()
         end
-        if pending then
-            -- keep the highlighted piece under your feet until the real one has streamed in
-            if pieceAt(pending.model, pending.spot) or GetGameTimer() > pending.giveUp then
-                local nextEnd = pending.nextEnd
-                pending = nil
-                target = nextEnd
-                -- carry on only if nothing is joined there already
-                local free = false
-                for _, p in ipairs(connections()) do if endKey(p) == endKey(target) then free = true end end
-                if not free then dropGhost() lib.notify({ type = 'inform', description = 'You\'ve dug through to another tunnel' }) break end
-                openUp()
-                makeGhost()
-            end
-        else
-            pos = GetEntityCoords(ped)
-            local along = (pos.x - target.x) * target.dx + (pos.y - target.y) * target.dy
-            if along > 0.6 then
-                local r = lib.callback.await('opslabs-towers:fixture:save', false, { model = ghostModel, x = spot.x, y = spot.y, z = spot.z, heading = spot.heading })
-                if not (r and r.ok) then lib.notify({ type = 'error', description = (r and r.error) or 'Could not dig here' }) break end
+        pos = GetEntityCoords(ped)
+        local along = (pos.x - target.x) * target.dx + (pos.y - target.y) * target.dy
+        if ghost and along > 0.6 then
+            local r = lib.callback.await('opslabs-towers:fixture:save', false, { model = ghostModel, x = spot.x, y = spot.y, z = spot.z, heading = spot.heading })
+            if not (r and r.ok) then
+                lib.notify({ type = 'error', description = (r and r.error) or 'Could not dig here' })
+                done = true
+            else
                 built = built + 1
+                SetEntityDrawOutline(ghost, false)
+                holds[#holds + 1] = { ent = ghost, model = ghostModel, spot = spot }
+                ghost = nil
                 local len = ghostModel == CHAMBER and 2 * CH or SEG
-                pending = { model = ghostModel, spot = spot, giveUp = GetGameTimer() + 4000,
-                    nextEnd = { x = target.x + target.dx * len, y = target.y + target.dy * len, z = target.z, dx = target.dx, dy = target.dy } }
-                if ghost then SetEntityDrawOutline(ghost, false) end
+                local nextEnd = { x = target.x + target.dx * len, y = target.y + target.dy * len, z = target.z, dx = target.dx, dy = target.dy }
+                if occupied(nextEnd, spot) then
+                    lib.notify({ type = 'inform', description = 'You\'ve dug through to another tunnel' })
+                    done = true
+                else
+                    target = nextEnd
+                    openUp()
+                    makeGhost()                -- the next highlighted section is there straight away
+                end
             end
         end
         PlaceHud.draw(sf2, 'Digging a tunnel', ('Next: %s   ·   %d built   ·   walk into the highlighted section'):format(model == TUNNEL and 'tunnel section (4 m)' or 'chamber', built), { 48, 209, 88 })
-        if IsDisabledControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 200) then break end
+        if IsDisabledControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 200) then done = true end
     end
     PlaceHud.release(sf2)
-    -- don't leave anyone standing on nothing: wait for the real piece before taking the highlighted one away
-    if pending then
-        local t = GetGameTimer() + 4000
-        while not pieceAt(pending.model, pending.spot) and GetGameTimer() < t do Wait(100) end
+    -- don't leave anyone standing on nothing: every dug piece must be really there before its highlighted copy goes
+    for _, h in ipairs(holds) do
+        awaitPiece(h.model, h.spot, 8000)
+        if DoesEntityExist(h.ent) then DeleteEntity(h.ent) end
     end
     dropGhost()
     DigKey = nil
@@ -479,9 +511,15 @@ local function climb(label, x, y, z, heading)
     if not lib.progressBar({ duration = 1600, label = label, canCancel = true, disable = { move = true, combat = true, car = true } }) then return end
     DoScreenFadeOut(250)
     Wait(260)
+    -- hold still until the ground round the landing spot is there, so you can't drop through on arrival
+    FreezeEntityPosition(ped, true)
     SetEntityCoords(ped, x, y, z, false, false, false, false)
     SetEntityHeading(ped, heading)
-    Wait(150)
+    RequestCollisionAtCoord(x, y, z)
+    local t = GetGameTimer() + 2000
+    while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() < t do Wait(0) end
+    Wait(200)
+    FreezeEntityPosition(ped, false)
     DoScreenFadeIn(300)
 end
 
