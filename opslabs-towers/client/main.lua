@@ -674,6 +674,7 @@ SectionMenu = function(id)
         add({ title = 'Move cable, trunking or a box', description = 'Aim and click · reshape a route or carry a box', icon = 'up-down-left-right', iconColor = BLUE, onSelect = function() A.move(back) end })
         add({ title = 'Cut a cable', description = 'Aim anywhere along it · or press C on a pole / ladder', icon = 'scissors', iconColor = RED, onSelect = function() A.cut(back) end })
         add({ title = 'Remove cable, trunking or a box', description = 'Aim and hold · Z puts it back', icon = 'trash-can', iconColor = RED, onSelect = function() A.remove(back) end })
+        add({ title = 'Remove cable in an area (draw a box)', description = 'Click two corners · any size, every height · Tab picks what · cable in players’ hands inside it goes too', icon = 'vector-square', iconColor = RED, onSelect = function() A.removeArea(back) end })
         add({ title = 'Remove all cable within a range…', description = 'Pick what (cable, fibre, power, trunking or everything) and how far', icon = 'circle-radiation', iconColor = RED, onSelect = function() A.removeRange(back) end })
         add({ title = 'Place a ladder', description = 'Telescopic 0.9 → 3.2 m, extension 6.9 m or 13 m · carry it, lean it, climb it (also /' .. (Config.Cabling.LadderCommand or 'ladder') .. ')', icon = 'stairs', onSelect = function() if PlaceLadder then PlaceLadder() end end })
     elseif id == 'guides' then

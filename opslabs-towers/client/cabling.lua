@@ -730,6 +730,7 @@ local function layRun(kind, color, box, opts)
         ghost = {}
     end
     local dropped = false
+    local startedAt = GetGameTimer()
     if boxed then TriggerEvent('opslabs:carry', 'cable', true) end      -- opslabs-animations: cable in hand
     local sf = carry and PlaceHud.buttons({ { 'Fix point', 24 }, { 'Fix the end here', 191 }, { 'Drop it', { 47, 177 } }, { 'Straight line', 21 } })
         or PlaceHud.buttons(not boxed
@@ -743,6 +744,18 @@ local function layRun(kind, color, box, opts)
         Wait(0)
         for _, ctl in ipairs({ 24, 25, 37, 44, 47, 140, 141, 142, 177, 191, 199, 200, 257, 263 }) do DisableControlAction(0, ctl, true) end
         DisablePlayerFiring(PlayerId(), true)
+        -- someone removed all cable in a box round this: it goes from your hands too
+        local cleared = AreaCleared
+        if cleared and cleared.at > startedAt and AREA_KIND_OK(cleared.what, kind) then
+            local function inside(p) return p.x >= cleared.r.minx and p.x <= cleared.r.maxx and p.y >= cleared.r.miny and p.y <= cleared.r.maxy end
+            local hit = inside(GetEntityCoords(PlayerPedId()))
+            for _, p in ipairs(pts) do if inside(p) then hit = true break end end
+            if hit then
+                result, dropped = nil, false
+                lib.notify({ type = 'inform', description = 'The cable you were holding was removed (area cleared)' })
+                break
+            end
+        end
         local at, normal, ent = aim(nil, 40.0)
         local target, tgtTower, tgtFixture
         local straight, poleHint
@@ -1672,6 +1685,7 @@ RunsMenu = function()
         RunsMenu()
     end
     options[#options + 1] = { title = 'Remove by aiming', description = 'Aim at any cable or trunking and click', icon = 'crosshairs', iconColor = '#ff453a', onSelect = function() RemoveMode() RunsMenu() end }
+    options[#options + 1] = { title = 'Remove cable in an area (draw a box)', description = 'Click two corners on the ground · any size · cable in players’ hands inside it goes too', icon = 'vector-square', iconColor = '#ff453a', onSelect = function() AreaRemove() RunsMenu() end }
     options[#options + 1] = { title = 'Remove all within a range…', description = 'Pick what and how far (5–200 m)', icon = 'circle-radiation', iconColor = '#ff453a', onSelect = function() ReturnMenu = function() RunsMenu() end RemoveInRange() end }
     options[#options + 1] = { title = ('Remove all trunking nearby (%d)'):format(#trunks), icon = 'grip-lines', iconColor = '#ff5a5f', disabled = #trunks == 0,
         onSelect = function() bulk(trunks, 'Remove all trunking within 60 m?', 'Cable inside it stays on the wall.') end }
@@ -2101,6 +2115,125 @@ function RunPowerCable()
     menuBack()
     end
 
+---------------------------------------------------------------------------
+-- remove cable in a box drawn on the ground (any size, every height) — cable in people's hands inside it goes too
+---------------------------------------------------------------------------
+local AREA_KINDS = { cabling = { cable = true, fibre = true }, cable = { cable = true }, fibre = { fibre = true }, copper = { copper = true },
+    power = { power = true }, trunk = { trunk = true }, wires = { cable = true, fibre = true, copper = true, power = true } }
+local AREA_ORDER = { { 'wires', 'All cable (CAT6, fibre, phone, power)' }, { 'all', 'Everything (cable + trunking & ducts)' }, { 'cabling', 'CAT6 & fibre' },
+    { 'cable', 'CAT6 only' }, { 'fibre', 'Fibre only' }, { 'copper', 'Phone cable only' }, { 'power', 'Power cable only' }, { 'trunk', 'Trunking & ducts only' } }
+function AREA_KIND_OK(what, kind) return what == 'all' or (AREA_KINDS[what] or {})[kind] == true end
+
+AreaCleared = nil
+RegisterNetEvent('opslabs-towers:cable:areaCleared', function(r, what) AreaCleared = { r = r, what = what, at = GetGameTimer() } end)
+
+local function segHitsRect(a, b, r)
+    local t0, t1, dx, dy = 0.0, 1.0, b.x - a.x, b.y - a.y
+    for _, e in ipairs({ { -dx, a.x - r.minx }, { dx, r.maxx - a.x }, { -dy, a.y - r.miny }, { dy, r.maxy - a.y } }) do
+        local p, q = e[1], e[2]
+        if p == 0 then if q < 0 then return false end
+        else
+            local t = q / p
+            if p < 0 then if t > t1 then return false elseif t > t0 then t0 = t end
+            else if t < t0 then return false elseif t < t1 then t1 = t end end
+        end
+    end
+    return true
+end
+
+local function runsInArea(r, what)
+    local out, metres = {}, 0.0
+    for id, run in pairs(data.runs) do
+        if AREA_KIND_OK(what, run.kind) then
+            local pts, hit = run.points or {}, false
+            for i = 1, #pts do
+                local p = pts[i]
+                if (p.x >= r.minx and p.x <= r.maxx and p.y >= r.miny and p.y <= r.maxy) or (i > 1 and segHitsRect(pts[i - 1], p, r)) then hit = true break end
+            end
+            for _, tip in pairs(run._looseTip or {}) do
+                if tip.x >= r.minx and tip.x <= r.maxx and tip.y >= r.miny and tip.y <= r.maxy then hit = true end
+            end
+            if hit then out[#out + 1] = id metres = metres + (run.length or 0) end
+        end
+    end
+    return out, metres
+end
+
+function AreaRemove()
+    local A, mode = nil, 1
+    local lit = {}
+    local function unlight()
+        for _, e in ipairs(lit) do if DoesEntityExist(e) then SetEntityDrawOutline(e, false) end end
+        lit = {}
+    end
+    local sf = PlaceHud.buttons({ { 'Corner / remove', { 24, 191 } }, { 'What', 37 }, { 'Back', { 25, 177 } }, { 'Cancel', 200 } })
+    local found, metres, lastScan = {}, 0.0, 0
+    while true do
+        Wait(0)
+        for _, c in ipairs({ 24, 25, 37, 140, 141, 142, 177, 191, 199, 200, 257, 263 }) do DisableControlAction(0, c, true) end
+        DisablePlayerFiring(PlayerId(), true)
+        if IsDisabledControlJustPressed(0, 37) then mode = mode % #AREA_ORDER + 1 lastScan = 0 end
+        local cam, rot = GetGameplayCamCoord(), GetGameplayCamRot(2)
+        local rx, rz = math.rad(rot.x), math.rad(rot.z)
+        local to = cam + vector3(-math.sin(rz) * math.abs(math.cos(rx)), math.cos(rz) * math.abs(math.cos(rx)), math.sin(rx)) * 150.0
+        local _, hit, at = GetShapeTestResult(StartExpensiveSynchronousShapeTestLosProbe(cam.x, cam.y, cam.z, to.x, to.y, to.z, 1, PlayerPedId(), 4))
+        local what = AREA_ORDER[mode]
+        local r
+        if hit == 1 then
+            DrawMarker(28, at.x, at.y, at.z, 0, 0, 0, 0, 0, 0, 0.12, 0.12, 0.12, 255, 69, 58, 220, false, false, 2, false, nil, nil, false)
+            if A then
+                r = { minx = math.min(A.x, at.x), maxx = math.max(A.x, at.x), miny = math.min(A.y, at.y), maxy = math.max(A.y, at.y) }
+                local z0, z1 = math.min(A.z, at.z) - 0.5, math.max(A.z, at.z) + 0.05
+                local c = { vector3(r.minx, r.miny, z1), vector3(r.maxx, r.miny, z1), vector3(r.maxx, r.maxy, z1), vector3(r.minx, r.maxy, z1) }
+                for i = 1, 4 do
+                    local a, b = c[i], c[i % 4 + 1]
+                    DrawLine(a.x, a.y, a.z, b.x, b.y, b.z, 255, 69, 58, 255)
+                    DrawLine(a.x, a.y, a.z + 15.0, b.x, b.y, b.z + 15.0, 255, 69, 58, 120)
+                    DrawLine(a.x, a.y, z0, a.x, a.y, a.z + 15.0, 255, 69, 58, 200)
+                end
+                DrawPoly(c[1].x, c[1].y, c[1].z, c[2].x, c[2].y, c[2].z, c[3].x, c[3].y, c[3].z, 255, 69, 58, 60)
+                DrawPoly(c[1].x, c[1].y, c[1].z, c[3].x, c[3].y, c[3].z, c[4].x, c[4].y, c[4].z, 255, 69, 58, 60)
+                DrawPoly(c[3].x, c[3].y, c[3].z, c[2].x, c[2].y, c[2].z, c[1].x, c[1].y, c[1].z, 255, 69, 58, 60)
+                DrawPoly(c[4].x, c[4].y, c[4].z, c[3].x, c[3].y, c[3].z, c[1].x, c[1].y, c[1].z, 255, 69, 58, 60)
+                if GetGameTimer() - lastScan > 250 then                    -- outline everything that will go
+                    lastScan = GetGameTimer()
+                    found, metres = runsInArea(r, what[1])
+                    unlight()
+                    SetEntityDrawOutlineColor(255, 69, 58, 255)
+                    SetEntityDrawOutlineShader(1)
+                    for _, id in ipairs(found) do
+                        for _, e in ipairs(spawned['r' .. id] or {}) do
+                            if #lit >= 600 then break end
+                            if DoesEntityExist(e) then SetEntityDrawOutline(e, true) lit[#lit + 1] = e end
+                        end
+                    end
+                end
+            end
+        end
+        local note = not A and ('Click the first corner   ·   %s'):format(what[2])
+            or r and ('%.0f × %.0f m   ·   %d piece(s), %.0f m   ·   %s'):format(r.maxx - r.minx, r.maxy - r.miny, #found, metres, what[2]) or 'Aim at the ground'
+        PlaceHud.draw(sf, 'Remove cable in an area', note, { 255, 69, 58 })
+        if hit == 1 and (IsDisabledControlJustPressed(0, 24) or IsDisabledControlJustPressed(0, 191)) then
+            if not A then A = at
+            elseif r then
+                if lib.alertDialog({ header = ('Remove %d piece(s)?'):format(#found), content = ('%s inside the %.0f × %.0f m box, at every height — %.0f m. Anyone holding cable in the box drops it. Z in Remove mode puts it back.')
+                    :format(what[2], r.maxx - r.minx, r.maxy - r.miny, metres), centered = true, cancel = true }) == 'confirm' then
+                    local res = lib.callback.await('opslabs-towers:cable:deleteArea', false, { x1 = r.minx, y1 = r.miny, x2 = r.maxx, y2 = r.maxy }, what[1])
+                    if res and res.ok then lib.notify({ type = 'success', description = ('Removed %d piece(s)'):format(res.count or 0) })
+                    else lib.notify({ type = 'error', description = (res and res.error) or 'Failed' }) end
+                    break
+                end
+            end
+        end
+        if IsDisabledControlJustPressed(0, 25) or IsDisabledControlJustPressed(0, 177) then
+            if A then A = nil unlight() found, metres = {}, 0.0 else break end
+        end
+        if IsDisabledControlJustPressed(0, 200) then break end
+    end
+    unlight()
+    PlaceHud.release(sf)
+end
+
 --- copper phone cable: drop wire from the pole, internal cable round the house, multi-pair between cabinets
 function RunCopperCable()
     local opts = {}
@@ -2222,6 +2355,7 @@ CableActions.remove = wrapMode(RemoveMode)
 CableActions.cut = wrapMode(function() CutMode() end)
 CableActions.runs = function() RunsMenu() end
 CableActions.removeRange = function(back) ReturnMenu = back RemoveInRange() end
+CableActions.removeArea = function(back) AreaRemove() if back then back() end end
 CableActions.boxes = function() BoxesMenu() end
 CableActions.equipment = function(net) EquipmentNetMenu(net) end
 CableActions.placeBuilding = function(e, back) placeEquipment(e, back) end

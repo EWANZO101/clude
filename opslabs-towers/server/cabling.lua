@@ -755,3 +755,61 @@ lib.callback.register('opslabs-towers:fixture:delete', function(src, id)
     changed()
     return true
 end)
+
+---------------------------------------------------------------------------
+-- remove everything inside a box drawn on the ground (any size, every height)
+---------------------------------------------------------------------------
+
+--- does segment a→b cross the rectangle (Liang–Barsky clip in x / y)
+local function segHitsRect(a, b, r)
+    local t0, t1 = 0.0, 1.0
+    local dx, dy = b.x - a.x, b.y - a.y
+    for _, e in ipairs({ { -dx, a.x - r.minx }, { dx, r.maxx - a.x }, { -dy, a.y - r.miny }, { dy, r.maxy - a.y } }) do
+        local p, q = e[1], e[2]
+        if p == 0 then
+            if q < 0 then return false end
+        else
+            local t = q / p
+            if p < 0 then if t > t1 then return false elseif t > t0 then t0 = t end
+            else if t < t0 then return false elseif t < t1 then t1 = t end end
+        end
+    end
+    return true
+end
+
+local AREA_KINDS = { cabling = { cable = true, fibre = true }, cable = { cable = true }, fibre = { fibre = true }, copper = { copper = true },
+    power = { power = true }, trunk = { trunk = true }, wires = { cable = true, fibre = true, copper = true, power = true } }
+
+function CablingRunsInArea(r, what)
+    local kinds = AREA_KINDS[what]
+    local ids = {}
+    for id, run in pairs(Cabling.runs) do
+        if what == 'all' or (kinds and kinds[run.kind]) then
+            local pts, inside = run.points or {}, false
+            for i = 1, #pts do
+                local p = pts[i]
+                if p.x >= r.minx and p.x <= r.maxx and p.y >= r.miny and p.y <= r.maxy then inside = true break end
+                if i > 1 and segHitsRect(pts[i - 1], p, r) then inside = true break end
+            end
+            for _, l in pairs(run.loose or {}) do
+                if l.at and l.at.x >= r.minx and l.at.x <= r.maxx and l.at.y >= r.miny and l.at.y <= r.maxy then inside = true end
+            end
+            if inside then ids[#ids + 1] = id end
+        end
+    end
+    return ids
+end
+
+lib.callback.register('opslabs-towers:cable:deleteArea', function(src, area, what)
+    if not canCable(src) or type(area) ~= 'table' then return { error = 'not allowed' } end
+    local x1, y1, x2, y2 = num(area.x1), num(area.y1), num(area.x2), num(area.y2)
+    if not (x1 and y1 and x2 and y2) then return { error = 'bad area' } end
+    local r = { minx = math.min(x1, x2), maxx = math.max(x1, x2), miny = math.min(y1, y2), maxy = math.max(y1, y2) }
+    what = (AREA_KINDS[what] or what == 'all') and what or 'wires'
+    local ids = CablingRunsInArea(r, what)
+    local n = #ids > 0 and deleteRuns(ids, src) or 0
+    -- cable people are holding inside the box (still being pulled / carried) is dropped from their hands too
+    TriggerClientEvent('opslabs-towers:cable:areaCleared', -1, r, what)
+    print(('[opslabs-towers] %s removed %d run(s) in a %.0f × %.0f m area (%s)'):format(GetPlayerName(src), n, r.maxx - r.minx, r.maxy - r.miny, what))
+    return { ok = true, count = n }
+end)

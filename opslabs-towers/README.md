@@ -152,6 +152,10 @@ Visible to everyone, saved in the DB (`opslabs_towers_cable_boxes`, `_cables`, `
   stand, and you walk away hands-free. Walk back to the end and press **E** to carry on: it keeps paying out from the box. **Cable you
   put down** (OPS Openline / StreamFibre menu) lists the loose ends nearby and sets a waypoint. Esc while pulling still puts it all back on the box.
 - **Cut ends go loose:** cutting CAT6, fibre or power cable leaves each cut end hanging from its last fixing and lying on the ground with the length that was cut free. Walk up to a loose end and press **E** to pick it up: fix it along walls / poles again (it can only reach as far as its loose length), **Enter** fixes the end where you are (then terminate / splice), **G** or **Backspace** drops it where you stand. Loose ends can't be terminated until they're fixed.
+- **Remove cable in an area:** Tools (or Nearby cables & trunking) → *Remove cable in an area* — click one corner on the ground, aim at
+  the other (any size, up to 150 m away); everything that will go is outlined red, **Tab** picks what (all cable, everything incl.
+  trunking, CAT6, fibre, phone, power, trunking only). It removes runs at every height inside the box, and anyone pulling or carrying
+  cable inside the box drops it. Z in Remove mode puts it back.
 - **Remove all cable within a range:** Tools (or Nearby cables & trunking) → pick cable & fibre, CAT6, fibre, power, trunking or everything, and a distance of 5–200 m. Z in Remove mode puts it back.
 - **/towers** is laid out by company: OPS Mobile (cell & Wi-Fi), OPS Openline, StreamFibre, San Andreas Power & Light, Road safety and Tools.
 - **Cutting from a pole or ladder:** press **C** while climbing. Every cable within reach is highlighted — **← →** choose the cable, **↑ ↓** slide the cut point along it (Shift for fine), **Enter** cuts, **Backspace** stops.
