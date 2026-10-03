@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% from '_icons.html' import icon with context %}
+{% block title %}Checkout · {{ carrier.name }}{% endblock %}
+{% set credit = info.balance.credit or 0 %}
+{% set use_credit = [credit, item.price]|min %}
+{% set from_bank = item.price - use_credit %}
+{% set enough = info.balance.bank >= from_bank %}
+{% block content %}
+<section class="wrap auth">
+  <a class="back-link" href="{{ url_for('account') if me else url_for('plans_page') }}">← Back</a>
+  <div class="card checkout" style="--c: {{ item.color }}">
+    <span class="eyebrow">{{ 'Add to your plan' if item.kind == 'addon' else ('Switch plan' if line and line.plan and line.plan.code != item.code else 'Checkout') }}</span>
+    <h1>{{ item.name }}</h1>
+    <p class="muted">{{ item.description }}</p>
+    <ul class="feat">
+      {% if item.kind == 'addon' %}
+        {% if item.sms > 0 %}<li>{{ icon('message', 15) }}<span>+{{ item.sms }} texts</span></li>{% endif %}
+        {% if item.minutes > 0 %}<li>{{ icon('phone', 15) }}<span>+{{ item.minutes }} minutes</span></li>{% endif %}
+        {% if item.data_mb > 0 %}<li>{{ icon('data', 15) }}<span>+{{ item.data_mb|mb }} data</span></li>{% endif %}
+        <li>{{ icon('check', 15) }}<span>Lasts until your plan renews</span></li>
+      {% else %}
+        <li>{{ icon('message', 15) }}<span><b>{{ item.sms|limit }}</b> texts</span></li>
+        <li>{{ icon('phone', 15) }}<span><b>{{ item.minutes|limit }}</b>{% if item.minutes >= 0 %} minutes{% else %} calls{% endif %}</span></li>
+        <li>{{ icon('data', 15) }}<span><b>{{ item.data_mb|limit('mb') }}</b> data</span></li>
+        <li>{{ icon('refresh', 15) }}<span>{{ item.period_days }}-day period{% if line and line.installed %}, starts now{% else %}, starts when you install the eSIM{% endif %}</span></li>
+      {% endif %}
+    </ul>
+    <div class="summary">
+      <div><span>Price</span><b>{{ item.price|money }}</b></div>
+      {% if use_credit %}<div class="credit-line"><span>{{ carrier.name }} credit</span><b>−{{ use_credit|money }}</b></div>{% endif %}
+      <div><span>From bank · {{ info.number }}</span><b>{{ from_bank|money }} <small class="muted">of {{ info.balance.bank|money }}</small></b></div>
+      <div class="total"><span>You pay today</span><b>{{ from_bank|money }}</b></div>
+    </div>
+    {% if item.kind == 'addon' and not (line and line.service) %}
+      <div class="flash error">You need an active plan before adding extras.</div>
+      <a class="btn block" href="{{ url_for('account') }}#change">Choose a plan</a>
+    {% elif not enough %}
+      <div class="flash error">Not enough money in your in-game bank. You need {{ (from_bank - info.balance.bank)|money }} more.</div>
+      <a class="btn ghost block" href="{{ url_for('account') }}">Back to account</a>
+    {% else %}
+    <form method="post" class="form">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      {% if item.kind == 'plan' and item.price > 0 %}<label class="check"><input type="checkbox" name="auto_renew" value="1" checked> Renew automatically every {{ item.period_days }} days</label>{% endif %}
+      <button class="btn brand-btn block lg">{% if from_bank == 0 %}Pay with credit{% else %}Pay {{ from_bank|money }}{% endif %}</button>
+    </form>
+    {% if line and line.plan and item.kind == 'plan' and line.plan.code != item.code and line.service %}<p class="hint">Your current {{ line.plan.name }} plan and its remaining allowance end when you switch.</p>{% endif %}
+    {% endif %}
+    <p class="secure">{{ icon('lock', 14) }} Paid with in-game money. No real-world payment is ever taken.</p>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'admin/base.html' %}
+{% block title %}Plans{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Plans &amp; extras</h1><div><a class="btn" href="{{ url_for('admin_plan', kind='plan') }}">New plan</a> <a class="btn ghost" href="{{ url_for('admin_plan', kind='addon') }}">New extra</a></div></div>
+{% for title, list in [('Plans', plans), ('Extras (add-ons)', addons)] %}
+<div class="card"><h3>{{ title }}</h3><div class="table-wrap"><table class="list">
+  <thead><tr><th>Name</th><th>Code</th><th>Price</th>{% if list is sameas plans %}<th>Period</th>{% endif %}<th>Texts</th><th>Minutes</th><th>Data</th><th>Shown</th><th></th></tr></thead>
+  <tbody>{% for p in list %}
+    <tr class="{{ '' if p.active else 'dim' }}">
+      <td><span class="swatch" style="--c:{{ p.color }}"></span><b>{{ p.name }}</b>{% if p.featured %} <span class="badge">featured</span>{% endif %}{% if not p.active %} <span class="badge bad">retired</span>{% endif %}</td>
+      <td class="mono">{{ p.code }}</td><td>{{ p.price|money }}</td>{% if list is sameas plans %}<td>{{ p.period_days }} days</td>{% endif %}
+      <td>{{ p.sms|limit }}</td><td>{{ p.minutes|limit }}</td><td>{{ p.data_mb|limit('mb') }}</td>
+      <td>{{ 'Store' if p.public else 'Hidden' }}</td>
+      <td class="r"><a href="{{ url_for('admin_plan', plan_id=p.id) }}">Edit</a></td>
+    </tr>{% else %}<tr><td colspan="9" class="muted">None yet.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% from '_icons.html' import icon with context %}
+{% block body_class %}home{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="wrap hero-in">
+    <div class="hero-copy">
+      <a class="pill" href="{{ url_for('status_page') }}"><span class="dot"></span>5G live across San Andreas <span class="pill-arrow">{{ icon('arrow', 14) }}</span></a>
+      <h1>The network built<br>for <span class="grad-text">Los Santos.</span></h1>
+      <p>5G texts, calls and data on an eSIM that's ready in seconds. Pay from your bank, switch any time, no contracts.</p>
+      <div class="cta">
+        <a class="btn lg brand-btn" href="{{ url_for('plans_page') }}">Explore plans {{ icon('arrow', 18) }}</a>
+        <a class="btn lg ghost-light" href="{{ url_for('account' if me else 'login') }}">{{ 'My account' if me else 'Sign in' }}</a>
+      </div>
+      <ul class="hero-points">
+        <li>{{ icon('check', 16) }}Plans from {{ (plans|map(attribute='price')|min if plans else 0)|money }}</li>
+        <li>{{ icon('check', 16) }}Keep your number</li>
+        <li>{{ icon('check', 16) }}eSIM in 30 seconds</li>
+      </ul>
+    </div>
+    <div class="hero-phone" aria-hidden="true">
+      <div class="phone">
+        <div class="island"></div>
+        <div class="ph-bar"><span>9:41</span><span class="ph-sig"><i></i><i></i><i></i><i></i> 5G</span></div>
+        <div class="ph-head"><small>{{ carrier.name }}</small><b>Plus</b><span>Renews in 5 days</span></div>
+        <div class="ph-rings">
+          <div class="ring" style="--p:100;--rc:#0a84ff"><b>∞</b><small>Texts</small></div>
+          <div class="ring" style="--p:100;--rc:#30d158"><b>∞</b><small>Minutes</small></div>
+          <div class="ring" style="--p:42;--rc:#bf5af2"><b>11.6</b><small>GB left</small></div>
+        </div>
+        <div class="ph-msg"><small>{{ carrier.name }} · now</small>Your Plus plan renewed. Thanks for being with us!</div>
+      </div>
+      <div class="float-card fc1">{{ icon('sim', 18) }}<div><b>eSIM activated</b><span>Ready in 28 seconds</span></div></div>
+      <div class="float-card fc2">{{ icon('signal', 18) }}<div><b>5G · Excellent</b><span>Vinewood Hills</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="trust">
+  <div class="wrap trust-in">
+    <div>{{ icon('signal', 22) }}<b>5G everywhere</b><span>City to Paleto Bay</span></div>
+    <div>{{ icon('zap', 22) }}<b>Instant eSIM</b><span>No store visit</span></div>
+    <div>{{ icon('refresh', 22) }}<b>No contracts</b><span>Switch or cancel any time</span></div>
+    <div>{{ icon('shield', 22) }}<b>911 always free</b><span>Even without a plan</span></div>
+  </div>
+</section>
+
+<section class="wrap section" id="plans">
+  <div class="sec-head"><span class="kicker">Plans</span><h2>Pick the plan that fits</h2><p>Every plan comes with 5G, an instant eSIM and free emergency calls. Prices are per {{ (plans[0].period_days if plans else 7) }}-day period.</p></div>
+  {% if plans %}
+    <div class="plans">{% for p in plans %}{% include '_plan_card.html' %}{% endfor %}</div>
+    <p class="center-link"><a href="{{ url_for('plans_page') }}">Compare all plans and extras {{ icon('arrow', 15) }}</a></p>
+  {% else %}
+    <div class="card empty">Plans are loading — the city server may be restarting. Try again in a moment.</div>
+  {% endif %}
+</section>
+
+<section class="band">
+  <div class="wrap why">
+    <div class="why-copy">
+      <span class="kicker">Why {{ carrier.name }}</span>
+      <h2>Everything you need. Nothing you don't.</h2>
+      <p>Manage everything from the {{ carrier.name }} app on your phone or right here online. Credit, top-ups and plan changes apply instantly.</p>
+      <a class="btn brand-btn" href="{{ url_for('plans_page') }}">Get started</a>
+    </div>
+    <div class="why-grid">
+      <div class="why-card">{{ icon('gift', 20) }}<b>Account credit</b><span>Credit is spent first on plans and renewals — your bank only covers the rest.</span></div>
+      <div class="why-card">{{ icon('zap', 20) }}<b>Instant boosts</b><span>Out of data? Add a boost and it works straight away.</span></div>
+      <div class="why-card">{{ icon('activity', 20) }}<b>Live usage</b><span>See texts, minutes and data in real time on your phone.</span></div>
+      <div class="why-card">{{ icon('message', 20) }}<b>Text support</b><span>Message {{ carrier.number }} from your phone and our team replies.</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap section" id="esim">
+  <div class="sec-head"><span class="kicker">eSIM</span><h2>Connected in three steps</h2><p>No SIM card, no store visit. Everything happens on your phone.</p></div>
+  <div class="steps">
+    <div class="step"><span class="num">1</span>{{ icon('user', 22) }}<h3>Sign in with your number</h3><p>We text a one-time code to the Messages app on your in-game phone.</p></div>
+    <div class="step"><span class="num">2</span>{{ icon('card', 22) }}<h3>Choose a plan</h3><p>Pay from your bank (or credit). No contracts, cancel any time.</p></div>
+    <div class="step"><span class="num">3</span>{{ icon('sim', 22) }}<h3>Install the eSIM</h3><p>Tap the notification, or open Settings › Mobile Service and enter your code.</p></div>
+  </div>
+</section>
+
+<section class="wrap section" id="coverage">
+  <div class="coverage card">
+    <div class="cov-copy">
+      <span class="kicker">Coverage</span>
+      <h2>5G from Los Santos to Paleto Bay</h2>
+      <p>Our network covers the whole of San Andreas — downtown, the hills, Sandy Shores, Grapeseed and the coast.</p>
+      <ul class="legend"><li><i class="l5g"></i>5G Ultra</li><li><i class="l5"></i>5G</li><li><i class="l4"></i>LTE</li></ul>
+      <a href="{{ url_for('status_page') }}" class="status-chip"><span class="dot"></span>Check live network status</a>
+    </div>
+    <div class="cov-map" aria-label="Coverage map of San Andreas">
+      <svg viewBox="0 0 400 520">
+        <defs>
+          <radialGradient id="g5u"><stop offset="0" stop-color="#7c5cff" stop-opacity=".9"/><stop offset="1" stop-color="#7c5cff" stop-opacity="0"/></radialGradient>
+          <radialGradient id="g5"><stop offset="0" stop-color="#0a84ff" stop-opacity=".7"/><stop offset="1" stop-color="#0a84ff" stop-opacity="0"/></radialGradient>
+          <radialGradient id="g4"><stop offset="0" stop-color="#30d158" stop-opacity=".55"/><stop offset="1" stop-color="#30d158" stop-opacity="0"/></radialGradient>
+          <clipPath id="land"><path d="M150 20 C210 10 270 40 300 90 C330 140 350 200 340 260 C335 300 360 330 350 370 C340 420 300 470 250 500 C200 515 150 505 120 470 C90 440 60 400 70 350 C80 300 50 260 60 210 C70 160 90 120 110 80 C120 50 130 28 150 20Z"/></clipPath>
+        </defs>
+        <path class="land" d="M150 20 C210 10 270 40 300 90 C330 140 350 200 340 260 C335 300 360 330 350 370 C340 420 300 470 250 500 C200 515 150 505 120 470 C90 440 60 400 70 350 C80 300 50 260 60 210 C70 160 90 120 110 80 C120 50 130 28 150 20Z"/>
+        <g clip-path="url(#land)">
+          <circle cx="210" cy="420" r="170" fill="url(#g4)"/><circle cx="200" cy="120" r="150" fill="url(#g4)"/><circle cx="270" cy="260" r="140" fill="url(#g4)"/>
+          <circle cx="200" cy="430" r="120" fill="url(#g5)"/><circle cx="260" cy="240" r="80" fill="url(#g5)"/><circle cx="150" cy="90" r="70" fill="url(#g5)"/><circle cx="300" cy="140" r="60" fill="url(#g5)"/>
+          <circle cx="205" cy="440" r="70" fill="url(#g5u)"/><circle cx="160" cy="400" r="45" fill="url(#g5u)"/>
+        </g>
+        <g class="towers">{% for x, y in [(205,440),(160,400),(250,465),(260,240),(150,90),(300,140),(120,300),(220,330)] %}<circle cx="{{ x }}" cy="{{ y }}" r="3.5"/>{% endfor %}</g>
+        <g class="labels"><text x="196" y="470">Los Santos</text><text x="245" y="232">Sandy Shores</text><text x="118" y="78">Paleto Bay</text><text x="282" y="128">Grapeseed</text></g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section class="wrap section">
+  <div class="cta-band">
+    <div><h2>Questions? Text us.</h2><p>Message <b>{{ carrier.number }}</b> from your phone any time, or browse the help centre.</p></div>
+    <div class="cta-band-btns"><a class="btn lg ghost-light" href="{{ url_for('help_page') }}">Help centre</a><a class="btn lg white" href="{{ url_for('plans_page') }}">See plans</a></div>
+  </div>
+</section>
+
+<section class="wrap section" id="faq">
+  <div class="sec-head"><span class="kicker">FAQ</span><h2>Common questions</h2></div>
+  <div class="faq">
+    <details><summary>What needs a plan?</summary><p>Sending texts, making calls, and online apps such as Chirp, Mail, Bank, Garage, music streaming and internet radio. Receiving texts, texting {{ carrier.number }} and calling emergency numbers always work.</p></details>
+    <details><summary>What happens when I run out?</summary><p>That service pauses until your plan renews. Add a boost or upgrade from your account or the {{ carrier.name }} app and it works straight away.</p></details>
+    <details><summary>How does renewal work?</summary><p>At the end of each period we use your account credit first, then your in-game bank. If there isn't enough, the line pauses until you renew.</p></details>
+    <details><summary>I changed plans. Do I need a new eSIM?</summary><p>No — the eSIM stays on your phone. Plan changes apply instantly.</p></details>
+    <details><summary>My phone says SOS.</summary><p>You don't have an active plan, or your eSIM isn't installed yet. Open Settings › Mobile Service on your phone to see why.</p></details>
+  </div>
+  <p class="center-link"><a href="{{ url_for('help_page') }}">Visit the help centre {{ icon('arrow', 15) }}</a></p>
+</section>
+{% endblock %}

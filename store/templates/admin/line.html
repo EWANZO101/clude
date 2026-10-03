@@ -1,0 +1,179 @@
+{% extends 'admin/base.html' %}
+{% block title %}{{ info.number }}{% endblock %}
+{% macro post(what) %}<form method="post" action="{{ url_for('admin_line_post', number=info.number, what=what) }}" class="{{ kwargs.get('cls', '') }}"{% if kwargs.get('confirm') %} onsubmit="return confirm('{{ kwargs.confirm }}')"{% endif %}><input type="hidden" name="_csrf" value="{{ csrf_token() }}">{{ caller() }}</form>{% endmacro %}
+{% block content %}
+<div class="page-head">
+  <div><a class="muted" href="{{ url_for('admin_lines') }}">← Lines</a><h1 class="mono">{{ info.number }}</h1>
+  <p class="muted">{{ info.name or '—' }} · {{ info.email }} · <span class="badge {{ 'ok' if info.online else '' }}">{{ 'In the city' if info.online else 'Offline' }}</span></p></div>
+  <div class="head-stats">
+    <div><b class="pos">{{ info.balance.credit|money }}</b><span>credit</span></div>
+    <div><b>{{ info.balance.bank|money }}</b><span>bank</span></div>
+    <div><b>{{ info.balance.cash|money }}</b><span>cash</span></div>
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="stack">
+  <div class="card">
+    <div class="card-head"><h3>Line</h3>{% if line %}<span class="badge {{ 'ok' if line.service else ('warn' if line.status == 'pending' else 'bad') }}">{{ line.status }}{% if not line.installed %} · eSIM not installed{% endif %}</span>{% endif %}</div>
+    {% if line %}
+    <dl class="facts">
+      <div><dt>Plan</dt><dd>{{ line.plan.name if line.plan else '—' }}</dd></div>
+      <div><dt>Period</dt><dd>{{ line.period_start|date }} → {{ line.period_end|date }} {% if line.period_end %}<small>({{ line.period_end|ago }})</small>{% endif %}</dd></div>
+      <div><dt>Auto-renew</dt><dd>{{ 'On' if line.auto_renew else 'Off' }}</dd></div>
+      <div><dt>ICCID</dt><dd class="mono">{{ line.iccid }}</dd></div>
+      <div><dt>Activation code</dt><dd class="mono">{{ info.activation_code }}</dd></div>
+      <div><dt>Extras</dt><dd>+{{ info.extra.sms }} texts · +{{ info.extra.minutes }} min · +{{ info.extra.data_mb|mb }}</dd></div>
+    </dl>
+    {% set u = line.usage %}
+    {% for key, label, unit in [('sms', 'Texts', ''), ('minutes', 'Minutes', ''), ('data_mb', 'Data', 'mb')] %}{% set x = u[key] %}
+      <div class="meter"><div class="m-top"><span>{{ label }}</span><b>{% if unit == 'mb' %}{{ x.used|mb }}{% else %}{{ x.used }}{% endif %} <small>of {{ x.limit|limit(unit) }}</small></b></div>
+      {% if x.limit >= 0 %}{% set p = x|pct %}<div class="bar"><span class="{{ 'bad' if p >= 100 else ('warn' if p >= 80 else '') }}" style="width:{{ p }}%"></span></div>{% endif %}</div>
+    {% endfor %}
+    <div class="btn-row">
+      {% if line.status == 'suspended' %}
+        {% call post('action') %}<input type="hidden" name="action" value="resume"><button class="btn">Resume</button>{% endcall %}
+      {% else %}
+        {% call post('action', confirm='Suspend this line?') %}<input type="hidden" name="action" value="suspend"><input type="hidden" name="reason" value="Suspended by {{ carrier.name }}"><button class="btn ghost">Suspend</button>{% endcall %}
+      {% endif %}
+      {% call post('action', confirm='Renew now and charge the plan price?') %}<input type="hidden" name="action" value="renew"><button class="btn ghost">Renew (charge)</button>{% endcall %}
+      {% call post('action', confirm='Renew for free?') %}<input type="hidden" name="action" value="renew"><input type="hidden" name="charge" value="0"><button class="btn ghost">Renew (free)</button>{% endcall %}
+      {% call post('action') %}<input type="hidden" name="action" value="reset_usage"><button class="btn ghost">Reset usage</button>{% endcall %}
+      {% if not line.installed %}{% call post('action') %}<input type="hidden" name="action" value="install"><button class="btn ghost">Install eSIM for them</button>{% endcall %}{% endif %}
+      {% call post('action', confirm='Issue a new eSIM? The current one stops working until the new one is installed.') %}<input type="hidden" name="action" value="reissue_esim"><button class="btn ghost">Reissue eSIM</button>{% endcall %}
+      {% call post('action') %}<input type="hidden" name="action" value="notify"><button class="btn ghost">Ping phone</button>{% endcall %}
+      {% call post('action', confirm='Cancel this line now?') %}<input type="hidden" name="action" value="cancel"><input type="hidden" name="reason" value="Cancelled by {{ carrier.name }}"><button class="btn danger">Cancel line</button>{% endcall %}
+    </div>
+    {% else %}
+      <p class="muted">This phone has no line yet. Give it a plan below.</p>
+    {% endif %}
+  </div>
+<div class="card convo" id="messages">
+  <div class="card-head"><h3>Messages <small class="muted">with {{ carrier.name }} ({{ carrier.number }})</small></h3><span class="live muted"><span class="live-dot"></span> Live</span></div>
+  <div class="thread" id="thread" data-url="{{ url_for('admin_line_messages', number=info.number) }}">
+    {% if thread is none %}
+      <p class="muted center">Messages aren't available — restart opslabs-phone so the new message API loads.</p>
+    {% else %}
+      {% for m in thread %}{% include 'admin/_bubble.html' %}{% else %}<p class="muted center empty-thread">No texts yet. Anything you send appears on their phone from {{ carrier.name }}, and their replies show up here.</p>{% endfor %}
+    {% endif %}
+  </div>
+  <form class="compose" id="compose" method="post" action="{{ url_for('admin_line_post', number=info.number, what='sms') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <textarea name="message" rows="1" maxlength="500" required placeholder="Text {{ info.name or info.number }} as {{ carrier.name }}…"></textarea>
+    <button class="btn glow">Send</button>
+  </form>
+</div>
+<script>
+(() => {
+  const thread = document.getElementById('thread'), form = document.getElementById('compose'), box = form.querySelector('textarea');
+  const lastId = () => Math.max(0, ...[...thread.querySelectorAll('.bubble')].map((b) => +b.dataset.id));
+  const toBottom = () => { thread.scrollTop = thread.scrollHeight; };
+  toBottom();
+  let busy = false;
+  const poll = async () => {
+    if (busy) return;
+    busy = true;
+    try {
+      const r = await fetch(thread.dataset.url + '?since=' + lastId());
+      const d = await r.json();
+      if (d.messages && d.messages.length) {
+        const near = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 80;
+        thread.querySelector('.empty-thread')?.remove();
+        for (const m of d.messages) if (!thread.querySelector(`.bubble[data-id="${m.id}"]`)) thread.insertAdjacentHTML('beforeend', m.html);
+        if (near) toBottom();
+      }
+    } catch (e) {}
+    busy = false;
+  };
+  setInterval(poll, 5000);
+  box.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
+  box.addEventListener('input', () => { box.style.height = 'auto'; box.style.height = Math.min(140, box.scrollHeight) + 'px'; });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = box.value.trim();
+    if (!text) return;
+    const btn = form.querySelector('button'); btn.disabled = true;
+    try {
+      const r = await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'X-Requested-With': 'fetch' } });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Not sent');
+      box.value = ''; box.style.height = '';
+      await poll(); toBottom();
+    } catch (err) { alert(err.message); }
+    btn.disabled = false; box.focus();
+  });
+  if (location.hash === '#messages') setTimeout(() => { document.getElementById('messages').scrollIntoView({ behavior: 'smooth' }); box.focus(); }, 100);
+})();
+</script>
+{% if info.events %}
+<div class="card history-card"><h3>History</h3><div class="table-wrap"><table class="list">
+  <thead><tr><th>When</th><th>Event</th><th>Detail</th><th class="r">Amount</th></tr></thead>
+  <tbody>{% for e in info.events %}<tr><td>{{ e.created_at|date('%d %b %Y %H:%M') }}</td><td>{{ e.type }}</td><td class="muted">{{ e.detail }}</td><td class="r">{{ e.amount|money if e.amount else '—' }}</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% endif %}
+  </div>
+
+  <div class="stack">
+    <div class="card credit-card">
+      <div class="card-head"><h3>Credit</h3><span class="credit-amt">{{ info.balance.credit|money }}</span></div>
+      <p class="muted small">Spent automatically before their bank on plans, renewals and extras.</p>
+      {% call post('credit', cls='form credit-form') %}
+        <div class="seg">
+          <label><input type="radio" name="direction" value="add" checked><span>Give</span></label>
+          <label><input type="radio" name="direction" value="remove"><span>Remove</span></label>
+        </div>
+        <div class="amount-row">
+          <span class="cur">$</span><input name="amount" type="number" min="1" step="1" placeholder="0" required>
+        </div>
+        <div class="quick">{% for v in [100, 250, 500, 1000, 2500] %}<button type="button" class="chip" onclick="this.form.amount.value={{ v }}">${{ '{:,}'.format(v) }}</button>{% endfor %}</div>
+        <input name="reason" maxlength="160" placeholder="Reason (shown to the customer), e.g. Sorry for the outage">
+        <label class="check"><input type="checkbox" name="notify" value="1" checked> Text the customer when credit is given</label>
+        <button class="btn glow">Apply</button>
+      {% endcall %}
+      {% if info.credit_log %}
+      <div class="credit-log">
+        {% for c in info.credit_log[:8] %}
+          <div class="cl-row"><span class="cl-amt {{ 'pos' if c.amount > 0 else 'neg' }}">{{ '+' if c.amount > 0 }}{{ c.amount|money if c.amount > 0 else '−' ~ ((0 - c.amount)|money) }}</span>
+            <span class="cl-why">{{ c.reason or ('Payment' if c.actor == 'payment' else '—') }}<small>{{ c.actor }} · {{ c.created_at|date('%d %b %H:%M') }}</small></span>
+            <span class="cl-bal">{{ c.balance_after|money }}</span></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <div class="card">
+      <h3>{{ 'Change plan' if line else 'Give a plan' }}</h3>
+      {% call post('subscribe', cls='form') %}
+        <select name="plan">{% for p in plans if p.active %}<option value="{{ p.code }}" {{ 'selected' if line and line.plan and line.plan.code == p.code }}>{{ p.name }} · {{ p.price|money }}/{{ p.period_days }}d{{ '' if p.public else ' (hidden)' }}</option>{% endfor %}</select>
+        <label class="check"><input type="checkbox" name="charge" value="1"> Charge their bank</label>
+        <label class="check"><input type="checkbox" name="auto_renew" value="1" checked> Auto-renew</label>
+        <button class="btn">Apply plan</button>
+      {% endcall %}
+    </div>
+    {% if line %}
+    <div class="card">
+      <h3>Add extras</h3>
+      {% call post('addon', cls='form') %}
+        <select name="plan">{% for a in addons if a.active %}<option value="{{ a.code }}">{{ a.name }} · {{ a.price|money }}</option>{% endfor %}</select>
+        <label class="check"><input type="checkbox" name="charge" value="1"> Charge their bank</label>
+        <button class="btn">Add</button>
+      {% endcall %}
+    </div>
+    <div class="card">
+      <h3>Adjust allowance</h3>
+      {% call post('adjust', cls='form grid-form') %}
+        <label>Extra texts<input name="extra_sms" type="number" value="{{ info.extra.sms }}"></label>
+        <label>Extra minutes<input name="extra_minutes" type="number" value="{{ info.extra.minutes }}"></label>
+        <label>Extra data (MB)<input name="extra_data_mb" type="number" value="{{ info.extra.data_mb }}"></label>
+        <label>Extend period (days)<input name="extend_days" type="number" step="0.5" placeholder="0"></label>
+        <label class="check span2"><input type="checkbox" name="auto_renew" value="1" {{ 'checked' if line.auto_renew }}> Auto-renew</label>
+        <button class="btn span2">Save</button>
+      {% endcall %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+
+
+
+{% endblock %}

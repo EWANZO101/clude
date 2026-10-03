@@ -1,0 +1,35 @@
+{% extends 'admin/base.html' %}
+{% block title %}{{ plan.name or 'New' }}{% endblock %}
+{% set addon = plan.kind == 'addon' %}
+{% block content %}
+<div class="page-head"><div><a class="muted" href="{{ url_for('admin_plans') }}">← Plans</a><h1>{{ plan.name or ('New extra' if addon else 'New plan') }}</h1></div></div>
+<div class="card narrow">
+<form method="post" class="form grid-form">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <label>Type<select name="kind"><option value="plan" {{ 'selected' if not addon }}>Plan (renews every period)</option><option value="addon" {{ 'selected' if addon }}>Extra (added to the current period)</option></select></label>
+  <label>Code <small>(used in links)</small><input name="code" value="{{ plan.code or '' }}" required pattern="[a-z0-9-]+" placeholder="unlimited"></label>
+  <label class="span2">Name<input name="name" value="{{ plan.name or '' }}" required maxlength="60"></label>
+  <label class="span2">Description<input name="description" value="{{ plan.description or '' }}" maxlength="255"></label>
+  <label>Price ($)<input name="price" type="number" min="0" value="{{ plan.price or 0 }}"></label>
+  <label>Period (days) <small>plans only</small><input name="period_days" type="number" min="0" value="{{ plan.period_days or 7 }}"></label>
+  {% for key, label in [('sms', 'Texts'), ('minutes', 'Call minutes')] %}
+  <label>{{ label }}<span class="with-check"><input name="{{ key }}" type="number" min="0" value="{{ plan[key] if plan[key] is not none and plan[key] >= 0 else 0 }}"><span class="check"><input type="checkbox" name="{{ key }}_unlimited" value="1" {{ 'checked' if plan[key] is not none and plan[key] < 0 }}> Unlimited</span></span></label>
+  {% endfor %}
+  <label>Data (GB)<span class="with-check"><input name="data_mb" type="number" min="0" step="0.5" value="{{ ((plan.data_mb / 1024)|round(1)) if plan.data_mb and plan.data_mb > 0 else 0 }}"><input type="hidden" name="data_unit" value="gb"><span class="check"><input type="checkbox" name="data_mb_unlimited" value="1" {{ 'checked' if plan.data_mb is not none and plan.data_mb < 0 }}> Unlimited</span></span></label>
+  <label>Colour<input name="color" type="color" value="{{ plan.color or '#0a84ff' }}"></label>
+  <label>Sort order<input name="sort" type="number" value="{{ plan.sort or 0 }}"></label>
+  <div class="span2 checks">
+    <label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if plan.active }}> Available</label>
+    <label class="check"><input type="checkbox" name="public" value="1" {{ 'checked' if plan.public }}> Shown on the store</label>
+    <label class="check"><input type="checkbox" name="featured" value="1" {{ 'checked' if plan.featured }}> Featured ("Most popular")</label>
+  </div>
+  <p class="hint span2">For extras, the texts / minutes / data are added on top of the customer's plan until it renews. Changing a plan's price or allowance applies to everyone on it straight away.</p>
+  <button class="btn glow span2">Save</button>
+</form>
+{% if plan.id and plan.active %}
+<form method="post" action="{{ url_for('admin_plan_retire', plan_id=plan.id) }}" onsubmit="return confirm('Retire this plan? It disappears from the store; current customers keep it until their period ends.')" style="margin-top:14px">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="btn danger">Retire</button>
+</form>
+{% endif %}
+</div>
+{% endblock %}

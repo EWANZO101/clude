@@ -1,0 +1,9 @@
+{% extends 'admin/base.html' %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Audit log</h1></div>
+<div class="card"><div class="table-wrap"><table class="list">
+  <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead>
+  <tbody>{% for r in rows %}<tr><td>{{ r.at|date('%d %b %Y %H:%M') }}</td><td>{{ r.actor }}</td><td>{{ r.action }}</td><td class="mono">{{ r.target or '' }}</td><td class="muted small">{{ r.detail }}</td></tr>{% else %}<tr><td colspan="5" class="muted">Nothing yet.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

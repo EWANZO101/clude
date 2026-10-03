@@ -1,0 +1,37 @@
+{% set rows = rows if rows is defined else recent %}
+{% set status_label = {'active': 'Active', 'pending': 'Waiting for eSIM', 'suspended': 'Suspended', 'expired': 'Ended', 'cancelled': 'Cancelled'} %}
+{% macro usage(used, limit, unit='') %}
+  {% if limit is none %}<span class="u-none">—</span>
+  {% elif limit < 0 %}<div class="u"><span class="u-val">{% if unit == 'mb' %}{{ used|mb }}{% else %}{{ used }}{% endif %}</span><div class="u-bar unl"><span></span></div></div>
+  {% else %}{% set p = [100, (used / ([limit, 1]|max) * 100)|round|int]|min %}
+    <div class="u" title="{{ used }} of {{ limit }}"><span class="u-val">{% if unit == 'mb' %}{{ used|mb }}<small>/{{ limit|mb }}</small>{% else %}{{ used }}<small>/{{ limit }}</small>{% endif %}</span>
+    <div class="u-bar"><span class="{{ 'bad' if p >= 100 else ('warn' if p >= 80 else '') }}" style="width:{{ p }}%"></span></div></div>
+  {% endif %}
+{% endmacro %}
+<div class="table-wrap"><table class="lines-table">
+  <thead><tr><th>Customer</th><th>Plan</th><th>Status</th><th class="hide-sm">Texts</th><th class="hide-sm">Minutes</th><th class="hide-sm">Data</th><th class="hide-md">Renews</th><th></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    {% set nm = (r.name or '').strip() %}
+    <tr onclick="location.href='{{ url_for('admin_line', number=r.number) }}'">
+      <td>
+        <div class="cust">
+          <span class="avatar" style="--h: {{ (r.number|replace('-', '')|int(0)) % 360 }}">{{ (nm[:1] ~ (nm.split(' ')[-1][:1] if ' ' in nm else ''))|upper or '#' }}{% if r.online %}<i class="online" title="In the city"></i>{% endif %}</span>
+          <div><a href="{{ url_for('admin_line', number=r.number) }}" class="cust-name">{{ nm or 'Unknown' }}</a><span class="cust-sub"><span class="mono">{{ r.number }}</span> · {{ r.email }}</span></div>
+        </div>
+      </td>
+      <td><span class="plan-chip" style="--c: {{ r.plan_color or '#8e8e93' }}">{{ r.plan or '—' }}</span>{% if r.plan_price %}<span class="cell-sub">{{ r.plan_price|money }}</span>{% endif %}</td>
+      <td><span class="status s-{{ r.status }}"><i></i>{{ status_label.get(r.status, r.status) }}</span>{% if r.status != 'pending' and not r.installed %}<span class="cell-sub">no eSIM</span>{% elif r.auto_renew and r.status == 'active' %}<span class="cell-sub">auto-renew</span>{% endif %}</td>
+      <td class="hide-sm">{{ usage(r.sms_used, r.sms_limit) }}</td>
+      <td class="hide-sm">{{ usage(((r.seconds_used or 0) / 60)|round(0, 'ceil')|int, r.minutes_limit) }}</td>
+      <td class="hide-sm">{{ usage(((r.data_kb or 0) / 1024)|round(1), r.data_limit_mb, 'mb') }}</td>
+      <td class="hide-md">{% if r.period_end %}<span class="when">{{ r.period_end|date('%d %b') }}</span><span class="cell-sub">{{ r.period_end|ago }}</span>{% else %}<span class="u-none">—</span>{% endif %}</td>
+      <td class="go">›</td>
+    </tr>
+  {% else %}
+    <tr class="empty-row"><td colspan="8">
+      <div class="empty-state"><b>No lines found</b><span>{% if q or status %}Try a different search or filter.{% else %}Lines appear here once players buy a plan or get the starter plan.{% endif %}</span></div>
+    </td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>

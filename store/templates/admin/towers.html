@@ -1,0 +1,129 @@
+{% extends 'admin/base.html' %}
+{% from '_icons.html' import icon with context %}
+{% block title %}Tower map{% endblock %}
+{% block main_class %}flush{% endblock %}
+{% block content %}
+<div class="nm" id="tm" data-live="{{ url_for('admin_towers_live') }}" data-api="{{ url_for('admin_tower_create') }}" data-csrf="{{ csrf_token() }}">
+  <header class="nm-head">
+    <div class="nm-title">
+      <h1>Network map</h1>
+      <span class="nm-live" id="tm-live"><i></i><span id="tm-updated">Connecting…</span></span>
+    </div>
+    <div class="nm-kpis">
+      <div class="nm-kpi"><span>Towers online</span><b id="st-towers">–</b></div>
+      <div class="nm-kpi"><span>Land coverage</span><b id="st-cover">–</b></div>
+      <div class="nm-kpi"><span>Players</span><b id="st-players">–</b></div>
+      <div class="nm-kpi"><span>With signal</span><b id="st-signal">–</b></div>
+      <div class="nm-kpi"><span>On Wi-Fi</span><b id="st-wifi">–</b></div>
+    </div>
+    <div class="nm-actions">
+      <button class="btn sm outline" data-add="wifi">{{ icon('wifi', 15) }} Add Wi-Fi</button>
+      <button class="btn sm brand-btn" data-add="cell">{{ icon('signal', 15) }} Add cell tower</button>
+    </div>
+  </header>
+
+  <div class="nm-body">
+    <section class="nm-map">
+      <canvas id="tm-canvas"></canvas>
+      <div class="nm-hint" id="tm-hint" hidden></div>
+      <div class="nm-error" id="tm-error" hidden></div>
+      <div class="nm-tip" id="tm-tip" hidden></div>
+
+      <div class="nm-float nm-style">
+        <button data-style="light" class="on">Light</button><button data-style="dark">Dark</button>
+      </div>
+      <div class="nm-float nm-zoom">
+        <button data-zoom="1" title="Zoom in">+</button><button data-zoom="-1" title="Zoom out">−</button><button data-fit title="Fit San Andreas">{{ icon('map', 15) }}</button>
+      </div>
+      <div class="nm-float nm-legend">
+        <label><input type="checkbox" data-layer="cell" checked><i class="k-cell"></i>Cell</label>
+        <label><input type="checkbox" data-layer="wifi" checked><i class="k-wifi"></i>Wi-Fi</label>
+        <label><input type="checkbox" data-layer="players" checked><i class="k-player"></i>Players</label>
+        <label><input type="checkbox" data-layer="ranges" checked><i class="k-range"></i>Coverage</label>
+        <label><input type="checkbox" data-layer="dead" checked><i class="k-dead"></i>Dead zones</label>
+      </div>
+      <div class="nm-coords" id="tm-coords">X — · Y —</div>
+    </section>
+
+    <aside class="nm-panel">
+      <div class="nm-tabs" id="tm-tabs">
+        <button data-tab="towers" class="on">Towers <span id="c-towers">0</span></button>
+        <button data-tab="players">Players <span id="c-players">0</span></button>
+        <button data-tab="outages">Outages <span id="c-outages">0</span></button>
+      </div>
+      <div class="nm-search">{{ icon('search', 15) }}<input id="tm-q" placeholder="Search by name, Wi-Fi or player">
+        <button type="button" class="nm-select-btn" id="tm-select" title="Select several towers">Select</button></div>
+      <div class="nm-bulk-all" id="tm-bulk-all" hidden>
+        <span>Quick:</span>
+        <button type="button" data-bulk-all="offline">Delete offline</button>
+        <button type="button" data-bulk-all="wifi">Delete all Wi-Fi</button>
+        <button type="button" data-bulk-all="cell">Delete all cell</button>
+        <button type="button" data-bulk-all="all" class="danger">Delete everything</button>
+      </div>
+      <div class="nm-list" id="tm-list"></div>
+      <div class="nm-bulkbar" id="tm-bulkbar" hidden>
+        <label class="check"><input type="checkbox" id="tm-check-all"> <span id="tm-sel-count">0 selected</span></label>
+        <div>
+          <button type="button" class="btn sm outline" data-bulk="offline">Offline</button>
+          <button type="button" class="btn sm outline" data-bulk="online">Online</button>
+          <button type="button" class="btn sm danger" data-bulk="delete">Delete</button>
+        </div>
+      </div>
+
+      <form class="nm-detail" id="tm-editor" hidden>
+        <div class="nd-top nd-card">
+          <button type="button" class="nd-back" data-close>← All towers</button>
+          <div class="nd-title">
+            <span class="nd-ico" id="ed-ico"></span>
+            <div><b id="ed-title">Tower</b><span id="ed-sub"></span></div>
+            <label class="toggle" title="Online"><input type="checkbox" name="active" checked><span></span></label>
+          </div>
+          <div class="nd-stats">
+            <div><b id="ed-conn">0</b><span>connected</span></div>
+            <div><b id="ed-range-s">–</b><span>range</span></div>
+            <div><button type="button" class="linkbtn" data-focus>{{ icon('map', 14) }} Show on map</button></div>
+          </div>
+        </div>
+        <div class="nd-body">
+          <div class="nd-sec">
+            <h4>General</h4>
+            <div class="seg mini"><label><input type="radio" name="type" value="cell" checked><span>Cell tower</span></label><label><input type="radio" name="type" value="wifi"><span>Wi-Fi</span></label></div>
+            <label>Name<input name="name" maxlength="60" required></label>
+            <label>Notes<input name="notes" maxlength="255" placeholder="Optional — e.g. rooftop of Maze Bank"></label>
+          </div>
+          <div class="nd-sec">
+            <h4>Location</h4>
+            <div class="nd-row3">
+              <label>X<input name="x" type="number" step="0.1" required></label>
+              <label>Y<input name="y" type="number" step="0.1" required></label>
+              <label>Z<input name="z" type="number" step="0.1" required></label>
+            </div>
+            <p class="hint">Press and drag any tower on the map to move it, or type exact X / Y / Z. Height for desks and ceilings is set in game with <code>/towers</code> → Move (aim &amp; place).</p>
+            <p class="moved-note" id="tm-moved" hidden>Moved — click <b>Save changes</b> to apply. Its prop drops to the ground at the new spot.</p>
+          </div>
+          <div class="nd-sec">
+            <h4>Coverage</h4>
+            <div class="nd-range"><input type="range" id="ed-range" min="8" max="4000" step="1"><div class="nd-range-num"><input name="range" type="number" min="8" max="6000" required><span>m</span></div></div>
+            <label>Prop in game<select name="model"><option value="">No prop</option></select></label>
+          </div>
+          <div class="nd-sec wifi-only">
+            <h4>Wi-Fi access</h4>
+            <label>Network name (SSID)<input name="ssid" maxlength="40"></label>
+            <label>Password <small>empty = open network · min 4 characters</small>
+              <div class="pw-wrap"><input name="password" type="password" maxlength="64" autocomplete="new-password" placeholder="No password"><button type="button" class="pw-eye" data-eye>Show</button></div></label>
+            <label>Restricted to jobs <small>comma separated · empty = everyone</small><input name="jobs" maxlength="120" placeholder="police, ambulance"></label>
+            <p class="hint">Reaches 14 m above/below its height. Place indoor Wi-Fi in game with <code>/towers</code> for the right floor.</p>
+          </div>
+          <p class="hint" id="ed-meta"></p>
+        </div>
+        <div class="nd-foot">
+          <button class="btn danger" type="button" data-delete>Delete</button>
+          <button class="btn brand-btn" type="submit">Save changes</button>
+        </div>
+      </form>
+    </aside>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/sa-map-data.js') }}?v=1"></script>
+<script src="{{ url_for('static', filename='js/towermap.js') }}?v=8"></script>
+{% endblock %}

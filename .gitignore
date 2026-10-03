@@ -1,0 +1,12 @@
+# secrets — never commit
+config_server.lua
+.env
+*.env
+# runtime / generated
+venv/
+__pycache__/
+instance/
+*.db
+*.sqlite
+resources/opslabs-phone/media/*
+!resources/opslabs-phone/media/.gitkeep

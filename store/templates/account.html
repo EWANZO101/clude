@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% from '_icons.html' import icon with context %}
+{% block title %}My account · {{ carrier.name }}{% endblock %}
+{% set st = line.status if line else None %}
+{% set statusText = {'active': 'Active', 'pending': 'Ready to install', 'suspended': 'Suspended', 'expired': 'Ended', 'cancelled': 'Cancelled'} %}
+{% set first = info.name.split(' ')[0] if info.name and info.name.strip() else '' %}
+{% block content %}
+<section class="acct-hero">
+  <div class="wrap acct-hero-in">
+    <div class="acct-id">
+      <span class="avatar xl" style="--h: {{ (info.number|replace('-', '')|int(0)) % 360 }}">{{ (first[:1] or '#')|upper }}</span>
+      <div><h1>Hi{% if first %}, {{ first }}{% endif %}</h1><p>{{ info.number }} · {{ info.email }}</p></div>
+    </div>
+    <div class="acct-money">
+      <div><span>{{ icon('gift', 14) }} Credit</span><b class="pos">{{ info.balance.credit|money }}</b></div>
+      <div><span>{{ icon('card', 14) }} Bank</span><b>{{ info.balance.bank|money }}</b></div>
+      <form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="btn sm ghost-light">{{ icon('logout', 15) }} Sign out</button></form>
+    </div>
+  </div>
+  <nav class="wrap subnav">
+    <a href="#overview" class="on">Overview</a>
+    {% if line and line.installed %}<a href="#usage">Usage</a>{% endif %}
+    <a href="#change">Plans</a>
+    {% if line and line.service %}<a href="#extras">Extras</a>{% endif %}
+    <a href="#billing">Billing</a>
+  </nav>
+</section>
+
+<section class="wrap section tight acct" id="overview">
+  {% if not info.carrier.enabled %}
+    <div class="notice-bar">{{ icon('signal', 18) }}Mobile service is currently free and unlimited for everyone — no plan needed.</div>
+  {% endif %}
+  {% if info.balance.credit %}
+    <div class="notice-bar good">{{ icon('gift', 18) }}<span>You have <b>{{ info.balance.credit|money }}</b> account credit. It's used first for plans, renewals and extras.</span></div>
+  {% endif %}
+
+  {% if not line %}
+    <div class="card empty-line">
+      <span class="big-ico">{{ icon('sim', 28) }}</span>
+      <div><h2>You don't have a line yet</h2><p class="muted">Choose a plan below — your eSIM is ready instantly.</p></div>
+      <a class="btn brand-btn" href="#change">Choose a plan</a>
+    </div>
+  {% else %}
+    <div class="line-grid">
+      <div class="card line-card" style="--c: {{ line.plan.color if line.plan else '#8e8e93' }}">
+        <div class="lc-top">
+          <div><span class="eyebrow">Your plan</span><h2>{{ line.plan.name if line.plan else '—' }}</h2></div>
+          <span class="status s-{{ 'active' if line.service else st }}"><i></i>{{ 'Active' if line.service else statusText.get(st, st) }}</span>
+        </div>
+        {% if line.installed and line.service and line.period_end and line.plan %}
+          {% set total = line.plan.period_days * 86400 %}
+          {% set left = [line.period_end - now, 0]|max %}
+          <div class="period">
+            <div class="period-bar"><span style="width: {{ (100 - (left / total * 100))|round|int }}%"></span></div>
+            <div class="period-meta"><span>{{ (left / 86400)|round(0, 'ceil')|int }} days left</span><span>{{ 'Renews' if line.auto_renew else 'Ends' }} {{ line.period_end|date }}</span></div>
+          </div>
+        {% endif %}
+        <dl class="facts">
+          {% if line.plan and line.plan.price %}<div><dt>Price</dt><dd>{{ line.plan.price|money }} / {{ line.plan.period_days }} days</dd></div>{% endif %}
+          {% if not line.installed %}<div><dt>Period</dt><dd>Starts when your eSIM is installed</dd></div>{% elif not line.service and line.period_end %}<div><dt>Ended</dt><dd>{{ line.period_end|date }}</dd></div>{% endif %}
+          <div><dt>Auto-renew</dt><dd>
+            <form method="post" action="{{ url_for('auto_renew') }}" class="inline">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="on" value="{{ '0' if line.auto_renew else '1' }}">
+              <button class="switch {{ 'on' if line.auto_renew else '' }}" title="Toggle auto-renew" {% if not line.plan or not line.plan.price %}disabled{% endif %}><span></span></button>
+            </form></dd></div>
+          <div><dt>Phone number</dt><dd class="mono">{{ info.number }}</dd></div>
+          <div><dt>ICCID</dt><dd class="mono small">{{ line.iccid }}</dd></div>
+        </dl>
+        <div class="lc-actions">
+          {% if line.plan and line.plan.price and st == 'expired' %}
+            <form method="post" action="{{ url_for('renew') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="btn brand-btn">{{ icon('refresh', 16) }} Renew · {{ line.plan.price|money }}</button></form>
+          {% endif %}
+          <a class="btn outline" href="#change">Change plan</a>
+          {% if line.service %}<a class="btn outline" href="#extras">{{ icon('zap', 15) }} Add extras</a>{% endif %}
+        </div>
+      </div>
+
+      {% if not line.installed %}
+      <div class="card esim-card">
+        <span class="eyebrow">Install your eSIM</span>
+        <h2>Almost there</h2>
+        <div class="esim-body">
+          <div id="qr" class="qr" data-code="LPA:1$esim.{{ carrier.name|lower|replace(' ', '') }}${{ info.activation_code }}"></div>
+          <ol>
+            <li>On your phone open <b>Settings › Mobile Service</b>.</li>
+            <li>Tap <b>Install</b>, or <b>Enter Activation Code</b>.</li>
+            <li>Code: <span class="code mono">{{ info.activation_code }}</span></li>
+          </ol>
+        </div>
+        <form method="post" action="{{ url_for('send_esim') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="btn brand-btn block">{{ icon('sim', 16) }} Send to my phone</button></form>
+      </div>
+      {% else %}
+      <div class="card usage-card" id="usage">
+        <span class="eyebrow">This period</span>
+        <h2>Usage</h2>
+        {% set u = line.usage %}
+        {% for key, label, unit, ic, color in [('data_mb', 'Mobile data', 'mb', 'data', '#7c5cff'), ('minutes', 'Minutes', '', 'phone', '#22b357'), ('sms', 'Texts', '', 'message', '#0a84ff')] %}
+          {% set x = u[key] %}
+          <div class="meter">
+            <div class="m-top"><span class="m-label" style="--mc: {{ color }}">{{ icon(ic, 15) }}{{ label }}</span>
+              <b>{% if unit == 'mb' %}{{ x.used|mb }}{% else %}{{ x.used }}{% endif %} {% if x.limit >= 0 %}<small>of {{ x.limit|limit(unit) }}</small>{% else %}<small>· Unlimited</small>{% endif %}</b></div>
+            {% if x.limit >= 0 %}{% set p = x|pct %}<div class="bar"><span class="{{ 'bad' if p >= 100 else ('warn' if p >= 80 else '') }}" style="width: {{ p }}%; --mc: {{ color }}"></span></div>{% else %}<div class="bar unl"><span></span></div>{% endif %}
+          </div>
+        {% endfor %}
+        <p class="hint">Usage resets when your plan renews. Emergency calls and texts to {{ carrier.number }} are always free.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if info.daily %}
+    <div class="card chart-card">
+      <div class="chart-head"><h3>Data used</h3><span class="muted small">Last 30 days</span></div>
+      {% set maxkb = (info.daily|map(attribute='data_kb')|max) or 1 %}
+      <div class="chart">{% for d in info.daily %}<div class="col" title="{{ d.day }} · {{ (d.data_kb / 1024)|mb }} · {{ d.sms }} texts · {{ (d.seconds / 60)|round|int }} min"><span style="height: {{ [(d.data_kb / maxkb * 100)|round, 2]|max }}%"></span></div>{% endfor %}</div>
+    </div>
+    {% endif %}
+  {% endif %}
+
+  <div class="sec-head left" id="change"><h2>{{ 'Change plan' if line else 'Choose a plan' }}</h2>{% if line and line.installed %}<p>Changes apply instantly and start a new period. Your eSIM stays installed.</p>{% endif %}</div>
+  {% set current = line.plan.code if line and line.plan else None %}
+  <div class="plans">{% for p in plans %}{% include '_plan_card.html' %}{% endfor %}</div>
+
+  {% if line and line.service and addons %}
+  <div class="sec-head left" id="extras"><h2>Extras</h2><p>Added straight away, until your plan renews.</p></div>
+  <div class="addons">{% for a in addons %}<a class="addon" href="{{ url_for('checkout', code=a.code) }}" style="--c:{{ a.color }}"><span class="addon-ico">{{ icon('data' if a.data_mb > 0 else ('phone' if a.minutes > 0 else 'message'), 20) }}</span><div><b>{{ a.name }}</b><span>{{ a.description }}</span></div><em>{{ a.price|money }}</em></a>{% endfor %}</div>
+  {% endif %}
+
+  <div class="sec-head left" id="billing"><h2>Billing &amp; activity</h2></div>
+  <div class="card table-wrap flush">
+    <table class="list">
+      <thead><tr><th>Date</th><th>Activity</th><th class="r">Amount</th></tr></thead>
+      <tbody>{% for e in info.events %}<tr><td class="nowrap">{{ e.created_at|date('%d %b %Y, %H:%M') }}</td><td>{{ e.type|replace('_', ' ')|capitalize }}{% if e.detail %} <span class="muted">· {{ e.detail }}</span>{% endif %}</td><td class="r">{% if e.amount %}<b>{{ e.amount|money }}</b>{% else %}<span class="muted">—</span>{% endif %}</td></tr>
+      {% else %}<tr><td colspan="3" class="muted">No activity yet.</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+
+  {% if line and st not in ('cancelled',) %}
+  <details class="danger-zone">
+    <summary>Cancel my line</summary>
+    <p class="muted">Your service stops immediately and won't renew. You can start a new plan later.</p>
+    <form method="post" action="{{ url_for('cancel') }}" onsubmit="return confirm('Cancel your {{ carrier.name }} line now?')"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="btn danger">Cancel line</button></form>
+  </details>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  const qr = document.getElementById('qr');
+  if (qr && window.QRCode) new QRCode(qr, { text: qr.dataset.code, width: 148, height: 148, colorDark: '#0b0b1a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+  // highlight the section in view
+  const links = [...document.querySelectorAll('.subnav a')];
+  const secs = links.map((a) => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  addEventListener('scroll', () => {
+    let cur = secs[0];
+    for (const s of secs) if (s.getBoundingClientRect().top < 160) cur = s;
+    links.forEach((a) => a.classList.toggle('on', cur && a.getAttribute('href') === '#' + cur.id));
+  }, { passive: true });
+</script>
+{% endblock %}

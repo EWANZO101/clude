@@ -1,0 +1,21 @@
+{% from '_icons.html' import icon with context %}
+<article class="plan {% if p.featured %}featured{% endif %}" style="--c: {{ p.color }}">
+  {% if p.featured %}<span class="tag">Most popular</span>{% endif %}
+  <div class="plan-top">
+    <h3>{{ p.name }}</h3>
+    <p class="desc">{{ p.description }}</p>
+  </div>
+  <div class="price"><span class="cur">$</span><b>{{ '{:,}'.format(p.price) }}</b><span class="per">/ {{ p.period_days }} days</span></div>
+  <div class="allow">
+    <div><b>{{ p.data_mb|limit('mb') }}</b><span>5G data</span></div>
+    <div><b>{{ p.minutes|limit }}</b><span>{{ 'minutes' if p.minutes >= 0 else 'calls' }}</span></div>
+    <div><b>{{ p.sms|limit }}</b><span>texts</span></div>
+  </div>
+  <ul class="feat">
+    <li>{{ icon('check', 16) }}Instant eSIM, keep your number</li>
+    <li>{{ icon('check', 16) }}Auto-renews, cancel any time</li>
+    <li>{{ icon('check', 16) }}Free emergency calls</li>
+    {% if p.data_mb < 0 %}<li>{{ icon('check', 16) }}No data caps, ever</li>{% endif %}
+  </ul>
+  <a class="btn block {% if p.featured %}brand-btn{% else %}outline{% endif %}" href="{{ url_for('checkout', code=p.code) }}">{% if current and current == p.code %}Renew {{ p.name }}{% else %}Choose {{ p.name }}{% endif %}</a>
+</article>

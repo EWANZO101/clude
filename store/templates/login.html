@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% from '_icons.html' import icon, logo with context %}
+{% block title %}Sign in · {{ carrier.name }}{% endblock %}
+{% block content %}
+<section class="auth-split wrap">
+  <div class="auth-side">
+    <h2>Your plan, your usage, your eSIM.</h2>
+    <ul>
+      <li>{{ icon('activity', 18) }}Live texts, minutes and data</li>
+      <li>{{ icon('refresh', 18) }}Change plan or add boosts instantly</li>
+      <li>{{ icon('sim', 18) }}Install or resend your eSIM</li>
+      <li>{{ icon('gift', 18) }}See your account credit</li>
+    </ul>
+  </div>
+  <div class="card auth-card">
+    {{ logo(40) }}
+    <h1>Sign in</h1>
+    <p class="muted">Enter your in-game phone number. We'll text a 6-digit code from <b>{{ carrier.name }} ({{ carrier.number }})</b>.</p>
+    <form method="post" class="form">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <label>Phone number<div class="input-ico">{{ icon('phone', 18) }}<input name="number" inputmode="numeric" autocomplete="tel" placeholder="555-0142" required autofocus></div></label>
+      <button class="btn brand-btn block lg">Text me a code</button>
+    </form>
+    <p class="hint">{{ icon('lock', 14) }} Your number is shown at the top of Settings on your phone.</p>
+  </div>
+</section>
+{% endblock %}

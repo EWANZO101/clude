@@ -1,0 +1,6 @@
+<div class="bubble {{ m.from }}" data-id="{{ m.id }}">
+  {% if m.attachment and m.attachment.type == 'image' and m.attachment.url %}<img src="{{ m.attachment.url }}" alt="" loading="lazy">{% endif %}
+  {% if m.attachment and m.attachment.type in ('location', 'live') %}<em>📍 Shared a location</em>{% endif %}
+  {% if m.message %}<p>{{ m.message }}</p>{% endif %}
+  <time>{{ m.at|date('%d %b, %H:%M') }}{% if m.from == 'customer' and not m.read %} · new{% endif %}</time>
+</div>

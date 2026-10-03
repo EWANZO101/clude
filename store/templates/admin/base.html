@@ -1,0 +1,72 @@
+{% from '_icons.html' import icon, logo with context %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Admin{% endblock %} · {{ carrier.name }} Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=15">
+  <meta name="robots" content="noindex">
+</head>
+<body class="admin {{ 'signed-in' if session.admin else 'signed-out' }}">
+  {% if session.admin %}
+  {% set ep = request.endpoint or '' %}
+  <aside class="side">
+    <a class="brand" href="{{ url_for('admin') }}">{{ logo(30) }}<span>{{ carrier.name }}<small>Network Console</small></span></a>
+    <nav>
+      <span class="nav-sec">Overview</span>
+      <a href="{{ url_for('admin') }}" class="{{ 'on' if ep == 'admin' }}">{{ icon('grid', 18) }}Dashboard</a>
+      <span class="nav-sec">Customers</span>
+      <a href="{{ url_for('admin_lines') }}" class="{{ 'on' if ep.startswith('admin_line') }}">{{ icon('users', 18) }}Lines</a>
+      <a href="{{ url_for('admin_inbox') }}" class="{{ 'on' if ep == 'admin_inbox' }}">{{ icon('inbox', 18) }}Messages <span class="nav-badge" id="unread-badge" hidden></span></a>
+      <span class="nav-sec">Network</span>
+      <a href="{{ url_for('admin_towers') }}" class="{{ 'on' if ep == 'admin_towers' }}">{{ icon('signal', 18) }}Tower map</a>
+      <span class="nav-sec">Catalog</span>
+      <a href="{{ url_for('admin_plans') }}" class="{{ 'on' if ep.startswith('admin_plan') }}">{{ icon('tag', 18) }}Plans &amp; extras</a>
+      <span class="nav-sec">System</span>
+      <a href="{{ url_for('admin_settings') }}" class="{{ 'on' if ep == 'admin_settings' }}">{{ icon('settings', 18) }}Network settings</a>
+      <a href="{{ url_for('admin_audit') }}" class="{{ 'on' if ep == 'admin_audit' }}">{{ icon('audit', 18) }}Audit log</a>
+      <a href="{{ url_for('status_page') }}" target="_blank">{{ icon('activity', 18) }}Public status {{ icon('external', 13, 'ext') }}</a>
+      <a href="{{ url_for('home') }}" target="_blank">{{ icon('globe', 18) }}Storefront {{ icon('external', 13, 'ext') }}</a>
+    </nav>
+    <div class="side-foot">
+      <div class="who"><span class="avatar sm" style="--h: 260">{{ session.admin[:1]|upper }}</span><div><b>{{ session.admin }}</b><small>Administrator</small></div></div>
+      <form method="post" action="{{ url_for('admin_logout') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="icon-btn" title="Sign out">{{ icon('logout', 18) }}</button></form>
+    </div>
+  </aside>
+  <div class="admin-wrap">
+    <header class="topbar">
+      <div class="crumbs">{{ carrier.name }} <span>/</span> <b>{% block crumb %}{{ self.title() }}{% endblock %}</b></div>
+      <form class="top-search" onsubmit="const v=this.q.value.trim(); if(!v) return false; location.href = /^[0-9 -]{4,}$/.test(v) ? '{{ url_for('admin_lines') }}/' + encodeURIComponent(v) : '{{ url_for('admin_lines') }}?q=' + encodeURIComponent(v); return false;">
+        {{ icon('search', 16) }}<input name="q" placeholder="Search customers or jump to a number…" autocomplete="off"><kbd>/</kbd>
+      </form>
+      <div class="top-right">
+        <span class="env {{ 'live' if carrier.enabled else 'free' }}"><i></i>{{ 'Plans enforced' if carrier.enabled else 'Free mode' }}</span>
+      </div>
+    </header>
+    <main class="admin-main {% block main_class %}{% endblock %}">
+      {% with msgs = get_flashed_messages(with_categories=true) %}
+        {% if msgs %}<div class="flashes">{% for cat, m in msgs %}<div class="flash {{ cat }}">{{ icon('check' if cat == 'success' else 'help', 18) }}<span>{{ m }}</span></div>{% endfor %}</div>{% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <script>
+  (() => {
+    const b = document.getElementById('unread-badge');
+    const check = () => fetch('{{ url_for('admin_unread') }}').then((r) => r.json()).then((d) => { b.hidden = !d.unread; b.textContent = d.unread; }).catch(() => {});
+    check(); setInterval(check, 30000);
+    addEventListener('keydown', (e) => { if (e.key === '/' && !e.target.closest('input, textarea, select')) { e.preventDefault(); document.querySelector('.top-search input').focus(); } });
+  })();
+  </script>
+  {% else %}
+  <main class="admin-login">
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% if msgs %}<div class="flashes">{% for cat, m in msgs %}<div class="flash {{ cat }}"><span>{{ m }}</span></div>{% endfor %}</div>{% endif %}
+    {% endwith %}
+    {% block login %}{% endblock %}
+  </main>
+  {% endif %}
+</body>
+</html>

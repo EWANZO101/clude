@@ -1,0 +1,58 @@
+{% extends 'admin/base.html' %}
+{% from '_icons.html' import icon with context %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+{% set L = stats.lines if stats.lines is mapping else {} %}
+{% set u = stats.usage_30d if stats.usage_30d is mapping else {} %}
+{% set daily = stats.daily or [] %}
+<div class="page-head">
+  <div><h1>Good {{ 'morning' if (now|date('%H')|int) < 12 else ('afternoon' if (now|date('%H')|int) < 18 else 'evening') }}, {{ session.admin }}</h1>
+  <p class="muted">Here's how {{ carrier.name }} is doing today.</p></div>
+  <span class="health {{ 'ok' if health else 'bad' }}"><i></i>{{ 'Core network online' if health else 'Core network offline' }}</span>
+</div>
+
+<div class="kpis">
+  <div class="card kpi"><span class="kpi-ico" style="--k:#22b357">{{ icon('signal', 18) }}</span><span class="kpi-label">Active lines</span><b>{{ L.active or 0 }}</b><small>{{ L.pending or 0 }} waiting for eSIM</small></div>
+  <div class="card kpi"><span class="kpi-ico" style="--k:#5b3df5">{{ icon('dollar', 18) }}</span><span class="kpi-label">Revenue · 30 days</span><b>{{ stats.revenue_30d|money }}</b><small>{{ stats.revenue_total|money }} all time</small></div>
+  <div class="card kpi"><span class="kpi-ico" style="--k:#0a84ff">{{ icon('data', 18) }}</span><span class="kpi-label">Data · 30 days</span><b>{{ ((u.data_kb or 0) / 1024)|mb }}</b><small>{{ u.sms or 0 }} texts · {{ ((u.seconds or 0) / 60)|round|int }} min</small></div>
+  <div class="card kpi"><span class="kpi-ico" style="--k:#f59f0a">{{ icon('gift', 18) }}</span><span class="kpi-label">Credit outstanding</span><b>{{ (credit.outstanding if credit else 0)|money }}</b><small>{% if credit %}{{ credit.customers }} customers · {{ credit.given_30d|money }} given (30d){% else %}—{% endif %}</small></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <div class="card-head"><div><h3>Network traffic</h3><span class="muted small">Mobile data per day, last 30 days</span></div></div>
+    {% if daily %}
+      {% set maxkb = (daily|map(attribute='data_kb')|max) or 1 %}
+      {% set n = daily|length %}
+      {% set w = 600 %}{% set h = 180 %}
+      {% set step = (w / ([n - 1, 1]|max)) %}
+      {% set pts = [] %}
+      {% for d in daily %}{% set _ = pts.append(((loop.index0 * step)|round(1)) ~ ',' ~ ((h - 10 - (d.data_kb / maxkb) * (h - 30))|round(1))) %}{% endfor %}
+      <svg class="area" viewBox="0 0 {{ w }} {{ h }}" preserveAspectRatio="none">
+        <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b3df5" stop-opacity=".35"/><stop offset="1" stop-color="#5b3df5" stop-opacity="0"/></linearGradient></defs>
+        {% for gy in [40, 85, 130] %}<line x1="0" x2="{{ w }}" y1="{{ gy }}" y2="{{ gy }}" class="grid-l"/>{% endfor %}
+        {% if n > 1 %}<polygon points="0,{{ h }} {{ pts|join(' ') }} {{ w }},{{ h }}" fill="url(#ag)"/><polyline points="{{ pts|join(' ') }}" class="line-l"/>{% else %}<circle cx="{{ w / 2 }}" cy="{{ h / 2 }}" r="5" fill="#5b3df5"/>{% endif %}
+      </svg>
+      <div class="area-x"><span>{{ daily[0].day[5:] }}</span><span>peak {{ (maxkb / 1024)|mb }}/day</span><span>{{ daily[-1].day[5:] }}</span></div>
+    {% else %}<div class="empty-state"><b>No traffic yet</b><span>Usage appears here once customers start texting, calling and browsing.</span></div>{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-head"><div><h3>Customers by plan</h3><span class="muted small">Active lines</span></div><a href="{{ url_for('admin_plans') }}" class="small">Manage →</a></div>
+    {% set plist = stats.plans or [] %}
+    {% set pmax = (plist|map(attribute='line_count')|max if plist else 1) or 1 %}
+    <div class="plan-bars">
+      {% for p in plist %}
+        <div class="pb"><span class="pb-name">{{ p.name }}</span><div class="pb-bar"><span style="width: {{ (p.line_count / pmax * 100)|round }}%"></span></div><b>{{ p.line_count }}</b></div>
+      {% else %}<p class="muted">No plans yet.</p>{% endfor %}
+    </div>
+    <div class="mini-split">
+      <div><b>{{ L.expired or 0 }}</b><span>ended</span></div><div><b>{{ L.suspended or 0 }}</b><span>suspended</span></div><div><b>{{ L.cancelled or 0 }}</b><span>cancelled</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="card lines-card">
+  <div class="card-head pad"><div><h3>Recent activity</h3><span class="muted small">Lines updated most recently</span></div><a href="{{ url_for('admin_lines') }}" class="btn sm outline">All lines</a></div>
+  {% include 'admin/_lines_table.html' %}
+</div>
+{% endblock %}

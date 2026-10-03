@@ -1,0 +1,16 @@
+{% extends 'admin/base.html' %}
+{% from '_icons.html' import icon, logo with context %}
+{% block title %}Sign in{% endblock %}
+{% block login %}
+<div class="card auth-card admin-auth">
+  {{ logo(44) }}
+  <h1>{{ carrier.name }} Network Console</h1>
+  <p class="muted">Staff only. All actions are recorded in the audit log.</p>
+  <form method="post" class="form">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ next }}">
+    <label>Username<div class="input-ico">{{ icon('user', 17) }}<input name="username" autocomplete="username" required autofocus></div></label>
+    <label>Password<div class="input-ico">{{ icon('lock', 17) }}<input name="password" type="password" autocomplete="current-password" required></div></label>
+    <button class="btn brand-btn block lg">Sign in</button>
+  </form>
+</div>
+{% endblock %}

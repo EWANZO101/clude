@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% from '_icons.html' import icon with context %}
+{% block title %}Help centre · {{ carrier.name }}{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="wrap">
+    <span class="kicker">Support</span>
+    <h1>How can we help?</h1>
+    <p>Answers to the most common questions. Still stuck? Text <b>{{ carrier.number }}</b> from your phone.</p>
+    <div class="help-search">{{ icon('search', 18) }}<input id="hq" placeholder="Search help articles" autocomplete="off"></div>
+  </div>
+</section>
+<section class="wrap section tight">
+  <div class="help-cats">
+    <a href="#esim-help">{{ icon('sim', 22) }}<b>eSIM &amp; setup</b><span>Install, reissue, SOS</span></a>
+    <a href="#billing">{{ icon('card', 22) }}<b>Billing &amp; credit</b><span>Renewals, payments, credit</span></a>
+    <a href="#usage">{{ icon('data', 22) }}<b>Usage &amp; data</b><span>What counts, running out</span></a>
+    <a href="#account-help">{{ icon('user', 22) }}<b>Account</b><span>Sign in, cancel, change plan</span></a>
+  </div>
+  {% set sections = [
+    ('esim-help', 'eSIM & setup', [
+      ('How do I install my eSIM?', 'After buying a plan you get a notification on your phone — tap it. Or open Settings › Mobile Service and tap Install. You can also enter the activation code shown in your account.'),
+      ('My phone shows SOS', "SOS means no active service. Your eSIM may not be installed yet, your plan may have ended, or the line is suspended. Settings › Mobile Service shows the exact reason."),
+      ('I need a new eSIM', 'Text ' ~ carrier.number ~ ' and our team can reissue it. You will get a new activation code by text.'),
+      ('Can I keep my number?', 'Yes. Your eSIM is tied to your existing phone number — nothing changes.')]),
+    ('billing', 'Billing & credit', [
+      ('How am I charged?', 'Plans are paid in-game. Account credit is used first and anything left comes from your bank account.'),
+      ('What is account credit?', 'Credit added to your account by ' ~ carrier.name ~ ' — for example as a goodwill gesture. It is spent automatically on plans, renewals and extras.'),
+      ('What happens at renewal?', 'At the end of each period we charge the plan price (credit first, then bank). If there is not enough money, your line pauses until you renew.'),
+      ('How do I turn off auto-renew?', 'In your account or in the ' ~ carrier.name ~ ' app, switch Auto-renew off. Your plan then ends at the end of the period.')]),
+    ('usage', 'Usage & data', [
+      ('What uses data?', 'Online apps: Chirp, Mail, Bank, Garage, music streaming, internet radio and live location. The ' ~ carrier.name ~ ' app itself never uses data.'),
+      ('What is always free?', 'Receiving texts, texting ' ~ carrier.number ~ ' and calling emergency numbers.'),
+      ('I ran out — now what?', 'Add a boost from the Extras page or upgrade your plan. It works immediately.')]),
+    ('account-help', 'Account', [
+      ('How do I sign in?', 'Enter your in-game phone number and we will text you a 6-digit code.'),
+      ('How do I change plan?', 'Pick a new plan in your account or the app. The new plan starts immediately and your eSIM stays installed.'),
+      ('How do I cancel?', 'At the bottom of your account page choose Cancel my line. Service stops straight away.')]),
+  ] %}
+  {% for id, title, items in sections %}
+  <div class="help-sec" id="{{ id }}">
+    <h2 class="h-sm">{{ title }}</h2>
+    <div class="faq">{% for q, a in items %}<details><summary>{{ q }}</summary><p>{{ a }}</p></details>{% endfor %}</div>
+  </div>
+  {% endfor %}
+  <div class="cta-band slim">
+    <div><h2>Still need help?</h2><p>Text <b>{{ carrier.number }}</b> from the Messages app on your phone. Our team replies right there.</p></div>
+    <a class="btn lg white" href="{{ url_for('status_page') }}">Check network status</a>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.getElementById('hq').addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    document.querySelectorAll('.help-sec details').forEach((d) => {
+      const hit = !q || d.textContent.toLowerCase().includes(q);
+      d.style.display = hit ? '' : 'none';
+      if (q && hit) d.open = true;
+    });
+    document.querySelectorAll('.help-sec').forEach((s) => { s.style.display = [...s.querySelectorAll('details')].some((d) => d.style.display !== 'none') ? '' : 'none'; });
+  });
+</script>
+{% endblock %}

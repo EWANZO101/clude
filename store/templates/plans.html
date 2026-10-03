@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% from '_icons.html' import icon with context %}
+{% block title %}Plans · {{ carrier.name }}{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="wrap">
+    <span class="kicker">Plans</span>
+    <h1>Simple plans. Serious 5G.</h1>
+    <p>Prices are per period and paid with in-game money. Account credit is used first. Switch or cancel any time.</p>
+  </div>
+</section>
+<section class="wrap section tight">
+  <div class="plans">{% for p in plans %}{% include '_plan_card.html' %}{% endfor %}</div>
+</section>
+{% if plans %}
+<section class="wrap section tight">
+  <h2 class="h-sm">Compare plans</h2>
+  <div class="card table-wrap flush">
+    <table class="compare">
+      <thead><tr><th></th>{% for p in plans %}<th style="--c:{{ p.color }}"><span class="swatch"></span>{{ p.name }}{% if p.featured %}<em>Popular</em>{% endif %}</th>{% endfor %}</tr></thead>
+      <tbody>
+        <tr><td>Price</td>{% for p in plans %}<td><b>{{ p.price|money }}</b><small> / {{ p.period_days }} days</small></td>{% endfor %}</tr>
+        <tr><td>5G data</td>{% for p in plans %}<td>{{ p.data_mb|limit('mb') }}</td>{% endfor %}</tr>
+        <tr><td>Call minutes</td>{% for p in plans %}<td>{{ p.minutes|limit }}</td>{% endfor %}</tr>
+        <tr><td>Texts</td>{% for p in plans %}<td>{{ p.sms|limit }}</td>{% endfor %}</tr>
+        <tr><td>Instant eSIM</td>{% for p in plans %}<td class="yes">{{ icon('check', 16) }}</td>{% endfor %}</tr>
+        <tr><td>Emergency calls</td>{% for p in plans %}<td class="yes">{{ icon('check', 16) }}</td>{% endfor %}</tr>
+        <tr><td>Account credit accepted</td>{% for p in plans %}<td class="yes">{{ icon('check', 16) }}</td>{% endfor %}</tr>
+        <tr><td></td>{% for p in plans %}<td><a class="btn sm {{ 'brand-btn' if p.featured else 'outline' }}" href="{{ url_for('checkout', code=p.code) }}">Choose</a></td>{% endfor %}</tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% if addons %}
+<section class="wrap section tight" id="extras">
+  <h2 class="h-sm">Extras &amp; boosts</h2>
+  <p class="muted">Added to your current plan straight away and last until it renews.</p>
+  <div class="addons">
+    {% for a in addons %}
+    <a class="addon" href="{{ url_for('checkout', code=a.code) }}" style="--c:{{ a.color }}">
+      <span class="addon-ico">{{ icon('data' if a.data_mb > 0 else ('phone' if a.minutes > 0 else 'message'), 20) }}</span>
+      <div><b>{{ a.name }}</b><span>{{ a.description }}</span></div>
+      <em>{{ a.price|money }}</em>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+<section class="wrap section tight">
+  <div class="note-grid">
+    <div>{{ icon('shield', 20) }}<b>No contracts</b><span>Every plan is pay-as-you-go. Turn auto-renew off whenever you like.</span></div>
+    <div>{{ icon('gift', 20) }}<b>Credit first</b><span>Any {{ carrier.name }} credit on your account is spent before your bank.</span></div>
+    <div>{{ icon('refresh', 20) }}<b>Instant changes</b><span>Upgrades and boosts apply the moment you pay.</span></div>
+  </div>
+</section>
+{% endblock %}

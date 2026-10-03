@@ -1,0 +1,40 @@
+{% extends 'admin/base.html' %}
+{% block title %}Lines{% endblock %}
+{% set tabs = [('', 'All', total), ('active', 'Active', counts.active or 0), ('pending', 'Waiting for eSIM', counts.pending or 0), ('suspended', 'Suspended', counts.suspended or 0), ('expired', 'Ended', counts.expired or 0), ('cancelled', 'Cancelled', counts.cancelled or 0)] %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Lines</h1><p class="muted">Every {{ carrier.name }} customer and their eSIM line.</p></div>
+  <div class="head-stats">
+    <div><b>{{ counts.active or 0 }}</b><span>active</span></div>
+    <div><b>{{ counts.pending or 0 }}</b><span>waiting</span></div>
+    <div><b>{{ revenue|money }}</b><span>30-day revenue</span></div>
+  </div>
+</div>
+
+<div class="card lines-card">
+  <div class="lines-toolbar">
+    <nav class="tabs">
+      {% for key, label, n in tabs %}
+        <a href="{{ url_for('admin_lines', status=key, q=q) }}" class="{{ 'on' if status == key }}">{{ label }}<span>{{ n }}</span></a>
+      {% endfor %}
+    </nav>
+    <form class="search" method="get">
+      <input type="hidden" name="status" value="{{ status }}">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input name="q" value="{{ q }}" placeholder="Search name, number or email" autocomplete="off">
+      {% if q %}<a class="clear" href="{{ url_for('admin_lines', status=status) }}" title="Clear">×</a>{% endif %}
+    </form>
+  </div>
+  {% if jump %}
+    <div class="jump">No line matches “{{ q }}”. <a href="{{ url_for('admin_line', number=jump) }}">Open phone {{ q }} →</a> <span class="muted">to give it a plan.</span></div>
+  {% endif %}
+  {% include 'admin/_lines_table.html' %}
+  {% if page > 1 or rows|length == 50 %}
+  <div class="pager">
+    <span class="muted">Page {{ page }}</span>
+    <div>{% if page > 1 %}<a class="btn ghost sm" href="{{ url_for('admin_lines', q=q, status=status, page=page - 1) }}">← Previous</a>{% endif %}
+    {% if rows|length == 50 %}<a class="btn ghost sm" href="{{ url_for('admin_lines', q=q, status=status, page=page + 1) }}">Next →</a>{% endif %}</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

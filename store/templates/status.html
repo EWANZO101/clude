@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% from '_icons.html' import icon with context %}
+{% block title %}Network status · {{ carrier.name }}{% endblock %}
+{% block content %}
+{% set up = health is not none %}
+<section class="page-hero">
+  <div class="wrap">
+    <span class="kicker">Network status</span>
+    <h1>{% if up %}All systems operational{% else %}We're having trouble{% endif %}</h1>
+    <p>Checked {{ checked|date('%d %b %Y, %H:%M UTC') }}. This page refreshes every minute.</p>
+  </div>
+</section>
+<section class="wrap section tight">
+  <div class="status-banner {{ 'ok' if up else 'bad' }}">{{ icon('check' if up else 'help', 22) }}<div><b>{{ 'Everything is running normally' if up else 'The city network is unreachable' }}</b><span>{{ 'Texts, calls, data and eSIM activation are working.' if up else 'The city server may be restarting. Service usually returns within a few minutes.' }}</span></div></div>
+  <div class="card flush status-list">
+    {% for name, desc, ok in [
+      ('Mobile network', 'Texts, calls and 5G data', up and carrier.enabled is not false),
+      ('eSIM activation', 'Installing and reissuing eSIMs', up),
+      ('Billing & renewals', 'Payments, credit and auto-renew', up),
+      ('Online account', 'This website and sign-in codes', true),
+      (carrier.name ~ ' app', 'Plan management on your phone', up)] %}
+      <div class="st-row"><div><b>{{ name }}</b><span>{{ desc }}</span></div><span class="st-state {{ 'ok' if ok else 'bad' }}"><i></i>{{ 'Operational' if ok else 'Outage' }}</span></div>
+    {% endfor %}
+  </div>
+  <div class="note-grid">
+    <div>{{ icon('activity', 20) }}<b>{{ ms ~ ' ms' if ms is not none else '—' }}</b><span>Core network response time</span></div>
+    <div>{{ icon('users', 20) }}<b>{{ active }}</b><span>Active lines right now</span></div>
+    <div>{{ icon('signal', 20) }}<b>5G</b><span>Coverage across San Andreas</span></div>
+  </div>
+</section>
+<script>setTimeout(() => location.reload(), 60000);</script>
+{% endblock %}

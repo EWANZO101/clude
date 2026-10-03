@@ -1,0 +1,17 @@
+{% extends 'admin/base.html' %}
+{% block title %}Network settings{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Network settings</h1></div>
+<div class="card narrow">
+<form method="post" class="form grid-form">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <label class="check span2 big"><input type="checkbox" name="enabled" value="1" {{ 'checked' if s.enabled }}> <span><b>Require a plan</b><small>When off, every phone has free unlimited service (plans aren't enforced).</small></span></label>
+  <label>Carrier name<input name="name" value="{{ s.name }}" maxlength="30" required><small>Shown on every phone (status bar, Control Center, Settings).</small></label>
+  <label>Carrier number<input name="number" value="{{ s.number }}" maxlength="15" required><small>Texts from the network come from this number.</small></label>
+  <label class="span2">Store address<input name="store_url" value="{{ s.store_url }}"><small>Phones open this when players tap "Get a Plan" or "Manage Plan".</small></label>
+  <label>Free starter plan<select name="starter_plan"><option value="">None</option>{% for p in plans if p.active %}<option value="{{ p.code }}" {{ 'selected' if s.starter_plan == p.code }}>{{ p.name }}</option>{% endfor %}</select><small>Given once to phones that have never had a line.</small></label>
+  <label>Society account<input name="society" value="{{ s.society or '' }}" placeholder="society_opsmobile"><small>Optional: plan payments go into this ESX society account.</small></label>
+  <button class="btn glow span2">Save settings</button>
+</form>
+</div>
+{% endblock %}

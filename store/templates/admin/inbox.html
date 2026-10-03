@@ -1,0 +1,19 @@
+{% extends 'admin/base.html' %}
+{% block title %}Messages{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Messages</h1><p class="muted">Texts between {{ carrier.name }} ({{ carrier.number }}) and customers. Replies sent to {{ carrier.number }} on a phone land here.</p></div></div>
+<div class="card"><div class="table-wrap"><table class="list inbox">
+  <tbody>
+  {% for r in rows %}
+    <tr class="tap {{ 'unread' if r.unread }}" onclick="location.href='{{ url_for('admin_line', number=r.number) }}#messages'">
+      <td class="who"><b>{{ r.name.strip() or r.number }}</b><span class="mono muted">{{ r.number }}</span></td>
+      <td class="last">{% if r.from_carrier %}<span class="muted">You: </span>{% endif %}{{ r.message[:120] or '(attachment)' }}</td>
+      <td class="r when">{% if r.unread %}<span class="badge ok">{{ r.unread }} new</span> {% endif %}<span class="muted">{{ r.at|ago }}</span></td>
+    </tr>
+  {% else %}
+    <tr><td class="muted">No conversations yet. Customers' replies to {{ carrier.number }} will show up here.</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div></div>
+<script>setTimeout(() => location.reload(), 20000);</script>
+{% endblock %}
