@@ -92,11 +92,12 @@ local PROP = {
     pliers = { model = 'prop_tool_pliers', bone = 57005, pos = vec3(0.12, 0.02, -0.02), rot = vec3(-90.0, 0.0, 0.0) },
     stick = { model = 'prop_tool_broom', bone = 57005, pos = vec3(0.1, 0.0, -0.05), rot = vec3(-70.0, 0.0, 0.0) },
     buttset = { model = 'opslabs_tool_buttset', bone = 57005, pos = vec3(0.12, 0.02, -0.02), rot = vec3(-90.0, 0.0, 0.0) },
+    drill = { model = 'hei_prop_heist_drill', bone = 57005, pos = vec3(0.14, 0.0, -0.03), rot = vec3(-90.0, 0.0, 0.0) },
     toner = { model = 'opslabs_tool_toner', bone = 57005, pos = vec3(0.1, 0.02, -0.02), rot = vec3(-90.0, 0.0, 0.0) },
 }
 -- hand props from opslabs-props fall back to a base-game one when it isn't streamed
-for _, k in ipairs({ 'buttset', 'toner' }) do
-    if not IsModelInCdimage(joaat(PROP[k].model)) then PROP[k].model = k == 'buttset' and 'prop_cs_hand_radio' or 'prop_cs_police_torch' end
+for _, k in ipairs({ 'buttset', 'toner', 'drill' }) do
+    if not IsModelInCdimage(joaat(PROP[k].model)) then PROP[k].model = k == 'buttset' and 'prop_cs_hand_radio' or k == 'drill' and 'prop_tool_pliers' or 'prop_cs_police_torch' end
 end
 
 local function work(label, ms, anim, prop)
@@ -537,6 +538,33 @@ local function testSocket()
 end
 
 ---------------------------------------------------------------------------
+-- cordless drill: drill the cable entry hole through an outside wall and fit the entry bushing
+---------------------------------------------------------------------------
+local function drill()
+    local ped = PlayerPedId()
+    local from = GetEntityCoords(ped) + vector3(0.0, 0.0, 0.2)
+    local h = math.rad(GetEntityHeading(ped))
+    local to = from + vector3(-math.sin(h), math.cos(h), 0.0) * 1.6
+    local _, hit, at, n = GetShapeTestResult(StartExpensiveSynchronousShapeTestLosProbe(from.x, from.y, from.z, to.x, to.y, to.z, 1 + 16, ped, 4))
+    if hit ~= 1 or math.abs(n.z) > 0.4 then return need('wall', 'face the wall where the cable goes in') end
+    if not work('Marking the spot and drilling a pilot hole', 2500, 'hands', 'drill') then return end
+    if not work('Drilling through the brickwork with the long masonry bit', 5000, 'hands', 'drill') then return end
+    if not lib.skillCheck({ 'easy', 'medium' }, { 'e' }) then return lib.notify({ type = 'error', description = 'The bit wandered and blew the brick out the other side — fill it and drill again' }) end
+    local head = vector3(at.x + n.x * 0.005, at.y + n.y * 0.005, at.z)
+    local heading = math.deg(math.atan(n.x, -n.y)) % 360             -- the bushing's front faces out of the wall
+    if lib.alertDialog({ header = 'Fit the entry bushing?', content = 'Push a brickwork entry bushing into the hole for the drop cable.', centered = true, cancel = true,
+        labels = { confirm = 'Fit it', cancel = 'Leave the hole' } }) ~= 'confirm' then
+        return lib.notify({ type = 'success', description = 'Hole drilled through the wall' })
+    end
+    if not work('Sealing the bushing into the hole', 2000, 'hands') then return end
+    local r = lib.callback.await('opslabs-towers:fixture:save', false, { model = 'opslabs_entry_bushing', x = head.x, y = head.y, z = head.z, heading = heading })
+    if r and r.ok then lib.notify({ type = 'success', description = 'Entry hole drilled and bushing fitted — run the drop cable through it' })
+    else lib.notify({ type = 'error', description = (r and r.error) or 'Could not fit the bushing' }) end
+end
+
+ToolDrill = drill                                          -- also straight from /towers → Tools
+
+---------------------------------------------------------------------------
 -- MEWP (cherry picker): set up in front of you, ride the basket up to 14 m
 ---------------------------------------------------------------------------
 local mewpActive = false
@@ -628,6 +656,7 @@ end
 -- menus
 ---------------------------------------------------------------------------
 local FIBRE = {
+    { 'Cordless drill', 'Drill the cable entry hole through an outside wall and fit the entry bushing', 'screwdriver-wrench', drill },
     { 'Fusion splicer', 'Fuse two fibres at a joint, CBT or CSP — shows the splice loss', 'bolt', splicer },
     { 'OTDR', 'Shoot the fibre beside you — finds breaks, open ends and the length', 'chart-line', otdr },
     { 'Visual fault locator (red light)', 'Breaks and open ends glow red for 30 s', 'lightbulb', vfl },
@@ -641,6 +670,7 @@ local FIBRE = {
     { 'Pole tester hammer & probe', 'Tap and probe a pole for rot before climbing', 'hammer', poleTest },
 }
 local COPPER_TOOLS = {
+    { 'Cordless drill', 'Drill the cable entry hole through an outside wall and fit the entry bushing', 'screwdriver-wrench', drill },
     { 'Lineman’s test set (butt set)', 'Clip on at a socket, DP, joint or cabinet — dial tone, line number, path to the exchange', 'phone', buttSet },
     { 'Tone generator & inductive probe', 'Put tone on a pair, then follow it — the toned cable warbles and glows', 'wave-square', toneTracer },
     { 'Copper line tester', 'Loop resistance, insulation, capacitance — finds how far away an open circuit is', 'chart-line', lineTester },
@@ -681,9 +711,9 @@ function ToolKitMenu()
     if PPE.insulated then worn[#worn + 1] = 'insulated tools' end
     lib.registerContext({ id = 'toolkit', title = 'Tool kit', options = {
         { title = 'Wearing: ' .. (#worn > 0 and table.concat(worn, ', ') or 'nothing'), icon = 'user-shield', readOnly = true },
-        { title = 'OPS Openline · fibre & telecom tools', description = 'Splicer, OTDR, red light, power meter, cleaners, gas detector, rods, harness, tester, pole hammer', icon = 'network-wired', iconColor = '#0a84ff', arrow = true,
+        { title = 'OPS Openline · fibre & telecom tools', description = 'Drill, splicer, OTDR, red light, power meter, cleaners, gas detector, rods, harness, tester, pole hammer', icon = 'network-wired', iconColor = '#0a84ff', arrow = true,
             onSelect = function() kitMenu('toolkit_fibre', 'Fibre & telecom tools', FIBRE, '#0a84ff') end },
-        { title = 'OPS Openline · copper phone line tools', description = 'Butt set, tone & probe, line tester, punch-down tool, UY crimpers, multimeter, NTE5 test socket', icon = 'phone', iconColor = '#bf5af2', arrow = true,
+        { title = 'OPS Openline · copper phone line tools', description = 'Drill, butt set, tone & probe, line tester, punch-down tool, UY crimpers, multimeter, NTE5 test socket', icon = 'phone', iconColor = '#bf5af2', arrow = true,
             onSelect = function() kitMenu('toolkit_copper', 'Copper phone line tools', COPPER_TOOLS, '#bf5af2') end },
         { title = 'San Andreas Power & Light · electrical tools', description = 'Insulated tools, voltage detector, gloves, arc PPE, earths, operating rod, thermal camera, spiking gun, sockets, MEWP', icon = 'bolt', iconColor = '#ffd60a', arrow = true,
             onSelect = function() kitMenu('toolkit_power', 'Electrical tools', POWER, '#ffd60a') end },

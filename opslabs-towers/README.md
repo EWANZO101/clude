@@ -87,6 +87,7 @@ Taking the uniform off puts your own clothes back.
 (nudge a piece up / down, left / right, in / out with the arrows — Shift for fine — and save). Stored in `uniform.json`.
 
 ## Tool kit — `/toolkit`, the van stores, or `/towers` → Tools
+**Cordless drill** (fibre and copper kits, and Tools → Cordless drill): face an outside wall — it drills the cable entry hole and fits the brickwork entry bushing for the drop cable.
 **OPS Openline fibre & telecom:** fusion splicer (splice loss at a joint / CBT / CSP), OTDR (shoots the fibre beside you — length,
 breaks, open ends), visual fault locator (breaks and open ends glow red for 30 s), optical power meter (dBm at the ONT),
 fibre strippers & Kevlar shears (prep → cleaner splice), one-click cleaner, manhole keys & gas detector, duct rods & draw grips
