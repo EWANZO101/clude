@@ -289,8 +289,8 @@ local function editDialog(t, kind)
     kind = t and t.type or kind
     local lim = kind == 'wifi' and Config.Wifi or Config.Cell
     local fields = {
-        { type = 'input', label = 'Name', default = t and t.name or (kind == 'wifi' and 'Building Wi-Fi' or 'New Tower'), required = true, max = 60 },
-        { type = 'number', label = ('Range (metres, %d-%d)'):format(lim.MinRange, lim.MaxRange), default = t and t.range or lim.DefaultRange, min = lim.MinRange, max = lim.MaxRange, required = true },
+        { type = 'input', label = 'Name', icon = 'tag', default = t and t.name or (kind == 'wifi' and 'Building Wi-Fi' or 'New Tower'), required = true, max = 60 },
+        { type = 'number', label = 'Range (metres)', icon = 'bullseye', description = ('%d – %d m'):format(lim.MinRange, lim.MaxRange), default = t and t.range or lim.DefaultRange, min = lim.MinRange, max = lim.MaxRange, required = true },
     }
     local function propOptions(list, fallback)
         local options, current = { { value = '', label = 'No prop' } }, ''
@@ -303,16 +303,16 @@ local function editDialog(t, kind)
     if kind == 'wifi' then
         local pw = t and t.secured and lib.callback.await('opslabs-towers:password', false, t.id) or ''
         local options, current = propOptions(Config.Wifi.Props, Config.Wifi.Prop)
-        fields[#fields + 1] = { type = 'input', label = 'Network name (SSID)', default = t and t.ssid or '', max = 40 }
-        fields[#fields + 1] = { type = 'input', label = ('Password (empty = open network, min %d)'):format(Config.Wifi.PasswordMin or 4), default = pw, password = true, max = 64 }
-        fields[#fields + 1] = { type = 'input', label = 'Only these jobs (comma separated, empty = everyone)', default = t and t.jobs or '', max = 120 }
-        fields[#fields + 1] = { type = 'select', label = 'Router prop', options = options, default = current }
+        fields[#fields + 1] = { type = 'input', label = 'Network name (SSID)', icon = 'wifi', default = t and t.ssid or '', max = 40 }
+        fields[#fields + 1] = { type = 'input', label = 'Password', icon = 'lock', description = ('Leave empty for an open network · at least %d characters'):format(Config.Wifi.PasswordMin or 4), default = pw, password = true, max = 64 }
+        fields[#fields + 1] = { type = 'input', label = 'Restrict to jobs', icon = 'briefcase', description = 'Comma separated, e.g. police,ambulance · empty = everyone', default = t and t.jobs or '', max = 120 }
+        fields[#fields + 1] = { type = 'select', label = 'Router / AP model', icon = 'cube', options = options, default = current, searchable = true }
     else
         local options, current = propOptions(Config.Cell.Props, Config.Cell.Prop)
         options[1].label = 'No prop (invisible tower)'
-        fields[#fields + 1] = { type = 'select', label = 'Prop', options = options, default = current }
+        fields[#fields + 1] = { type = 'select', label = 'Mast / dish model', icon = 'cube', options = options, default = current }
     end
-    fields[#fields + 1] = { type = 'checkbox', label = 'Online', checked = not t or t.active }
+    fields[#fields + 1] = { type = 'checkbox', label = 'Online (broadcasting)', checked = not t or t.active }
     local v = lib.inputDialog(t and ('Edit ' .. t.name) or (kind == 'wifi' and 'New Wi-Fi access point' or 'New cell tower'), fields)
     if not v then return nil end
     local data = { id = t and t.id, type = kind, name = v[1], range = v[2] }
@@ -335,39 +335,70 @@ local function freshTower(t)
     return (t and towers[t.id]) or t
 end
 
+local GREEN, BLUE, ORANGE, RED, GREY = '#30d158', '#0a84ff', '#ff9f0a', '#ff453a', '#8e8e93'
+
+local function propLabel(t)
+    if not t.prop then return 'None' end
+    for _, p in ipairs((t.type == 'wifi' and Config.Wifi.Props or Config.Cell.Props) or {}) do
+        if p.model == t.model then return p.label end
+    end
+    return t.model or 'Default'
+end
+
+local function distText(d)
+    return d >= 1000 and ('%.1f km'):format(d / 1000) or ('%d m'):format(math.floor(d))
+end
+
 TowerMenu = function(t)
     t = freshTower(t)
     if not t then return NearbyMenu() end
-    local meta = t.type == 'wifi'
-        and ('SSID: %s%s%s'):format(t.ssid or '', t.secured and ' · password protected' or ' · open', t.jobs and (' · jobs: ' .. t.jobs) or '')
-        or ('Range %dm%s'):format(t.range, t.prop and ' · prop shown' or '')
+    local wifi = t.type == 'wifi'
+    local d = #(GetEntityCoords(PlayerPedId()) - vector3(t.x, t.y, t.z))
+    local meta = {
+        { label = 'Status', value = t.active and 'Online' or 'Offline (outage)' },
+        { label = 'Range', value = t.range .. ' m' },
+        { label = 'Distance', value = distText(d) },
+        { label = 'Prop', value = propLabel(t) },
+    }
+    if wifi then
+        table.insert(meta, 2, { label = 'SSID', value = (t.ssid and t.ssid ~= '') and t.ssid or t.name })
+        table.insert(meta, 3, { label = 'Security', value = t.secured and 'WPA2 · password' or 'Open' })
+        if t.jobs and t.jobs ~= '' then table.insert(meta, 4, { label = 'Jobs', value = t.jobs }) end
+    end
+    meta[#meta + 1] = { label = 'Position', value = ('%.1f, %.1f, %.1f'):format(t.x, t.y, t.z) }
     lib.registerContext({
-        id = 'towers_one', title = ('%s · %s'):format(t.type == 'wifi' and 'Wi-Fi' or 'Tower', t.name), menu = 'towers_nearby',
+        id = 'towers_one', title = (wifi and 'Wi-Fi · ' or 'Cell tower · ') .. t.name, menu = 'towers_nearby',
         onBack = function() NearbyMenu() end,
         options = {
-            { title = ('#%d · %s'):format(t.id, t.active and 'Online' or 'OFFLINE'), description = meta, icon = t.type == 'wifi' and 'wifi' or 'tower-cell', iconColor = t.active and '#30d158' or '#ff5a5f', readOnly = true },
-            { title = 'Teleport here', icon = 'location-arrow', onSelect = function()
-                SetEntityCoords(PlayerPedId(), t.x, t.y, t.z + 0.2, false, false, false, false)
-                TowerMenu(t)
+            { title = t.active and 'Online' or 'Offline', description = ('#%d · %s · %d m range'):format(t.id, wifi and ((t.ssid and t.ssid ~= '') and t.ssid or 'Wi-Fi') or 'Cell site', t.range),
+              icon = wifi and 'wifi' or 'tower-cell', iconColor = t.active and GREEN or RED, metadata = meta, readOnly = true },
+            { title = 'Edit details', description = wifi and 'Name, range, SSID, password, jobs, prop' or 'Name, range, prop', icon = 'pen-to-square', iconColor = BLUE, onSelect = function()
+                TowerMenu(editDialog(t) or t)
             end },
-            { title = t.active and 'Take offline (outage)' or 'Bring online', icon = 'power-off', iconColor = t.active and '#ff9f0a' or '#30d158', onSelect = function()
+            { title = t.active and 'Take offline' or 'Bring online', description = t.active and 'Simulate an outage — phones here lose this signal' or 'Restore the signal',
+              icon = 'power-off', iconColor = t.active and ORANGE or GREEN, onSelect = function()
                 TowerMenu(save({ id = t.id, active = not t.active }) or t)
             end },
-            { title = 'Edit', icon = 'pen', onSelect = function() TowerMenu(editDialog(t) or t) end },
-            { title = 'Move (aim & place)', description = 'A preview follows where you look · scroll to rotate · arrows for height', icon = 'up-down-left-right', iconColor = '#0a84ff', onSelect = function()
-                local model = t.prop and (t.model or (t.type == 'wifi' and Config.Wifi.Prop or Config.Cell.Prop)) or nil
+            { title = 'Move · aim & place', description = 'Preview follows your aim · scroll rotates · arrows set height', icon = 'up-down-left-right', iconColor = BLUE, onSelect = function()
+                local model = t.prop and (t.model or (wifi and Config.Wifi.Prop or Config.Cell.Prop)) or nil
                 local spot = PlacementMode(t.type, model, t.range, t.heading)
-                if spot then
-                    TowerMenu(save({ id = t.id, x = spot.x, y = spot.y, z = spot.z, heading = spot.heading, exact = true }) or t)
-                else
-                    TowerMenu(t)
-                end
+                if spot then TowerMenu(save({ id = t.id, x = spot.x, y = spot.y, z = spot.z, heading = spot.heading, exact = true }) or t)
+                else TowerMenu(t) end
             end },
             { title = 'Move to my feet', icon = 'person-walking', onSelect = function()
                 local c = GetEntityCoords(PlayerPedId())
                 TowerMenu(save({ id = t.id, x = c.x, y = c.y, z = c.z, heading = GetEntityHeading(PlayerPedId()), exact = false }) or t)
             end },
-            { title = 'Delete', icon = 'trash', iconColor = '#ff5a5f', onSelect = function()
+            { title = 'Set GPS waypoint', icon = 'map-location-dot', onSelect = function()
+                SetNewWaypoint(t.x, t.y)
+                lib.notify({ type = 'inform', description = 'Waypoint set to ' .. t.name })
+                TowerMenu(t)
+            end },
+            { title = 'Teleport here', icon = 'location-arrow', onSelect = function()
+                SetEntityCoords(PlayerPedId(), t.x, t.y, t.z + 0.2, false, false, false, false)
+                TowerMenu(t)
+            end },
+            { title = 'Delete', description = 'Removes it for good', icon = 'trash', iconColor = RED, onSelect = function()
                 if lib.alertDialog({ header = 'Delete ' .. t.name .. '?', content = 'Phones around it will lose this signal.', centered = true, cancel = true }) == 'confirm' then
                     if lib.callback.await('opslabs-towers:delete', false, t.id) then
                         lib.notify({ type = 'success', description = t.name .. ' deleted' })
@@ -382,24 +413,46 @@ TowerMenu = function(t)
     lib.showContext('towers_one')
 end
 
+local listFilter = 'all'
+local FILTERS = { all = 'All', cell = 'Cell towers', wifi = 'Wi-Fi', offline = 'Offline' }
+local FILTER_NEXT = { all = 'cell', cell = 'wifi', wifi = 'offline', offline = 'all' }
+
 NearbyMenu = function()
     local pos = GetEntityCoords(PlayerPedId())
-    local list = {}
-    for _, t in pairs(towers) do list[#list + 1] = { t = t, d = #(pos - vector3(t.x, t.y, t.z)) } end
+    local list, total, off = {}, 0, 0
+    for _, t in pairs(towers) do
+        total = total + 1
+        if not t.active then off = off + 1 end
+        local keep = listFilter == 'all' or (listFilter == 'offline' and not t.active) or t.type == listFilter
+        if keep then list[#list + 1] = { t = t, d = #(pos - vector3(t.x, t.y, t.z)) } end
+    end
     table.sort(list, function(a, b) return a.d < b.d end)
-    local options = {}
+    local options = {
+        { title = ('Showing: %s'):format(FILTERS[listFilter]), description = ('%d of %d · %d offline · click to change'):format(#list, total, off),
+          icon = 'filter', iconColor = BLUE, onSelect = function() listFilter = FILTER_NEXT[listFilter] NearbyMenu() end },
+    }
     for i = 1, math.min(#list, 40) do
         local t, d = list[i].t, list[i].d
+        local wifi = t.type == 'wifi'
+        local inside = d <= t.range
         options[#options + 1] = {
-            title = t.name .. (t.active and '' or ' (offline)'),
-            description = ('%s · %dm away · range %dm'):format(t.type == 'wifi' and ('Wi-Fi ' .. (t.ssid or '') .. (t.secured and ' 🔒' or '')) or 'Cell tower', math.floor(d), t.range),
-            icon = t.type == 'wifi' and 'wifi' or 'tower-cell', iconColor = not t.active and '#ff5a5f' or t.type == 'wifi' and '#30d158' or '#0a84ff',
+            title = t.name,
+            description = ('%s · %s away%s'):format(wifi and ('Wi-Fi' .. (t.secured and ' · locked' or ' · open')) or 'Cell tower', distText(d), t.active and '' or ' · OFFLINE'),
+            icon = wifi and 'wifi' or 'tower-cell', iconColor = not t.active and RED or wifi and GREEN or BLUE,
+            progress = t.active and math.max(4, math.floor((1 - math.min(1, d / t.range)) * 100)) or nil,
+            colorScheme = inside and 'green' or 'gray',
+            metadata = {
+                { label = 'Status', value = t.active and 'Online' or 'Offline' },
+                { label = 'Range', value = t.range .. ' m' },
+                { label = 'You are', value = inside and 'inside its coverage' or 'outside its coverage' },
+                wifi and { label = 'SSID', value = (t.ssid and t.ssid ~= '') and t.ssid or t.name } or { label = 'Prop', value = propLabel(t) },
+            },
             arrow = true,
             onSelect = function() TowerMenu(t) end,
         }
     end
-    if #options == 0 then options[1] = { title = 'No towers yet', readOnly = true } end
-    lib.registerContext({ id = 'towers_nearby', title = 'Nearby towers', menu = 'towers_main', onBack = function() MainMenu() end, options = options })
+    if #list == 0 then options[#options + 1] = { title = total == 0 and 'No towers yet — place one from the main menu' or 'Nothing matches this filter', icon = 'circle-info', readOnly = true } end
+    lib.registerContext({ id = 'towers_nearby', title = 'Towers & access points', menu = 'towers_main', onBack = function() MainMenu() end, options = options })
     lib.showContext('towers_nearby')
 end
 
@@ -423,7 +476,7 @@ local function pickTowers(action, label)
     table.sort(list, function(a, b) return a.d < b.d end)
     local options = {}
     for _, e in ipairs(list) do
-        options[#options + 1] = { value = tostring(e.t.id), label = ('%s · %s · %dm away%s'):format(e.t.name, e.t.type == 'wifi' and 'Wi-Fi' or 'cell', math.floor(e.d), e.t.active and '' or ' (offline)') }
+        options[#options + 1] = { value = tostring(e.t.id), label = ('%s — %s, %s away%s'):format(e.t.name, e.t.type == 'wifi' and 'Wi-Fi' or 'cell', distText(e.d), e.t.active and '' or ' (offline)') }
     end
     if #options == 0 then return lib.notify({ type = 'inform', description = 'No towers' }) end
     local v = lib.inputDialog(label .. ' towers', { { type = 'multi-select', label = 'Towers (nearest first)', options = options, searchable = true, required = true } })
@@ -442,13 +495,14 @@ BulkMenuOpen = function()
     lib.registerContext({
         id = 'towers_bulk', title = 'Bulk actions', menu = 'towers_main', onBack = function() MainMenu() end,
         options = {
-            { title = 'Choose towers to delete…', description = 'Tick several from a list', icon = 'list-check', onSelect = run(function() pickTowers('delete', 'Delete') end) },
-            { title = 'Choose towers to take offline…', icon = 'power-off', onSelect = run(function() pickTowers('offline', 'Took offline') end) },
-            { title = 'Choose towers to bring online…', icon = 'bolt', onSelect = run(function() pickTowers('online', 'Brought online') end) },
-            { title = ('Delete all offline towers (%d)'):format(offline), icon = 'trash', iconColor = '#ff5a5f', disabled = offline == 0, onSelect = run(function() confirmBulk('Delete all offline towers', { all = true, offline = true }, 'delete', 'Deleted') end) },
-            { title = ('Delete all Wi-Fi access points (%d)'):format(wifis), icon = 'wifi', iconColor = '#ff5a5f', disabled = wifis == 0, onSelect = run(function() confirmBulk('Delete all Wi-Fi access points', { all = true, type = 'wifi' }, 'delete', 'Deleted') end) },
-            { title = ('Delete all cell towers (%d)'):format(cells), icon = 'tower-cell', iconColor = '#ff5a5f', disabled = cells == 0, onSelect = run(function() confirmBulk('Delete all cell towers', { all = true, type = 'cell' }, 'delete', 'Deleted') end) },
-            { title = ('Delete EVERYTHING (%d)'):format(cells + wifis), icon = 'skull', iconColor = '#ff5a5f', disabled = cells + wifis == 0, onSelect = run(function() confirmBulk('Delete every tower and Wi-Fi', { all = true }, 'delete', 'Deleted') end) },
+            { title = ('%d cell · %d Wi-Fi · %d offline'):format(cells, wifis, offline), description = 'Pick towers from a list, or act on a whole group', icon = 'layer-group', readOnly = true },
+            { title = 'Take towers offline…', description = 'Tick towers from a list', icon = 'power-off', iconColor = ORANGE, onSelect = run(function() pickTowers('offline', 'Took offline') end) },
+            { title = 'Bring towers online…', description = 'Tick towers from a list', icon = 'bolt', iconColor = GREEN, onSelect = run(function() pickTowers('online', 'Brought online') end) },
+            { title = 'Delete towers…', description = 'Tick towers from a list', icon = 'list-check', iconColor = RED, onSelect = run(function() pickTowers('delete', 'Delete') end) },
+            { title = ('Delete all offline (%d)'):format(offline), icon = 'trash', iconColor = RED, disabled = offline == 0, onSelect = run(function() confirmBulk('Delete all offline towers', { all = true, offline = true }, 'delete', 'Deleted') end) },
+            { title = ('Delete all Wi-Fi (%d)'):format(wifis), icon = 'wifi', iconColor = RED, disabled = wifis == 0, onSelect = run(function() confirmBulk('Delete all Wi-Fi access points', { all = true, type = 'wifi' }, 'delete', 'Deleted') end) },
+            { title = ('Delete all cell towers (%d)'):format(cells), icon = 'tower-cell', iconColor = RED, disabled = cells == 0, onSelect = run(function() confirmBulk('Delete all cell towers', { all = true, type = 'cell' }, 'delete', 'Deleted') end) },
+            { title = ('Delete everything (%d)'):format(cells + wifis), description = 'Every tower and access point', icon = 'triangle-exclamation', iconColor = RED, disabled = cells + wifis == 0, onSelect = run(function() confirmBulk('Delete every tower and Wi-Fi', { all = true }, 'delete', 'Deleted') end) },
         },
     })
     lib.showContext('towers_bulk')
@@ -457,26 +511,40 @@ BulkMenu = BulkMenuOpen
 
 MainMenu = function()
     local here = lib.callback.await('opslabs-towers:here', false) or { cell = 0 }
-    local cells, wifis = 0, 0
-    for _, t in pairs(towers) do if t.type == 'wifi' then wifis = wifis + 1 else cells = cells + 1 end end
+    local cells, wifis, off = 0, 0, 0
+    for _, t in pairs(towers) do
+        if t.type == 'wifi' then wifis = wifis + 1 else cells = cells + 1 end
+        if not t.active then off = off + 1 end
+    end
+    local bars = here.cell or 0
     lib.registerContext({
-        id = 'towers_main', title = 'OPS Mobile network',
+        id = 'towers_main', title = 'OPS Mobile · Network',
         options = {
-            { title = ('Signal here: %d/4%s'):format(here.cell, here.tower and (' via ' .. here.tower) or ''), description = here.wifi and ('Wi-Fi: ' .. here.wifi.ssid) or 'No Wi-Fi here', icon = 'signal', readOnly = true },
-            { title = 'Place cell tower', description = 'Set it up, then aim where it goes (default ' .. Config.Cell.DefaultRange .. 'm range)', icon = 'tower-cell', iconColor = '#0a84ff', onSelect = function()
+            { title = bars > 0 and ('Signal here · %d/4 bars · %s'):format(bars, here.net or 'LTE') or 'No signal here',
+              description = here.tower and ('Served by ' .. here.tower) or 'Only emergency calls work here',
+              icon = 'signal', iconColor = bars >= 3 and GREEN or bars >= 1 and ORANGE or RED,
+              progress = math.max(3, bars * 25), colorScheme = bars >= 3 and 'green' or bars >= 1 and 'yellow' or 'red',
+              metadata = {
+                  { label = 'Cell', value = bars > 0 and (('%d/4 · %s'):format(bars, here.net or 'LTE')) or 'none' },
+                  { label = 'Tower', value = here.tower or '—' },
+                  { label = 'Wi-Fi', value = here.wifi and (here.wifi.ssid .. (here.wifi.secured and ' (locked)' or '')) or 'none in range' },
+                  { label = 'Enforced', value = Config.Enforce and 'yes' or 'no (everyone has full signal)' },
+              }, readOnly = true },
+            { title = 'Place a cell tower', description = ('Set it up, then aim where it goes · %d m default range'):format(Config.Cell.DefaultRange), icon = 'tower-cell', iconColor = BLUE, onSelect = function()
                 local t = editDialog(nil, 'cell')
                 if t then Wait(250) return TowerMenu(t) end
                 MainMenu()
             end },
-            { title = 'Place Wi-Fi access point', description = 'Set it up, then aim at a desk or shelf (default ' .. Config.Wifi.DefaultRange .. 'm) · optional password', icon = 'wifi', iconColor = '#30d158', onSelect = function()
+            { title = 'Place a Wi-Fi access point', description = ('Aim at a desk, shelf or ceiling · %d m default · optional password'):format(Config.Wifi.DefaultRange), icon = 'wifi', iconColor = GREEN, onSelect = function()
                 local t = editDialog(nil, 'wifi')
                 if t then Wait(250) return TowerMenu(t) end
                 MainMenu()
             end },
-            { title = ('Nearby towers (%d cell · %d Wi-Fi)'):format(cells, wifis), icon = 'list', arrow = true, onSelect = function() NearbyMenu() end },
-            { title = 'Bulk actions', description = 'Delete or switch off many towers at once', icon = 'layer-group', arrow = true, onSelect = function() BulkMenuOpen() end },
-            { title = 'CAT6 cabling', description = 'Cable boxes, pulling cable, trunking and terminating (also /' .. Config.Cabling.Command .. ')', icon = 'ethernet', arrow = true, onSelect = function() if OpenCableMenu then OpenCableMenu() end end },
-            { title = overlay and 'Hide coverage overlay' or 'Show coverage overlay', description = 'Range circles on the map + markers', icon = 'eye', onSelect = function()
+            { title = 'Towers & access points', description = ('%d cell · %d Wi-Fi%s'):format(cells, wifis, off > 0 and (' · %d offline'):format(off) or ''), icon = 'list-ul', arrow = true, onSelect = function() NearbyMenu() end },
+            { title = 'Bulk actions', description = 'Switch off or delete many at once', icon = 'layer-group', arrow = true, onSelect = function() BulkMenuOpen() end },
+            { title = 'Cabling & equipment', description = ('CAT6, fibre, trunking, poles, ladders, ONTs · also /%s'):format(Config.Cabling.Command), icon = 'ethernet', arrow = true, onSelect = function() if OpenCableMenu then OpenCableMenu() end end },
+            { title = 'Coverage overlay', description = overlay and 'On — range circles on the map and markers in the world' or 'Off — show range circles on the map',
+              icon = overlay and 'eye' or 'eye-slash', iconColor = overlay and GREEN or GREY, onSelect = function()
                 overlay = not overlay
                 RefreshOverlay()
                 MainMenu()
