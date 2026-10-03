@@ -208,6 +208,92 @@ local function powerMeter()
     })
 end
 
+--- ONT diagnostics: read the five lights (POWER · PON · LOS · LAN · INTERNET), say what's wrong and how to fix it
+local LED = { on = { 'On', '#30d158' }, off = { 'Off', '#8e8e93' }, blink = { 'Flashing', '#ff9f0a' }, red = { 'Red', '#ff453a' }, traffic = { 'Flickering (traffic)', '#30d158' } }
+
+local function ontDiagnose(f)
+    local o = OntReading and OntReading(f.id) or {}
+    local failed = o.hardware == 'failed'
+    local fibre, spliced = nil, false
+    for _, r in pairs(CablingRuns and CablingRuns() or {}) do
+        if r.kind == 'fibre' and (r.start_fixture == f.id or r.end_fixture == f.id) then
+            fibre = r
+            if (r.start_fixture == f.id and r.start_term) or (r.end_fixture == f.id and r.end_term) then spliced = true end
+        end
+    end
+    local leds = {
+        { 'POWER', failed and 'off' or 'on' },
+        { 'PON', o.pon or 'off' },
+        { 'LOS', o.los and 'red' or 'off' },
+        { 'LAN', o.lan or 'off' },
+        { 'INTERNET', o.internet or 'off' },
+    }
+    local title, steps, ok
+    if failed then
+        title = 'POWER off — the ONT has failed'
+        steps = { 'Check the ONT power supply is plugged in and switched on', 'If it still won't power up the ONT itself is dead', 'Swap the ONT (repair the fault with the repair key at the ONT) and re-provision it' }
+    elseif o.los then
+        if not fibre then
+            title = 'LOS — no fibre connected to this ONT'
+            steps = { 'Run fibre (yellow patch / drop) from the CSP or splice tray to the ONT', 'Splice it into the ONT', 'Test again — PON should flash, then go solid' }
+        elseif not spliced then
+            title = 'LOS — the fibre at the ONT isn't spliced'
+            steps = { ('Fibre #%d reaches the ONT but the end isn't finished'):format(fibre.id), 'Strip, clean, cleave and splice it into the ONT (Nearby cables → that fibre → Splice the end)', 'Test again' }
+        elseif o.lowLight then
+            title = 'LOS — light is too weak (below −28 dBm)'
+            steps = { 'Too much loss on the path: too many splitters / joints or a bad splice', 'Clean the connectors at the ONT and CSP (one-click cleaner)', 'Find the bad joint with the OTDR and re-splice it' }
+        else
+            title = 'LOS — no light reaching the ONT'
+            steps = { 'The fibre is broken or not spliced somewhere between the cabinet / OLT and here', 'Shine the red light (VFL) and walk the route — breaks and open ends glow', 'Check the joints with the OTDR, re-splice the break', 'At the exchange: is the OLT patched to a powered core router with its uplink up?' }
+        end
+    elseif o.pon == 'blink' then
+        title = 'PON flashing — registering with the OLT'
+        steps = { 'Light is arriving and the ONT is ranging with the OLT', 'Wait about 20 seconds — PON goes solid when it's registered' }
+    elseif o.service == 'none' or o.internet == 'off' and o.service ~= 'active' then
+        title = 'No service on this line'
+        steps = { 'The fibre is good (PON solid) but no broadband is provisioned', 'Open the ONT (Tools → Nearby equipment) → Internet service → pick a provider & plan' }
+    elseif o.service == 'suspended' or o.internet == 'red' then
+        title = 'INTERNET red — service suspended by the provider'
+        steps = { 'The line is fine; the provider has suspended the account', 'Resume it from the ONT's Internet service menu (or the provider's admin)' }
+    elseif o.internet == 'blink' then
+        title = 'INTERNET flashing — PPP login in progress'
+        steps = { 'Wait a few seconds for the login to finish' }
+    elseif o.lan == 'off' then
+        title = 'LAN off — no router plugged into the ONT'
+        steps = { 'Internet is up at the ONT but nothing is connected to its LAN port', 'Pull CAT6 from the ONT to the customer's router and terminate both ends (RJ45)', 'The LAN light comes on — it flickers once traffic flows' }
+        ok = 'Internet is live at the ONT'
+    else
+        title = 'All good — the line is healthy'
+        steps = { ('%s · %s · %d / %d Mbps'):format(o.provider or '?', o.plan or '?', o.down or 0, o.up or 0), o.lanName and ('Router on the LAN port: ' .. o.lanName) or 'Router connected' }
+        ok = true
+    end
+    local options = {}
+    for _, l in ipairs(leds) do
+        local st = LED[l[2]] or LED.off
+        options[#options + 1] = { title = ('%s · %s'):format(l[1], st[1]), icon = 'circle', iconColor = st[2], readOnly = true }
+    end
+    options[#options + 1] = { title = ('Light level %s'):format(o.rx and ('%.1f dBm'):format(o.rx) or '— (no light)'),
+        description = o.distance and ('%d m of fibre · %d joint(s) back to the OLT'):format(o.distance, o.joints or 0) or nil, icon = 'gauge', readOnly = true }
+    options[#options + 1] = { title = title, description = table.concat(steps, '  ·  '), icon = ok == true and 'circle-check' or 'stethoscope',
+        iconColor = ok == true and '#30d158' or ok and '#ff9f0a' or '#ff453a', onSelect = function()
+            local lines = {}
+            for i, st in ipairs(steps) do lines[#lines + 1] = ('%d. %s'):format(i, st) end
+            lib.alertDialog({ header = title, content = table.concat(lines, '  \n'), centered = true })
+            ontDiagnose(f)
+        end }
+    options[#options + 1] = { title = 'Test again', icon = 'rotate', onSelect = function() if work('Re-testing the line', 2500, 'tablet', 'tablet') then ontDiagnose(f) end end }
+    lib.registerContext({ id = 'ont_diag', title = 'ONT diagnostics · ' .. (o.serial or ('#' .. f.id)), options = options })
+    lib.showContext('ont_diag')
+end
+
+local function ontTester()
+    local id, f = nearestOntId(3.0)
+    if not id then return need('ONT', 'plug the tester into the ONT you are diagnosing') end
+    if not work('Plugging the diagnostic tester into the ONT', 3000, 'tablet', 'tablet') then return end
+    ontDiagnose(f)
+end
+OntDiagnostics = ontTester
+
 local function strippers()
     if not work('Stripping the jacket and cutting back the Kevlar', 4000, 'hands', 'pliers') then return end
     prepped = true
@@ -671,6 +757,7 @@ local FIBRE = {
     { 'Fusion splicer', 'Fuse two fibres at a joint, CBT or CSP — shows the splice loss', 'bolt', splicer },
     { 'OTDR', 'Shoot the fibre beside you — finds breaks, open ends and the length', 'chart-line', otdr },
     { 'Visual fault locator (red light)', 'Breaks and open ends glow red for 30 s', 'lightbulb', vfl },
+    { 'ONT diagnostic tester', 'Reads POWER · PON · LOS · LAN · INTERNET, says what\'s wrong and how to fix it', 'stethoscope', ontTester },
     { 'Optical power meter', 'Light level arriving at the ONT (dBm)', 'gauge', powerMeter },
     { 'Fibre strippers & Kevlar shears', 'Prep the fibre — your next splice is cleaner', 'scissors', strippers },
     { 'One-click fibre cleaner', 'Clean a CBT port, CSP or ONT connector', 'pen', cleaner },
@@ -722,7 +809,7 @@ function ToolKitMenu()
     if PPE.insulated then worn[#worn + 1] = 'insulated tools' end
     lib.registerContext({ id = 'toolkit', title = 'Tool kit', options = {
         { title = 'Wearing: ' .. (#worn > 0 and table.concat(worn, ', ') or 'nothing'), icon = 'user-shield', readOnly = true },
-        { title = 'OPS Openline · fibre & telecom tools', description = 'Drill, splicer, OTDR, red light, power meter, cleaners, gas detector, rods, harness, tester, pole hammer', icon = 'network-wired', iconColor = '#0a84ff', arrow = true,
+        { title = 'OPS Openline · fibre & telecom tools', description = 'ONT diagnostics, drill, splicer, OTDR, red light, power meter, cleaners, gas detector, rods, harness, tester, pole hammer', icon = 'network-wired', iconColor = '#0a84ff', arrow = true,
             onSelect = function() kitMenu('toolkit_fibre', 'Fibre & telecom tools', FIBRE, '#0a84ff') end },
         { title = 'OPS Openline · copper phone line tools', description = 'Drill, butt set, tone & probe, line tester, punch-down tool, UY crimpers, multimeter, NTE5 test socket', icon = 'phone', iconColor = '#bf5af2', arrow = true,
             onSelect = function() kitMenu('toolkit_copper', 'Copper phone line tools', COPPER_TOOLS, '#bf5af2') end },
