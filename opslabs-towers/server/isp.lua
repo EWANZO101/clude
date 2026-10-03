@@ -176,6 +176,9 @@ function IspGatewayOnline(towerId)
     return GatewayOnline[towerId] == true
 end
 
+--- is this gateway's WAN cabled to an ONT with internet right now (whatever RequireIspForGateways says)
+function IspGatewayLive(towerId) return GatewayOnline[towerId] == true end
+
 function IspFixtureRemoved(id)
     if Services[id] then
         Services[id] = nil
@@ -262,8 +265,8 @@ function IspList()
         stats = { total = #out, live = live, no_service = none, los = down } }
 end
 
-local POLE_H = { opslabs_pole_07m = 7.0, opslabs_pole_10m = 10.0, opslabs_pole_13m = 13.0, opslabs_house_pole = 1.63, opslabs_pole_metal = 9.0,
-    opslabs_power_pole_10m = 10.0, opslabs_power_pole_12m = 12.0 }
+local POLE_H = { opslabs_house_pole = 1.63 }
+for m, h in pairs(Config.Cabling.PoleHeights) do POLE_H[m] = h end
 local POLE_STATUS = { planned = true, building = true, maintenance = true }
 
 local function equipLabel(model)

@@ -5,8 +5,7 @@
 local CC = Config.Cabling
 local SET = {}
 for _, m in ipairs(CC.WorldPoles or {}) do SET[joaat(m)] = m end
-local PLACED_H = { opslabs_pole_07m = 7.0, opslabs_pole_10m = 10.0, opslabs_pole_13m = 13.0, opslabs_pole_metal = 9.0,
-    opslabs_power_pole_10m = 10.0, opslabs_power_pole_12m = 12.0 }
+local PLACED_H = Config.Cabling.PoleHeights
 local world, dims = {}, {}
 
 -- map poles near the player, refreshed every 2 s (cheap: one pass over the object pool)
@@ -65,6 +64,6 @@ function PoleRadius(p, zAbove)
     if p.house then return 0.026 end
     if p.world then return 0.13 end
     local rb, rt = 0.115 + p.H * 0.002, 0.075
-    if p.model == 'opslabs_pole_metal' then rb, rt = 0.11, 0.065 elseif p.model and p.model:find('^opslabs_power_pole_') then rb, rt = 0.14, 0.09 end
+    if p.model == 'opslabs_pole_metal' then rb, rt = 0.11, 0.065 elseif p.model == 'opslabs_pole_roof' then rb, rt = 0.09, 0.065 elseif p.model and p.model:find('^opslabs_power_pole_') then rb, rt = 0.14, 0.09 end
     return rb + (rt - rb) * math.max(0.0, math.min(1.0, (zAbove or 0) / p.H))
 end

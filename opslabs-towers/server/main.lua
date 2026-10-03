@@ -16,7 +16,7 @@ local ready = false
 local function bool(v) return v == true or v == 1 or v == '1' end
 
 local function normalize(t)
-    t.active, t.prop, t.exact = bool(t.active), bool(t.prop), bool(t.exact)
+    t.active, t.prop, t.exact, t.fibre_only = bool(t.active), bool(t.prop), bool(t.exact), bool(t.fibre_only)
     t.x, t.y, t.z, t.heading = tonumber(t.x), tonumber(t.y), tonumber(t.z), tonumber(t.heading) or 0.0
     t.range = tonumber(t.range_m)
     t.range_m = nil
@@ -63,6 +63,10 @@ MySQL.ready(function()
     end
     if MySQL.scalar.await("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'opslabs_towers' AND COLUMN_NAME = 'password'") == 0 then
         MySQL.query.await('ALTER TABLE `opslabs_towers` ADD COLUMN `password` VARCHAR(64) DEFAULT NULL AFTER `jobs`')
+    end
+    if MySQL.scalar.await("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'opslabs_towers' AND COLUMN_NAME = 'fibre_only'") == 0 then
+        -- 1 = the access point only broadcasts while it is cabled to a gateway with a live fibre line
+        MySQL.query.await('ALTER TABLE `opslabs_towers` ADD COLUMN `fibre_only` TINYINT(1) NOT NULL DEFAULT 0 AFTER `active`')
     end
     -- Wi-Fi networks each character has joined (remembered like a real phone)
     MySQL.query.await([[CREATE TABLE IF NOT EXISTS `opslabs_towers_wifi_known` (
@@ -115,17 +119,18 @@ function SaveTower(id, data, actor)
         end
     end
     if data.active ~= nil then t.active = bool(data.active) else t.active = base.active ~= false end
+    if data.fibre_only ~= nil then t.fibre_only = bool(data.fibre_only) else t.fibre_only = base.fibre_only == true end
     if t.name == '' then return nil, 'name is required' end
     if not t.x or not t.y then return nil, 'x and y are required' end
     if t.type == 'wifi' and (not t.ssid or t.ssid == '') then t.ssid = t.name:gsub('%s+', '-') end
-    if t.type == 'cell' then t.ssid, t.jobs, t.password = nil, nil, nil end
+    if t.type == 'cell' then t.ssid, t.jobs, t.password, t.fibre_only = nil, nil, nil, false end
     if t.jobs == '' then t.jobs = nil end
     if id then
-        MySQL.update.await('UPDATE opslabs_towers SET type=?, name=?, x=?, y=?, z=?, heading=?, range_m=?, ssid=?, jobs=?, password=?, prop=?, model=?, exact=?, active=?, notes=? WHERE id=?',
-            { t.type, t.name, t.x, t.y, t.z, t.heading, t.range, t.ssid, t.jobs, t.password, t.prop, t.model, t.exact, t.active, t.notes, id })
+        MySQL.update.await('UPDATE opslabs_towers SET type=?, name=?, x=?, y=?, z=?, heading=?, range_m=?, ssid=?, jobs=?, password=?, prop=?, model=?, exact=?, active=?, fibre_only=?, notes=? WHERE id=?',
+            { t.type, t.name, t.x, t.y, t.z, t.heading, t.range, t.ssid, t.jobs, t.password, t.prop, t.model, t.exact, t.active, t.fibre_only, t.notes, id })
     else
-        id = MySQL.insert.await('INSERT INTO opslabs_towers (type, name, x, y, z, heading, range_m, ssid, jobs, password, prop, model, exact, active, notes, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-            { t.type, t.name, t.x, t.y, t.z, t.heading, t.range, t.ssid, t.jobs, t.password, t.prop, t.model, t.exact, t.active, t.notes, actor or 'api' })
+        id = MySQL.insert.await('INSERT INTO opslabs_towers (type, name, x, y, z, heading, range_m, ssid, jobs, password, prop, model, exact, active, fibre_only, notes, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+            { t.type, t.name, t.x, t.y, t.z, t.heading, t.range, t.ssid, t.jobs, t.password, t.prop, t.model, t.exact, t.active, t.fibre_only, t.notes, actor or 'api' })
     end
     t.id = id
     Towers[id] = t
@@ -238,7 +243,8 @@ function ComputeCoverage(coords, src)
     local best, bestTower = 0, nil
     local wifi, nearby = nil, {}
     for _, t in pairs(Towers) do
-        if t.active and not (FaultEffects and FaultEffects.towers[t.id]) then
+        -- fibre-only access points stay silent until they're cabled to a gateway with a live fibre line
+        if t.active and not (FaultEffects and FaultEffects.towers[t.id]) and not (t.fibre_only and not (WifiOnFibre and WifiOnFibre(t.id))) then
             local dx, dy = coords.x - t.x, coords.y - t.y
             local d2 = math.sqrt(dx * dx + dy * dy)
             if t.type == 'cell' then

@@ -91,7 +91,13 @@ local PROP = {
     meter = { model = 'prop_cs_hand_radio', bone = 57005, pos = vec3(0.14, 0.03, -0.02), rot = vec3(-110.0, 0.0, 0.0) },
     pliers = { model = 'prop_tool_pliers', bone = 57005, pos = vec3(0.12, 0.02, -0.02), rot = vec3(-90.0, 0.0, 0.0) },
     stick = { model = 'prop_tool_broom', bone = 57005, pos = vec3(0.1, 0.0, -0.05), rot = vec3(-70.0, 0.0, 0.0) },
+    buttset = { model = 'opslabs_tool_buttset', bone = 57005, pos = vec3(0.12, 0.02, -0.02), rot = vec3(-90.0, 0.0, 0.0) },
+    toner = { model = 'opslabs_tool_toner', bone = 57005, pos = vec3(0.1, 0.02, -0.02), rot = vec3(-90.0, 0.0, 0.0) },
 }
+-- hand props from opslabs-props fall back to a base-game one when it isn't streamed
+for _, k in ipairs({ 'buttset', 'toner' }) do
+    if not IsModelInCdimage(joaat(PROP[k].model)) then PROP[k].model = k == 'buttset' and 'prop_cs_hand_radio' or 'prop_cs_police_torch' end
+end
 
 local function work(label, ms, anim, prop)
     return lib.progressBar({ duration = ms, label = label, canCancel = true, disable = { move = true, combat = true, car = true },
@@ -386,6 +392,151 @@ local function sockets()
 end
 
 ---------------------------------------------------------------------------
+-- OPS Openline copper phone line tools
+---------------------------------------------------------------------------
+local PL = Config.PhoneLine or {}
+local COPPER = {}
+for _, list in ipairs({ PL.Exchange, PL.PassThrough, PL.Sockets }) do for _, m in ipairs(list or {}) do COPPER[m] = true end end
+local SOCKETS = {}
+for _, m in ipairs(PL.Sockets or {}) do SOCKETS[m] = true end
+
+local function copperKit(maxDist) return nearestFixture(function(m) return COPPER[m] == true end, maxDist or 2.5) end
+
+local function trace(f)
+    local t = lib.callback.await('opslabs-towers:phoneline:trace', false, f.id)
+    if not t or t.error then lib.notify({ type = 'error', description = (t and t.error) or 'Line test failed' }) return nil end
+    return t
+end
+
+local function noLine(t)
+    if t.exchange then return ('**No dial tone** — the line reaches %s but the exchange has no power.'):format(t.exchangeLabel) end
+    if (t.open or 0) > 0 then
+        return ('**No dial tone** — open circuit about **%d m** away%s.'):format(t.open, t.openAt and (' (copper ends at the ' .. t.openAt .. ')') or '')
+    end
+    return '**No dial tone** — nothing is punched down on this terminal.'
+end
+
+local function buttSet()
+    local f = copperKit(2.5)
+    if not f then return need('socket, DP, joint, cabinet or MDF', 'clip on at the terminals you are testing') end
+    if not work('Clipping the butt set on the pair', 2500, 'hands', 'buttset') then return end
+    local t = trace(f)
+    if not t then return end
+    if not t.dialtone then return result('Lineman’s test set · ' .. t.label, { noLine(t), 'Trace it back with the tone tracer or the line tester.' }) end
+    if not work('Listening for dial tone… dialling the ring-back test', 3000, 'hands', 'buttset') then return end
+    PlaySoundFrontend(-1, 'Beep_Green', 'DLC_HEIST_HACKING_SNAKE_SOUNDS', true)
+    result('Lineman’s test set · ' .. t.label, {
+        '**Dial tone** — line working',
+        ('Line number **%s** (ring-back test answered)'):format(t.number),
+        ('Fed from %s · %d m of copper%s'):format(t.exchangeLabel, math.floor(t.metres + 0.5), #t.hops > 0 and (' via ' .. table.concat(t.hops, ' → ')) or ''),
+    })
+end
+
+local toneUntil = 0
+local function toneTracer()
+    local f = copperKit(2.5)
+    if not f then return need('socket, DP, joint or cabinet', 'clip the tone generator on at one end of the pair') end
+    if not work('Clipping the tone generator on the pair', 2000, 'hands', 'toner') then return end
+    local t = trace(f)
+    if not t then return end
+    local toned = {}
+    for _, id in ipairs(t.direct or {}) do toned[id] = true end
+    for _, id in ipairs(t.runs or {}) do toned[id] = true end
+    if not next(toned) then return lib.notify({ type = 'error', description = 'No copper punched down here — nothing to tone' }) end
+    toneUntil = GetGameTimer() + 90000
+    lib.notify({ description = 'Tone on for 90 s — walk the probe along the cables: the toned pair warbles and glows purple' })
+    CreateThread(function()
+        local nextBeep = 0
+        while GetGameTimer() < toneUntil do
+            local here = pos()
+            local best
+            for id in pairs(toned) do
+                local r = (CablingRuns and CablingRuns() or {})[id]
+                local pts = r and r.points or {}
+                for i = 1, #pts - 1 do
+                    local a, b = vector3(pts[i].x, pts[i].y, pts[i].z), vector3(pts[i + 1].x, pts[i + 1].y, pts[i + 1].z)
+                    local d = segDist(here, a, b)
+                    if d < 40.0 then DrawLine(a.x, a.y, a.z + 0.02, b.x, b.y, b.z + 0.02, 191, 90, 242, 200) end
+                    if d < (best or 2.0) then best = d end
+                end
+            end
+            if best and GetGameTimer() > nextBeep then
+                PlaySoundFrontend(-1, 'Beep_Red', 'DLC_HEIST_HACKING_SNAKE_SOUNDS', true)
+                nextBeep = GetGameTimer() + math.floor(150 + best * 400)
+            end
+            Wait(0)
+        end
+    end)
+end
+
+local function lineTester()
+    local f = copperKit(2.5)
+    if not f then return need('socket, DP, joint, cabinet or MDF', 'connect the tester to the pair') end
+    if not work('Running insulation, loop and capacitance tests', 6000, 'tablet', 'tablet') then return end
+    local t = trace(f)
+    if not t then return end
+    local seed = f.id .. ':' .. math.floor(GetCloudTimeAsInt() / 3600)
+    if t.exchange then
+        result('Copper line tester · ' .. t.label, {
+            t.dialtone and '**PASS**' or '**FAIL** — exchange battery missing',
+            ('Loop resistance **%.1f Ω** (%d m of 0.5 mm copper)'):format(t.loop or 0, math.floor(t.metres + 0.5)),
+            ('Insulation A–B / A–E / B–E: >%d MΩ'):format(500 + roll(seed, 400)),
+            ('Line voltage %s · capacitance %d nF'):format(t.dialtone and ('%.1f V DC'):format(49.5 + roll(seed, 15) / 10) or '0 V', math.floor(t.metres * 0.05 + 0.5) + 50),
+            ('Path: %s'):format(#t.hops > 0 and table.concat(t.hops, ' → ') .. ' → ' .. t.exchangeLabel or t.exchangeLabel),
+        })
+    else
+        result('Copper line tester · ' .. t.label, {
+            '**FAIL — open circuit**',
+            (t.open or 0) > 0 and ('Capacitance puts the break about **%d m** away%s.'):format(t.open, t.openAt and (' — after the ' .. t.openAt) or '') or 'No pair connected at this terminal.',
+            'Insulation >999 MΩ · Line voltage 0 V · No exchange battery.',
+        })
+    end
+end
+
+local function punchTool()
+    if not work('Laying out the Krone tool, sheath knife and strippers', 2000, 'hands', 'pliers') then return end
+    CopperPunchReady = true
+    lib.notify({ type = 'success', description = 'IDC punch-down tool in hand — your next copper termination seats first time' })
+end
+
+local function uyCrimper()
+    local f = nearestFixture(function(m) return COPPER[m] == true and not SOCKETS[m] end, 3.0)
+    if not f then return need('copper joint, DP, junction box or cabinet', 'stand at the joint') end
+    if not work('Cutting the pairs and dressing them into UY connectors', 4000, 'hands', 'pliers') then return end
+    if not lib.skillCheck({ 'easy', 'medium' }, { 'e' }) then return lib.notify({ type = 'error', description = 'A UY connector didn’t crimp fully — cut it out and use a new one' }) end
+    if not work('Crimping and sealing the joint (gel-filled)', 2500, 'hands', 'pliers') then return end
+    lib.notify({ type = 'success', description = 'Pairs jointed in gel-filled UY connectors — ' .. equipLabelFor(f.model) })
+end
+
+local function multimeter()
+    local f = copperKit(2.5)
+    if not f then return need('phone socket or terminals', 'put the probes on the pair') end
+    if not work('Measuring the line voltage', 2000, 'hands', 'meter') then return end
+    local t = trace(f)
+    if not t then return end
+    result('Multimeter · ' .. t.label, { t.dialtone and ('**%.1f V DC** across A–B (on hook)'):format(49.5 + roll(f.id, 15) / 10) or '**0.0 V** — no exchange battery on the pair',
+        t.dialtone and 'Exchange battery present (−50 V on the A-leg).' or 'Dead pair — check it back towards the exchange.' })
+end
+
+local function testSocket()
+    local f = nearestFixture(function(m) return m == 'opslabs_nte5c' end, 2.5)
+    if not f then return need('master socket (NTE5C)', 'stand at the master socket') end
+    if not work('Removing the faceplate and plugging into the test socket', 2500, 'hands') then return end
+    local t = trace(f)
+    if not t then return end
+    if not t.dialtone then return result('NTE5 test socket', { noLine(t), 'The fault is on the network side — not the customer’s wiring.' }) end
+    local bad = {}
+    for _, g in pairs(CablingFixtures()) do
+        if (g.model == 'opslabs_copper_linejack' or g.model == 'opslabs_vdsl_faceplate') and #(vector3(g.x, g.y, g.z) - vector3(f.x, f.y, f.z)) < 30.0 then
+            local e = trace(g)
+            if e and not e.dialtone then bad[#bad + 1] = equipLabelFor(g.model) .. ' #' .. g.id end
+        end
+    end
+    result('NTE5 test socket', { '**Dial tone at the test socket** — the line is good to the house',
+        #bad > 0 and ('House wiring fault — no dial tone at: %s. Re-punch the extension wiring.'):format(table.concat(bad, ', ')) or 'Extension sockets nearby all have dial tone.' })
+end
+
+---------------------------------------------------------------------------
 -- MEWP (cherry picker): set up in front of you, ride the basket up to 14 m
 ---------------------------------------------------------------------------
 local mewpActive = false
@@ -489,6 +640,17 @@ local FIBRE = {
     { 'Handheld network tester', 'Speed test and login check at the ONT', 'tablet-screen-button', tester },
     { 'Pole tester hammer & probe', 'Tap and probe a pole for rot before climbing', 'hammer', poleTest },
 }
+local COPPER_TOOLS = {
+    { 'Lineman’s test set (butt set)', 'Clip on at a socket, DP, joint or cabinet — dial tone, line number, path to the exchange', 'phone', buttSet },
+    { 'Tone generator & inductive probe', 'Put tone on a pair, then follow it — the toned cable warbles and glows', 'wave-square', toneTracer },
+    { 'Copper line tester', 'Loop resistance, insulation, capacitance — finds how far away an open circuit is', 'chart-line', lineTester },
+    { 'IDC punch-down tool & strippers', 'Krone tool, sheath knife, strippers — your next copper termination seats first time', 'screwdriver', punchTool },
+    { 'UY crimpers & gel connectors', 'Joint pairs at a DP, joint, junction box or cabinet', 'compress', uyCrimper },
+    { 'Multimeter', 'Line voltage across the pair (exchange battery)', 'gauge', multimeter },
+    { 'NTE5 test socket check', 'At the master socket: is the fault the network or the house wiring?', 'house-signal', testSocket },
+    { 'Combat harness & pole straps', 'Put on / take off fall-arrest gear for climbing', 'user-shield', harness },
+    { 'Pole tester hammer & probe', 'Tap and probe a pole for rot before climbing', 'hammer', poleTest },
+}
 local POWER = {
     { 'Insulated hand tools (1000 V)', 'VDE screwdrivers, pliers & cutters', 'screwdriver', ppeToggle('insulated', 'Insulated tools in hand', 'Insulated tools away') },
     { 'Voltage detector & phasing stick', 'Is the pole / line live or dead?', 'wave-square', voltage },
@@ -521,6 +683,8 @@ function ToolKitMenu()
         { title = 'Wearing: ' .. (#worn > 0 and table.concat(worn, ', ') or 'nothing'), icon = 'user-shield', readOnly = true },
         { title = 'OPS Openline · fibre & telecom tools', description = 'Splicer, OTDR, red light, power meter, cleaners, gas detector, rods, harness, tester, pole hammer', icon = 'network-wired', iconColor = '#0a84ff', arrow = true,
             onSelect = function() kitMenu('toolkit_fibre', 'Fibre & telecom tools', FIBRE, '#0a84ff') end },
+        { title = 'OPS Openline · copper phone line tools', description = 'Butt set, tone & probe, line tester, punch-down tool, UY crimpers, multimeter, NTE5 test socket', icon = 'phone', iconColor = '#bf5af2', arrow = true,
+            onSelect = function() kitMenu('toolkit_copper', 'Copper phone line tools', COPPER_TOOLS, '#bf5af2') end },
         { title = 'San Andreas Power & Light · electrical tools', description = 'Insulated tools, voltage detector, gloves, arc PPE, earths, operating rod, thermal camera, spiking gun, sockets, MEWP', icon = 'bolt', iconColor = '#ffd60a', arrow = true,
             onSelect = function() kitMenu('toolkit_power', 'Electrical tools', POWER, '#ffd60a') end },
     } })

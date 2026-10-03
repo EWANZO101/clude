@@ -3,7 +3,7 @@
 -- removes what's next to you, X climbs down.
 
 local CC = Config.Cabling
-local POLES = { opslabs_pole_07m = 7.0, opslabs_pole_10m = 10.0, opslabs_pole_13m = 13.0, opslabs_pole_metal = 9.0, opslabs_power_pole_10m = 10.0, opslabs_power_pole_12m = 12.0 }
+local POLES = Config.Cabling.PoleHeights
 local climbing = false
 
 

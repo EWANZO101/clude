@@ -155,25 +155,28 @@ function SpawnOpsVan()
     SetVehicleHasBeenOwnedByPlayer(veh, true)
     Entity(veh).state:set('opsvan', true, true)
     Entity(veh).state:set('beacons', false, true)
+    if (V.Spotlight or {}).Fitted ~= false then Entity(veh).state:set('spot', { on = false, s = 0.0, r = 0.0, p = 0.0, t = 0.0 }, true) end
     SetModelAsNoLongerNeeded(h)
     myVan = veh
-    lib.notify({ type = 'success', description = ('OPS van ready · %s for the beacons · [E] at the back for the stores'):format(V.BeaconKey or 'K') })
+    lib.notify({ type = 'success', description = ('OPS van ready · %s for the beacons · %s for the roof spotlight · [E] at the back for the stores'):format(V.BeaconKey or 'K', (V.Spotlight or {}).Key or 'L') })
 end
 RegisterCommand(V.Command or 'opsvan', function() SpawnOpsVan() end, false)
 
 --- the van's stores (at the back doors)
-local function storesMenu()
+local function storesMenu(veh)
     local A = CableActions or {}
     local options = {
         { title = 'Ladder', description = 'Take a 6.9 m or 13 m extension ladder off the roof', icon = 'stairs', onSelect = function() if PlaceLadder then PlaceLadder() end end },
         { title = 'Cable box or drum', description = 'CAT6, fibre, spine feed or ULW drop', icon = 'box-open', onSelect = function() if A.placeBox then A.placeBox(function() end) end end },
+        { title = 'Phone cable (copper)', description = 'Drop wire, internal CW1308 or 50-pair — run it and punch it down', icon = 'phone', iconColor = '#bf5af2', onSelect = function() if A.copper then A.copper(function() end) end end },
         { title = 'Road safety kit', description = 'Cones, barriers, signs, traffic lights, tape', icon = 'triangle-exclamation', iconColor = '#ff9f0a', onSelect = function() if OpenRoadworksMenu then OpenRoadworksMenu() end end },
     }
+    if VanSpotStoresOption then options[#options + 1] = VanSpotStoresOption(veh) end
     if UniformMenu then
         table.insert(options, 1, { title = 'Uniform locker', description = 'Change into (or out of) OPS Network uniform', icon = 'user-tie', iconColor = '#0a84ff', onSelect = function() UniformMenu() end })
     end
     if ToolKitMenu then
-        table.insert(options, 1, { title = 'Tool kit', description = 'Fibre tools (splicer, OTDR, VFL, power meter…) and electrical tools', icon = 'toolbox', iconColor = '#0a84ff', arrow = true, onSelect = function() ToolKitMenu() end })
+        table.insert(options, 1, { title = 'Tool kit', description = 'Fibre tools (splicer, OTDR, VFL, power meter…), copper phone line tools (butt set, toner, line tester…) and electrical tools', icon = 'toolbox', iconColor = '#0a84ff', arrow = true, onSelect = function() ToolKitMenu() end })
     end
     lib.registerContext({ id = 'opsvan_stores', root = true, title = 'OPS van · stores', options = options })
     lib.showContext('opsvan_stores')
@@ -195,7 +198,7 @@ CreateThread(function()
         end
         if near then
             if not shown then lib.showTextUI('[E] Van stores', { icon = 'toolbox' }) shown = true end
-            if IsControlJustPressed(0, 38) then lib.hideTextUI() shown = false storesMenu() end
+            if IsControlJustPressed(0, 38) then lib.hideTextUI() shown = false storesMenu(near) end
             Wait(0)
         else
             if shown then lib.hideTextUI() shown = false end

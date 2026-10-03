@@ -8,6 +8,9 @@ Cell towers and Wi-Fi access points for **opslabs-phone** (OPS Mobile coverage).
 - **Wi-Fi:** apps work with no signal and no plan, and don't use plan data. Reaches `Config.Wifi.FloorTolerance` m above/below the access point.
   - **Passwords:** set one and phones see a lock; players enter it once in Settings › Wi-Fi and rejoin automatically (remembered per character in `opslabs_towers_wifi_known`). Changing the password logs everyone out. "Forget This Network" on the phone.
   - **Job-locked networks** (`jobs = police,ambulance`) show as restricted to everyone else.
+  - **Only online when connected to the fibre network** (tick it in the access point's details): the network stays silent —
+    phones don't even see it — until the AP is cabled (CAT6, through any switches / other APs) to a gateway whose WAN goes to an
+    ONT with live fibre and an active service. Unplug or cut that chain and it drops off air. Leave it unticked and it works as before.
 
 ## In game — `/towers`
 Admins: ESX groups in `Config.AdminGroups`, licenses in `Config.AdminLicenses`, or ace `opslabs.towers`. The menu stays open until Esc / Backspace / ✕.
@@ -52,7 +55,13 @@ real collision, furniture, lights that come on inside, and doors.
 A base van (Config.Van.Model, default `speedo`) dressed in OPS Network livery: branded sides, red / yellow chevrons on the back,
 roof light bar and rear beacon pods, roof rack with a ladder. Every player sees it (state bag `opsvan`).
 **K** (rebindable) — beacons on / off (alternating amber with real light). **[E] at the back doors** — van stores: tool kit,
-ladder, cable box / drum, road safety kit. Use `/opsvan` again to send your van back.
+ladder, cable box / drum, phone cable, road safety kit, fit / take off the roof spotlight. Use `/opsvan` again to send your van back.
+
+**Roof spotlight** — a lamp head on a pan / tilt yoke, on a telescopic post that slides along a rail across the roof (fitted on new
+vans; fit or remove it at the van stores). Press **L** (rebindable) from **any seat** to work it while you drive:
+**← →** pan (all the way round) · **↑ ↓** tilt · **Shift + ← →** slide it side to side along the rail · **PgUp / PgDn** raise / lower the
+mast · hold **Alt** and the head follows your camera · **Enter** light on / off · **X** park it · **Backspace** done. It's a real
+spotlight with shadows, and everyone sees it move (`Config.Van.Spotlight`: key, position, travel, colour, range).
 
 ## Uniform — `/uniform`, `/towers` → Tools → Uniform, or the van's uniform locker
 Navy work polo, navy work trousers and black work boots (base-game items, checked against the game's clothing names),
@@ -109,6 +118,17 @@ Visible to everyone, saved in the DB (`opslabs_towers_cable_boxes`, `_cables`, `
   - **OPS Openline** — the main fibre & copper network (above), plus triple-sided brackets, J-hooks / pigtail bolts and the **metal pole 9 m** with a live **branding & info plate** (company, colour, pole number, phone, extra line — set from the pole's menu).
   - **StreamFibre** — alt-net kit for shared poles: alt-net CBT, yellow provider ID tags, shared (PIA) bracket & slack loop.
   - **San Andreas Power & Light** — wooden power poles 10 / 12 m with cross-arm & insulators, pole-mounted transformer, cut-out fuses & surge arresters, auto-recloser (PMAR), pothead, LV connectors & shrouds, copper earth tape, anti-climbing device, Danger of Death sign.
+- **Copper phone line** (OPS Openline → Run phone cable / Copper phone line equipment): copper **drop wire** (pole → house),
+  **internal CW1308** (round the house) and **50-pair** (exchange ↔ cabinet ↔ DP). It clamps to poles and sags like the fibre, can go in
+  trunking, and is cut / picked up like any other cable. Finish each end on kit by **punching it down** — the pair on the IDC terminals
+  (2 = White / Blue, 5 = Blue / White). Kit: copper DP, pole splice box, aerial copper joint, master socket (NTE5C), extension socket,
+  internal junction box, VDSL faceplate, plus the PCP cabinet and the exchange MDF. A socket has **dial tone** (and a line number) when
+  punched-down copper joins it, through DPs / joints / cabinets, to an **MDF in an exchange with power** (`Config.PhoneLine`).
+  Tools (Tool kit → Copper phone line tools): **butt set** (dial tone, number, path), **tone generator & probe** (the toned pair warbles and
+  glows purple), **copper line tester** (loop resistance, insulation, distance to an open circuit), **IDC punch-down tool**, **UY
+  crimpers**, **multimeter** (line voltage), **NTE5 test socket check** (network fault or house wiring?).
+- **Rooftop mast 6 m** (Telecom equipment → Poles & fixings): a galvanised mast on a ballast frame that stands on a flat roof — put
+  poles on top of the telephone exchange. Climb it, clamp cable to it and fit pole kit like any pole.
 - **Power cable** (Network cabling → Run power cable): HV overhead conductor, LV bundled cable or a service drop to a house. It clamps to poles and sags between them like the fibre does.
 - **Cable types:** CAT6; fibre as black dropwire, yellow indoor patch, thick spine feed (drum) and ULW drop (drum). Trunking in white / black / blue, steel capping No. 1, plastic capping No. 25, orange sub-duct and green blown-fibre tubing — cable laid into any of them is hidden.
 - **Fixings are automatic:** dropwire clamps wherever cable is clamped to a pole or wall anchor, masonry clips every 35 cm along cable on walls.

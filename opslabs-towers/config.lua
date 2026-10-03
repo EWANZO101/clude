@@ -102,6 +102,9 @@ Config.Cabling = {
     -- telecom equipment that can be placed with /cable → Telecom equipment
     -- telegraph poles: anyone can climb (E at the base); ClimbJobs = { 'telecom' } to restrict
     ClimbJobs = false,
+    -- every placed pole model and its height (m): climbing, ladders, cable clamps, guy wires, faults all use this
+    PoleHeights = { opslabs_pole_07m = 7.0, opslabs_pole_10m = 10.0, opslabs_pole_13m = 13.0, opslabs_pole_metal = 9.0,
+        opslabs_power_pole_10m = 10.0, opslabs_power_pole_12m = 12.0, opslabs_pole_roof = 6.0 },
     ClimbSpeed = 0.9,          -- metres per second
     LadderCommand = 'ladder',  -- /ladder to stand an extension ladder against a wall or pole
     Ladders = {                -- top = top of the fly when closed (m along the ladder), maxExt = how far the fly slides out
@@ -123,6 +126,10 @@ Config.Cabling = {
     PowerColors = { 'hv', 'lv', 'service' },
     PowerLabels = { hv = 'HV overhead conductor (11 kV)', lv = 'LV bundled cable (230 / 400 V)', service = 'Service drop to a house' },
     MaxPowerLength = 600,
+    -- copper phone cable (Run phone cable): drop wire pole → house, internal cable round the house, multi-pair between cabinets
+    CopperColors = { 'drop', 'internal', 'multipair' },
+    CopperLabels = { drop = 'Copper drop wire (black, 2 pair)', internal = 'Internal phone cable (CW1308, white)', multipair = 'Multi-pair cable (50 pair, black)' },
+    MaxCopperLength = 800,
     Equipment = {
         -- poles & house fixings
         { net = 'openline', cat = 'Poles & fixings', label = 'Telegraph pole 7 m',  model = 'opslabs_pole_07m' },
@@ -130,6 +137,8 @@ Config.Cabling = {
         { net = 'openline', cat = 'Poles & fixings', label = 'Telegraph pole 13 m', model = 'opslabs_pole_13m' },
         { net = 'openline', cat = 'Poles & fixings', label = 'House pole (wall bracket, for the drop from the pole)', model = 'opslabs_house_pole' },
         { net = 'openline', cat = 'Poles & fixings', label = 'Metal pole 9 m (branding & info plate)', model = 'opslabs_pole_metal' },
+        { net = 'openline', cat = 'Poles & fixings', label = 'Rooftop mast 6 m (ballast frame, for flat roofs)', model = 'opslabs_pole_roof',
+          about = 'Stands on a flat roof without fixing into it — e.g. on top of the telephone exchange. Climb it, clamp cable, fit kit.' },
         -- exchange
         { net = 'sites', cat = 'Buildings', label = 'Telephone exchange building (walk-in)', model = 'opslabs_exchange_building', building = true,
           about = '16 × 10 m · racks, power plant & switching go inside' },
@@ -181,9 +190,7 @@ Config.Cabling = {
             { label = '4 ports', model = 'opslabs_cbt_4' }, { label = '8 ports', model = 'opslabs_cbt_8' }, { label = '12 ports', model = 'opslabs_cbt' } } },
         { net = 'openline', cat = 'On the pole', label = 'Top hat joint (fibre node)', model = 'opslabs_joint_tophat', pole = true },
         { net = 'openline', cat = 'On the pole', label = 'Splice enclosure', model = 'opslabs_splice_enclosure', pole = true },
-        { net = 'openline', cat = 'On the pole', label = 'Pole mounted splice box (copper)', model = 'opslabs_pole_splice_box', pole = true },
         { net = 'openline', cat = 'On the pole', label = 'Cable slack / coil bracket', model = 'opslabs_slack_loop', pole = true },
-        { net = 'openline', cat = 'On the pole', label = 'Legacy copper DP box', model = 'opslabs_copper_dp', pole = true },
         { net = 'openline', cat = 'On the pole', label = 'Triple-sided bracket', model = 'opslabs_triple_bracket', pole = true, axis = true },
         { net = 'openline', cat = 'On the pole', label = 'J-hook / pigtail bolt', model = 'opslabs_jhook', pole = true },
         -- customer premises, outside
@@ -192,10 +199,16 @@ Config.Cabling = {
         { net = 'openline', cat = 'Customer premises · outside', label = 'Brickwork entry bushing', model = 'opslabs_entry_bushing' },
         -- customer premises, inside
         { net = 'openline', cat = 'Customer premises · inside', label = 'ONT (optical network termination)', model = 'opslabs_ont' },
-        { net = 'openline', cat = 'Customer premises · inside', label = 'Master socket (NTE5C)', model = 'opslabs_nte5c' },
-        { net = 'openline', cat = 'Customer premises · inside', label = 'VDSL faceplate', model = 'opslabs_vdsl_faceplate' },
         { net = 'openline', cat = 'Customer premises · inside', label = 'Internal splicing tray', model = 'opslabs_splice_tray' },
         { net = 'openline', cat = 'Customer premises · inside', label = 'Internal fibre entry box', model = 'opslabs_entry_cap' },
+        -- copper phone line: exchange MDF → PCP cabinet → aerial joint / DP on the pole → drop wire → master socket → extensions
+        { net = 'openline', cat = 'Copper phone line', label = 'Copper DP box (distribution point)', model = 'opslabs_copper_dp', pole = true },
+        { net = 'openline', cat = 'Copper phone line', label = 'Pole mounted splice box (copper)', model = 'opslabs_pole_splice_box', pole = true },
+        { net = 'openline', cat = 'Copper phone line', label = 'Aerial copper joint (sleeve)', model = 'opslabs_copper_joint_aerial', pole = true },
+        { net = 'openline', cat = 'Copper phone line', label = 'Master socket (NTE5C)', model = 'opslabs_nte5c' },
+        { net = 'openline', cat = 'Copper phone line', label = 'Secondary phone socket (extension)', model = 'opslabs_copper_linejack' },
+        { net = 'openline', cat = 'Copper phone line', label = 'Internal junction box', model = 'opslabs_copper_jb' },
+        { net = 'openline', cat = 'Copper phone line', label = 'VDSL faceplate', model = 'opslabs_vdsl_faceplate' },
         -- StreamFibre (alt-net) kit, mounted alongside / below the main network on shared poles
         { net = 'streamfibre', cat = 'On the pole', label = 'Alt-net CBT', model = 'opslabs_alt_cbt', pole = true },
         { net = 'streamfibre', cat = 'On the pole', label = 'Provider ID tag (yellow)', model = 'opslabs_alt_tag', pole = true },
@@ -365,6 +378,19 @@ Config.Faults = {
     },
 }
 
+-- Copper phone lines: a socket has dial tone when copper runs punched down at both ends connect it, through
+-- the kit below, to an MDF in an exchange with power (rectifier / batteries / generator within Isp.ExchangeRadius).
+-- Engineers test with the tool kit (OPS Openline → Copper phone line tools): butt set, tone & probe, line tester…
+Config.PhoneLine = {
+    Exchange = { 'opslabs_mdf' },                                      -- dial tone comes from here
+    NeedsPower = true,                                                 -- the exchange needs its power plant
+    PassThrough = { 'opslabs_cabinet_pcp', 'opslabs_copper_dp', 'opslabs_pole_splice_box', 'opslabs_copper_joint_aerial',
+        'opslabs_copper_jb', 'opslabs_footway_box', 'opslabs_hof' },    -- joints, DPs, cabinets
+    Sockets = { 'opslabs_nte5c', 'opslabs_copper_linejack', 'opslabs_vdsl_faceplate' },   -- where a phone plugs in (they feed extensions too)
+    OhmsPerKm = 168,                                                   -- loop resistance of 0.5 mm copper
+    NumberPrefix = '01632 96',                                         -- line numbers: prefix + 4 digits from the socket
+}
+
 -- Street works safety kit (Network cabling → Road safety equipment). Signs have editable text
 -- (drawn live on the sign face); traffic lights work in pairs (A / B) on a shared cycle.
 Config.Roadworks = {
@@ -480,6 +506,18 @@ Config.Van = {
     Trim = { 10, 90, 200 },           -- secondary (RGB)
     Plate = 'OPSNET',
     BeaconKey = 'K',
+    -- roof spotlight (opslabs_van_spot_*): a rail across the roof, a telescopic post that slides along it, a pan / tilt head.
+    -- L inside the van (any seat) opens the controls: ←→ pan · ↑↓ tilt · Shift + ←→ slide · PgUp / PgDn raise · hold Alt to aim
+    -- with the camera · Enter on / off · X park. Fit or take it off at the van stores ([E] at the back).
+    Spotlight = {
+        Fitted = true,                -- new vans come with it fitted
+        Key = 'L',
+        Along = 0.74,                 -- rail position along the van (0 = back, 1 = front): just in front of the light bar
+        Lift = 0.0,                   -- raise the rail if it sinks into the roof of another van model
+        Slide = 0.62, Raise = 0.35,   -- metres either side / mast travel
+        TiltDown = -50.0, TiltUp = 40.0,
+        Colour = { 255, 244, 225 }, Range = 80.0, Brightness = 14.0, Cone = 13.0, Falloff = 25.0,
+    },
 }
 
 -- Anti-climb zones along every fence panel, fence post and gate: you can't jump, climb or vault over them.

@@ -8,7 +8,7 @@ local guys = {}            -- [id] = guy (from the server)
 local spawned = {}         -- [id] = { sig, ents }
 local UP = vector3(0.0, 0.0, 1.0)
 local PIECES = { { 2.0, '200' }, { 1.0, '100' }, { 0.5, '050' }, { 0.25, '025' }, { 0.1, '010' }, { 0.05, '005' } }
-local POLE_H = { opslabs_pole_07m = 7.0, opslabs_pole_10m = 10.0, opslabs_pole_13m = 13.0, opslabs_pole_metal = 9.0, opslabs_power_pole_10m = 10.0, opslabs_power_pole_12m = 12.0 }
+local POLE_H = Config.Cabling.PoleHeights
 local MAX_SPAN = 60.0
 local pending = {}         -- [id .. ':' .. idx] = height being dragged (preview before it's saved)
 

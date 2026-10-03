@@ -132,7 +132,7 @@ local function eqLabel(model)
 end
 
 -- nearest pole within reach of a point (kit strapped to a pole, a cable clamped on one)
-local POLE_H = { opslabs_pole_07m = 7.0, opslabs_pole_10m = 10.0, opslabs_pole_13m = 13.0, opslabs_pole_metal = 9.0, opslabs_power_pole_10m = 10.0, opslabs_power_pole_12m = 12.0 }
+local POLE_H = Config.Cabling.PoleHeights
 local function poleAt(x, y, reach)
     local best, bd
     for id, f in pairs(Cabling.fixtures) do

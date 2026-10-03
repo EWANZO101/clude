@@ -26,6 +26,8 @@ server_scripts {
     'server/uniform.lua',
     'server/faults.lua',
     'server/guys.lua',
+    'server/van.lua',
+    'server/phoneline.lua',
 }
 
 client_scripts {
@@ -44,6 +46,7 @@ client_scripts {
     'client/coach.lua',
     'client/doors.lua',
     'client/van.lua',
+    'client/vanspot.lua',
     'client/tools.lua',
     'client/anticlimb.lua',
     'client/uniform.lua',

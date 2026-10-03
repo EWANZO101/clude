@@ -39,6 +39,13 @@ Streamed props used by opslabs-towers.
 | `opslabs_rw_worklight`, `opslabs_rw_lighttower` (+ `_on`) | OPS Openline road works lighting: tripod with twin 50 W LED floods and a 110 V site transformer; towable lighting tower with 4 floods on a 7.5 m mast |
 | `opslabs_guy_seg_005…200`, `opslabs_guy_joint`, `opslabs_guy_hook` | Guild wire: galvanised 7 mm steel strand pieces + joint, and the forged J-hook on a back plate it rests in (pole-mounted) |
 | `opslabs_harness_strap`, `opslabs_lanyard` | Climber's fall-arrest kit: orange webbing pole strap with D-ring, and a 1 m lanyard strip stretched between harness and strap |
+| `opslabs_copper_{drop,internal,multipair}_{005…200}` + `_joint` | Copper phone cable: black dropwire (Ø 5 mm), off-white CW1308-style internal cable (Ø 4.4 mm) and black 50-pair cable (Ø 16 mm) in 5 cm – 2 m pieces + a joint ball |
+| `opslabs_copper_jb` | Internal telephone junction box — white ABS 100 × 75 × 35 mm, screw-on lid, two knock-outs underneath (wall-mount, back on the wall) |
+| `opslabs_copper_linejack` | Secondary telephone socket — single-gang white faceplate with a phone jack on a surface box (wall-mount) |
+| `opslabs_copper_joint_aerial` | Aerial copper joint closure — black ribbed sleeve (0.45 m × Ø 90) on a galvanised pole bracket (pole-mount) |
+| `opslabs_pole_roof` | Rooftop telecom mast for flat roofs — galvanised 6 m tubular mast (ring head at 5.8 m, step bolts from 0.6 m) on a 1.6 × 1.6 m non-penetrating ballast frame with four concrete blocks and diagonal braces. Origin = frame centre on the roof |
+| `opslabs_tool_buttset`, `opslabs_tool_toner` | Hand tools (held, origin at the grip, along +Y): orange lineman's butt set with keypad, coiled lead and red / black croc clips; yellow / black tone tracer probe |
+| `opslabs_van_spot_rail`, `_post`, `_mast`, `_yoke`, `_head` (+ `_head_on`) | Remote roof spotlight for the OPS Network van (`speedo`), in parts the client slides / raises / pans / tilts: 1.5 m aluminium T-slot cross-bar (top at 0.10 m), sliding carriage + Ø 50 outer tube (top 0.25 m), 0.40 m telescopic inner tube (origin at its top), pan turntable + U-yoke (tilt axis 0.22 m), Ø 220 lamp head with chrome bezel (lens on +Y) and its glowing lens |
 
 Access point: white matte body + glowing blue LED ring. Gateways: detailed front/back panel textures and glowing screens (emissive). All have embedded textures and collision (plastic / metal); fronts face the player when placed. No logos or text.
 

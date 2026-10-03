@@ -5,7 +5,7 @@
 
 local CC = Config.Cabling
 Guys = {}                      -- [id] = { id, points = { { pole = fixtureId, h = metres above the pole base } }, fibre_run, created_by }
-local POLE_H = { opslabs_pole_07m = 7.0, opslabs_pole_10m = 10.0, opslabs_pole_13m = 13.0, opslabs_pole_metal = 9.0, opslabs_power_pole_10m = 10.0, opslabs_power_pole_12m = 12.0 }
+local POLE_H = Config.Cabling.PoleHeights
 local MAX_SPAN, MAX_POLES, TAIL = 60.0, 12, 3.0
 
 local function poleRadius(H, z)

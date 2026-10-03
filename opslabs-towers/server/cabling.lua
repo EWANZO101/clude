@@ -113,7 +113,25 @@ function RecomputeUplinks()
         end
     end
     Uplinked = up
+    -- on the fibre network: cabled (through any switches / APs) to a gateway whose WAN reaches a live ONT
+    local fibre = {}
+    queue = {}
+    for id, t in pairs(Towers or {}) do
+        if isGateway(t) and t.active and IspGatewayLive and IspGatewayLive(id) then fibre[id] = true; queue[#queue + 1] = id end
+    end
+    while #queue > 0 do
+        local id = table.remove(queue)
+        for _, nb in ipairs(adj[id] or {}) do
+            if not fibre[nb] then fibre[nb] = true; queue[#queue + 1] = nb end
+        end
+    end
+    OnFibre = fibre
 end
+OnFibre = {}
+
+--- fibre-only Wi-Fi (the access point's "Only online when on the fibre network" option)
+function WifiOnFibre(id) return OnFibre[id] == true end
+lib.callback.register('opslabs-towers:wifiFibre', function(_, id) return OnFibre[tonumber(id)] == true end)
 
 --- used by ComputeCoverage when Config.Cabling.RequireUplink is on
 function WifiHasUplink(id)
@@ -292,7 +310,7 @@ end)
 --- save a laid cable or trunking run. d: { kind, color, points, box_id, end_tower }
 lib.callback.register('opslabs-towers:cable:saveRun', function(src, d)
     if not canCable(src) or type(d) ~= 'table' then return { error = 'not allowed' } end
-    local kind = (d.kind == 'trunk' or d.kind == 'fibre' or d.kind == 'power') and d.kind or 'cable'
+    local kind = (d.kind == 'trunk' or d.kind == 'fibre' or d.kind == 'power' or d.kind == 'copper') and d.kind or 'cable'
     local points, length = cleanPoints(d.points)
     if not points then return { error = length } end
     local color = 'black'
@@ -305,6 +323,10 @@ lib.callback.register('opslabs-towers:cable:saveRun', function(src, d)
         color = 'lv'
         for _, c in ipairs(CC.PowerColors or {}) do if c == d.color then color = c end end
         if length > (CC.MaxPowerLength or 600) + 0.5 then return { error = 'power run too long' } end
+    elseif kind == 'copper' then
+        color = 'drop'
+        for _, c in ipairs(CC.CopperColors or {}) do if c == d.color then color = c end end
+        if length > (CC.MaxCopperLength or 800) + 0.5 then return { error = 'phone cable run too long' } end
     end
     local boxId = nil
     if kind == 'cable' or kind == 'fibre' then

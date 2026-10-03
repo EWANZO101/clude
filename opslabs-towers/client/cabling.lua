@@ -12,7 +12,7 @@ local TRUNK_INSIDE = 0.008    -- cable height inside 25x16 trunking
 -- despawned (and re-streamed) only when its signature is new. Runs also get a bounding
 -- sphere so streaming and aiming can skip far-away cable cheaply.
 local sigs = {}
-local POLE_MODELS = { opslabs_pole_07m = true, opslabs_pole_10m = true, opslabs_pole_13m = true, opslabs_pole_metal = true, opslabs_power_pole_10m = true, opslabs_power_pole_12m = true }
+local POLE_MODELS = Config.Cabling.PoleHeights
 local function mm(v) return math.floor((v or 0) * 1000 + 0.5) end
 
 local function runSig(r)
@@ -189,8 +189,12 @@ local FIBRE_KIT = setOf(Config.Isp and Config.Isp.Headends)
 for k in pairs(setOf(Config.Isp and Config.Isp.PassThrough)) do FIBRE_KIT[k] = true end
 local ONT_MODEL = Config.Isp and Config.Isp.Ont or 'opslabs_ont'
 FIBRE_KIT[ONT_MODEL] = true
+local PL = Config.PhoneLine or {}
+local COPPER_KIT = setOf(PL.Exchange)
+for _, list in ipairs({ PL.PassThrough, PL.Sockets }) do for k in pairs(setOf(list)) do COPPER_KIT[k] = true end end
 local function connectable(kind, model)
     if kind == 'fibre' then return FIBRE_KIT[model] == true end
+    if kind == 'copper' then return COPPER_KIT[model] == true end
     return kind == 'cable' and model == ONT_MODEL
 end
 local function fixtureLabel(id)
@@ -274,6 +278,14 @@ local function fixings(list, pts)
 end
 
 POWER_R = { hv = 0.007, lv = 0.012, service = 0.006 }
+COPPER_R = { drop = 0.003, internal = 0.0026, multipair = 0.0085 }
+
+local function runLabel(r)
+    if r.kind == 'copper' then return (CC.CopperLabels or {})[r.color] or 'Phone cable' end
+    return r.kind == 'trunk' and ((CC.TrunkLabels or {})[r.color] or ('Trunking (' .. r.color .. ')'))
+        or r.kind == 'fibre' and ((CC.FibreLabels or {})[r.color] or ('Fibre (' .. r.color .. ')'))
+        or r.kind == 'power' and ((CC.PowerLabels or {})[r.color] or 'Power cable') or 'CAT6'
+end
 
 local function groundUnder(x, y, z)
     local ray = StartExpensiveSynchronousShapeTestLosProbe(x, y, z + 0.2, x, y, z - 30.0, 1, 0, 4)
@@ -334,13 +346,16 @@ function BuildRun(r, list)
         local col
         if r.kind == 'power' then col = POWER_R[r.color] and r.color or 'lv'
             drawLoose(r, list, ('opslabs_power_%s_'):format(col), ('opslabs_power_%s_joint'):format(col), POWER_R[col])
+        elseif r.kind == 'copper' then col = COPPER_R[r.color] and r.color or 'drop'
+            drawLoose(r, list, ('opslabs_copper_%s_'):format(col), ('opslabs_copper_%s_joint'):format(col), COPPER_R[col])
         elseif r.kind == 'fibre' then col = FIBRE_R[r.color] and r.color or 'black'
             drawLoose(r, list, ('opslabs_fibre_%s_'):format(col), ('opslabs_fibre_%s_joint'):format(col), FIBRE_R[col])
         else drawLoose(r, list, 'opslabs_cat6_seg_', 'opslabs_cat6_joint', CABLE_R) end
     end
-    if r.kind == 'power' then
-        local col = POWER_R[r.color] and r.color or 'lv'
-        local lift, prefix, joint = POWER_R[col], ('opslabs_power_%s_'):format(col), ('opslabs_power_%s_joint'):format(col)
+    if r.kind == 'power' or r.kind == 'copper' then
+        local R, fam = r.kind == 'copper' and COPPER_R or POWER_R, r.kind
+        local col = R[r.color] and r.color or (fam == 'copper' and 'drop' or 'lv')
+        local lift, prefix, joint = R[col], ('opslabs_%s_%s_'):format(fam, col), ('opslabs_%s_%s_joint'):format(fam, col)
         for i = 1, #pts - 1 do
             local a, b = pts[i], pts[i + 1]
             if isAerial(a, b) then hangSpan(list, a, b, CABLE_PIECES, prefix, joint)
@@ -678,8 +693,9 @@ end
 local function layRun(kind, color, box, opts)
     local pts, preview = {}, {}
     local boxed = kind == 'cable' or kind == 'fibre'          -- pulled from a box / drum, ends plug into kit
+    local plugs = boxed or kind == 'copper'                   -- ends finish on kit
     local maxLen = (opts and opts.start) and (opts.maxLen or 0) or kind == 'cable' and math.min(CC.MaxRunLength, box.remaining) or kind == 'fibre' and math.min(CC.MaxFibreLength or 1000, box.remaining)
-        or kind == 'power' and (CC.MaxPowerLength or 600) or 200.0
+        or kind == 'power' and (CC.MaxPowerLength or 600) or kind == 'copper' and (CC.MaxCopperLength or 800) or 200.0
     local carry = opts and opts.start
     if carry then
         pts[1] = opts.start                                     -- carrying a loose end from its last fixing
@@ -719,8 +735,9 @@ local function layRun(kind, color, box, opts)
         and { { 'Fix point', 24 }, { 'Finish', 191 }, { 'Undo', { 25, 177 } }, { 'Straight line', 21 }, { 'Cancel', 200 } }
         or { { 'Fix point', 24 }, { 'Finish & connect', 191 }, { 'Undo', { 25, 177 } }, { 'Straight line', 21 }, { 'Cancel', 200 } })
     local title = kind == 'cable' and 'Pulling CAT6' or kind == 'fibre' and ('Pulling ' .. ((CC.FibreLabels or {})[color] or ('fibre · ' .. color)):lower())
-        or kind == 'power' and ('Running ' .. ((CC.PowerLabels or {})[color] or 'power cable'):lower()) or ('Fitting ' .. ((CC.TrunkLabels or {})[color] or ('trunking · ' .. color)):lower())
-    local accent = kind == 'power' and { 255, 214, 10 } or kind == 'fibre' and (color == 'yellow' and { 255, 214, 10 } or { 120, 120, 125 }) or kind == 'trunk' and { 48, 209, 88 } or { 10, 132, 255 }
+        or kind == 'power' and ('Running ' .. ((CC.PowerLabels or {})[color] or 'power cable'):lower())
+        or kind == 'copper' and ('Running ' .. ((CC.CopperLabels or {})[color] or 'phone cable'):lower()) or ('Fitting ' .. ((CC.TrunkLabels or {})[color] or ('trunking · ' .. color)):lower())
+    local accent = kind == 'power' and { 255, 214, 10 } or kind == 'copper' and { 191, 90, 242 } or kind == 'fibre' and (color == 'yellow' and { 255, 214, 10 } or { 120, 120, 125 }) or kind == 'trunk' and { 48, 209, 88 } or { 10, 132, 255 }
     while true do
         Wait(0)
         for _, ctl in ipairs({ 24, 25, 37, 44, 47, 140, 141, 142, 177, 191, 199, 200, 257, 263 }) do DisableControlAction(0, ctl, true) end
@@ -745,8 +762,8 @@ local function layRun(kind, color, box, opts)
         if at and not poleHint and #(at - GetGameplayCamCoord()) > 14.0 then at = nil end   -- far points only for poles
         if at then
             target = { x = at.x, y = at.y, z = at.z, nx = normal.x, ny = normal.y, nz = normal.z, p = poleHint and pole.id or nil }
-            tgtTower = towerOfEntity(ent)
-            if not tgtTower and boxed then
+            tgtTower = kind ~= 'copper' and towerOfEntity(ent) or nil
+            if not tgtTower and plugs then
                 if ent and ent ~= 0 then
                     for id, f in pairs(data.fixtures) do
                         local sp = spawned['f' .. id]
@@ -756,7 +773,7 @@ local function layRun(kind, color, box, opts)
                 -- pole kit has no collision: aiming within ~40 cm of it counts too
                 tgtFixture = tgtFixture or nearestFixtureFor(kind, at, 0.45)
             end
-            if boxed and not poleHint then
+            if plugs and not poleHint then
                 local snap = snapToTrunking(at)
                 if snap then target = { x = snap.pos.x, y = snap.pos.y, z = snap.pos.z, nx = snap.n.x, ny = snap.n.y, nz = snap.n.z, t = snap.run } end
             end
@@ -832,8 +849,8 @@ local function layRun(kind, color, box, opts)
         end
         local extra = (target and #pts > 0) and seglen(pts[#pts], target) or 0.0
         local over = boxed and length + extra > maxLen
-        local hint = (tgtTower or tgtFixture) and boxed and ('Enter to connect to ' .. (towerName(tgtTower) or fixtureLabel(tgtFixture) or 'this device'))
-            or (boxed and target and target.t and 'Inside trunking')
+        local hint = (tgtTower or tgtFixture) and plugs and ('Enter to connect to ' .. (towerName(tgtTower) or fixtureLabel(tgtFixture) or 'this device'))
+            or (plugs and target and target.t and 'Inside trunking')
             or poleHint
             or (straight == 'plumb' and 'straight up / down') or (straight == 'level' and 'level')
             or (#pts == 0 and 'Aim at the floor, a wall or the ceiling')
@@ -864,7 +881,7 @@ local function layRun(kind, color, box, opts)
             end
         end
         if IsDisabledControlJustPressed(0, 191) then
-            if target and (tgtTower or tgtFixture) and boxed and (#pts == 0 or seglen(pts[#pts], target) > 0.03) and length + extra <= maxLen then
+            if target and (tgtTower or tgtFixture) and plugs and (#pts == 0 or seglen(pts[#pts], target) > 0.03) and length + extra <= maxLen then
                 pts[#pts + 1] = target
                 length = length + extra
             end
@@ -872,7 +889,7 @@ local function layRun(kind, color, box, opts)
             if #pts >= needed then
                 result = pts
                 endTower = boxed and (tgtTower or nearestTowerProp(vector3(pts[#pts].x, pts[#pts].y, pts[#pts].z), 0.6)) or nil
-                endFixture = boxed and not endTower and (tgtFixture or nearestFixtureFor(kind, vector3(pts[#pts].x, pts[#pts].y, pts[#pts].z), 0.6)) or nil
+                endFixture = plugs and not endTower and (tgtFixture or nearestFixtureFor(kind, vector3(pts[#pts].x, pts[#pts].y, pts[#pts].z), 0.6)) or nil
                 break
             end
             lib.notify({ type = 'inform', description = boxed and 'Fix the cable to at least two points first' or 'Place at least two points' })
@@ -907,10 +924,12 @@ function CarryLooseEnd(r, which)
     if dropped then lib.notify({ type = 'inform', description = 'Dropped — the end lies here until you pick it up again' })
     else
         lib.notify({ type = 'success', description = 'End fixed in place' })
-        if (endTower or endFixture) and (r.kind == 'cable' or r.kind == 'fibre') then
+        if (endTower or endFixture) and (r.kind == 'cable' or r.kind == 'fibre' or r.kind == 'copper') then
             Wait(250)
             local cur = data.runs[r.id]
-            if cur and lib.alertDialog({ header = (r.kind == 'fibre' and 'Splice' or 'Terminate') .. ' it into ' .. (towerName(endTower) or fixtureLabel(endFixture) or 'the device') .. '?', centered = true, cancel = true }) == 'confirm' then
+            local into = towerName(endTower) or fixtureLabel(endFixture) or 'the device'
+            local q = r.kind == 'fibre' and ('Splice it into ' .. into .. '?') or r.kind == 'copper' and ('Punch it down on the ' .. into .. '?') or ('Terminate it into ' .. into .. '?')
+            if cur and lib.alertDialog({ header = q, centered = true, cancel = true }) == 'confirm' then
                 TerminateEnd(cur, which, endTower, endFixture)
             end
         end
@@ -1029,8 +1048,50 @@ local function spliceFibre(run, which, towerId, fixtureId)
     return true
 end
 
+-- copper phone line: strip the sheath, put the pair on the IDC terminals (2 = B-leg, 5 = A-leg), punch down
+local COPPER_WIRES = { 'White / Blue', 'Blue / White', 'Orange / White', 'White / Orange' }
+local COPPER_WIRE_COLOR = { ['White / Blue'] = '#cfe0ff', ['Blue / White'] = '#1f6fff', ['Orange / White'] = '#ff8a00', ['White / Orange'] = '#ffd9b0' }
+local COPPER_ORDER = { { 2, 'White / Blue', 'B-leg' }, { 5, 'Blue / White', 'A-leg' } }
+CopperPunchReady = false                                   -- tools.lua: the IDC punch-down tool is in hand
+
+local function punchCopper(run, which, towerId, fixtureId)
+    if not work('Stripping the sheath back 50 mm', 2000) then return false end
+    for _, step in ipairs(COPPER_ORDER) do
+        local choice = 0
+        while choice == 0 do
+            local p = promise.new()
+            local options = { { title = ('Terminal %d (%s)'):format(step[1], step[3]), description = 'Which wire goes on this IDC terminal?', readOnly = true, icon = 'plug' } }
+            for i, w in ipairs(COPPER_WIRES) do options[#options + 1] = { title = w, icon = 'circle', iconColor = COPPER_WIRE_COLOR[w], onSelect = function() p:resolve(i) end } end
+            options[#options + 1] = { title = 'Look at the wiring chart', icon = 'circle-info', onSelect = function() p:resolve(0) end }
+            lib.registerContext({ id = 'copper_wires', root = true, title = 'Pair on the IDC block', options = options, onExit = function() p:resolve(-1) end })
+            lib.showContext('copper_wires')
+            choice = Citizen.Await(p)
+            if choice == -1 then return false end
+            if choice == 0 then
+                lib.alertDialog({ header = 'Phone line wiring (pair 1)', content = 'Terminal 2 — White / Blue (B-leg)  \nTerminal 3 — Orange / White (bell wire, old sockets only)  \nTerminal 5 — Blue / White (A-leg)  \nPair 2 (orange) is the spare.', centered = true })
+            end
+        end
+        if COPPER_WIRES[choice] ~= step[2] then
+            lib.notify({ type = 'error', description = ('%s on terminal %d — that reverses the pair. Pull it out and start again.'):format(COPPER_WIRES[choice], step[1]) })
+            return false
+        end
+        if not work(('Punching down terminal %d'):format(step[1]), 900) then return false end
+    end
+    if not lib.skillCheck(CopperPunchReady and { 'easy' } or { 'easy', 'medium' }, { 'e' }) then
+        lib.notify({ type = 'error', description = 'The wire didn’t seat in the IDC slot — trim it and punch again' })
+        return false
+    end
+    CopperPunchReady = false
+    local r = lib.callback.await('opslabs-towers:cable:terminate', false, run.id, which, towerId, fixtureId)
+    if not r or r.error then lib.notify({ type = 'error', description = (r and r.error) or 'Failed' }) return false end
+    PlaySoundFrontend(-1, 'PICK_UP', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
+    lib.notify({ type = 'success', description = fixtureId and 'Punched down — test the line with the butt set' or 'Ends made off' })
+    return true
+end
+
 function TerminateEnd(run, which, towerId, fixtureId)
     if run.kind == 'fibre' then return spliceFibre(run, which, towerId, fixtureId) end
+    if run.kind == 'copper' then return punchCopper(run, which, nil, fixtureId) end
     if not work('Stripping the outer jacket', 2500) then return false end
     if not work('Untwisting the four pairs', 2500) then return false end
     if not arrangeWires() then return false end
@@ -1086,16 +1147,17 @@ RunMenu = function(r)
     local a, z = runEnds(r)
     local nearStart = a and #(pos - vector3(a.x, a.y, a.z)) < 2.5
     local nearEnd = z and #(pos - vector3(z.x, z.y, z.z)) < 2.5
-    local done = r.kind == 'fibre' and 'spliced' or 'terminated'
+    local done = r.kind == 'fibre' and 'spliced' or r.kind == 'copper' and 'punched down' or 'terminated'
     local options = {
-        { title = ('%s · %.1f m'):format(r.kind == 'trunk' and ('Trunking (' .. r.color .. ')') or r.kind == 'fibre' and ('Fibre (' .. r.color .. ')') or 'CAT6 cable', r.length or 0),
+        { title = ('%s · %.1f m'):format(r.kind == 'trunk' and ('Trunking (' .. r.color .. ')') or r.kind == 'fibre' and ('Fibre (' .. r.color .. ')')
+            or r.kind == 'copper' and ((CC.CopperLabels or {})[r.color] or 'Phone cable') or r.kind == 'power' and ((CC.PowerLabels or {})[r.color] or 'Power cable') or 'CAT6 cable', r.length or 0),
           description = r.kind ~= 'trunk' and ('Start: %s · End: %s%s'):format(
             r.box_id and 'still on the box' or (r.start_term and (done .. (endName(r, 'start') and (' → ' .. endName(r, 'start')) or '')) or 'bare end'),
             r.end_term and (done .. (endName(r, 'end') and (' → ' .. endName(r, 'end')) or '')) or 'bare end',
             '') or nil, icon = r.kind == 'trunk' and 'grip-lines' or 'ethernet', readOnly = true },
     }
-    local verb = r.kind == 'fibre' and 'Splice' or 'Terminate'
-    if r.kind == 'cable' or r.kind == 'fibre' then
+    local verb = r.kind == 'fibre' and 'Splice' or r.kind == 'copper' and 'Punch down' or 'Terminate'
+    if r.kind == 'cable' or r.kind == 'fibre' or r.kind == 'copper' then
         if r.box_id then
             options[#options + 1] = { title = 'Cut from the box', description = 'Frees the start of the cable so you can terminate it', icon = 'scissors', onSelect = function()
                 local res = lib.callback.await('opslabs-towers:cable:cut', false, r.id)
@@ -1103,7 +1165,7 @@ RunMenu = function(r)
                 RunMenu(r)
             end }
         elseif not r.start_term then
-            local tw = a and nearestTowerProp(vector3(a.x, a.y, a.z), 1.2)
+            local tw = a and r.kind ~= 'copper' and nearestTowerProp(vector3(a.x, a.y, a.z), 1.2)
             local fx = a and not tw and nearestFixtureFor(r.kind, vector3(a.x, a.y, a.z), 1.5)
             local into = towerName(tw) or fixtureLabel(fx)
             options[#options + 1] = { title = verb .. ' the start', description = not nearStart and 'Walk to the start of the cable first' or into and ('Connects to ' .. into) or 'Nothing to plug into here — it will just be finished off',
@@ -1113,7 +1175,7 @@ RunMenu = function(r)
             end }
         end
         if not r.end_term then
-            local tw = r.end_tower or (z and nearestTowerProp(vector3(z.x, z.y, z.z), 1.2))
+            local tw = r.end_tower or (z and r.kind ~= 'copper' and nearestTowerProp(vector3(z.x, z.y, z.z), 1.2))
             local fx = not tw and (r.end_fixture or (z and nearestFixtureFor(r.kind, vector3(z.x, z.y, z.z), 1.5)))
             local into = towerName(tw) or fixtureLabel(fx)
             options[#options + 1] = { title = verb .. ' the end', description = not nearEnd and 'Walk to the end of the cable first' or into and ('Connects to ' .. into) or 'Nothing to plug into here — it will just be finished off',
@@ -1140,7 +1202,7 @@ RunMenu = function(r)
         end
         RunMenu(r)
     end }
-    lib.registerContext({ id = 'cable_run', title = r.kind == 'trunk' and 'Trunking' or r.kind == 'fibre' and 'Fibre' or 'Cable', menu = 'cable_runs', onBack = function() RunsMenu() end, options = options })
+    lib.registerContext({ id = 'cable_run', title = r.kind == 'trunk' and 'Trunking' or r.kind == 'fibre' and 'Fibre' or r.kind == 'copper' and 'Phone cable' or 'Cable', menu = 'cable_runs', onBack = function() RunsMenu() end, options = options })
     lib.showContext('cable_run')
 end
 
@@ -1177,7 +1239,7 @@ local function CutMode(onlyId)
         for _, ctl in ipairs({ 24, 25, 37, 44, 140, 141, 142, 177, 199, 200, 257, 263 }) do DisableControlAction(0, ctl, true) end
         DisablePlayerFiring(PlayerId(), true)
         local r, seg, q = pickRun(onlyId)
-        local what = r and (r.kind == 'trunk' and ('Trunking (' .. r.color .. ')') or r.kind == 'fibre' and ('Fibre (' .. r.color .. ')') or 'CAT6')
+        local what = r and runLabel(r)
         if r then
             local sp = SpanPoints(r.points[seg], r.points[seg + 1])
             for k = 1, #sp - 1 do DrawLine(sp[k].x, sp[k].y, sp[k].z, sp[k + 1].x, sp[k + 1].y, sp[k + 1].z, 255, 69, 58, 255) end
@@ -1195,7 +1257,7 @@ local function CutMode(onlyId)
                 else
                     cuts = cuts + 1
                     PlaySoundFrontend(-1, 'CLICK_BACK', 'WEB_NAVIGATION_SOUNDS_PHONE', true)
-                    lib.notify({ type = 'success', description = r.kind == 'trunk' and 'Trunking cut in two' or ('Cut — #%d and #%d now have bare ends to %s'):format(res.a.id, res.b.id, r.kind == 'fibre' and 'splice' or 'terminate') })
+                    lib.notify({ type = 'success', description = r.kind == 'trunk' and 'Trunking cut in two' or ('Cut — #%d and #%d now have bare ends to %s'):format(res.a.id, res.b.id, r.kind == 'fibre' and 'splice' or r.kind == 'copper' and 'punch down' or 'terminate') })
                     onlyId = nil
                     Wait(300)
                 end
@@ -1220,11 +1282,6 @@ local function outline(key, r, g, b)
     end
 end
 
-local function runLabel(r)
-    return r.kind == 'trunk' and ((CC.TrunkLabels or {})[r.color] or ('Trunking (' .. r.color .. ')'))
-        or r.kind == 'fibre' and ((CC.FibreLabels or {})[r.color] or ('Fibre (' .. r.color .. ')'))
-        or r.kind == 'power' and ((CC.PowerLabels or {})[r.color] or 'Power cable') or 'CAT6'
-end
 
 --- what the player is aiming at: a box (by its prop or within 35 cm) or the nearest run
 local function aimTarget()
@@ -1348,7 +1405,7 @@ function CableCutAtHand()
         DrawMarker(28, cur.pos.x, cur.pos.y, cur.pos.z, 0, 0, 0, 0, 0, 0, 0.035, 0.035, 0.035, 255, 255, 255, 255, false, false, 2, false, nil, nil, false)
         DrawMarker(28, cur.pos.x, cur.pos.y, cur.pos.z, 0, 0, 0, 0, 0, 0, 0.07, 0.07, 0.07, 255, 69, 58, 90, false, false, 2, false, nil, nil, false)
         local r = c.run
-        local what = r.kind == 'trunk' and ('Trunking (' .. r.color .. ')') or r.kind == 'fibre' and ('Fibre (' .. r.color .. ')') or 'CAT6'
+        local what = runLabel(r)
         PlaceHud.draw(sf, ('Cut a cable · %d of %d within reach'):format(sel, #list), ('%s #%d · %.1f m long · cut point %.2f m from your hands'):format(what, r.id, r.length or 0, #(h - cur.pos)), { 255, 69, 58 })
         if IsDisabledControlJustPressed(0, 191) then
             if lib.progressBar({ duration = r.kind == 'trunk' and 2500 or 1200, label = r.kind == 'trunk' and 'Sawing through the trunking' or r.kind == 'fibre' and 'Cutting the fibre' or 'Cutting with the snips', canCancel = true, disable = { combat = true } }) then
@@ -1591,8 +1648,8 @@ RunsMenu = function()
     for _, e in ipairs(list) do
         local r = e.r
         local state = r.kind == 'trunk' and r.color or (r.start_term and r.end_term and 'connected both ends' or r.box_id and 'on the box' or 'needs terminating')
-        options[#options + 1] = { title = ('%s #%d · %.1f m'):format(r.kind == 'trunk' and 'Trunking' or r.kind == 'fibre' and ('Fibre ' .. r.color) or 'CAT6', r.id, r.length or 0),
-            description = ('%s · %dm away'):format(state, math.floor(e.d)), icon = r.kind == 'trunk' and 'grip-lines' or 'ethernet',
+        options[#options + 1] = { title = ('%s #%d · %.1f m'):format(r.kind == 'trunk' and 'Trunking' or r.kind == 'fibre' and ('Fibre ' .. r.color) or r.kind == 'cable' and 'CAT6' or runLabel(r), r.id, r.length or 0),
+            description = ('%s · %dm away'):format(state, math.floor(e.d)), icon = r.kind == 'trunk' and 'grip-lines' or r.kind == 'copper' and 'phone' or 'ethernet',
             iconColor = r.kind ~= 'trunk' and (r.start_term and r.end_term and '#30d158' or '#ff9f0a') or nil, arrow = true, onSelect = function() RunMenu(r) end }
     end
     if #list == 0 then options[#options + 1] = { title = 'No cables nearby', readOnly = true } end
@@ -1779,7 +1836,7 @@ local CAT_ICON = {
     ['Poles & fixings'] = 'tower-observation', ['Exchange network kit'] = 'server', ['Street cabinets & chambers'] = 'box-archive',
     ['Underground joints'] = 'circle-down', ['On the pole'] = 'arrow-up-from-bracket', ['Customer premises · outside'] = 'house-chimney',
     ['Customer premises · inside'] = 'house-laptop', ['Power poles'] = 'tower-observation', ['On the power pole'] = 'bolt',
-    ['Safety & earthing'] = 'triangle-exclamation', ['Buildings'] = 'city', ['Exchange power & cooling'] = 'plug',
+    ['Safety & earthing'] = 'triangle-exclamation', ['Buildings'] = 'city', ['Exchange power & cooling'] = 'plug', ['Copper phone line'] = 'phone',
 }
 
 function EquipmentNetMenu(net)
@@ -1914,8 +1971,32 @@ function RunPowerCable()
     menuBack()
     end
 
+--- copper phone cable: drop wire from the pole, internal cable round the house, multi-pair between cabinets
+function RunCopperCable()
+    local opts = {}
+    for _, c in ipairs(CC.CopperColors or {}) do opts[#opts + 1] = { value = c, label = (CC.CopperLabels or {})[c] or c } end
+    local v = lib.inputDialog('Phone cable (copper)', { { type = 'select', label = 'Cable', options = opts, default = opts[1] and opts[1].value, required = true } })
+    if v then
+        local pts, _, endFixture = layRun('copper', v[1])
+        if pts then
+            local res = lib.callback.await('opslabs-towers:cable:saveRun', false, { kind = 'copper', color = v[1], points = pts, end_fixture = endFixture })
+            if not res or res.error then lib.notify({ type = 'error', description = (res and res.error) or 'Failed' })
+            else
+                lib.notify({ type = 'success', description = ('%.1f m of %s run'):format(res.run.length, ((CC.CopperLabels or {})[v[1]] or 'phone cable'):lower()) })
+                Wait(250)
+                local cur = data.runs[res.run.id]
+                if cur and endFixture and lib.alertDialog({ header = 'Punch it down on the ' .. (fixtureLabel(endFixture) or 'socket') .. '?', content = 'Do the other end from Tools → Nearby cables & trunking.', centered = true, cancel = true }) == 'confirm' then
+                    TerminateEnd(cur, 'end', nil, endFixture)
+                end
+            end
+            Wait(250)
+        end
+    end
+    menuBack()
+end
+
     --- remove every cable of a kind within a distance of the player (undo with Z in Remove mode)
-local RANGE_KINDS = { { 'cabling', 'Cable & fibre' }, { 'cable', 'CAT6 only' }, { 'fibre', 'Fibre only' }, { 'power', 'Power cable' }, { 'trunk', 'Trunking, capping & ducts' }, { 'all', 'Everything' } }
+local RANGE_KINDS = { { 'cabling', 'Cable & fibre' }, { 'cable', 'CAT6 only' }, { 'fibre', 'Fibre only' }, { 'power', 'Power cable' }, { 'copper', 'Phone cable (copper)' }, { 'trunk', 'Trunking, capping & ducts' }, { 'all', 'Everything' } }
 function RemoveInRange()
     local opts = {}
     for _, k in ipairs(RANGE_KINDS) do opts[#opts + 1] = { value = k[1], label = k[2] } end
@@ -1939,7 +2020,7 @@ function RemoveInRange()
         end
     end
     if #ids == 0 then lib.notify({ type = 'inform', description = 'Nothing like that within ' .. range .. ' m' }) return menuBack() end
-    local label = ({ cabling = 'cable and fibre', cable = 'CAT6 cable', fibre = 'fibre', power = 'power cable', trunk = 'trunking, capping and ducts', all = 'cable, trunking and ducts' })[what] or what
+    local label = ({ cabling = 'cable and fibre', cable = 'CAT6 cable', fibre = 'fibre', power = 'power cable', copper = 'copper phone cable', trunk = 'trunking, capping and ducts', all = 'cable, trunking and ducts' })[what] or what
     if lib.alertDialog({ header = ('Remove %d piece(s)?'):format(#ids), content = ('Every bit of %s within %d m — %.0f m in total. Z in Remove mode puts it back.'):format(label, range, metres), centered = true, cancel = true }) == 'confirm' then
         local n = lib.callback.await('opslabs-towers:cable:deleteRuns', false, ids)
         lib.notify({ type = 'success', description = ('Removed %d piece(s)'):format(n or 0) })
@@ -2005,6 +2086,7 @@ CableActions.placeBox = wrap(placeBox)
 CableActions.pull = wrap(pullCable)
 CableActions.trunking = wrap(layTrunking)
 CableActions.power = wrap(RunPowerCable)
+CableActions.copper = wrap(RunCopperCable)
 CableActions.move = wrapMode(MoveMode)
 CableActions.remove = wrapMode(RemoveMode)
 CableActions.cut = wrapMode(function() CutMode() end)

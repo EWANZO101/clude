@@ -328,10 +328,13 @@ local function editDialog(t, kind)
         fields[#fields + 1] = { type = 'select', label = 'Mast / dish model', icon = 'cube', options = options, default = current }
     end
     fields[#fields + 1] = { type = 'checkbox', label = 'Online (broadcasting)', checked = not t or t.active }
+    if kind == 'wifi' then
+        fields[#fields + 1] = { type = 'checkbox', label = 'Only online when connected to the fibre network', checked = t and t.fibre_only == true or false }
+    end
     local v = lib.inputDialog(t and ('Edit ' .. t.name) or (kind == 'wifi' and 'New Wi-Fi access point' or 'New cell tower'), fields)
     if not v then return nil end
     local data = { id = t and t.id, type = kind, name = v[1], range = v[2] }
-    if kind == 'wifi' then data.ssid, data.password, data.jobs, data.model, data.active = v[3], v[4] or '', v[5], v[6] or '', v[7]
+    if kind == 'wifi' then data.ssid, data.password, data.jobs, data.model, data.active, data.fibre_only = v[3], v[4] or '', v[5], v[6] or '', v[7], v[8] == true
     else data.model, data.active = v[3] or '', v[4] end
     if not t then
         -- new tower: aim where it goes
@@ -379,6 +382,10 @@ TowerMenu = function(t)
         table.insert(meta, 2, { label = 'SSID', value = (t.ssid and t.ssid ~= '') and t.ssid or t.name })
         table.insert(meta, 3, { label = 'Security', value = t.secured and 'WPA2 · password' or 'Open' })
         if t.jobs and t.jobs ~= '' then table.insert(meta, 4, { label = 'Jobs', value = t.jobs }) end
+        if t.fibre_only then
+            local on = lib.callback.await('opslabs-towers:wifiFibre', false, t.id)
+            table.insert(meta, 2, { label = 'Fibre', value = on and 'Connected — broadcasting' or 'Not connected — silent until it is cabled to a gateway with live fibre' })
+        end
     end
     meta[#meta + 1] = { label = 'Position', value = ('%.1f, %.1f, %.1f'):format(t.x, t.y, t.z) }
     lib.registerContext({
@@ -591,6 +598,9 @@ SectionMenu = function(id)
         add({ title = 'Place a cable box or drum', description = 'CAT6, black / yellow fibre, spine feed or ULW drop', icon = 'box-open', iconColor = BLUE, onSelect = function() A.placeBox(back) end })
         add({ title = 'Pull cable from the nearest box', description = 'CAT6 or fibre · fix along walls and poles, finish on the kit', icon = 'ethernet', iconColor = BLUE, onSelect = function() A.pull(back) end })
         add({ title = 'Trunking, capping & ducts', description = 'Trunking, steel / plastic capping, sub-duct, blown fibre tubing', icon = 'grip-lines', iconColor = BLUE, onSelect = function() A.trunking(back) end })
+        add({ title = 'Run phone cable (copper)', description = 'Drop wire, internal cable or 50-pair · clamps to poles · punch down on DPs, sockets, cabinets, the MDF', icon = 'phone', iconColor = '#bf5af2', onSelect = function() A.copper(back) end })
+        add({ title = 'Copper phone line equipment', description = 'DP, splice box, aerial joint, master socket, extension socket, junction box, VDSL faceplate', icon = 'phone-volume', iconColor = '#bf5af2', arrow = true,
+            onSelect = function() A.equipmentCat(net, 'Copper phone line') end })
         add({ title = 'Internet service', description = 'Fit an ONT (Customer premises · inside), then open it from Tools → Nearby equipment to provision it', icon = 'globe', readOnly = true })
     elseif id == 'streamfibre' then
         add({ title = 'StreamFibre equipment', description = 'Alt-net CBT, provider tags, shared (PIA) brackets', icon = 'boxes-stacked', iconColor = net.color, arrow = true, onSelect = function() A.equipment(net) end })
@@ -634,7 +644,7 @@ SectionMenu = function(id)
         add({ title = 'Tool kit', description = 'Fibre tools (splicer, OTDR, red light, power meter…) and electrical tools (voltage detector, earths, MEWP…)', icon = 'toolbox', iconColor = BLUE, arrow = true, onSelect = function() if ToolKitMenu then ToolKitMenu() end end })
         add({ title = 'OPS Network van', description = 'Branded van with beacons (K) and stores at the back · use again to send it back (/' .. ((Config.Van or {}).Command or 'opsvan') .. ')', icon = 'truck', iconColor = BLUE, onSelect = function() if SpawnOpsVan then SpawnOpsVan() end end })
         add({ title = 'Nearby equipment', description = 'Everything placed within 60 m · open one to move, remove, provision or brand it', icon = 'location-dot', iconColor = BLUE, arrow = true, onSelect = function() A.nearby() end })
-        add({ title = 'Nearby cables & trunking', description = 'CAT6, fibre, power cable and trunking within 80 m', icon = 'list', arrow = true, onSelect = function() A.runs() end })
+        add({ title = 'Nearby cables & trunking', description = 'CAT6, fibre, phone cable, power cable and trunking within 80 m', icon = 'list', arrow = true, onSelect = function() A.runs() end })
         add({ title = 'Cable boxes & drums', description = 'See, teleport to or remove boxes and drums', icon = 'boxes-stacked', arrow = true, onSelect = function() A.boxes() end })
         add({ title = 'Move cable, trunking or a box', description = 'Aim and click · reshape a route or carry a box', icon = 'up-down-left-right', iconColor = BLUE, onSelect = function() A.move(back) end })
         add({ title = 'Cut a cable', description = 'Aim anywhere along it · or press C on a pole / ladder', icon = 'scissors', iconColor = RED, onSelect = function() A.cut(back) end })
