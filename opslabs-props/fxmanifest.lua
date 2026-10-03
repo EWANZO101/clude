@@ -25,6 +25,7 @@ files {
     'stream/opslabs_phoneline_props.ytyp',
     'stream/opslabs_vanspot_props.ytyp',
     'stream/opslabs_mast_props.ytyp',
+    'stream/opslabs_underground_props.ytyp',
 }
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_wifi_props.ytyp'
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_network_props.ytyp'
@@ -43,3 +44,4 @@ data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_rigging_props.ytyp'
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_phoneline_props.ytyp'
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_vanspot_props.ytyp'
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_mast_props.ytyp'
+data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_underground_props.ytyp'
