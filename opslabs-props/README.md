@@ -50,6 +50,7 @@ Streamed props used by opslabs-towers.
 | `opslabs_mast_5g` | OPS Mobile roadside 5G monopole: 17.5 m light grey stepped pole, louvred antenna shroud (antennas at 16.65 m), root cabinet, perforated equipment cabinet and meter pillar on a plinth |
 | `opslabs_ug_chamber`, `opslabs_ug_hatch_lid` | Walk-in underground jointing chamber (3.2 × 3.2 m inside, floor 3 m below the road) with a 0.8 m access hatch + hinged chequer-plate lid, step irons, tunnel openings on all four sides, cable bearers, joint closure, lamp, sump — origin on the road surface |
 | `opslabs_ug_tunnel`, `opslabs_ug_tunnel_end` | 4 m cable tunnel section (2.0 × 2.2 m inside, cable trays both walls, LED battens) that joins chambers and other sections end to end, and an end wall with sealed ducts |
+| `opslabs_ladder_tele_base`, `opslabs_ladder_tele_sec` | Telescopic aluminium ladder: 0.32 m sections (stiles, rung, black latch collars) stacked 10 high by the game — nested to 0.9 m, open to 3.2 m |
 
 Access point: white matte body + glowing blue LED ring. Gateways: detailed front/back panel textures and glowing screens (emissive). All have embedded textures and collision (plastic / metal); fronts face the player when placed. No logos or text.
 

@@ -114,6 +114,9 @@ Config.Cabling = {
     Ladders = {                -- top = top of the fly when closed (m along the ladder), maxExt = how far the fly slides out
         { id = 'l7', label = 'Extension ladder · 3.6 m → 6.9 m', base = 'opslabs_ladder_base', fly = 'opslabs_ladder_fly', top = 3.9, maxExt = 3.0 },
         { id = 'l13', label = 'Extension ladder · 6.8 m → 13 m', base = 'opslabs_ladder13_base', fly = 'opslabs_ladder13_fly', top = 7.1, maxExt = 5.9 },
+        -- telescopic: 10 sections of 0.32 m, nested to 0.9 m closed, end to end at 3.2 m (opslabs-props/source/build_ladder_tele.py)
+        { id = 'l3', label = 'Telescopic ladder · 0.9 m → 3.2 m', base = 'opslabs_ladder_tele_base', fly = 'opslabs_ladder_tele_sec', top = 0.905, maxExt = 2.295,
+          tele = { n = 10, len = 0.32 } },
     },
     LadderMaxPerPlayer = 2,
     ClimbAnimFlip = true,      -- climbers face the pole; set false if they ever end up with their back to it

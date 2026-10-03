@@ -30,32 +30,48 @@ local function loadModel(name)
     return h
 end
 
-local function pose(base, fly, x, y, z, heading, ext)
+--- s = a spawned ladder { t, base, fly, parts }. Extension ladders: the fly slides up the axis by ext.
+--- Telescopic ladders (t.tele): n sections spread evenly from the foot to the top — nested when closed.
+local function pose(s, x, y, z, heading, ext)
     local a = axisFor(heading)
-    SetEntityCoordsNoOffset(base, x, y, z, false, false, false)
-    SetEntityRotation(base, -LEAN, 0.0, heading, 2, false)
-    SetEntityCoordsNoOffset(fly, x + a.x * ext, y + a.y * ext, z + a.z * ext, false, false, false)
-    SetEntityRotation(fly, -LEAN, 0.0, heading, 2, false)
+    local tele = s.t and s.t.tele
+    for i, e in ipairs(s.parts) do
+        local off = 0.0
+        if tele then off = (i - 1) * math.max(0.0, (s.t.top + ext) - tele.len) / math.max(1, #s.parts - 1)
+        elseif e == s.fly then off = ext end
+        SetEntityCoordsNoOffset(e, x + a.x * off, y + a.y * off, z + a.z * off, false, false, false)
+        SetEntityRotation(e, -LEAN, 0.0, heading, 2, false)
+    end
 end
 
 local function spawnPair(t, x, y, z, heading, ext, alpha)
-    local hb, hf = loadModel(t.base), loadModel(t.fly)
-    if not (hb and hf) then return nil end
-    local base = CreateObjectNoOffset(hb, x, y, z, false, false, false)
-    local fly = CreateObjectNoOffset(hf, x, y, z, false, false, false)
-    for _, e in ipairs({ base, fly }) do
+    local models = { t.base, t.fly }
+    if t.tele then
+        models = { t.base }
+        for _ = 2, t.tele.n do models[#models + 1] = t.fly end
+    end
+    local parts = {}
+    for _, m in ipairs(models) do
+        local h = loadModel(m)
+        if not h then
+            for _, e in ipairs(parts) do DeleteEntity(e) end
+            return nil
+        end
+        local e = CreateObjectNoOffset(h, x, y, z, false, false, false)
         FreezeEntityPosition(e, true)
         SetEntityCollision(e, false, false)
         if alpha then SetEntityAlpha(e, alpha, false) end
+        parts[#parts + 1] = e
     end
-    pose(base, fly, x, y, z, heading, ext)
-    return { base = base, fly = fly }
+    local s = { t = t, base = parts[1], fly = parts[#parts], parts = parts }
+    pose(s, x, y, z, heading, ext)
+    return s
 end
 
 local function despawn(id)
     local s = spawned[id]
     if not s then return end
-    for _, e in ipairs({ s.base, s.fly }) do if DoesEntityExist(e) then DeleteEntity(e) end end
+    for _, e in ipairs(s.parts) do if DoesEntityExist(e) then DeleteEntity(e) end end
     spawned[id] = nil
 end
 
@@ -65,7 +81,7 @@ local function refresh()
         local sig = ('%.2f|%.2f|%.2f|%.1f|%.2f'):format(l.x, l.y, l.z, l.heading, l.ext)
         local s = spawned[id]
         if s and s.sig ~= sig then
-            pose(s.base, s.fly, l.x, l.y, l.z, l.heading, l.ext)
+            pose(s, l.x, l.y, l.z, l.heading, l.ext)
             s.sig = sig
         elseif not s then
             s = spawnPair(typeOf(l.type), l.x, l.y, l.z, l.heading, l.ext)
@@ -143,7 +159,7 @@ local function carryLadder(t, existing)
     local ghost = spawnPair(t, c.x, c.y, c.z, 0.0, 0.0, 210)
     if not ghost then lib.notify({ type = 'error', description = 'Start opslabs-props for the ladder model' }) return nil end
     local real = existing and spawned[existing.id]
-    if real then SetEntityVisible(real.base, false, false) SetEntityVisible(real.fly, false, false) end
+    if real then for _, e in ipairs(real.parts) do SetEntityVisible(e, false, false) end end
     local ext, turn = existing and existing.ext or 0.0, 0.0
     local result
     local cosL, sinL = math.cos(math.rad(LEAN)), math.sin(math.rad(LEAN))
@@ -248,8 +264,8 @@ local function carryLadder(t, existing)
             foot = vector3(fx, fy, groundBelow(fx, fy, pos.z, ghost.base) or (pos.z - 1.0))
             note = 'Walk up to a wall or pole to lean it'
         end
-        pose(ghost.base, ghost.fly, foot.x, foot.y, foot.z, heading, ext)
-        outline({ ghost.base, ghost.fly }, rest)
+        pose(ghost, foot.x, foot.y, foot.z, heading, ext)
+        outline(ghost.parts, rest)
         local top = foot + axisFor(heading) * L
         DrawMarker(25, foot.x, foot.y, foot.z + 0.02, 0, 0, 0, 0, 0, 0, 0.8, 0.8, 0.8, rest and 48 or 255, rest and 209 or 159, rest and 88 or 10, 150, false, false, 2, false, nil, nil, false)
         DrawMarker(28, top.x, top.y, top.z, 0, 0, 0, 0, 0, 0, 0.07, 0.07, 0.07, rest and 48 or 255, rest and 209 or 159, rest and 88 or 10, 230, false, false, 2, false, nil, nil, false)
@@ -266,8 +282,8 @@ local function carryLadder(t, existing)
     end
     PlaceHud.release(sf)
     TriggerEvent('opslabs:carry', 'ladder', false)
-    for _, e in ipairs({ ghost.base, ghost.fly }) do if DoesEntityExist(e) then DeleteEntity(e) end end
-    if real and DoesEntityExist(real.base) then SetEntityVisible(real.base, true, false) SetEntityVisible(real.fly, true, false) end
+    for _, e in ipairs(ghost.parts) do if DoesEntityExist(e) then DeleteEntity(e) end end
+    if real and DoesEntityExist(real.base) then for _, e in ipairs(real.parts) do SetEntityVisible(e, true, false) end end
     return result
 end
 
@@ -324,7 +340,7 @@ local function extendMode(l)
             PlaySoundFrontend(-1, 'CLICK_BACK', 'WEB_NAVIGATION_SOUNDS_PHONE', true)
         end
         if not ladders[l.id] or not DoesEntityExist(s.fly) then break end
-        pose(s.base, s.fly, l.x, l.y, l.z, l.heading, ext)
+        pose(s, l.x, l.y, l.z, l.heading, ext)
         PlaceHud.draw(sf, 'Extending ladder', ('Extended %.1f / %.1f m   ·   reaches %.1f m'):format(ext, lt.maxExt, axisFor(l.heading).z * (lt.top + ext)), { 255, 159, 10 })
         if IsDisabledControlJustPressed(0, 191) then done = true break end
         if IsDisabledControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 25) or IsDisabledControlJustPressed(0, 200) then break end
@@ -334,7 +350,7 @@ local function extendMode(l)
         local r = lib.callback.await('opslabs-towers:ladder:extend', false, l.id, ext)
         if r and r.error then lib.notify({ type = 'error', description = r.error }) end
     end
-    if ladders[l.id] and spawned[l.id] then pose(s.base, s.fly, l.x, l.y, l.z, l.heading, ladders[l.id].ext) end
+    if ladders[l.id] and spawned[l.id] then pose(s, l.x, l.y, l.z, l.heading, ladders[l.id].ext) end
 end
 
 ---------------------------------------------------------------------------
@@ -380,7 +396,7 @@ function LaddersOnPole(pole)
         local p = poleAtTop(l)
         if p and math.abs(p.x - pole.x) < 0.01 and math.abs(p.y - pole.y) < 0.01 then
             local t = typeOf(l.type)
-            local s = t.top + l.ext - 1.9
+            local s = math.max(0.0, t.top + l.ext - 1.9)
             local feet = vector3(l.x, l.y, l.z) + axisFor(l.heading) * s
             out[#out + 1] = { l = l, s = s, h = feet.z - pole.z, angle = math.atan(feet.y - pole.y, feet.x - pole.x) }
         end
@@ -408,7 +424,7 @@ local function ladderTopNear(pos)
     for _, l in pairs(ladders) do
         local t = typeOf(l.type)
         local top = vector3(l.x, l.y, l.z) + axisFor(l.heading) * (t.top + l.ext)
-        if #(pos - top) < 1.8 and pos.z > top.z - 1.6 then return l, t.top + l.ext - 1.9 end
+        if #(pos - top) < 1.8 and pos.z > top.z - 1.6 then return l, math.max(0.0, t.top + l.ext - 1.9) end
     end
 end
 
@@ -437,7 +453,7 @@ local function climb(l, startS)
         DisablePlayerFiring(PlayerId(), true)
         local cur = ladders[l.id]
         if not cur or IsPedDeadOrDying(ped, true) then break end
-        local top = typeOf(cur.type).top + cur.ext - 1.9
+        local top = math.max(0.0, typeOf(cur.type).top + cur.ext - 1.9)
         local state = 'hold'
         if leaving then
             s = s - 1.6 * dt

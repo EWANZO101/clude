@@ -674,7 +674,7 @@ SectionMenu = function(id)
         add({ title = 'Cut a cable', description = 'Aim anywhere along it · or press C on a pole / ladder', icon = 'scissors', iconColor = RED, onSelect = function() A.cut(back) end })
         add({ title = 'Remove cable, trunking or a box', description = 'Aim and hold · Z puts it back', icon = 'trash-can', iconColor = RED, onSelect = function() A.remove(back) end })
         add({ title = 'Remove all cable within a range…', description = 'Pick what (cable, fibre, power, trunking or everything) and how far', icon = 'circle-radiation', iconColor = RED, onSelect = function() A.removeRange(back) end })
-        add({ title = 'Place an extension ladder', description = '6.9 m or 13 m · carry it, lean it, climb it (also /' .. (Config.Cabling.LadderCommand or 'ladder') .. ')', icon = 'stairs', onSelect = function() if PlaceLadder then PlaceLadder() end end })
+        add({ title = 'Place a ladder', description = 'Telescopic 0.9 → 3.2 m, extension 6.9 m or 13 m · carry it, lean it, climb it (also /' .. (Config.Cabling.LadderCommand or 'ladder') .. ')', icon = 'stairs', onSelect = function() if PlaceLadder then PlaceLadder() end end })
     elseif id == 'guides' then
         add({ title = 'Pole work guide — step by step', description = 'Fibre to a house · pole & ladder basics · power line — ticks off each step as you do it (F7)', icon = 'list-check', iconColor = GREEN,
             onSelect = function() if PoleGuideMenu then PoleGuideMenu() end end })

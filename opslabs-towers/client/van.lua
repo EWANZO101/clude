@@ -166,7 +166,7 @@ RegisterCommand(V.Command or 'opsvan', function() SpawnOpsVan() end, false)
 local function storesMenu(veh)
     local A = CableActions or {}
     local options = {
-        { title = 'Ladder', description = 'Take a 6.9 m or 13 m extension ladder off the roof', icon = 'stairs', onSelect = function() if PlaceLadder then PlaceLadder() end end },
+        { title = 'Ladder', description = 'Telescopic 0.9 → 3.2 m, or a 6.9 m or 13 m extension ladder off the roof', icon = 'stairs', onSelect = function() if PlaceLadder then PlaceLadder() end end },
         { title = 'Cable box or drum', description = 'CAT6, fibre, spine feed or ULW drop', icon = 'box-open', onSelect = function() if A.placeBox then A.placeBox(function() end) end end },
         { title = 'Phone cable (copper)', description = 'Drop wire, internal CW1308 or 50-pair — run it and punch it down', icon = 'phone', iconColor = '#bf5af2', onSelect = function() if A.copper then A.copper(function() end) end end },
         { title = 'Road safety kit', description = 'Cones, barriers, signs, traffic lights, tape', icon = 'triangle-exclamation', iconColor = '#ff9f0a', onSelect = function() if OpenRoadworksMenu then OpenRoadworksMenu() end end },
