@@ -194,6 +194,10 @@ local function poleMenu(pole, H, angle, h, onClose)
             end }
         end
     end
+    if ToolDrillPole and not (pole.house or pole.anchor) then
+        table.insert(options, 1, { title = 'Cordless drill · drill a bolt hole', description = ('Through-bolt hole for a bracket at %.1f m'):format(z - pole.z), icon = 'screwdriver-wrench', iconColor = '#0a84ff',
+            onSelect = function() ToolDrillPole(z - pole.z) onClose() end })
+    end
     if #options == 0 then options[1] = { title = 'Nothing to fit here', readOnly = true } end
     lib.registerContext({ id = 'pole_equipment', root = true, title = 'On the pole', options = options, onExit = onClose })
     lib.showContext('pole_equipment')

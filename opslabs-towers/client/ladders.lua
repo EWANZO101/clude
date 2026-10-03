@@ -361,8 +361,12 @@ end
 -- only things that go on a wall (no poles, cabinets, buildings or exchange plant)
 local WALL_CATS = { ['Customer premises · outside'] = true, ['Customer premises · inside'] = true, ['On the pole'] = true }
 
-function LadderWallEquipment(onClose)
+function LadderWallEquipment(onClose, wallDir)
     local options = {}
+    if ToolDrill then
+        options[#options + 1] = { title = 'Cordless drill · drill an entry hole here', description = 'Through the wall in front of you, then fit the entry bushing', icon = 'screwdriver-wrench', iconColor = '#0a84ff',
+            onSelect = function() ToolDrill({ dir = wallDir or vector3(-math.sin(math.rad(GetEntityHeading(PlayerPedId()))), math.cos(math.rad(GetEntityHeading(PlayerPedId()))), 0.0) }) onClose() end }
+    end
     for _, e in ipairs(CC.Equipment) do
         if (WALL_CATS[e.cat] or e.model == 'opslabs_house_pole') and IsModelInCdimage(joaat(e.model)) then
             options[#options + 1] = { title = 'Fit: ' .. e.label, description = 'Aim at the wall · scroll to rotate', icon = 'plus', onSelect = function()
@@ -488,7 +492,8 @@ local function climb(l, startS)
                 if onPole and PoleEquipMenu then
                     PoleEquipMenu(onPole, math.atan(feetNow.y - onPole.y, feetNow.x - onPole.x), feetNow.z - onPole.z, function() menuOpen = false end)
                 else
-                    LadderWallEquipment(function() menuOpen = false end)
+                    local ax = axisFor(cur.heading)
+                    LadderWallEquipment(function() menuOpen = false end, vector3(ax.x, ax.y, 0.0) / math.max(0.01, math.sqrt(ax.x * ax.x + ax.y * ax.y)))
                 end
             end
             -- near the top of a ladder leaning on a pole: step across onto the pole

@@ -87,7 +87,7 @@ Taking the uniform off puts your own clothes back.
 (nudge a piece up / down, left / right, in / out with the arrows — Shift for fine — and save). Stored in `uniform.json`.
 
 ## Tool kit — `/toolkit`, the van stores, or `/towers` → Tools
-**Cordless drill** (fibre and copper kits, and Tools → Cordless drill): face an outside wall — it drills the cable entry hole and fits the brickwork entry bushing for the drop cable.
+**Cordless drill** (fibre and copper kits, and Tools → Cordless drill): face an outside wall — it drills the cable entry hole and fits the brickwork entry bushing for the drop cable. Up a ladder, **G** → *Cordless drill · drill an entry hole here* drills the wall in front of you; up a pole, **G** → *Cordless drill · drill a bolt hole* drills a through-bolt hole at your height (you stay in your climbing pose).
 **OPS Openline fibre & telecom:** fusion splicer (splice loss at a joint / CBT / CSP), OTDR (shoots the fibre beside you — length,
 breaks, open ends), visual fault locator (breaks and open ends glow red for 30 s), optical power meter (dBm at the ONT),
 fibre strippers & Kevlar shears (prep → cleaner splice), one-click cleaner, manhole keys & gas detector, duct rods & draw grips

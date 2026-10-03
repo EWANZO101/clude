@@ -540,15 +540,18 @@ end
 ---------------------------------------------------------------------------
 -- cordless drill: drill the cable entry hole through an outside wall and fit the entry bushing
 ---------------------------------------------------------------------------
-local function drill()
+--- opts (on a ladder): { dir = horizontal direction to the wall } — keeps the climbing pose (no work animation)
+local function drill(opts)
     local ped = PlayerPedId()
-    local from = GetEntityCoords(ped) + vector3(0.0, 0.0, 0.2)
+    local from = GetEntityCoords(ped) + vector3(0.0, 0.0, opts and 0.45 or 0.2)
     local h = math.rad(GetEntityHeading(ped))
-    local to = from + vector3(-math.sin(h), math.cos(h), 0.0) * 1.6
+    local dir = opts and opts.dir or vector3(-math.sin(h), math.cos(h), 0.0)
+    local to = from + dir * (opts and 4.0 or 1.6)          -- from a ladder the wall can be a few metres off
     local _, hit, at, n = GetShapeTestResult(StartExpensiveSynchronousShapeTestLosProbe(from.x, from.y, from.z, to.x, to.y, to.z, 1 + 16, ped, 4))
     if hit ~= 1 or math.abs(n.z) > 0.4 then return need('wall', 'face the wall where the cable goes in') end
-    if not work('Marking the spot and drilling a pilot hole', 2500, 'hands', 'drill') then return end
-    if not work('Drilling through the brickwork with the long masonry bit', 5000, 'hands', 'drill') then return end
+    local anim = not opts and 'hands' or nil
+    if not work('Marking the spot and drilling a pilot hole', 2500, anim, 'drill') then return end
+    if not work('Drilling through the brickwork with the long masonry bit', 5000, anim, 'drill') then return end
     if not lib.skillCheck({ 'easy', 'medium' }, { 'e' }) then return lib.notify({ type = 'error', description = 'The bit wandered and blew the brick out the other side — fill it and drill again' }) end
     local head = vector3(at.x + n.x * 0.005, at.y + n.y * 0.005, at.z)
     local heading = math.deg(math.atan(n.x, -n.y)) % 360             -- the bushing's front faces out of the wall
@@ -562,7 +565,15 @@ local function drill()
     else lib.notify({ type = 'error', description = (r and r.error) or 'Could not fit the bushing' }) end
 end
 
-ToolDrill = drill                                          -- also straight from /towers → Tools
+ToolDrill = drill                                          -- also straight from /towers → Tools, and from a ladder (G)
+
+--- up a pole: drill a through-bolt hole for a bracket at your height (keeps the climbing pose)
+function ToolDrillPole(heightAbove)
+    if not work('Drilling a through-bolt hole in the pole', 4000, nil, 'drill') then return end
+    if not lib.skillCheck({ 'easy' }, { 'e' }) then return lib.notify({ type = 'error', description = 'The bit snagged in the grain — back it out and go again' }) end
+    if not work('Clearing the swarf and fitting the bolt', 1500, nil, 'drill') then return end
+    lib.notify({ type = 'success', description = ('Bolt hole drilled at %.1f m — ready to fit the bracket'):format(heightAbove or 0) })
+end
 
 ---------------------------------------------------------------------------
 -- MEWP (cherry picker): set up in front of you, ride the basket up to 14 m
