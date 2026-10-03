@@ -256,6 +256,8 @@ function UndergroundMenu()
     local options = {
         { title = 'Lay a tunnel line', description = 'Click the start, aim at the end · chambers at the ends, a section every 4 m, level all the way', icon = 'route', iconColor = '#30d158',
           onSelect = function() tunnelLine() UndergroundMenu() end },
+        { title = 'Dig forward from here (inside)', description = 'Stand by an open end underground · walk into the highlighted section and it\'s built, the next one appears ahead · G tunnel / chamber',
+          icon = 'person-digging', iconColor = '#30d158', onSelect = function() if DigForward then DigForward() end end },
         { title = 'Place chambers one by one', description = '3.2 × 3.2 m walk-in chamber with an access hatch (PIN lock) and step irons', icon = 'square', iconColor = '#8e8e93',
           onSelect = function() placeOne(CHAMBER) UndergroundMenu() end },
         { title = 'Place tunnel sections one by one', description = '4 m sections · aim near an open end and they join on · keeps going until Backspace', icon = 'grip-lines-vertical', iconColor = '#8e8e93',
@@ -283,6 +285,8 @@ end
 -- (a local prop, not saved) — join another piece on and that wall goes, so lines can always be extended
 ---------------------------------------------------------------------------
 local seals = {}
+local DigKey = nil              -- the open end being dug right now gets no wall
+local function endKey(p) return ('%.1f|%.1f|%.1f'):format(p.x, p.y, p.z) end
 CreateThread(function()
     while true do
         Wait(1000)
@@ -290,9 +294,9 @@ CreateThread(function()
         local want = {}
         for _, p in ipairs(connections()) do
             if math.abs(p.x - pos.x) < 150.0 and math.abs(p.y - pos.y) < 150.0 then
-                local key = ('%.1f|%.1f|%.1f'):format(p.x, p.y, p.z)
-                want[key] = true
-                if not seals[key] or not DoesEntityExist(seals[key]) then
+                local key = endKey(p)
+                want[key] = key ~= DigKey or nil
+                if key ~= DigKey and (not seals[key] or not DoesEntityExist(seals[key])) then
                     local h = joaat(ENDWALL)
                     if IsModelInCdimage(h) then
                         lib.requestModel(h, 5000)
@@ -317,6 +321,100 @@ AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for _, e in pairs(seals) do if DoesEntityExist(e) then DeleteEntity(e) end end
 end)
+
+---------------------------------------------------------------------------
+-- dig forward: inside, at an open end — a highlighted section (solid, so you can walk on it) waits in front of you;
+-- walk into it and it's built for real, the wall goes, and the next one appears ahead. G swaps tunnel / chamber.
+---------------------------------------------------------------------------
+local function pieceAt(model, spot)
+    for _, f in pairs(fixtures()) do
+        if f.model == model and math.abs(f.x - spot.x) < 0.2 and math.abs(f.y - spot.y) < 0.2 and math.abs(f.z - spot.z) < 0.2 then return f end
+    end
+end
+
+function DigForward()
+    local ped = PlayerPedId()
+    local pos = GetEntityCoords(ped)
+    local target, bd
+    for _, p in ipairs(connections()) do
+        local d = math.sqrt((p.x - pos.x) ^ 2 + (p.y - pos.y) ^ 2)
+        if pos.z < p.z - 0.8 and pos.z > p.z + FLOOR - 0.5 and d < (bd or 4.5) then target, bd = p, d end
+    end
+    if not target then return lib.notify({ type = 'error', description = 'Go underground and stand by an open end (a plain concrete wall) of a tunnel or chamber' }) end
+    local model = TUNNEL
+    local ghost, ghostModel, spot
+    local function dropGhost() if ghost and DoesEntityExist(ghost) then DeleteEntity(ghost) end ghost = nil end
+    local function makeGhost()
+        dropGhost()
+        spot = snapped(model, target)
+        local h = joaat(model)
+        if not IsModelInCdimage(h) then return end
+        lib.requestModel(h, 5000)
+        ghost = CreateObjectNoOffset(h, spot.x, spot.y, spot.z, false, false, false)
+        SetEntityHeading(ghost, spot.heading)
+        FreezeEntityPosition(ghost, true)
+        SetEntityAlpha(ghost, 140, false)
+        SetEntityDrawOutlineColor(48, 209, 88, 255)
+        SetEntityDrawOutlineShader(1)
+        SetEntityDrawOutline(ghost, true)
+        ghostModel = model
+    end
+    local function openUp()
+        DigKey = endKey(target)
+        local e = seals[DigKey]
+        if e and DoesEntityExist(e) then DeleteEntity(e) end
+        seals[DigKey] = nil
+    end
+    openUp()
+    makeGhost()
+    local sf2 = PlaceHud.buttons({ { 'Walk forward to dig', 32 }, { 'Tunnel / chamber', 47 }, { 'Stop', { 177, 200 } } })
+    local built, pending = 0, nil
+    while true do
+        Wait(0)
+        for _, c in ipairs({ 47, 177, 199, 200 }) do DisableControlAction(0, c, true) end
+        if IsDisabledControlJustPressed(0, 47) and not pending then
+            model = model == TUNNEL and CHAMBER or TUNNEL
+            makeGhost()
+        end
+        if pending then
+            -- keep the highlighted piece under your feet until the real one has streamed in
+            if pieceAt(pending.model, pending.spot) or GetGameTimer() > pending.giveUp then
+                local nextEnd = pending.nextEnd
+                pending = nil
+                target = nextEnd
+                -- carry on only if nothing is joined there already
+                local free = false
+                for _, p in ipairs(connections()) do if endKey(p) == endKey(target) then free = true end end
+                if not free then dropGhost() lib.notify({ type = 'inform', description = 'You\'ve dug through to another tunnel' }) break end
+                openUp()
+                makeGhost()
+            end
+        else
+            pos = GetEntityCoords(ped)
+            local along = (pos.x - target.x) * target.dx + (pos.y - target.y) * target.dy
+            if along > 0.6 then
+                local r = lib.callback.await('opslabs-towers:fixture:save', false, { model = ghostModel, x = spot.x, y = spot.y, z = spot.z, heading = spot.heading })
+                if not (r and r.ok) then lib.notify({ type = 'error', description = (r and r.error) or 'Could not dig here' }) break end
+                built = built + 1
+                local len = ghostModel == CHAMBER and 2 * CH or SEG
+                pending = { model = ghostModel, spot = spot, giveUp = GetGameTimer() + 4000,
+                    nextEnd = { x = target.x + target.dx * len, y = target.y + target.dy * len, z = target.z, dx = target.dx, dy = target.dy } }
+                if ghost then SetEntityDrawOutline(ghost, false) end
+            end
+        end
+        PlaceHud.draw(sf2, 'Digging a tunnel', ('Next: %s   ·   %d built   ·   walk into the highlighted section'):format(model == TUNNEL and 'tunnel section (4 m)' or 'chamber', built), { 48, 209, 88 })
+        if IsDisabledControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 200) then break end
+    end
+    PlaceHud.release(sf2)
+    -- don't leave anyone standing on nothing: wait for the real piece before taking the highlighted one away
+    if pending then
+        local t = GetGameTimer() + 4000
+        while not pieceAt(pending.model, pending.spot) and GetGameTimer() < t do Wait(100) end
+    end
+    dropGhost()
+    DigKey = nil
+    if built > 0 then lib.notify({ type = 'success', description = ('Dug %d piece(s) — the open end is sealed until you carry on'):format(built) }) end
+end
 
 ---------------------------------------------------------------------------
 -- getting in and out
@@ -390,3 +488,9 @@ CreateThread(function()
         Wait(found and 0 or 300)
     end
 end)
+
+-- /dig: straight into dig mode when you're standing at an open end underground
+RegisterCommand('dig', function()
+    if not lib.callback.await('opslabs-towers:cable:can', false) then return lib.notify({ type = 'error', description = 'Only network engineers can dig tunnels' }) end
+    DigForward()
+end, false)

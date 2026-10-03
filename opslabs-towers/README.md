@@ -53,6 +53,10 @@ real collision, furniture, lights that come on inside, and doors.
   - **Chambers along the line:** none, back to back (chambers only), or one after every 1 / 2 / 3 / 5 tunnel sections.
   - **Sealed walls:** any opening with nothing joined to it shows a concrete wall automatically; join another piece on and that wall
     goes — so a line can always be extended later. Opening the hatch shows the shaft going down (the road itself can't have a hole cut in it).
+  - **Dig forward** (`/dig`, or the menu): stand underground by an open end — the wall goes and a highlighted, walkable section waits
+    in front of you; walk into it and it's built, then the next one appears ahead, so you dig as you walk. **G** swaps the next piece
+    between a tunnel section and a chamber; Backspace stops (the end seals itself again). It stops by itself if you break through into
+    another tunnel.
   - **Street entrance:** a small access kiosk with a steel door; below it a stairwell with one opening that joins on to an open end like a
     chamber. **F** at the door goes down the stairs; **F** at the foot of the stairs comes back up to the street.
   - **Riser pipes:** duct pipes up out of the ground anywhere — a goose-neck above ground, or flush with a duct cap (under a cabinet /
