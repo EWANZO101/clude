@@ -143,6 +143,12 @@ local ready = false
 CreateThread(function()
     while not DatabaseReady do Wait(100) end
     for _, q in ipairs(SCHEMA) do MySQL.query.await(q) end
+    -- the renewal check runs every minute: index what it filters on
+    local hasIdx = MySQL.scalar.await([[SELECT COUNT(*) FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'opslabs_phone_carrier_lines' AND INDEX_NAME = 'status_due']])
+    if (tonumber(hasIdx) or 0) == 0 then
+        MySQL.query.await('ALTER TABLE opslabs_phone_carrier_lines ADD INDEX status_due (status, period_end)')
+    end
     if MySQL.scalar.await('SELECT COUNT(*) FROM opslabs_phone_carrier_plans') == 0 then
         for _, p in ipairs(DEFAULT_PLANS) do
             MySQL.insert.await([[INSERT INTO opslabs_phone_carrier_plans (code, kind, name, description, price, period_days, sms, minutes, data_mb, color, featured, public, sort)

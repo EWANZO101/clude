@@ -201,7 +201,7 @@ local function jobAllowed(src, jobs)
     local xPlayer = ESX.GetPlayerFromId(src)
     local job = xPlayer and xPlayer.getJob() and xPlayer.getJob().name
     if not job then return false end
-    for j in jobs:gmatch('[^,]+') do if j == job then return true end end
+    for j in jobs:gmatch('[^,]+') do if j:match('^%s*(.-)%s*$') == job then return true end end
     return false
 end
 

@@ -8,12 +8,55 @@ local CABLE_R = 0.0045        -- lift so the 8 mm cable lies on the surface
 local TRUNK_LIFT = 0.0006
 local TRUNK_INSIDE = 0.008    -- cable height inside 25x16 trunking
 
+-- Only what changed is redrawn: every box / run / fixture gets a signature, and a key is
+-- despawned (and re-streamed) only when its signature is new. Runs also get a bounding
+-- sphere so streaming and aiming can skip far-away cable cheaply.
+local sigs = {}
+local POLE_MODELS = { opslabs_pole_07m = true, opslabs_pole_10m = true, opslabs_pole_13m = true }
+local function mm(v) return math.floor((v or 0) * 1000 + 0.5) end
+
+local function runSig(r)
+    local t = { r.kind, r.color or '', r.start_term and 1 or 0, r.end_term and 1 or 0 }
+    for _, p in ipairs(r.points or {}) do t[#t + 1] = ('%d,%d,%d,%s,%s'):format(mm(p.x), mm(p.y), mm(p.z), p.t or '', p.p or '') end
+    return table.concat(t, '|')
+end
+
+local function runBounds(r)
+    local pts, n = r.points or {}, #(r.points or {})
+    if n == 0 then r._c, r._r = vector3(0.0, 0.0, -1000.0), 0.0 return end
+    local sx, sy, sz = 0.0, 0.0, 0.0
+    for _, p in ipairs(pts) do sx, sy, sz = sx + p.x, sy + p.y, sz + p.z end
+    local c = vector3(sx / n, sy / n, sz / n)
+    local rad = 0.0
+    for _, p in ipairs(pts) do rad = math.max(rad, #(c - vector3(p.x, p.y, p.z))) end
+    r._c, r._r = c, rad + 1.0          -- + room for sagging spans
+end
+
 RegisterNetEvent('opslabs-towers:cabling', function(d)
-    data.boxes, data.runs, data.fixtures = {}, {}, {}
-    for _, f in ipairs(d.fixtures or {}) do data.fixtures[f.id] = f end
-    for _, b in ipairs(d.boxes or {}) do data.boxes[b.id] = b end
-    for _, r in ipairs(d.runs or {}) do data.runs[r.id] = r end
-    for key in pairs(spawned) do DespawnKey(key) end   -- redraw with fresh data
+    local boxes, runs, fixtures, newSigs = {}, {}, {}, {}
+    local poleSig = {}
+    for _, f in ipairs(d.fixtures or {}) do
+        fixtures[f.id] = f
+        if POLE_MODELS[f.model] then poleSig[#poleSig + 1] = ('%d:%d,%d'):format(f.id, mm(f.x), mm(f.y)) end
+    end
+    poleSig = table.concat(poleSig, ';')   -- pole kit's bands depend on which pole it sits on
+    for id, f in pairs(fixtures) do
+        newSigs['f' .. id] = ('%s|%d|%d|%d|%d|%s'):format(f.model, mm(f.x), mm(f.y), mm(f.z), mm(f.heading), POLE_MODELS[f.model] and '' or poleSig)
+    end
+    for _, b in ipairs(d.boxes or {}) do
+        boxes[b.id] = b
+        newSigs['b' .. b.id] = ('%s|%d|%d|%d|%d'):format(b.kind or 'cat6', mm(b.x), mm(b.y), mm(b.z), mm(b.heading))
+    end
+    for _, r in ipairs(d.runs or {}) do
+        runs[r.id] = r
+        runBounds(r)
+        newSigs['r' .. r.id] = runSig(r)
+    end
+    data.boxes, data.runs, data.fixtures = boxes, runs, fixtures
+    for key in pairs(spawned) do
+        if newSigs[key] ~= sigs[key] then DespawnKey(key) end   -- gone or changed: redraw just this one
+    end
+    sigs = newSigs
 end)
 
 ---------------------------------------------------------------------------
@@ -262,6 +305,7 @@ function DespawnKey(key)
 end
 
 local function nearRun(r, pos, dist)
+    if r._c then return #(pos - r._c) - r._r < dist end
     for _, p in ipairs(r.points or {}) do
         if #(pos - vector3(p.x, p.y, p.z)) < dist then return true end
     end
@@ -363,7 +407,7 @@ local function pickRun(onlyId, tol)
     local wall = at and #(at - camPos) + 0.3 or maxS
     local bestRun, bestSeg, bestPt, bestD, bestS
     for id, r in pairs(data.runs) do
-        if not onlyId or id == onlyId then
+        if (not onlyId or id == onlyId) and (not r._c or #(camPos - r._c) - r._r < maxS) then
             local pts = r.points or {}
             for i = 1, #pts - 1 do
                 local a, b = pts[i], pts[i + 1]

@@ -114,11 +114,20 @@ local function draw3d(x, y, z, text)
 end
 
 CreateThread(function()
+    local near, nextScan = {}, 0
     while true do
-        if not overlay then Wait(1000) else
+        if not overlay then Wait(1000) nextScan = 0 else
             Wait(0)
             local pos = GetEntityCoords(PlayerPedId())
-            for _, t in pairs(towers) do
+            -- only re-scan the tower list twice a second; draw the cached nearby ones every frame
+            if GetGameTimer() >= nextScan then
+                nextScan = GetGameTimer() + 500
+                near = {}
+                for _, t in pairs(towers) do
+                    if #(pos - vector3(t.x, t.y, t.z)) < 260.0 then near[#near + 1] = t end
+                end
+            end
+            for _, t in ipairs(near) do
                 local d = #(pos - vector3(t.x, t.y, t.z))
                 if d < 250.0 then
                     local r, g, b = 60, 140, 255
