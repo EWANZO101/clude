@@ -159,6 +159,9 @@ Config.Cabling = {
         { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Underground chamber (walk-in, access hatch)', model = 'opslabs_ug_chamber', underground = true },
         { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Cable tunnel section 4 m', model = 'opslabs_ug_tunnel', underground = true },
         { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Tunnel end wall', model = 'opslabs_ug_tunnel_end', underground = true },
+        { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Street entrance (kiosk, stairs down)', model = 'opslabs_ug_entrance', underground = true },
+        { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Riser pipe · goose-neck', model = 'opslabs_ug_riser', underground = true },
+        { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Riser pipe · flush cap', model = 'opslabs_ug_riser_flush', underground = true },
         { net = 'sites', cat = 'Security & fencing', label = 'Palisade fence panel 2.5 m', model = 'opslabs_fence_pal_grey', fence = true, sizeLabel = 'Finish', sizes = {
             { label = 'Anthracite', model = 'opslabs_fence_pal_grey' }, { label = 'Green', model = 'opslabs_fence_pal_green' }, { label = 'Galvanised', model = 'opslabs_fence_pal_galv' } } },
         { net = 'sites', cat = 'Security & fencing', label = 'Mesh fence panel 2.5 m', model = 'opslabs_fence_mesh_grey', fence = true, sizeLabel = 'Finish', sizes = {
@@ -254,7 +257,7 @@ Config.Cabling = {
 Config.Isp = {
     Headends = { 'opslabs_olt', 'opslabs_cabinet_pcp', 'opslabs_cabinet_fttc', 'opslabs_cabinet_green3', 'opslabs_cabinet_green3_open' },   -- light comes from these
     PassThrough = { 'opslabs_splice_enclosure', 'opslabs_cbt', 'opslabs_cbt_4', 'opslabs_cbt_8', 'opslabs_csp', 'opslabs_joint_tophat',
-        'opslabs_fdf', 'opslabs_ucbt', 'opslabs_track_joint', 'opslabs_base_node', 'opslabs_entry_cap', 'opslabs_splice_tray' },  -- fibre joints / splitters
+        'opslabs_fdf', 'opslabs_ucbt', 'opslabs_track_joint', 'opslabs_base_node', 'opslabs_entry_cap', 'opslabs_splice_tray', 'opslabs_ug_riser', 'opslabs_ug_riser_flush' },  -- fibre joints / splitters
     Ont = 'opslabs_ont',
     OltNeedsBackhaul = true,        -- an OLT only lights fibre when a powered core router patches it to an uplink
     ExchangeRadius = 60.0,          -- metres: routers, OLTs and power plant within this count as the same exchange
@@ -398,7 +401,7 @@ Config.PhoneLine = {
     Exchange = { 'opslabs_mdf' },                                      -- dial tone comes from here
     NeedsPower = true,                                                 -- the exchange needs its power plant
     PassThrough = { 'opslabs_cabinet_pcp', 'opslabs_cabinet_green3', 'opslabs_cabinet_green3_open', 'opslabs_copper_dp', 'opslabs_pole_splice_box', 'opslabs_copper_joint_aerial',
-        'opslabs_copper_jb', 'opslabs_footway_box', 'opslabs_hof' },    -- joints, DPs, cabinets
+        'opslabs_copper_jb', 'opslabs_footway_box', 'opslabs_hof', 'opslabs_ug_riser', 'opslabs_ug_riser_flush' },    -- joints, DPs, cabinets
     Sockets = { 'opslabs_nte5c', 'opslabs_copper_linejack', 'opslabs_vdsl_faceplate' },   -- where a phone plugs in (they feed extensions too)
     OhmsPerKm = 168,                                                   -- loop resistance of 0.5 mm copper
     NumberPrefix = '01632 96',                                         -- line numbers: prefix + 4 digits from the socket
@@ -504,6 +507,7 @@ Config.Buildings = {
         lights = { z = -0.55, rgb = { 255, 240, 215 }, range = 5.5, power = 1.6, pts = { { 0.6, 0.6 } } },
         doors = { { label = 'Access hatch', leaves = { { hinge = { -1.4, -1.15 }, z = 0.0, h = 0, w = 0.8, kind = 'opslabs_ug_hatch_lid', lift = 100 } } } },
     },
+    opslabs_ug_entrance = { lights = { z = -0.55, rgb = { 255, 240, 215 }, range = 5.5, power = 1.6, pts = { { 0.6, 0.6 } } } },
     opslabs_ug_tunnel = { lights = { z = -0.95, rgb = { 235, 242, 255 }, range = 5.0, power = 1.5, pts = { { 0.0, -1.0 }, { 0.0, 1.0 } } } },
     opslabs_exchange_building = {
         lights = { z = 4.6, rgb = { 255, 250, 235 }, range = 7.0, power = 1.6,
@@ -544,6 +548,8 @@ Config.Van = {
 Config.Underground = {
     Hatch = { -1.0, -1.15 },   -- hatch centre in the chamber's frame
     Floor = -3.0,              -- walkable floor below the road surface
+    EntranceDoor = { 0.0, -1.0 },      -- street entrance: just outside the kiosk door
+    EntranceLanding = { -0.9, 1.0 },   -- street entrance: foot of the stairs
 }
 
 -- Anti-climb zones along every fence panel, fence post and gate: you can't jump, climb or vault over them.

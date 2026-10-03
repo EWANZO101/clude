@@ -53,6 +53,8 @@ Streamed props used by opslabs-towers.
 | `opslabs_ladder_tele_base`, `opslabs_ladder_tele_sec` | Telescopic aluminium ladder: 0.32 m sections (stiles, rung, black latch collars) stacked 10 high by the game — nested to 0.9 m, open to 3.2 m |
 | `opslabs_cabinet_green3` (+ `_open`) | Green three-door street cabinet (1.25 × 0.55 m, 1.42 m to the ridge): louvred and vented doors, side vents, pitched lid on a dark plinth — the `_open` version has the middle door swung open showing shelves, patch panels, line cards and leads |
 | `opslabs_rw_barrier_red` | Red interlocking pedestrian barrier, 1 m long × 1 m tall: grid panel, white reflective plate, rubber feet, pegs / hooks with yellow clips — laid end to end every 1 m |
+| `opslabs_ug_entrance` | Street entrance to the tunnels: green GRP access kiosk with a steel door and keypad, over a stairwell (concrete stair flight, handrails, lamp) with one tunnel opening in its +Y wall |
+| `opslabs_ug_riser`, `opslabs_ug_riser_flush` | Cable duct riser pipe from a tunnel / chamber ceiling up through the ground: goose-neck with capped gland, or flush duct cap — concrete collar at ground level |
 
 Access point: white matte body + glowing blue LED ring. Gateways: detailed front/back panel textures and glowing screens (emissive). All have embedded textures and collision (plastic / metal); fronts face the player when placed. No logos or text.
 

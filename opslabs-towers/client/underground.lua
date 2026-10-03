@@ -10,7 +10,11 @@ local HATCH = U.Hatch or { -1.0, -1.15 }           -- hatch centre in the chambe
 local FLOOR = U.Floor or -3.0
 local IRONS = { HATCH[1], -1.0 }                   -- where you stand at the foot of the step irons
 local CHAMBER, TUNNEL, ENDWALL = 'opslabs_ug_chamber', 'opslabs_ug_tunnel', 'opslabs_ug_tunnel_end'
-local LABEL = { [CHAMBER] = 'underground chamber', [TUNNEL] = 'tunnel section', [ENDWALL] = 'tunnel end wall' }
+local ENTRANCE, RISER, RISER_FLUSH = 'opslabs_ug_entrance', 'opslabs_ug_riser', 'opslabs_ug_riser_flush'
+local LABEL = { [CHAMBER] = 'underground chamber', [TUNNEL] = 'tunnel section', [ENDWALL] = 'tunnel end wall',
+    [ENTRANCE] = 'street entrance', [RISER] = 'riser pipe', [RISER_FLUSH] = 'flush riser pipe' }
+local ENT_DOOR = U.EntranceDoor or { 0.0, -1.0 }       -- outside the kiosk door (entrance frame)
+local ENT_LAND = U.EntranceLanding or { -0.9, 1.0 }    -- foot of the stairs, below
 
 local function fixtures() return CablingFixtures and CablingFixtures() or {} end
 local function headingOf(dx, dy) return math.deg(math.atan(-dx, dy)) % 360 end
@@ -28,7 +32,8 @@ end
 local function connections()
     local pts = {}
     for _, f in pairs(fixtures()) do
-        local list = f.model == CHAMBER and { { CH, 0 }, { -CH, 0 }, { 0, CH }, { 0, -CH } } or f.model == TUNNEL and { { 0, SEG / 2 }, { 0, -SEG / 2 } } or nil
+        local list = f.model == CHAMBER and { { CH, 0 }, { -CH, 0 }, { 0, CH }, { 0, -CH } } or f.model == TUNNEL and { { 0, SEG / 2 }, { 0, -SEG / 2 } }
+            or f.model == ENTRANCE and { { 0, CH } } or nil
         for _, p in ipairs(list or {}) do
             local x, y = toWorld(f, p[1], p[2])
             local len = math.sqrt(p[1] * p[1] + p[2] * p[2])
@@ -65,7 +70,7 @@ local function groundAt(x, y, z)
 end
 
 --- outline a piece's footprint on the road (the structure itself is out of sight below)
-local FOOT = { [CHAMBER] = { CH, CH }, [TUNNEL] = { 1.2, SEG / 2 }, [ENDWALL] = { 1.2, 0.1 } }
+local FOOT = { [CHAMBER] = { CH, CH }, [TUNNEL] = { 1.2, SEG / 2 }, [ENDWALL] = { 1.2, 0.1 }, [ENTRANCE] = { CH, CH }, [RISER] = { 0.15, 0.15 }, [RISER_FLUSH] = { 0.15, 0.15 } }
 local function footprint(model, x, y, z, heading, r, g, b)
     local e = FOOT[model]
     local c = {}
@@ -82,8 +87,10 @@ end
 
 --- where a piece goes when built onto an open end
 local function snapped(model, p)
-    local off = model == CHAMBER and CH or model == TUNNEL and SEG / 2 or 0.0
-    return { x = p.x + p.dx * off, y = p.y + p.dy * off, z = p.z, heading = headingOf(p.dx, p.dy) }
+    local off = (model == CHAMBER or model == ENTRANCE) and CH or model == TUNNEL and SEG / 2 or 0.0
+    -- an entrance has its one opening on its +Y side: that side faces back on to the open end
+    local heading = model == ENTRANCE and headingOf(-p.dx, -p.dy) or headingOf(p.dx, p.dy)
+    return { x = p.x + p.dx * off, y = p.y + p.dy * off, z = p.z, heading = heading }
 end
 
 local function nearestEnd(at, maxD)
@@ -118,7 +125,7 @@ local function placeOne(model)
         local at = aimGround(40.0)
         local spot, snapEnd
         if at then
-            local p = not IsControlPressed(0, 21) and nearestEnd(at, 3.0)
+            local p = model ~= RISER and model ~= RISER_FLUSH and not IsControlPressed(0, 21) and nearestEnd(at, 3.0)
             if p then spot, snapEnd = snapped(model, p), true
             else spot = { x = at.x, y = at.y, z = at.z + depth, heading = turn % 360 } end
             SetEntityCoordsNoOffset(ghost, spot.x, spot.y, spot.z, false, false, false)
@@ -255,6 +262,12 @@ function UndergroundMenu()
           onSelect = function() placeOne(TUNNEL) UndergroundMenu() end },
         { title = 'Close an open end', description = 'End wall with sealed ducts', icon = 'square-xmark', iconColor = '#8e8e93',
           onSelect = function() placeOne(ENDWALL) UndergroundMenu() end },
+        { title = 'Place a street entrance', description = 'Access kiosk with stairs down · joins on to an open end like a chamber · F at the door to go down', icon = 'door-open', iconColor = '#30d158',
+          onSelect = function() placeOne(ENTRANCE) UndergroundMenu() end },
+        { title = 'Place riser pipes (goose-neck)', description = 'Duct pipe up out of the ground anywhere · from the tunnel / chamber ceiling below · fibre & copper join through it', icon = 'faucet', iconColor = '#8e8e93',
+          onSelect = function() placeOne(RISER) UndergroundMenu() end },
+        { title = 'Place riser pipes (flush)', description = 'Ends at ground level with a duct cap — under a cabinet or beside a pole', icon = 'circle-dot', iconColor = '#8e8e93',
+          onSelect = function() placeOne(RISER_FLUSH) UndergroundMenu() end },
     }
     for i = 1, math.min(#near, 25) do
         local f = near[i].f
@@ -334,6 +347,22 @@ CreateThread(function()
         local found = false
         if not IsPedInAnyVehicle(ped, false) then
             for _, f in pairs(fixtures()) do
+                if f.model == ENTRANCE and math.abs(pos.x - f.x) < 6.0 and math.abs(pos.y - f.y) < 6.0 then
+                    local dx, dy = toWorld(f, ENT_DOOR[1], ENT_DOOR[2])
+                    local lx, ly = toWorld(f, ENT_LAND[1], ENT_LAND[2])
+                    if pos.z > f.z - 0.5 and pos.z < f.z + 3.0 and math.sqrt((pos.x - dx) ^ 2 + (pos.y - dy) ^ 2) < 1.2 then
+                        found = true
+                        text3d(dx, dy, f.z + 1.2, '[F] Go down to the tunnels')
+                        if IsControlJustPressed(0, 23) then climb('Unlocking the door and going down the stairs', lx, ly, f.z + FLOOR + 1.0, f.heading or 0.0) end
+                    elseif pos.z < f.z - 1.0 and pos.z > f.z + FLOOR - 0.5 and math.sqrt((pos.x - lx) ^ 2 + (pos.y - ly) ^ 2) < 1.3 then
+                        found = true
+                        text3d(lx, ly, f.z + FLOOR + 1.3, '[F] Up the stairs to the street')
+                        if IsControlJustPressed(0, 23) then
+                            local ox, oy = toWorld(f, ENT_DOOR[1], ENT_DOOR[2] - 0.8)
+                            climb('Going up the stairs', ox, oy, (groundAt(ox, oy, f.z) or f.z) + 1.0, ((f.heading or 0.0) + 180.0) % 360)
+                        end
+                    end
+                end
                 if f.model == CHAMBER and math.abs(pos.x - f.x) < 6.0 and math.abs(pos.y - f.y) < 6.0 then
                     local hx, hy = toWorld(f, HATCH[1], HATCH[2])
                     if pos.z > f.z - 0.5 and pos.z < f.z + 2.5 and math.sqrt((pos.x - hx) ^ 2 + (pos.y - hy) ^ 2) < 1.1 then

@@ -11,6 +11,12 @@ Every origin is on the road surface (z = 0) and the structure hangs below it.
                          walls 0.2, roof -0.80 .. -0.55, floor -3.20 .. -3.00. Trays at z -1.40 / -2.00 both walls,
                          LED battens centred y -1.0 / +1.0 (x 0, just under the ceiling), pipes on the -X floor edge.
   opslabs_ug_tunnel_end  end wall x +-1.2, y 0 .. 0.20, z -3.05 .. -0.55 with a capped 3-duct entry boss on its -Y face.
+  opslabs_ug_riser       HDPE duct d 0.11 from z -0.85 (flange under the ceiling) up to +0.90, goose-neck facing -Y,
+                         cap + gland at (0, -0.22, 1.05); concrete collar d 0.3 at z -0.02 .. 0.06. Origin = pipe centre.
+  opslabs_ug_riser_flush same duct ending just above ground (+0.05) in a flush cap (top +0.075) with a gland.
+  opslabs_ug_entrance    street access: 2.0 x 2.0 x 2.4 green GRP kiosk (door -Y, x +-0.45, z 0.05 .. 2.05) over a
+                         chamber-sized stairwell (one 2.0 x 2.2 opening in +Y); stair x -1.4 .. -0.4 from the top landing
+                         (z -0.30, y -1.6 .. -1.35) down to the floor at y +0.60; landing clear round (-0.9, +1.0).
 blender -b --python build_underground.py -- <out_dir>
 """
 import math
@@ -49,6 +55,7 @@ FONT = {
     'I': ['01110', '00100', '00100', '00100', '00100', '00100', '01110'], 'N': ['10001', '11001', '10101', '10011', '10001', '10001', '10001'],
     'O': ['01110', '10001', '10001', '10001', '10001', '10001', '01110'], 'P': ['11110', '10001', '10001', '11110', '10000', '10000', '10000'],
     'R': ['11110', '10001', '10001', '11110', '10100', '10010', '10001'], 'S': ['01111', '10000', '10000', '01110', '00001', '00001', '11110'],
+    'H': ['10001', '10001', '10001', '11111', '10001', '10001', '10001'],
     'T': ['11111', '00100', '00100', '00100', '00100', '00100', '00100'], 'Y': ['10001', '10001', '01010', '00100', '00100', '00100', '00100'],
     'L': ['10000', '10000', '10000', '10000', '10000', '10000', '11111'], 'M': ['10001', '11011', '10101', '10101', '10001', '10001', '10001'],
     'U': ['10001', '10001', '10001', '10001', '10001', '10001', '01110'], 'W': ['10001', '10001', '10001', '10101', '10101', '11011', '10001'],
@@ -295,7 +302,7 @@ def cable(bm, uv, pts, r, mi, sides=8):
 
 
 # ---------------------------------------------------------------- collision meshes
-COLMATS = ['CONCRETE', 'METAL_SOLID_MEDIUM', 'METAL_MANHOLE']
+COLMATS = ['CONCRETE', 'METAL_SOLID_MEDIUM', 'METAL_MANHOLE', 'PLASTIC']
 
 
 def cbox(cb, x0, y0, z0, x1, y1, z1, mi=0):
@@ -561,6 +568,147 @@ for x in (-0.25, 0.0, 0.25):
 cbox(cb, -0.32, -0.235, -2.27, 0.32, -0.10, -2.13, 1)
 add(finish('opslabs_ug_tunnel_end', bm, [mat('opslabs_ug_wall'), mat('opslabs_ug_duct'), mat('opslabs_ug_red'), mat('opslabs_ug_black')]),
     colmesh('opslabs_ug_tunnel_end', cb))
+
+# ================================================================ 5/6. duct risers (origin = pipe centre at ground level)
+c = Canvas(32, 256, (26, 26, 28)); c.rect(6, 0, 9, 256, (120, 122, 124)); c.rect(22, 0, 25, 256, (120, 122, 124)); c.noise(3); save(c, 'opslabs_ug_hdpe')
+c = Canvas(64, 64, (158, 156, 150)); c.noise(14); save(c, 'opslabs_ug_collar')
+RR = 0.055                           # duct radius (d 0.11)
+
+
+def riser_common(bm, uv, top):
+    cyl(bm, uv, (0, 0, -0.85), (0, 0, top), RR, sides=16, mi=0, vrep=(top + 0.85) * 3)                # duct
+    cyl(bm, uv, (0, 0, -0.85), (0, 0, -0.80), RR + 0.012, sides=16, mi=0)                          # bell end
+    cyl(bm, uv, (0, 0, -0.82), (0, 0, -0.805), 0.10, sides=16, mi=2)                               # ceiling flange
+    for a in range(4):
+        x, y = 0.08 * math.cos(a * math.pi / 2 + 0.6), 0.08 * math.sin(a * math.pi / 2 + 0.6)
+        cyl(bm, uv, (x, y, -0.805), (x, y, -0.80), 0.008, sides=6, mi=2)                          # flange bolts
+    cyl(bm, uv, (0, 0, -0.02), (0, 0, 0.06), 0.15, sides=20, mi=1)                                 # concrete collar d 0.3
+    cyl(bm, uv, (0, 0, 0.06), (0, 0, 0.07), 0.15, 0.13, sides=20, mi=1)                            # weathered top
+
+
+# goose-neck riser: vertical to +0.90, 90 deg bend (R 0.15) facing -Y, cap + cable gland at y -0.22, z 1.05
+bm = bmesh.new(); uv = bm.loops.layers.uv.new('UVMap 0'); cb = bmesh.new()
+riser_common(bm, uv, 0.90)
+BR = 0.15
+arc = [(0, -BR + BR * math.cos(math.radians(a)), 0.90 + BR * math.sin(math.radians(a))) for a in range(0, 91, 10)]
+cable(bm, uv, arc, RR, 0, sides=16)
+cyl(bm, uv, (0, -BR, 0.90 + BR), (0, -BR - 0.03, 0.90 + BR), RR, sides=16, mi=0)
+cyl(bm, uv, (0, -BR - 0.03, 0.90 + BR), (0, -BR - 0.07, 0.90 + BR), RR + 0.008, sides=16, mi=3)    # cap
+cyl(bm, uv, (0, -BR - 0.07, 0.90 + BR), (0, -BR - 0.095, 0.90 + BR), 0.02, 0.016, sides=10, mi=3)  # gland
+cable(bm, uv, [(0, -BR - 0.09, 0.90 + BR), (0, -0.30, 1.04), (0, -0.33, 0.98), (0.02, -0.33, 0.85)], 0.008, 4, sides=6)  # cable stub
+cbox(cb, -0.15, -0.15, -0.02, 0.15, 0.15, 0.07, 0)
+cbox(cb, -RR, -RR, 0.07, RR, RR, 0.95, 3)
+cbox(cb, -RR - 0.008, -0.24, 0.90, RR + 0.008, RR, 0.90 + BR + RR + 0.008, 3)
+RMATS = lambda: [mat('opslabs_ug_hdpe'), mat('opslabs_ug_collar'), mat('opslabs_ug_galv'), mat('opslabs_ug_black'), mat('opslabs_ug_cable_black')]
+add(finish('opslabs_ug_riser', bm, RMATS()), colmesh('opslabs_ug_riser', cb))
+# flush riser: up to +0.05, flush duct cap + gland
+bm = bmesh.new(); uv = bm.loops.layers.uv.new('UVMap 0'); cb = bmesh.new()
+riser_common(bm, uv, 0.05)
+cyl(bm, uv, (0, 0, 0.05), (0, 0, 0.075), RR + 0.008, sides=16, mi=3)                              # flush cap (top +0.075)
+cyl(bm, uv, (0, 0, 0.075), (0, 0, 0.10), 0.02, 0.016, sides=10, mi=3)                             # gland
+cable(bm, uv, [(0, 0, 0.095), (0, 0, 0.16), (0, -0.04, 0.21), (0, -0.12, 0.22)], 0.008, 4, sides=6)
+cbox(cb, -0.15, -0.15, -0.02, 0.15, 0.15, 0.07, 0)
+cbox(cb, -RR - 0.008, -RR - 0.008, 0.07, RR + 0.008, RR + 0.008, 0.10, 3)
+add(finish('opslabs_ug_riser_flush', bm, RMATS()), colmesh('opslabs_ug_riser_flush', cb))
+
+# ================================================================ 7. street access entrance (kiosk + stairwell)
+c = Canvas(128, 128, (38, 66, 48)); c.noise(5)
+for x in range(0, 128, 32):
+    c.rect(x, 0, x + 1, 128, (30, 54, 40))                                                     # GRP panel seams
+save(c, 'opslabs_ug_grp')
+c = Canvas(128, 256, (118, 122, 126))
+c.rect(0, 0, 128, 3, (80, 84, 88)); c.rect(0, 253, 128, 256, (80, 84, 88)); c.rect(0, 0, 3, 256, (80, 84, 88)); c.rect(125, 0, 128, 256, (80, 84, 88))
+c.rect(10, 20, 118, 22, (96, 100, 104)); c.rect(10, 234, 118, 236, (96, 100, 104))
+c.rect(14, 60, 114, 84, (244, 244, 240))                                                        # sign on the door
+text(c, 'AUTHORISED', 64, 63, 1, (180, 20, 20)); text(c, 'ACCESS ONLY', 64, 74, 1, (20, 20, 20))
+c.noise(4); save(c, 'opslabs_ug_door')
+c = Canvas(64, 64, (40, 66, 50))
+for y in range(4, 64, 8):
+    c.rect(4, y, 60, y + 4, (14, 22, 18)); c.rect(4, y + 4, 60, y + 5, (64, 96, 76))
+save(c, 'opslabs_ug_vent')
+c = Canvas(64, 96, (40, 40, 42))
+c.rect(8, 8, 56, 26, (60, 120, 90))
+for r in range(4):
+    for k in range(3):
+        c.rect(10 + k * 16, 34 + r * 15, 22 + k * 16, 45 + r * 15, (190, 190, 194))
+c.noise(2); save(c, 'opslabs_ug_keypad')
+c = Canvas(256, 64, (244, 244, 240))
+c.rect(0, 0, 256, 4, (180, 20, 20)); c.rect(0, 60, 256, 64, (180, 20, 20))
+text(c, 'AUTHORISED', 128, 10, 3, (180, 20, 20)); text(c, 'ACCESS ONLY', 128, 36, 3, (20, 20, 20))
+save(c, 'opslabs_ug_authsign')
+
+bm = bmesh.new(); uv = bm.loops.layers.uv.new('UVMap 0'); cb = bmesh.new()
+# indices: 0 wall 1 floor 2 galv 3 grp 4 door 5 vent 6 keypad 7 authsign 8 lampbody 9 glow 10 black
+EW, EF, EG, EGRP, EDOOR, EVENT, EKEY, ESIGN, ELAMP, EGLOW, EBLK = range(11)
+
+
+def ebox(x0, y0, z0, x1, y1, z1, mi=EW, colm=0, tile=WT, col=True):
+    box(bm, uv, x0, y0, z0, x1, y1, z1, mi=mi, tile=tile)
+    if col:
+        cbox(cb, x0, y0, z0, x1, y1, z1, colm)
+
+
+# --- stairwell shell (as the chamber): floor, solid walls, one 2.0 x 2.2 opening in +Y
+ebox(-OO, -OO, FB, OO, OO, FT, mi=EF)
+ebox(-OO, -OO, FT, OO, -OI, RB)                                                                  # -Y wall
+ebox(-OO, OI, FT, -OW, OO, RB); ebox(OW, OI, FT, OO, OO, RB); ebox(-OW, OI, OT, OW, OO, RB)      # +Y wall with the opening
+ebox(-OO, -OI, FT, -OI, OI, RB); ebox(OI, -OI, FT, OO, OI, RB)                                   # -X / +X walls
+# roof with the stair opening x -1.4 .. -0.4, y -1.6 .. -0.3
+SO = (-1.4, -1.6, -0.4, -0.3)
+ebox(-OO, -OO, RB, SO[0], OO, RT); ebox(SO[2], -OO, RB, OO, OO, RT)
+ebox(SO[0], -OO, RB, SO[2], SO[1], RT); ebox(SO[0], SO[3], RB, SO[2], OO, RT)
+# --- stair flight: 14 risers of 0.193, goings of 0.15, x -1.4 .. -0.4; top landing z -0.30 at y -1.6 .. -1.35,
+#     bottom step meets the floor at y +0.60
+NR, SG = 14, 0.15
+SR = (-0.30 - FT) / NR
+for k in range(1, NR + 1):
+    y1 = 0.6 - (k - 1) * SG
+    y0 = 0.6 - k * SG if k < NR else -OI
+    ebox(-1.4, y0, FT, -0.4, y1, FT + k * SR, mi=EW, tile=1.0)
+    box(bm, uv, -1.4, y1 - 0.03, FT + k * SR - 0.002, -0.4, y1 - 0.004, FT + k * SR + 0.001, mi=EBLK)  # anti-slip nosing
+# handrails: posts on the open side (x -0.40), rail 0.9 above the nosings; wall rail on the -X wall; both stop under the slab
+for k in (1, 5, 9, 12):
+    yp = 0.6 - (k - 0.5) * SG
+    cyl(bm, uv, (-0.42, yp, FT + k * SR), (-0.42, yp, FT + k * SR + 0.9), 0.02, sides=8, mi=EG)
+RAIL = lambda y: FT + 0.9 + (0.6 - y) / SG * SR
+cable(bm, uv, [(-0.42, 0.6, RAIL(0.6)), (-0.42, -0.95, RAIL(-0.95))], 0.022, EG)
+cable(bm, uv, [(-0.42, 0.6, RAIL(0.6)), (-0.42, 0.75, RAIL(0.6) - 0.05), (-0.42, 0.75, RAIL(0.6) - 0.9)], 0.022, EG)
+for yb in (0.45, -0.35):
+    cyl(bm, uv, (-OI, yb, RAIL(yb)), (-1.52, yb, RAIL(yb)), 0.01, sides=6, mi=EG)
+cable(bm, uv, [(-1.52, 0.7, RAIL(0.6)), (-1.52, -0.45, RAIL(-0.45))], 0.02, EG)
+# bulkhead lamp at (0.6, 0.6) under the ceiling, emissive lens (as the chamber)
+box(bm, uv, 0.44, 0.5, RB - 0.06, 0.76, 0.7, RB, mi=ELAMP)
+box(bm, uv, 0.47, 0.525, -0.395, 0.73, 0.675, RB - 0.06, mi=EGLOW)
+# --- kiosk: 2.0 x 2.0, 2.4 tall dark green GRP on a concrete plinth, shallow roof, steel door on -Y
+KZ = 0.05
+# plinth / floor (opening over the stairs inside the kiosk, x -0.95 .. -0.4, y -0.95 .. -0.3)
+ebox(-1.05, -1.05, 0.0, 1.05, -0.95, KZ, mi=EW, tile=1.0); ebox(-1.05, -0.3, 0.0, 1.05, 1.05, KZ, mi=EW, tile=1.0)
+ebox(-1.05, -0.95, 0.0, -0.95, -0.3, KZ, mi=EW, tile=1.0); ebox(-0.4, -0.95, 0.0, 1.05, -0.3, KZ, mi=EW, tile=1.0)
+# the part of the roof opening outside the kiosk is closed by a cover slab at road level
+ebox(SO[0], SO[1], RT, -0.95, SO[3], -0.01, mi=EW); ebox(-0.95, SO[1], RT, SO[2], -0.95, -0.01, mi=EW)
+T = 0.05
+ebox(-1.0, -1.0, KZ, -0.45, -1.0 + T, 2.4, mi=EGRP, colm=3, tile=2.0); ebox(0.45, -1.0, KZ, 1.0, -1.0 + T, 2.4, mi=EGRP, colm=3, tile=2.0)
+ebox(-0.45, -1.0, 2.05, 0.45, -1.0 + T, 2.4, mi=EGRP, colm=3, tile=2.0)                          # over the door
+ebox(-1.0, 1.0 - T, KZ, 1.0, 1.0, 2.4, mi=EGRP, colm=3, tile=2.0)
+ebox(-1.0, -1.0 + T, KZ, -1.0 + T, 1.0 - T, 2.4, mi=EGRP, colm=3, tile=2.0); ebox(1.0 - T, -1.0 + T, KZ, 1.0, 1.0 - T, 2.4, mi=EGRP, colm=3, tile=2.0)
+ebox(-1.08, -1.08, 2.4, 1.08, 1.08, 2.46, mi=EGRP, colm=3, tile=2.0)                             # roof
+ebox(-0.9, -0.9, 2.46, 0.9, 0.9, 2.50, mi=EGRP, colm=3, tile=2.0)                                # shallow raised top
+box(bm, uv, -1.0, -1.01, 0.0, 1.0, 1.01, KZ + 0.05, mi=EGRP, tile=2.0)                           # kick strip
+# steel door (closed): x -0.45 .. 0.45, z 0.05 .. 2.05, face at y -0.99; frame; handle; keypad on the right
+box(bm, uv, -0.45, -0.99, KZ, 0.45, -0.97, 2.05, mi=EDOOR, fmi={'top': EG, 'bottom': EG, 'left': EG, 'right': EG, 'back': EG})
+cbox(cb, -0.45, -1.0, KZ, 0.45, -0.95, 2.05, 1)
+for b in ((-0.5, -0.45, KZ, 2.1), (0.45, 0.5, KZ, 2.1)):
+    box(bm, uv, b[0], -1.015, b[2], b[1], -0.99, b[3], mi=EG)
+box(bm, uv, -0.45, -1.015, 2.05, 0.45, -0.99, 2.1, mi=EG)
+cable(bm, uv, [(0.33, -0.99, 1.05), (0.33, -1.04, 1.05), (0.20, -1.04, 1.05)], 0.012, EG, sides=8)  # lever handle
+box(bm, uv, 0.30, -1.0, 0.98, 0.36, -0.985, 1.12, mi=EG)
+box(bm, uv, 0.58, -1.03, 1.20, 0.72, -1.0, 1.41, mi=EKEY, fmi={'top': EBLK, 'bottom': EBLK, 'left': EBLK, 'right': EBLK, 'back': EBLK})
+box(bm, uv, -0.90, -1.012, 1.55, -0.55, -1.0, 1.70, mi=ESIGN, fmi={'top': EG, 'bottom': EG, 'left': EG, 'right': EG, 'back': EG})  # sign
+box(bm, uv, -0.85, -1.015, 1.85, -0.55, -1.0, 2.15, mi=EVENT, fmi={'top': EGRP, 'bottom': EGRP, 'left': EGRP, 'right': EGRP, 'back': EGRP})  # vent
+box(bm, uv, 1.0, -0.25, 1.85, 1.015, 0.25, 2.15, mi=EVENT)                                      # side vent
+add(finish('opslabs_ug_entrance', bm, [mat('opslabs_ug_wall'), mat('opslabs_ug_floor'), mat('opslabs_ug_galv'), mat('opslabs_ug_grp'), mat('opslabs_ug_door'),
+                                       mat('opslabs_ug_vent'), mat('opslabs_ug_keypad'), mat('opslabs_ug_authsign'), mat('opslabs_ug_lampbody'),
+                                       mat('opslabs_ug_glow_warm', 'emissive.sps'), mat('opslabs_ug_black')]), colmesh('opslabs_ug_entrance', cb))
 
 # ---------------------------------------------------------------- drawables, collision, ytyp, export
 scene = bpy.context.scene

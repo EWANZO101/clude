@@ -53,6 +53,10 @@ real collision, furniture, lights that come on inside, and doors.
   - **Chambers along the line:** none, back to back (chambers only), or one after every 1 / 2 / 3 / 5 tunnel sections.
   - **Sealed walls:** any opening with nothing joined to it shows a concrete wall automatically; join another piece on and that wall
     goes — so a line can always be extended later. Opening the hatch shows the shaft going down (the road itself can't have a hole cut in it).
+  - **Street entrance:** a small access kiosk with a steel door; below it a stairwell with one opening that joins on to an open end like a
+    chamber. **F** at the door goes down the stairs; **F** at the foot of the stairs comes back up to the street.
+  - **Riser pipes:** duct pipes up out of the ground anywhere — a goose-neck above ground, or flush with a duct cap (under a cabinet /
+    beside a pole). Below, the pipe comes down through the tunnel / chamber ceiling. Fibre and copper can be joined through them.
   - Everything is saved and listed in the same menu (move, fine-tune, teleport, remove).
 - **Doors** — every door has a keypad: **[E]** open / close, **[H]** keypad (lock, set or change the PIN, same PIN on every door).
   A locked door needs the PIN to open. 5 wrong PINs lock the keypad for 30 s. PINs are stored hashed on the server only.
