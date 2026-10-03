@@ -251,7 +251,7 @@ local function ruler(skipId)
 end
 
 --- lay a row: aim at the start, click, aim at the end — the row is previewed as you aim
-local LINE_GAP = { opslabs_rw_barrier = 2.0, opslabs_rw_barrier_stay = 2.0, opslabs_rw_tape = 3.0,
+local LINE_GAP = { opslabs_rw_barrier = 2.0, opslabs_rw_barrier_stay = 2.0, opslabs_rw_tape = 3.0, opslabs_rw_barrier_red = 1.0,
     opslabs_fence_pal_grey = 2.5, opslabs_fence_pal_green = 2.5, opslabs_fence_pal_galv = 2.5, opslabs_fence_mesh_grey = 2.5,
     opslabs_fence_mesh_green = 2.5, opslabs_fence_brand = 2.5 }
 local function lineMode(modelName, spacing)

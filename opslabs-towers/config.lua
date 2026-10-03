@@ -188,6 +188,8 @@ Config.Cabling = {
         -- street cabinets & chambers
         { net = 'openline', cat = 'Street cabinets & chambers', label = 'Street cabinet (PCP)', model = 'opslabs_cabinet_pcp' },
         { net = 'openline', cat = 'Street cabinets & chambers', label = 'Street cabinet (FTTC DSLAM)', model = 'opslabs_cabinet_fttc' },
+        { net = 'openline', cat = 'Street cabinets & chambers', label = 'Green 3-door street cabinet', model = 'opslabs_cabinet_green3', sizeLabel = 'Doors', sizes = {
+            { label = 'Doors closed', model = 'opslabs_cabinet_green3' }, { label = 'Middle door open (being worked on)', model = 'opslabs_cabinet_green3_open' } } },
         { net = 'openline', cat = 'Street cabinets & chambers', label = 'Footway box (joint box)', model = 'opslabs_footway_box' },
         { net = 'openline', cat = 'Street cabinets & chambers', label = 'Modular underground chamber', model = 'opslabs_chamber_modular' },
         { net = 'openline', cat = 'Street cabinets & chambers', label = 'Manhole chamber', model = 'opslabs_manhole' },
@@ -250,7 +252,7 @@ Config.Cabling = {
 -- A CAT6 run from the ONT's LAN port to a router gives that router internet. Lights on the
 -- ONT pop up when a player walks up to it.
 Config.Isp = {
-    Headends = { 'opslabs_olt', 'opslabs_cabinet_pcp', 'opslabs_cabinet_fttc' },   -- light comes from these
+    Headends = { 'opslabs_olt', 'opslabs_cabinet_pcp', 'opslabs_cabinet_fttc', 'opslabs_cabinet_green3', 'opslabs_cabinet_green3_open' },   -- light comes from these
     PassThrough = { 'opslabs_splice_enclosure', 'opslabs_cbt', 'opslabs_cbt_4', 'opslabs_cbt_8', 'opslabs_csp', 'opslabs_joint_tophat',
         'opslabs_fdf', 'opslabs_ucbt', 'opslabs_track_joint', 'opslabs_base_node', 'opslabs_entry_cap', 'opslabs_splice_tray' },  -- fibre joints / splitters
     Ont = 'opslabs_ont',
@@ -366,7 +368,7 @@ Config.Faults = {
             fix = { 'Visit the customer and check the ONT power supply', 'Swap the ONT for a new one and re-provision it', 'Confirm the PON and internet lights go green' },
             tools = { 'Replacement ONT', 'Optical power meter' }, repairSeconds = 20 },
         cabinet_power = { label = 'Street cabinet power failure', category = 'equipment', severity = 'critical', perWeek = 0.3, minLiveHours = 96, at_height = false,
-            targets = { 'opslabs_cabinet_pcp', 'opslabs_cabinet_fttc' },
+            targets = { 'opslabs_cabinet_pcp', 'opslabs_cabinet_fttc', 'opslabs_cabinet_green3', 'opslabs_cabinet_green3_open' },
             causes = { 'Mains supply fuse blown', 'Battery backup ran flat after a power cut', 'Rodents chewed through the power feed' },
             symptoms = { 'Every customer fed from this cabinet is offline', 'Cabinet alarms: mains fail and battery low' },
             diagnosis = 'The cabinet has no mains power and the backup battery is exhausted.',
@@ -395,7 +397,7 @@ Config.Faults = {
 Config.PhoneLine = {
     Exchange = { 'opslabs_mdf' },                                      -- dial tone comes from here
     NeedsPower = true,                                                 -- the exchange needs its power plant
-    PassThrough = { 'opslabs_cabinet_pcp', 'opslabs_copper_dp', 'opslabs_pole_splice_box', 'opslabs_copper_joint_aerial',
+    PassThrough = { 'opslabs_cabinet_pcp', 'opslabs_cabinet_green3', 'opslabs_cabinet_green3_open', 'opslabs_copper_dp', 'opslabs_pole_splice_box', 'opslabs_copper_joint_aerial',
         'opslabs_copper_jb', 'opslabs_footway_box', 'opslabs_hof' },    -- joints, DPs, cabinets
     Sockets = { 'opslabs_nte5c', 'opslabs_copper_linejack', 'opslabs_vdsl_faceplate' },   -- where a phone plugs in (they feed extensions too)
     OhmsPerKm = 168,                                                   -- loop resistance of 0.5 mm copper
@@ -413,6 +415,7 @@ Config.Roadworks = {
         } },
         { label = 'Barrier · Fibre works in progress', model = 'opslabs_rw_barrier' },
         { label = 'Barrier · Stay back', model = 'opslabs_rw_barrier_stay' },
+        { label = 'Red pedestrian barrier · 1 m (interlocking)', model = 'opslabs_rw_barrier_red' },
         { label = 'Works sign · editable dates & times', model = 'opslabs_rw_sign', sign = true },
         { label = 'Portable traffic light', model = 'opslabs_rw_tlight', light = true },
         { label = 'Cordon tape · 3 m', model = 'opslabs_rw_tape' },
