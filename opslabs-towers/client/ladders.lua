@@ -179,6 +179,26 @@ local function carryLadder(t, existing)
             local r = PoleRadius(f, L * cosL + (g - f.z))
             local fx, fy = f.x - dir.x * (L * sinL + r + 0.04), f.y - dir.y * (L * sinL + r + 0.04)
             foot = vector3(fx, fy, groundBelow(fx, fy, pos.z, ghost.base) or g)
+            -- rest it on the pole itself: feel for the pole's surface just below the top (map poles vary in
+            -- thickness and the fly section sits behind the base) and slide the ladder in until it touches
+            local a = axisFor(heading)
+            local touch
+            for k = 0, 4 do
+                local along = L - 0.15 - k * 0.2
+                local p = foot + a * along
+                local from, to = p - dir * 0.8, p + dir * 1.6
+                local ray = StartExpensiveSynchronousShapeTestLosProbe(from.x, from.y, from.z, to.x, to.y, to.z, 1 + 16, ghost.base, 4)
+                local _, hit, at = GetShapeTestResult(ray)
+                if hit == 1 then
+                    local d = (at.x - p.x) * dir.x + (at.y - p.y) * dir.y
+                    if not touch or d < touch then touch = d end
+                end
+            end
+            if touch then
+                local gap = touch - 0.11                          -- back of the fly section against the pole
+                foot = vector3(foot.x + dir.x * gap, foot.y + dir.y * gap, foot.z)
+                foot = vector3(foot.x, foot.y, groundBelow(foot.x, foot.y, pos.z, ghost.base) or foot.z)
+            end
             rest = not tooLong
             note = tooLong and ('This ladder is too long for a %d m pole — use the shorter one'):format(math.floor(lean.H))
                 or ('Leaning on the pole · top at %.1f m of %d m%s'):format(L * cosL + (foot.z - f.z), math.floor(lean.H), ext >= maxL - t.top - 0.01 and ' · as high as it goes' or '')

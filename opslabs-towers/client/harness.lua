@@ -50,7 +50,7 @@ local function clipOn()
         clipped = { pole = c.pole.id, x = c.pole.x, y = c.pole.y }
         publish()
         TriggerEvent('opslabs:harness', 'clip')
-        if GetResourceState('opslabs-animations') ~= 'started' then PlaySoundFrontend(-1, 'CLICK_BACK', 'WEB_NAVIGATION_SOUNDS_PHONE', true) end
+        PlaySoundFrontend(-1, 'CLICK_BACK', 'WEB_NAVIGATION_SOUNDS_PHONE', true)
         lib.notify({ type = 'success', description = 'Clipped on — you can lean back and work hands-free' })
     end
 end
