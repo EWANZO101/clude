@@ -7,7 +7,7 @@ description 'Cell towers and Wi-Fi access points for opslabs-phone (OPS Mobile c
 author 'OpsLabs'
 version '1.0.0'
 
-dependencies { 'oxmysql', 'ox_lib', 'es_extended' }
+dependencies { 'oxmysql', 'ox_lib', 'rps_lib' }   -- framework (ESX / QBCore / QBox) through rps_lib
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -16,6 +16,7 @@ shared_scripts {
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
+    'server/framework.lua',
     'server/main.lua',
     'server/api.lua',
     'server/cabling.lua',
@@ -47,6 +48,7 @@ client_scripts {
     'client/doors.lua',
     'client/van.lua',
     'client/vanspot.lua',
+    'client/underground.lua',
     'client/tools.lua',
     'client/anticlimb.lua',
     'client/uniform.lua',

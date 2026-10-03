@@ -1,4 +1,4 @@
-ESX = exports['es_extended']:getSharedObject()
+-- players, jobs, money and items go through FW (server/framework.lua → rps_lib: ESX / QBCore / QBox)
 
 Phones = {}          -- [source] = { identifier, number, email, name, settings }
 local numberIndex = {} -- [number] = source
@@ -52,11 +52,11 @@ local function generateNumber()
     end
 end
 
-local function generateEmail(xPlayer)
-    local fullName = xPlayer.getName() or ''
+local function generateEmail(p)
+    local fullName = p.name or ''
     local firstRaw, lastRaw = fullName:match('^(%S+)%s+(.+)$')
-    local first = (xPlayer.get('firstName') or firstRaw or fullName):lower():gsub('[^%a]', '')
-    local last = (xPlayer.get('lastName') or lastRaw or ''):lower():gsub('[^%a]', '')
+    local first = (p.firstname or firstRaw or fullName):lower():gsub('[^%a]', '')
+    local last = (p.lastname or lastRaw or ''):lower():gsub('[^%a]', '')
     local base = (last ~= '' and (first .. '.' .. last) or first)
     if base == '' then base = 'user' end
     local domain = GetMailDomain()
@@ -70,11 +70,8 @@ end
 
 function HasPhoneItem(src)
     if not Config.RequireItem then return true, 'black' end
-    local xPlayer = ESX.GetPlayerFromId(src)
-    if not xPlayer then return false end
     for item, color in pairs(Config.Items) do
-        local inv = xPlayer.getInventoryItem(item)
-        if inv and (inv.count or 0) > 0 then return true, color end
+        if FW.ItemCount(src, item) > 0 then return true, color end
     end
     return false
 end
@@ -85,24 +82,24 @@ function GetPhone(src)
     if not src then return nil end
     if Phones[src] then return Phones[src] end
 
-    local xPlayer = ESX.GetPlayerFromId(src)
-    if not xPlayer then return nil end
+    local p = FW.Player(src)
+    if not p or not p.identifier then return nil end
     AwaitDatabase()
 
-    local identifier = xPlayer.getIdentifier()
+    local identifier = p.identifier
     local row = MySQL.single.await('SELECT * FROM opslabs_phone_users WHERE identifier = ?', { identifier })
     if not row then
         row = {
             identifier = identifier,
             phone_number = generateNumber(),
-            email = generateEmail(xPlayer),
+            email = generateEmail(p),
             settings = '{}',
         }
         MySQL.insert.await('INSERT INTO opslabs_phone_users (identifier, phone_number, email, settings) VALUES (?, ?, ?, ?)',
             { row.identifier, row.phone_number, row.email, row.settings })
-        Emit('user.created', { number = row.phone_number, email = row.email, name = xPlayer.getName() })
+        Emit('user.created', { number = row.phone_number, email = row.email, name = p.name })
     elseif not row.email then
-        row.email = generateEmail(xPlayer)
+        row.email = generateEmail(p)
         MySQL.update.await('UPDATE opslabs_phone_users SET email = ? WHERE identifier = ?', { row.email, identifier })
     end
 
@@ -111,7 +108,7 @@ function GetPhone(src)
         identifier = identifier,
         number = row.phone_number,
         email = row.email,
-        name = (row.display_name and row.display_name ~= '') and row.display_name or xPlayer.getName(),
+        name = (row.display_name and row.display_name ~= '') and row.display_name or p.name,
         setupDone = IsTrue(row.setup_done),
         settings = json.decode(row.settings or '{}') or {},
     }
@@ -130,8 +127,7 @@ function GetSourceByIdentifier(identifier)
     for src, phone in pairs(Phones) do
         if phone.identifier == identifier then return src end
     end
-    local xPlayer = ESX.GetPlayerFromIdentifier(identifier)
-    return xPlayer and xPlayer.source or nil
+    return FW.SourceOf(identifier)
 end
 
 function Push(src, action, data)
@@ -219,7 +215,6 @@ end
 
 --- Everything the UI needs to start (also returned after setup).
 function BuildInit(src, phone)
-    local xPlayer = ESX.GetPlayerFromId(src)
     local _, color = HasPhoneItem(src)
     local unreadMessages = MySQL.scalar.await('SELECT COUNT(*) FROM opslabs_phone_messages WHERE receiver = ? AND is_read = 0', { phone.number })
     local unreadMail = MySQL.scalar.await('SELECT COUNT(*) FROM opslabs_phone_mail WHERE receiver = ? AND is_read = 0 AND deleted = 0', { phone.email })
@@ -232,7 +227,7 @@ function BuildInit(src, phone)
         number = phone.number,
         email = phone.email,
         name = phone.name,
-        job = xPlayer and xPlayer.getJob().label or nil,
+        job = FW.JobLabel(src),
         setupDone = phone.setupDone,
         mailDomain = GetMailDomain(),
         numberFormat = Config.NumberFormat,
@@ -492,7 +487,7 @@ end)
 -- When a phone item is used from the inventory, open the phone
 CreateThread(function()
     for item in pairs(Config.Items) do
-        ESX.RegisterUsableItem(item, function(src)
+        FW.UsableItem(item, function(src)
             TriggerClientEvent(PREFIX .. 'open', src)
         end)
     end

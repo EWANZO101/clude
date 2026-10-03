@@ -202,15 +202,12 @@ local function logTx(identifier, label, amount)
 end
 
 Register('getBank', function(src, phone)
-    local xPlayer = ESX.GetPlayerFromId(src)
-    local account = xPlayer.getAccount(Config.Bank.Account)
-    local cash = xPlayer.getAccount('money')
     local tx = MySQL.query.await('SELECT label, amount, created_at FROM opslabs_phone_bank_transactions WHERE identifier = ? ORDER BY id DESC LIMIT 50', { phone.identifier })
     local bills = MySQL.query.await('SELECT id, label, amount, target FROM billing WHERE identifier = ? ORDER BY id DESC', { phone.identifier })
     return {
         name = phone.name,
-        balance = account and account.money or 0,
-        cash = cash and cash.money or 0,
+        balance = FW.GetMoney(src, Config.Bank.Account),
+        cash = FW.GetMoney(src, 'cash'),
         transactions = tx,
         bills = bills or {},
     }
@@ -226,16 +223,14 @@ Register('transfer', function(src, phone, data)
     if not identifier then return { error = 'No account linked to this number' } end
     if identifier == phone.identifier then return { error = "You can't send money to yourself" } end
 
-    local xPlayer = ESX.GetPlayerFromId(src)
-    if xPlayer.getAccount(Config.Bank.Account).money < amount then return { error = 'Insufficient funds' } end
+    if FW.GetMoney(src, Config.Bank.Account) < amount then return { error = 'Insufficient funds' } end
 
     local note = Clean(data.note, 60)
     local targetSrc = GetSourceByIdentifier(identifier)
-    local xTarget = targetSrc and ESX.GetPlayerFromId(targetSrc)
 
-    if xTarget then
-        xPlayer.removeAccountMoney(Config.Bank.Account, amount, 'Phone transfer')
-        xTarget.addAccountMoney(Config.Bank.Account, amount, 'Phone transfer')
+    if targetSrc then
+        if not FW.RemoveMoney(src, amount, Config.Bank.Account, 'Phone transfer') then return { error = 'Insufficient funds' } end
+        FW.AddMoney(targetSrc, amount, Config.Bank.Account, 'Phone transfer')
         Notify(targetSrc, { app = 'wallet', title = 'Money received', icon = 'fa-money-bill-transfer',
             body = ('%s sent you $%s%s'):format(phone.name, amount, note ~= '' and (' — ' .. note) or '') })
     else
@@ -243,7 +238,7 @@ Register('transfer', function(src, phone, data)
         local accountsJson = MySQL.scalar.await('SELECT accounts FROM users WHERE identifier = ?', { identifier })
         local accounts = accountsJson and json.decode(accountsJson)
         if not accounts then return { error = 'Recipient account unavailable' } end
-        xPlayer.removeAccountMoney(Config.Bank.Account, amount, 'Phone transfer')
+        if not FW.RemoveMoney(src, amount, Config.Bank.Account, 'Phone transfer') then return { error = 'Insufficient funds' } end
         accounts[Config.Bank.Account] = (accounts[Config.Bank.Account] or 0) + amount
         MySQL.update.await('UPDATE users SET accounts = ? WHERE identifier = ?', { json.encode(accounts), identifier })
     end
@@ -258,20 +253,23 @@ end)
 Register('payBill', function(src, phone, data)
     local bill = MySQL.single.await('SELECT * FROM billing WHERE id = ? AND identifier = ?', { tonumber(data.id), phone.identifier })
     if not bill then return { error = 'Bill not found' } end
-    local xPlayer = ESX.GetPlayerFromId(src)
-    if xPlayer.getAccount(Config.Bank.Account).money < bill.amount then return { error = 'Insufficient funds' } end
+    if FW.GetMoney(src, Config.Bank.Account) < bill.amount then return { error = 'Insufficient funds' } end
 
     local deleted = MySQL.update.await('DELETE FROM billing WHERE id = ?', { bill.id })
     if deleted == 0 then return { error = 'Bill already paid' } end
-    xPlayer.removeAccountMoney(Config.Bank.Account, bill.amount, 'Bill payment')
+    if not FW.RemoveMoney(src, bill.amount, Config.Bank.Account, 'Bill payment') then
+        MySQL.insert.await('INSERT INTO billing (id, identifier, sender, target_type, target, label, amount) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            { bill.id, bill.identifier, bill.sender, bill.target_type, bill.target, bill.label, bill.amount })   -- put the bill back
+        return { error = 'Insufficient funds' }
+    end
 
     if bill.target_type == 'society' then
         TriggerEvent('esx_addonaccount:getSharedAccount', bill.target, function(account)
             if account then account.addMoney(bill.amount) end
         end)
     else
-        local xSender = ESX.GetPlayerFromIdentifier(bill.sender)
-        if xSender then xSender.addAccountMoney(Config.Bank.Account, bill.amount, 'Bill paid') end
+        local senderSrc = FW.SourceOf(bill.sender)
+        if senderSrc then FW.AddMoney(senderSrc, bill.amount, Config.Bank.Account, 'Bill paid') end
     end
     logTx(phone.identifier, 'Bill: ' .. bill.label, -bill.amount)
     return { ok = true }
@@ -304,9 +302,8 @@ local function serviceById(id)
 end
 
 local function isServiceMember(src, service)
-    local xPlayer = ESX.GetPlayerFromId(src)
-    if not xPlayer then return false end
-    local job = xPlayer.getJob().name
+    local job = FW.Job(src)
+    if not job then return false end
     for _, j in ipairs(service.jobs) do if j == job then return true end end
     return false
 end

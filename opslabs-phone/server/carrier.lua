@@ -270,11 +270,8 @@ Carrier.Text = carrierText
 ---------------------------------------------------------------------------
 
 local function balance(identifier)
-    local xPlayer = ESX.GetPlayerFromIdentifier(identifier)
-    if xPlayer then
-        local a, c = xPlayer.getAccount(Config.Bank.Account), xPlayer.getAccount('money')
-        return a and a.money or 0, c and c.money or 0
-    end
+    local src = FW.SourceOf(identifier)
+    if src then return FW.GetMoney(src, Config.Bank.Account), FW.GetMoney(src, 'cash') end
     local raw = MySQL.scalar.await('SELECT accounts FROM users WHERE identifier = ?', { identifier })
     local acc = raw and json.decode(raw) or {}
     return tonumber(acc[Config.Bank.Account]) or 0, tonumber(acc.money) or 0
@@ -303,12 +300,10 @@ end
 
 --- takes money from the bank only (online or offline). Returns ok, err
 local function takeBank(identifier, amount, label)
-    local xPlayer = ESX.GetPlayerFromIdentifier(identifier)
-    if xPlayer then
-        local a = xPlayer.getAccount(Config.Bank.Account)
-        if not a or a.money < amount then return false, 'insufficient_funds' end
-        xPlayer.removeAccountMoney(Config.Bank.Account, amount, label)
-    else
+    local src = FW.SourceOf(identifier)
+    if src then
+        if not FW.RemoveMoney(src, amount, Config.Bank.Account, label) then return false, 'insufficient_funds' end
+    else                                                       -- offline: the ESX users.accounts column
         local raw = MySQL.scalar.await('SELECT accounts FROM users WHERE identifier = ?', { identifier })
         if not raw then return false, 'no_account' end
         local acc = json.decode(raw) or {}

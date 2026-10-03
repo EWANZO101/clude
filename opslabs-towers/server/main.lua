@@ -3,7 +3,7 @@
 -- their phone and lets opslabs-phone ask for it before texts, calls and apps.
 --   exports['opslabs-towers']:GetCoverage(src) -> { cell = 0..4, net = '5G'|'LTE'|nil, wifi = { id, ssid, bars } | nil, tower = name }
 
-ESX = exports['es_extended']:getSharedObject()
+-- player / job / admin lookups go through FW (server/framework.lua → rps_lib)
 
 Towers = {}          -- id -> tower row
 local coverage = {}  -- src -> last coverage
@@ -203,8 +203,7 @@ end
 
 local function jobAllowed(src, jobs)
     if not jobs or jobs == '' then return true end
-    local xPlayer = ESX.GetPlayerFromId(src)
-    local job = xPlayer and xPlayer.getJob() and xPlayer.getJob().name
+    local job = FW.Job(src)
     if not job then return false end
     for j in jobs:gmatch('[^,]+') do if j:match('^%s*(.-)%s*$') == job then return true end end
     return false
@@ -212,8 +211,7 @@ end
 
 local known = {}   -- identifier -> { [towerId] = password }
 local function identifierOf(src)
-    local xPlayer = src and ESX.GetPlayerFromId(src)
-    return xPlayer and xPlayer.identifier
+    return src and FW.Identifier(src) or nil
 end
 local function knownFor(identifier)
     if not identifier then return {} end
@@ -361,10 +359,7 @@ function IsTowerAdmin(src)
     for _, l in ipairs(Config.AdminLicenses or {}) do
         if l == license then return true end
     end
-    local xPlayer = ESX.GetPlayerFromId(src)
-    local group = xPlayer and xPlayer.getGroup and xPlayer.getGroup()
-    for _, g in ipairs(Config.AdminGroups) do if g == group then return true end end
-    return false
+    return FW.IsAdmin(src, Config.AdminGroups)
 end
 
 lib.callback.register('opslabs-towers:isAdmin', function(src) return IsTowerAdmin(src) end)

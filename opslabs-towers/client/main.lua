@@ -25,6 +25,8 @@ end)
 -- mast / router props (local objects, spawned near the player)
 ---------------------------------------------------------------------------
 
+local propExtras = {}   -- tower id -> extra entities (Config.Cell.Extras)
+
 local function modelFor(t)
     local m = t.model or (t.type == 'wifi' and Config.Wifi.Prop or Config.Cell.Prop)
     if not m or not t.prop then return nil end
@@ -40,7 +42,8 @@ CreateThread(function()
             local t = towers[id]
             if not t or not t.prop or #(pos - vector3(t.x, t.y, t.z)) > 450.0 or (t.model and GetEntityModel(ent) ~= joaat(t.model)) then
                 if DoesEntityExist(ent) then DeleteEntity(ent) end
-                props[id] = nil
+                for _, e in ipairs(propExtras[id] or {}) do if DoesEntityExist(e) then DeleteEntity(e) end end
+                props[id], propExtras[id] = nil, nil
             end
         end
         for id, t in pairs(towers) do
@@ -63,6 +66,21 @@ CreateThread(function()
                     FreezeEntityPosition(ent, true)
                     SetModelAsNoLongerNeeded(hash)
                     props[id] = ent
+                    -- ground kit that goes with a mast (lattice mast → cabin, gantry, fenced compound), same origin
+                    local extras = {}
+                    for _, m in ipairs(((Config.Cell or {}).Extras or {})[t.model or ''] or {}) do
+                        local eh = joaat(m)
+                        if IsModelInCdimage(eh) then
+                            lib.requestModel(eh, 5000)
+                            local at = GetEntityCoords(ent)
+                            local x = CreateObjectNoOffset(eh, at.x, at.y, at.z, false, false, false)
+                            SetEntityHeading(x, GetEntityHeading(ent))
+                            FreezeEntityPosition(x, true)
+                            SetModelAsNoLongerNeeded(eh)
+                            extras[#extras + 1] = x
+                        end
+                    end
+                    propExtras[id] = extras
                 end
             end
         end
@@ -72,6 +90,7 @@ end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for _, ent in pairs(props) do if DoesEntityExist(ent) then DeleteEntity(ent) end end
+    for _, list in pairs(propExtras) do for _, e in ipairs(list) do if DoesEntityExist(e) then DeleteEntity(e) end end end
     for _, b in ipairs(blips) do RemoveBlip(b) end
 end)
 
@@ -621,6 +640,8 @@ SectionMenu = function(id)
                     icon = buildingIcon(e.model), iconColor = '#5e5ce6', onSelect = function() A.placeBuilding(e, back) end })
             end
         end
+        add({ title = 'Underground chambers & tunnels', description = 'Walk-in chambers with access hatches under the road · lay a tunnel line or place pieces one by one', icon = 'dungeon', iconColor = '#8e8e93', arrow = true,
+            onSelect = function() if UndergroundMenu then UndergroundMenu() end end })
         add({ title = 'Security & fencing', description = 'Branded fencing & signs · auto gates, barriers & rising bollards with PIN locks · bollards', icon = 'shield-halved', iconColor = '#5e5ce6', arrow = true,
             onSelect = function() A.equipmentCat(sites, 'Security & fencing') end })
         add({ title = 'Exchange power & cooling', description = 'Rectifiers, batteries, standby generator, DC power plant, HVAC', icon = 'plug', iconColor = '#ff9f0a', arrow = true,

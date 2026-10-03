@@ -47,12 +47,12 @@ local function live()
         if ped and ped ~= 0 then
             local c = GetEntityCoords(ped)
             local cov = ComputeCoverage(c, src)
-            local xPlayer = ESX.GetPlayerFromId(src)
+            local p = FW.Player(src)
             if cov.cell > 0 then withSignal = withSignal + 1 end
             if cov.wifi then onWifi = onWifi + 1 end
             players[#players + 1] = {
-                id = src, name = xPlayer and xPlayer.getName() or GetPlayerName(src),
-                number = xPlayer and numberFor(xPlayer.identifier) or nil,
+                id = src, name = p and p.name or GetPlayerName(src),
+                number = p and numberFor(p.identifier) or nil,
                 x = c.x, y = c.y, z = c.z, heading = GetEntityHeading(ped),
                 vehicle = GetVehiclePedIsIn(ped, false) ~= 0,
                 cell = cov.cell, net = cov.net, tower = cov.tower, wifi = cov.wifi and cov.wifi.ssid or nil,

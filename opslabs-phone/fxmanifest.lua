@@ -4,7 +4,7 @@ lua54 'yes'
 
 name 'opslabs-phone'
 author 'OpsLab Systems'
-description 'OPS OS smartphone for ESX Legacy with its own database'
+description 'OPS OS smartphone (ESX / QBCore / QBox through rps_lib) with its own database'
 version '1.0.0'
 
 shared_scripts {
@@ -24,6 +24,7 @@ client_scripts {
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'config_server.lua',
+    'server/framework.lua',
     'server/database.lua',
     'server/main.lua',
     'server/calls.lua',
@@ -54,7 +55,7 @@ files {
 }
 
 dependencies {
-    'es_extended',
+    'rps_lib',      -- framework (ESX / QBCore / QBox) through rps_lib
     'oxmysql',
     'ox_lib',
 }

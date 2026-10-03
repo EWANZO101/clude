@@ -196,8 +196,7 @@ RegisterNetEvent('opslabs-towers:ready', function() TriggerClientEvent('opslabs-
 
 local function canProvision(src)
     if IsTowerAdmin(src) then return true end
-    local xPlayer = ESX.GetPlayerFromId(src)
-    local job = xPlayer and xPlayer.getJob() and xPlayer.getJob().name
+    local job = FW.Job(src)
     for _, j in ipairs(Config.Cabling.Jobs or {}) do if j == job then return true end end
     return false
 end

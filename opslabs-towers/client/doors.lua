@@ -122,6 +122,8 @@ end
 local function stateOf(fid, idx)
     return (STATE[fid] or {})[idx] or { open = false, locked = false, pin = false }
 end
+--- is door / hatch idx of a placed building open (underground.lua: climb down only through an open hatch)
+function DoorIsOpen(fid, idx) return stateOf(fid, idx).open == true end
 
 RegisterNetEvent('opslabs-towers:door', function(fid, idx, s)
     STATE[fid] = STATE[fid] or {}

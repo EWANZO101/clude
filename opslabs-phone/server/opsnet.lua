@@ -580,12 +580,12 @@ end
 
 local function payUser(src, user, amount, bonus, label, jobId)
     local total = (amount or 0) + (bonus or 0)
-    local xPlayer = ESX.GetPlayerFromId(src)
-    if not xPlayer or total <= 0 then return false end
-    xPlayer.addAccountMoney(PAY_CFG.Account or 'bank', total, 'Ops-Networks: ' .. label)
+    local identifier = FW.Identifier(src)
+    if not identifier or total <= 0 then return false end
+    if not FW.AddMoney(src, total, PAY_CFG.Account or 'bank', 'Ops-Networks: ' .. label) then return false end
     MySQL.insert.await('INSERT INTO opslabs_phone_opsnet_payments (user_id, identifier, job_id, label, amount, bonus, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        { user.id, xPlayer.getIdentifier(), jobId, Clean(label, 160), amount or 0, bonus or 0, os.time() })
-    MySQL.insert('INSERT INTO opslabs_phone_bank_transactions (identifier, label, amount) VALUES (?, ?, ?)', { xPlayer.getIdentifier(), Clean('Ops-Networks: ' .. label, 120), total })
+        { user.id, identifier, jobId, Clean(label, 160), amount or 0, bonus or 0, os.time() })
+    MySQL.insert('INSERT INTO opslabs_phone_bank_transactions (identifier, label, amount) VALUES (?, ?, ?)', { identifier, Clean('Ops-Networks: ' .. label, 120), total })
     Notify(src, {
         app = 'opsnet', title = 'Ops-Networks', icon = 'fa-sack-dollar',
         body = ('Paid $%s for %s%s'):format(total, label, (bonus or 0) > 0 and (' (incl. $%s quick-fix bonus)'):format(bonus) or ''),
@@ -640,8 +640,8 @@ AddEventHandler('opslabs-towers:faultFixed', function(fault, fixer)
             completed_name = COALESCE(completed_name, ?) WHERE id = ?]], { fault.status or 'fixed', fixedAt, Clean(fault.fixed_by or 'Closed', 60), job.id })
         fixer = tonumber(fixer)
         if fixer and GetPlayerName(fixer) then
-            local xPlayer = ESX.GetPlayerFromId(fixer)
-            local u = xPlayer and accountFor(xPlayer.getIdentifier())
+            local fixerId = FW.Identifier(fixer)
+            local u = fixerId and accountFor(fixerId)
             if u and hasPerm(u, 'jobs.take') then
                 local amount, bonus = rateFor(fault), bonusFor(fault, fixedAt)
                 local flipped = MySQL.update.await([[UPDATE opslabs_phone_opsnet_jobs SET paid = 1, paid_amount = ?, completed_by = ?, completed_name = ?

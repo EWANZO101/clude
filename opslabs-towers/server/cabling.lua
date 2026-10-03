@@ -172,8 +172,7 @@ AddEventHandler('opslabs-towers:towersChanged', function() RecomputeUplinks() en
 
 local function canCable(src)
     if IsTowerAdmin(src) then return true end
-    local xPlayer = ESX.GetPlayerFromId(src)
-    local job = xPlayer and xPlayer.getJob() and xPlayer.getJob().name
+    local job = FW.Job(src)
     for _, j in ipairs(CC.Jobs or {}) do if j == job then return true end end
     return false
 end
@@ -711,7 +710,7 @@ lib.callback.register('opslabs-towers:fixture:saveMany', function(src, list)
     local n = 0
     for _, d in ipairs(list) do
         local x, y, z = num(d.x), num(d.y), num(d.z)
-        if x and y and z and type(d.model) == 'string' and (d.model:find('^opslabs_rw_') or d.model:find('^opslabs_fence_') or d.model:find('^opslabs_bollard_fixed') or d.model:find('^opslabs_bollard_steel')) and equipmentAllowed(d.model) then
+        if x and y and z and type(d.model) == 'string' and (d.model:find('^opslabs_rw_') or d.model:find('^opslabs_fence_') or d.model:find('^opslabs_bollard_fixed') or d.model:find('^opslabs_bollard_steel') or d.model:find('^opslabs_ug_')) and equipmentAllowed(d.model) then
             local id = MySQL.insert.await('INSERT INTO opslabs_towers_fixtures (model, x, y, z, heading, created_by) VALUES (?, ?, ?, ?, ?, ?)',
                 { d.model, x, y, z, num(d.heading) or 0.0, GetPlayerName(src) })
             Cabling.fixtures[id] = { id = id, model = d.model, x = x, y = y, z = z, heading = num(d.heading) or 0.0, created_by = GetPlayerName(src) }

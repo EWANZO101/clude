@@ -17,7 +17,7 @@ end
 
 local function canClimb()
     if not CC.ClimbJobs then return true end
-    local ok, job = pcall(function() return exports.es_extended:getSharedObject().GetPlayerData().job.name end)
+    local ok, job = pcall(function() return exports.rps_lib:GetPlayerData().job.name end)   -- any framework (rps_lib)
     if not ok then return true end
     for _, j in ipairs(CC.ClimbJobs) do if j == job then return true end end
     return false

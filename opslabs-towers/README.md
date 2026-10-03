@@ -42,6 +42,15 @@ real collision, furniture, lights that come on inside, and doors.
   restart. **Buildings & sites** lists every placed building (any distance): open one to **Move** it (aim & place), **Fine-tune** it
   (arrows slide, PgUp / PgDn height, Q / E turn, Shift fine), **Set exact position** (heading / height), **Teleport to the front door**
   or **Remove** it (deleted for good, with its doors and PINs).
+- **Underground chambers & tunnels** (Buildings & sites → Underground chambers & tunnels) — walk-in concrete structures that sit
+  under the road or pavement; from above you only see the access hatch.
+  - **Lay a tunnel line:** click the start (or an open end of an existing chamber / tunnel), aim at the end — a chamber at each end and a
+    4 m tunnel section every 4 m, level with the start, previewed on the road. It warns you if the ground drops so far the tunnel would show.
+  - **One by one:** chambers, tunnel sections or end walls. Aim near an open end and the piece joins on (hold Shift to place freely);
+    it keeps placing until Backspace. Q / E turn, PgUp / PgDn depth.
+  - **Getting in:** **E** at the hatch opens / closes it (**H** for its PIN keypad — lock it like any door), **F** at the open hatch
+    climbs down the step irons; **F** at the foot of the step irons climbs back out. Lit inside, real collision.
+  - Everything is saved and listed in the same menu (move, fine-tune, teleport, remove).
 - **Doors** — every door has a keypad: **[E]** open / close, **[H]** keypad (lock, set or change the PIN, same PIN on every door).
   A locked door needs the PIN to open. 5 wrong PINs lock the keypad for 30 s. PINs are stored hashed on the server only.
   Engineers: open the building (Tools → Nearby equipment) → **Doors & PINs** to set one PIN everywhere or clear them all.

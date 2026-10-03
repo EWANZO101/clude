@@ -28,7 +28,11 @@ Config.Cell = {
         { label = 'Large satellite dish',  model = 'prop_satdish_l_01' },
         { label = 'Medium radio mast',     model = 'prop_radiomast01' },
         { label = 'Large radio mast',      model = 'prop_radiomast02' },
+        { label = 'OPS 5G street monopole · 17.5 m, cabinets at the base', model = 'opslabs_mast_5g' },        -- opslabs-props
+        { label = 'OPS lattice mast · 25 m, cabin & fenced compound', model = 'opslabs_mast_lattice' },       -- opslabs-props
     },
+    -- ground kit spawned with a mast prop (same position and heading)
+    Extras = { opslabs_mast_lattice = { 'opslabs_mast_lattice_compound' } },
     Prop = 'prop_radiomast02',  -- used for towers placed before you picked a model
 }
 
@@ -148,6 +152,10 @@ Config.Cabling = {
         { net = 'sites', cat = 'Buildings', label = 'Engineering depot (walk-in)', model = 'opslabs_depot', building = true,
           about = '22 × 14 m · office, kit room, warehouse with racking & cable drums, roller-shutter bay' },
         -- security & fencing (fence panels go down in a row: Buildings & sites → Security & fencing → Lay a fence line)
+        -- underground (Buildings & sites → Underground chambers & tunnels): walk-in, placed under roads, origin on the road surface
+        { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Underground chamber (walk-in, access hatch)', model = 'opslabs_ug_chamber', underground = true },
+        { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Cable tunnel section 4 m', model = 'opslabs_ug_tunnel', underground = true },
+        { net = 'sites', cat = 'Underground chambers & tunnels', label = 'Tunnel end wall', model = 'opslabs_ug_tunnel_end', underground = true },
         { net = 'sites', cat = 'Security & fencing', label = 'Palisade fence panel 2.5 m', model = 'opslabs_fence_pal_grey', fence = true, sizeLabel = 'Finish', sizes = {
             { label = 'Anthracite', model = 'opslabs_fence_pal_grey' }, { label = 'Green', model = 'opslabs_fence_pal_green' }, { label = 'Galvanised', model = 'opslabs_fence_pal_galv' } } },
         { net = 'sites', cat = 'Security & fencing', label = 'Mesh fence panel 2.5 m', model = 'opslabs_fence_mesh_grey', fence = true, sizeLabel = 'Finish', sizes = {
@@ -485,6 +493,12 @@ Config.Buildings = {
     opslabs_bollard_rising = { gate = true,
         doors = { { label = 'Rising bollard', auto = 6.0, vehicles = true,
             leaves = { { hinge = { 0.0, 0.0 }, z = 0.0, h = 0, w = 0.2, kind = 'opslabs_bollard_post', sink = 0.92 } } } } },
+    -- underground: the hatch is a lifting leaf (E open / close, H keypad) · lights in the chamber and every tunnel section
+    opslabs_ug_chamber = {
+        lights = { z = -0.55, rgb = { 255, 240, 215 }, range = 5.5, power = 1.6, pts = { { 0.6, 0.6 } } },
+        doors = { { label = 'Access hatch', leaves = { { hinge = { -1.4, -1.15 }, z = 0.0, h = 0, w = 0.8, kind = 'opslabs_ug_hatch_lid', lift = 100 } } } },
+    },
+    opslabs_ug_tunnel = { lights = { z = -0.95, rgb = { 235, 242, 255 }, range = 5.0, power = 1.5, pts = { { 0.0, -1.0 }, { 0.0, 1.0 } } } },
     opslabs_exchange_building = {
         lights = { z = 4.6, rgb = { 255, 250, 235 }, range = 7.0, power = 1.6,
             pts = { { -5.5, -2.0 }, { -2.0, -1.0 }, { 2.0, -1.0 }, { 6.0, -2.0 }, { -5.5, 2.0 }, { -2.0, 2.0 }, { 2.0, 2.0 }, { 6.0, 2.0 } },
@@ -518,6 +532,12 @@ Config.Van = {
         TiltDown = -50.0, TiltUp = 40.0,
         Colour = { 255, 244, 225 }, Range = 80.0, Brightness = 14.0, Cone = 13.0, Falloff = 25.0,
     },
+}
+
+-- Underground chambers & tunnels (client/underground.lua) — numbers from opslabs-props/source/build_underground.py
+Config.Underground = {
+    Hatch = { -1.0, -1.15 },   -- hatch centre in the chamber's frame
+    Floor = -3.0,              -- walkable floor below the road surface
 }
 
 -- Anti-climb zones along every fence panel, fence post and gate: you can't jump, climb or vault over them.

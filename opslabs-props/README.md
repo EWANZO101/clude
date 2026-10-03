@@ -46,6 +46,8 @@ Streamed props used by opslabs-towers.
 | `opslabs_pole_roof` | Rooftop telecom mast for flat roofs — galvanised 6 m tubular mast (ring head at 5.8 m, step bolts from 0.6 m) on a 1.6 × 1.6 m non-penetrating ballast frame with four concrete blocks and diagonal braces. Origin = frame centre on the roof |
 | `opslabs_tool_buttset`, `opslabs_tool_toner` | Hand tools (held, origin at the grip, along +Y): orange lineman's butt set with keypad, coiled lead and red / black croc clips; yellow / black tone tracer probe |
 | `opslabs_van_spot_rail`, `_post`, `_mast`, `_yoke`, `_head` (+ `_head_on`) | Remote roof spotlight for the OPS Network van (`speedo`), in parts the client slides / raises / pans / tilts: 1.5 m aluminium T-slot cross-bar (top at 0.10 m), sliding carriage + Ø 50 outer tube (top 0.25 m), 0.40 m telescopic inner tube (origin at its top), pan turntable + U-yoke (tilt axis 0.22 m), Ø 220 lamp head with chrome bezel (lens on +Y) and its glowing lens |
+| `opslabs_mast_lattice` (+ `opslabs_mast_lattice_compound`) | OPS Mobile rural lattice mast: 25 m dark green steel tower, caged ladder, cable ladder, three sector antennas at 22 m, microwave dish, lightning finial — plus its compound: green equipment cabin, cable gantry, meter cabinet, timber post-and-rail fence with gate, gravel pad |
+| `opslabs_mast_5g` | OPS Mobile roadside 5G monopole: 17.5 m light grey stepped pole, louvred antenna shroud (antennas at 16.65 m), root cabinet, perforated equipment cabinet and meter pillar on a plinth |
 
 Access point: white matte body + glowing blue LED ring. Gateways: detailed front/back panel textures and glowing screens (emissive). All have embedded textures and collision (plastic / metal); fronts face the player when placed. No logos or text.
 
