@@ -65,8 +65,8 @@
     return s > 0 && blue < 12;          // all black or the blue placeholder: not the game yet
   }
 
-  function send(m, jpg) {
-    fetch(`https://${RES}/cctvFrame`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cam: m.cam, jpg, seq: m.seq }) }).catch(() => {});
+  function send(m, jpg, blank) {
+    fetch(`https://${RES}/cctvFrame`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cam: m.cam, jpg, seq: m.seq, blank: !!blank }) }).catch(() => {});
   }
 
   function loop() {
@@ -80,8 +80,9 @@
         let jpg = null;
         try {
           draw(m.w || 640, m.h || 360);
-          if (lit() || (m.tries || 0) >= 3) jpg = canvas.toDataURL('image/jpeg', m.q || 0.6).replace(/^data:image\/jpeg;base64,/, '');
-          else { m.tries = (m.tries || 0) + 1; queue.push(m); break; }   // black: try again on a later frame
+          if (lit()) jpg = canvas.toDataURL('image/jpeg', m.q || 0.6).replace(/^data:image\/jpeg;base64,/, '');
+          else if ((m.tries || 0) >= 3) { send(m, null, true); continue; }   // the game isn't giving its picture: say so, send nothing
+          else { m.tries = (m.tries || 0) + 1; queue.push(m); break; }       // not yet: try again on a later frame
         } catch (err) { jpg = null; }
         if (jpg) send(m, jpg);
       }

@@ -5,6 +5,7 @@ local CV = Config.Cctv or {}
 if not CV.Enabled then return end
 
 local seq, lastAt = 0, 0
+local blanks = 0          -- pictures in a row the game wouldn't give
 local waits = {}          -- capture seq -> promise (the relay waits for each picture before moving the camera on)
 local function capture(camId, q, w, h, wait)
     seq = seq + 1
@@ -23,6 +24,17 @@ RegisterNUICallback('cctvFrame', function(body, cb)
     if type(body) ~= 'table' then return end
     local p = waits[tonumber(body.seq) or -1]
     if p then waits[tonumber(body.seq)] = nil p:resolve(true) end
+    if body.blank then
+        -- FiveM isn't handing this game's picture to NUI (GTA V Enhanced, or a fullscreen / borderless switch): tell whoever runs it
+        blanks = blanks + 1
+        if blanks == 5 or blanks % 300 == 0 then
+            lib.notify({ type = 'error', title = 'CCTV relay', duration = 20000,
+                description = 'This game can\'t capture camera pictures. Use GTA V Legacy (not Enhanced), set Settings → Graphics → Screen Type to Windowed Borderless, then restart FiveM.' })
+            print('^1[opslabs-towers] CCTV relay: the game view is not available to NUI (GTA V Enhanced, or display mode). Use GTA V Legacy + Windowed Borderless and restart FiveM.^7')
+        end
+        return
+    end
+    blanks = 0
     if type(body.jpg) ~= 'string' or #body.jpg < 200 then return end
     TriggerLatentServerEvent('opslabs-towers:cctv:frame', 1500000, tonumber(body.cam), body.jpg)
 end)
