@@ -5,15 +5,15 @@ local CV = Config.Cctv or {}
 if not CV.Enabled then return end
 
 local seq, lastAt = 0, 0
-local function capture(camId, q)
+local function capture(camId, q, w, h)
     seq = seq + 1
-    SendNUIMessage({ action = 'cctvCapture', cam = camId, seq = seq, w = 640, h = 360, q = q or 0.6 })
+    SendNUIMessage({ action = 'cctvCapture', cam = camId, seq = seq, w = w or 960, h = h or 540, q = q or 0.8 })
 end
 
 RegisterNUICallback('cctvFrame', function(body, cb)
     cb(true)
     if type(body) ~= 'table' or type(body.jpg) ~= 'string' or #body.jpg < 200 then return end
-    TriggerLatentServerEvent('opslabs-towers:cctv:frame', 120000, tonumber(body.cam), body.jpg)
+    TriggerLatentServerEvent('opslabs-towers:cctv:frame', 1500000, tonumber(body.cam), body.jpg)
 end)
 
 --- the in-game viewer calls this every frame with the camera on screen: one picture a second goes to OPS Hub
@@ -100,15 +100,21 @@ local function relay()
         for _, c in ipairs(list) do
             if not relaying then break end
             local pos = vector3(c.x, c.y, c.z)
-            SetCamCoord(cam, c.x, c.y, c.z)
-            SetCamRot(cam, c.ptz and -15.0 or -12.0, 0.0, (c.heading or 0.0) + 180.0, 2)
-            SetCamFov(cam, math.max(25.0, math.min(100.0, (c.fov or 90) * 0.8)))
+            -- PTZ cameras point where OPS Hub left them (pan from the mount, tilt, zoom)
+            local function aim(x)
+                local baseFov = math.max(25.0, math.min(100.0, (x.fov or 90) * 0.8))
+                SetCamCoord(cam, x.x, x.y, x.z)
+                SetCamRot(cam, x.tilt or (x.ptz and -15.0 or -12.0), 0.0, (x.heading or 0.0) + 180.0 + (x.pan or 0.0), 2)
+                SetCamFov(cam, math.max(6.0, baseFov / (x.zoom or 1.0)))
+            end
+            aim(c)
             SetFocusPosAndVel(c.x, c.y, c.z, 0.0, 0.0, 0.0)
             if not current then RenderScriptCams(true, false, 0, true, true) end
             current = c.id
             label = ('%s · %s'):format(c.system or 'CCTV', c.name or ('Camera ' .. c.id))
             ClearTimecycleModifier()
-            SetTimecycleModifier(c.status == 'fault_lens' and 'BlackOut' or 'scanline_cam_cheap')
+            if c.status == 'fault_lens' then SetTimecycleModifier('BlackOut') SetTimecycleModifierStrength(0.45)
+            elseif (CV.RelayFilter or 0.25) > 0 then SetTimecycleModifier('scanline_cam_cheap') SetTimecycleModifierStrength(CV.RelayFilter or 0.25) end
             local h = GetClockHours()
             SetNightvision(c.ir and (h >= 20 or h < 6) or false)
             SetSeethrough(c.thermal or false)
@@ -122,9 +128,18 @@ local function relay()
                 Wait(250)
             end
             lastPos = pos
-            Wait(c.focus and 250 or 400)
-            capture(c.id, c.focus and 0.7 or 0.55)
-            Wait(150)
+            if c.hold then
+                -- a camera open full size on OPS Hub: stream it, 1280×720, ~4 pictures a second, following PTZ moves
+                local untilAt = GetGameTimer() + 1500
+                while relaying and GetGameTimer() < untilAt do
+                    capture(c.id, 0.85, 1280, 720)
+                    Wait(250)
+                end
+            else
+                Wait(350)
+                capture(c.id, 0.78, 960, 540)
+                Wait(150)
+            end
         end
     end
     lib.callback.await('opslabs-towers:cctv:relay', false, false)
@@ -143,6 +158,12 @@ RegisterCommand('cctvrelay', function()
     if relaying then relaying = false return end
     CreateThread(relay)
 end, false)
+
+-- an always-on relay account (Config.Cctv.RelayAccounts) joined: start by itself
+RegisterNetEvent('opslabs-towers:cctv:autorelay', function()
+    if relaying then return end
+    CreateThread(relay)
+end)
 
 AddEventHandler('onResourceStop', function(res)
     if res == GetCurrentResourceName() and relaying then

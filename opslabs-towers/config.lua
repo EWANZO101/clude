@@ -728,6 +728,11 @@ Config.OpsIsp = {
 Config.Cctv = {
     RelayCulling = 600.0,         -- /cctvrelay: how far (m) round its ped a relay is sent players and cars (OneSync culling)
     RelayMoveBeyond = 450.0,      -- cameras further than this from where the relay stands: its hidden ped goes there too
+    -- always-on relays: these accounts (any identifier: license:…, fivem:…, discord:…) start relaying on their own when
+    -- they join — leave one logged in on a spare PC and OPS Hub stays live with nobody else in the city
+    RelayAccounts = {},
+    BackgroundEvery = 60,         -- a relay with nothing else to do refreshes every online camera at least this often (s)
+    RelayFilter = 0.25,           -- strength of the CCTV look on relay pictures (0 = clean picture, 1 = heavy scanlines)
     Enabled = true,
     SiteRadius = 60.0, WifiRange = 40.0, PlugReach = 3.0, EventEvery = 5, MotionCooldown = 30, AnprCooldown = 90,
     FaultsPerCameraHour = 0.01,       -- chance per camera per real hour of a fault (dirty lens, cable, dead camera)
