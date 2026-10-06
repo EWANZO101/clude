@@ -123,19 +123,28 @@ SetHttpHandler(function(req, res)
             if not ok then return reply(res, 400, { error = err or 'Failed' }) end
             return reply(res, 200, { data = { ok = true } })
         end
-        -- OPS Secure CCTV live (server/cctvlive.lua)
+        -- OPS Secure CCTV live (server/cctvlive.lua). ?viewer=<character identifier> = an OPS Hub customer: only the
+        -- cameras they own / are shared / their organisation's, with remote viewing on and internet at the recorder
+        local viewer = query:match('viewer=([^&]+)')
+        if viewer then viewer = viewer:gsub('%%(%x%x)', function(h) return string.char(tonumber(h, 16)) end):gsub('%+', ' ') end
         if path == '/api/cctv/live' and req.method == 'GET' then
             if not CctvLive then return reply(res, 404, { error = 'CCTV live is off' }) end
             local want = query:match('want=([%w,]+)')
             local set = nil
             if want == 'all' then set = 'all' elseif want then set = {} for id in want:gmatch('%d+') do set[tonumber(id)] = true end end
-            return reply(res, 200, { data = CctvLive(set, query:match('focus=(%d+)')) })
+            return reply(res, 200, { data = CctvLive(set, query:match('focus=(%d+)'), viewer) })
         end
         local frameId = path:match('^/api/cctv/frame/(%d+)$')
         if frameId and req.method == 'GET' then
-            local fr = CctvFrame and CctvFrame(frameId)
+            local fr = CctvFrame and CctvFrame(frameId, viewer)
             if not fr then return reply(res, 404, { error = 'No picture yet' }) end
             return reply(res, 200, { data = fr })
+        end
+        local mapId = path:match('^/api/cctv/map/(%d+)$')
+        if mapId and req.method == 'GET' then
+            local m = CctvMap and CctvMap(mapId, viewer)
+            if not m then return reply(res, 404, { error = 'No such camera' }) end
+            return reply(res, 200, { data = m })
         end
         -- OPS City network builder (server/citybuild.lua)
         if path == '/api/city' and req.method == 'GET' then

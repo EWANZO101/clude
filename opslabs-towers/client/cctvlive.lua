@@ -30,6 +30,7 @@ function CctvLiveStop() TriggerServerEvent('opslabs-towers:cctv:stopWatching') e
 ---------------------------------------------------------------------------
 
 local relaying = false
+local relayGoHome = nil       -- puts the relay's ped back (set while relaying)
 local function txt(x, y, s, scale, r, g, b)
     SetTextFont(4) SetTextScale(scale, scale) SetTextColour(r or 255, g or 255, b or 255, 230) SetTextOutline()
     BeginTextCommandDisplayText('STRING') AddTextComponentSubstringPlayerName(s) EndTextCommandDisplayText(x, y)
@@ -42,6 +43,38 @@ local function relay()
     lib.notify({ type = 'success', title = 'CCTV relay', description = 'On — your screen shows the cameras OPS Hub viewers are watching. /cctvrelay or BACKSPACE to stop.', duration = 9000 })
     local cam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
     local current, label, lastPos = nil, 'Waiting for OPS Hub viewers…', nil
+    -- players and cars only stream to a game near its ped: for cameras far from where the relay stands, its (hidden,
+    -- frozen) ped goes with the camera and comes back when the relay stops
+    local ped = PlayerPedId()
+    local home, homeHeading, away = GetEntityCoords(ped), GetEntityHeading(ped), false
+    local function goNear(c)
+        local far = #(home - vector3(c.x, c.y, c.z)) > (CV.RelayMoveBeyond or 450.0)
+        if far then
+            if not away then
+                away = true
+                FreezeEntityPosition(ped, true)
+                SetEntityVisible(ped, false, false)
+                NetworkSetEntityInvisibleToNetwork(ped, true)
+                SetEntityCollision(ped, false, false)
+                SetEntityInvincible(ped, true)
+            end
+            SetEntityCoordsNoOffset(ped, c.x, c.y, c.z + 2.0, false, false, false)
+        elseif away then
+            SetEntityCoordsNoOffset(ped, home.x, home.y, home.z, false, false, false)
+        end
+    end
+    local function goHome()
+        relayGoHome = nil
+        if not away then return end
+        away = false
+        SetEntityCoordsNoOffset(ped, home.x, home.y, home.z, false, false, false)
+        SetEntityHeading(ped, homeHeading)
+        SetEntityCollision(ped, true, true)
+        NetworkSetEntityInvisibleToNetwork(ped, false)
+        SetEntityVisible(ped, true, false)
+        SetEntityInvincible(ped, false)
+        FreezeEntityPosition(ped, false)
+    end
     DisplayRadar(false)
     -- the overlay is drawn every frame (it's part of the picture the Hub gets, like a real NVR's)
     CreateThread(function()
@@ -56,6 +89,7 @@ local function relay()
             if current and (GetGameTimer() // 600) % 2 == 0 then txt(0.92, 0.03, '● LIVE', 0.5, 255, 60, 60) end
         end
     end)
+    relayGoHome = goHome
     while relaying do
         local list = lib.callback.await('opslabs-towers:cctv:relayNext', false) or {}
         if #list == 0 then
@@ -78,8 +112,9 @@ local function relay()
             local h = GetClockHours()
             SetNightvision(c.ir and (h >= 20 or h < 6) or false)
             SetSeethrough(c.thermal or false)
-            -- somewhere new: let the world stream in round it before taking the picture
+            -- somewhere new: let the world (and the players / cars there) stream in round it before taking the picture
             if not lastPos or #(lastPos - pos) > 200.0 then
+                goNear(c)
                 NewLoadSceneStartSphere(c.x, c.y, c.z, 120.0, 0)
                 local t0 = GetGameTimer()
                 while not IsNewLoadSceneLoaded() and GetGameTimer() - t0 < 3000 do Wait(50) end
@@ -93,6 +128,7 @@ local function relay()
         end
     end
     lib.callback.await('opslabs-towers:cctv:relay', false, false)
+    goHome()
     RenderScriptCams(false, false, 0, true, true)
     DestroyCam(cam, false)
     ClearFocus()
@@ -111,6 +147,7 @@ end, false)
 AddEventHandler('onResourceStop', function(res)
     if res == GetCurrentResourceName() and relaying then
         relaying = false
+        if relayGoHome then relayGoHome() end
         RenderScriptCams(false, false, 0, true, true)
         ClearFocus() ClearTimecycleModifier() SetNightvision(false) SetSeethrough(false) DisplayRadar(true)
     end

@@ -43,6 +43,8 @@ end
 lib.callback.register('opslabs-towers:cctv:relay', function(src, on)
     if on and not staff(src) then return { error = 'Only OPS Secure staff and admins can run a CCTV relay' } end
     Relays[src] = on and true or nil
+    -- OneSync only sends a client the players / cars near its ped: a relay hops round the city, so it sees further
+    pcall(SetPlayerCullingRadius, src, on and (CV.RelayCulling or 600.0) or 0.0)
     return { ok = true }
 end)
 
@@ -72,15 +74,49 @@ lib.callback.register('opslabs-towers:cctv:relayNext', function(src)
     return out
 end)
 
---- OPS Hub: every camera with its status and how fresh its picture is; marks them wanted (and one focused)
-function CctvLive(want, focus)
-    local now = os.time()
+--- an OPS Hub customer: their character's job (online → live job, else the saved one)
+local jobCache = {}
+local function jobOf(identifier)
+    if not identifier then return nil end
+    local src = FW.SourceOf and FW.SourceOf(identifier)
+    if src then return FW.Job(src) end
+    local c = jobCache[identifier]
+    if c and os.time() - c.at < 60 then return c.job end
+    local ok, j = pcall(MySQL.scalar.await, 'SELECT job FROM users WHERE identifier = ?', { identifier })
+    jobCache[identifier] = { job = ok and j or nil, at = os.time() }
+    return ok and j or nil
+end
+
+--- the cameras this viewer may see from OPS Hub (nil viewer = OPS Hub staff: all of them)
+local function visibleCams(viewer)
     local cams = CctvAllCams and CctvAllCams() or {}
+    if not viewer then return cams end
+    local job, out = jobOf(viewer), {}
+    for _, c in ipairs(cams) do
+        if CctvRemoteAllowed and CctvRemoteAllowed(c.recorder, viewer, job) then out[#out + 1] = c end
+    end
+    return out
+end
+
+function CctvViewerMay(id, viewer)
+    if not viewer then return true end
+    for _, c in ipairs(visibleCams(viewer)) do if c.id == tonumber(id) then return true end end
+    return false
+end
+
+--- OPS Hub: every camera with its status and how fresh its picture is; marks them wanted (and one focused).
+--- `viewer` (a character identifier) limits it to that customer's own / shared / organisation cameras.
+function CctvLive(want, focus, viewer)
+    local now = os.time()
+    local cams = visibleCams(viewer)
+    local mine = {}
+    for _, c in ipairs(cams) do mine[c.id] = true end
+    if focus and not mine[tonumber(focus)] then focus = nil end
     for _, c in ipairs(cams) do
         if want == 'all' or (type(want) == 'table' and want[c.id]) then Wanted[c.id] = now end
         local fr = Frames[c.id]
         c.frameAt = fr and fr.at or nil
-        c.frameBy = fr and fr.by or nil
+        c.frameBy = (not viewer and fr) and fr.by or nil      -- customers don't see who relayed it
     end
     focus = tonumber(focus)
     if focus then Focus[focus] = now Wanted[focus] = now end
@@ -90,7 +126,52 @@ function CctvLive(want, focus)
     return { cams = cams, relays = relays, watchers = watchers, now = now }
 end
 
-function CctvFrame(id)
+--- OPS Hub live map: what this camera can see right now, worked out on the server (no game needed to render it).
+--- Positions are metres in the camera's frame: x right, y ahead. People inside vehicles show as the vehicle.
+function CctvMap(id, viewer)
+    id = tonumber(id)
+    if not id or not CctvViewerMay(id, viewer) then return nil end
+    local v = CctvCamView and CctvCamView(id)
+    if not v then return nil end
+    local range = CctvCamRange and CctvCamRange(id) or 30
+    local h = math.rad(v.heading or 0)
+    local fx, fy = math.sin(h), -math.cos(h)       -- the camera's front, as in server/cctv.lua inView
+    local rx, ry = fy, -fx                          -- its right (seen from above)
+    local function rel(p)
+        local dx, dy = p.x - v.x, p.y - v.y
+        return math.floor((dx * rx + dy * ry) * 10 + 0.5) / 10, math.floor((dx * fx + dy * fy) * 10 + 0.5) / 10
+    end
+    local people, cars = {}, {}
+    local hour = tonumber(os.date('%H'))
+    if v.online then
+        for _, p in ipairs(GetPlayers()) do
+            local ped = GetPlayerPed(p)
+            if ped and ped ~= 0 and GetVehiclePedIsIn(ped, false) == 0 then
+                local pos = GetEntityCoords(ped)
+                if CctvInView(v, pos) then
+                    local x, y = rel(pos)
+                    people[#people + 1] = { x = x, y = y, h = math.floor(GetEntityHeading(ped) - (v.heading or 0)), moving = GetEntitySpeed(ped) > 0.6 }
+                end
+            end
+        end
+        for _, veh in ipairs(GetAllVehicles()) do
+            local pos = GetEntityCoords(veh)
+            if CctvInView(v, pos) then
+                local x, y = rel(pos)
+                local c1 = GetVehicleColours and select(1, GetVehicleColours(veh)) or nil
+                local plate = v.anpr and (GetVehicleNumberPlateText(veh) or ''):gsub('^%s+', ''):gsub('%s+$', '') or nil
+                local occupied = GetPedInVehicleSeat(veh, -1) ~= 0
+                cars[#cars + 1] = { x = x, y = y, h = math.floor(GetEntityHeading(veh) - (v.heading or 0)), type = GetVehicleType(veh) or 'automobile',
+                    colour = c1, plate = plate ~= '' and plate or nil, speed = math.floor(GetEntitySpeed(veh) * 2.237), occupied = occupied }
+            end
+        end
+    end
+    return { id = id, name = v.name, online = v.online, statusText = v.statusText, fov = v.fov, ptz = v.ptz, anpr = v.anpr,
+        range = range, people = people, cars = cars, now = os.time(), night = hour >= 20 or hour < 6 }
+end
+
+function CctvFrame(id, viewer)
+    if not CctvViewerMay(id, viewer) then return nil end
     local fr = Frames[tonumber(id) or -1]
     if not fr then return nil end
     return { jpg = fr.jpg, at = fr.at, by = fr.by }
