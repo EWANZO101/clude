@@ -3,6 +3,7 @@ opslabs-phone/config_server.lua
 # runtime data written by the server
 opslabs-phone/media/
 opslabs-towers/uniform.json
+opslabs-towers/danger_backups/
 # local tooling
 .claude/
 *.blend1
