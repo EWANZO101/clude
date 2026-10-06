@@ -983,6 +983,7 @@ Apps.register({
     ['network', 'OPS Network', 'network-wired', '#0a84ff'], ['fibre', 'OPS Fibre', 'circle-nodes', '#30d158'], ['secure', 'OPS Secure', 'video', '#ff375f'],
     ['comms', 'OPS Comms', 'phone', '#bf5af2'], ['systems', 'OPS Systems', 'laptop-code', '#64d2ff'], ['domains', 'OPS Domains', 'globe', '#c9a400'],
     ['web', 'OPS Web', 'code', '#ff9f0a'], ['data', 'OPS Data', 'server', '#5e5ce6'], ['cloud', 'OPS Cloud', 'cloud', '#40c8e0'],
+    ['pos', 'OPS POS', 'cash-register', '#ff9f0a'],
     // OPS America (US fiber) sub-companies
     ['usfiber', 'OPS America Fiber', 'flag-usa', '#2f6bff'], ['usosp', 'OPS America OSP', 'person-digging', '#e5484d'], ['usnet', 'OPS America NetOps', 'diagram-project', '#8e7dff'],
 ].forEach(([code, name, icon, color]) => Apps.register({

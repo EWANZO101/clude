@@ -39,6 +39,8 @@ files {
     'stream/opslabs_dc_props.ytyp',
     'stream/opslabs_grid_props.ytyp',
     'stream/opslabs_phone_props.ytyp',
+    'stream/opslabs_safemag.ytyp',
+    'stream/opslabs_pos.ytyp',
     'stream/opslabs_powerline_props.ytyp',
 }
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_ap_props.ytyp'
@@ -72,4 +74,6 @@ data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_cctv_props.ytyp'
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_dc_props.ytyp'
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_grid_props.ytyp'
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_phone_props.ytyp'
+data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_safemag.ytyp'
+data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_pos.ytyp'
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_powerline_props.ytyp'

@@ -138,6 +138,14 @@
    "icon": "diagram-project",
    "kind": "isp",
    "group": "OPS America"
+  },
+  {
+   "code": "pos",
+   "name": "OPS POS Systems",
+   "tagline": "Point of sale for stores · tills, card payments, stock & staff",
+   "color": "#ff9f0a",
+   "icon": "cash-register",
+   "kind": "retail"
   }
  ],
  "perms": [
@@ -3766,6 +3774,172 @@
    "warranty": false,
    "auto": false,
    "emergency": true
+  },
+  {
+   "code": "pos_install",
+   "company": "pos",
+   "title": "Install a POS till",
+   "desc": "Fit a full OPS POS till: terminal, card reader, cash drawer, receipt printer, barcode scanner and customer display, all on the counter.",
+   "for": [
+    "business"
+   ],
+   "wage": 900,
+   "price": 2400,
+   "verify": {
+    "kind": "all",
+    "steps": [
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_pos_terminal"
+      ],
+      "count": 1,
+      "radius": 40,
+      "label": "Terminal"
+     },
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_pos_cardreader"
+      ],
+      "count": 1,
+      "radius": 40,
+      "label": "Card reader"
+     },
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_pos_drawer"
+      ],
+      "count": 1,
+      "radius": 40,
+      "label": "Cash drawer"
+     },
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_pos_printer"
+      ],
+      "count": 1,
+      "radius": 40,
+      "label": "Receipt printer"
+     },
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_pos_scanner"
+      ],
+      "count": 1,
+      "radius": 40,
+      "label": "Barcode scanner"
+     },
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_pos_display"
+      ],
+      "count": 1,
+      "radius": 40,
+      "label": "Customer display"
+     }
+    ]
+   },
+   "parts": {
+    "pos-terminal": 1,
+    "pos-reader": 1,
+    "pos-drawer": 1,
+    "pos-printer": 1,
+    "pos-scanner": 1,
+    "pos-display": 1,
+    "cat6": 10
+   },
+   "warranty": false,
+   "cert": "pos_install"
+  },
+  {
+   "code": "pos_lane",
+   "company": "pos",
+   "title": "Add a checkout lane",
+   "desc": "Fit a second till (terminal and card reader) for a busy store.",
+   "for": [
+    "business"
+   ],
+   "wage": 450,
+   "price": 1200,
+   "verify": {
+    "kind": "all",
+    "steps": [
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_pos_terminal"
+      ],
+      "count": 1,
+      "radius": 40,
+      "label": "Terminal"
+     },
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_pos_cardreader"
+      ],
+      "count": 1,
+      "radius": 40,
+      "label": "Card reader"
+     }
+    ]
+   },
+   "parts": {
+    "pos-terminal": 1,
+    "pos-reader": 1,
+    "cat6": 5
+   },
+   "warranty": false,
+   "cert": "pos_install"
+  },
+  {
+   "code": "pos_reader",
+   "company": "pos",
+   "title": "Fit a card reader",
+   "desc": "Add a contactless card reader to an existing till so the store can take card and phone payments.",
+   "for": [
+    "business"
+   ],
+   "wage": 200,
+   "price": 450,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_pos_cardreader"
+    ],
+    "count": 1,
+    "radius": 40,
+    "label": "Card reader"
+   },
+   "parts": {
+    "pos-reader": 1
+   },
+   "warranty": false,
+   "cert": "pos_install"
+  },
+  {
+   "code": "pos_support",
+   "company": "pos",
+   "title": "POS support visit",
+   "desc": "On-site help with the store's tills: staff training, stock set-up, receipt printer and card reader checks.",
+   "for": [
+    "business"
+   ],
+   "wage": 220,
+   "price": 250,
+   "verify": {
+    "kind": "onsite",
+    "secs": 50,
+    "radius": 30,
+    "action": "Sorting out the store's tills"
+   },
+   "warranty": true,
+   "cert": "pos_install"
   }
  ],
  "isp": {
@@ -3922,7 +4096,8 @@
    "track": "opstrack.sa",
    "fuel": "opsfuel.sa",
    "sapl": "sapl.sa",
-   "solar": "sasolar.sa"
+   "solar": "sasolar.sa",
+   "pos": "opspos.sa"
   },
   "internal": [
    "ops.sa",
@@ -3935,6 +4110,7 @@
    "opsfuel.sa",
    "opsmobile.sa",
    "opsnetwork.sa",
+   "opspos.sa",
    "opssecure.sa",
    "opssystems.sa",
    "opstrack.sa",
@@ -4507,6 +4683,71 @@
      "start": 300,
      "supplier": "lscw"
     }
+   ],
+   "pos": [
+    {
+     "sku": "pos-terminal",
+     "name": "OPS POS terminal 15.6\"",
+     "unit": "each",
+     "cost": 620,
+     "min": 2,
+     "start": 4,
+     "supplier": "tillcraft"
+    },
+    {
+     "sku": "pos-reader",
+     "name": "Contactless card reader",
+     "unit": "each",
+     "cost": 140,
+     "min": 3,
+     "start": 6,
+     "supplier": "tillcraft"
+    },
+    {
+     "sku": "pos-drawer",
+     "name": "Cash drawer",
+     "unit": "each",
+     "cost": 95,
+     "min": 2,
+     "start": 4,
+     "supplier": "tillcraft"
+    },
+    {
+     "sku": "pos-printer",
+     "name": "Thermal receipt printer",
+     "unit": "each",
+     "cost": 120,
+     "min": 2,
+     "start": 4,
+     "supplier": "tillcraft"
+    },
+    {
+     "sku": "pos-scanner",
+     "name": "Barcode scanner + cradle",
+     "unit": "each",
+     "cost": 85,
+     "min": 2,
+     "start": 4,
+     "supplier": "tillcraft"
+    },
+    {
+     "sku": "pos-display",
+     "name": "Customer-facing display",
+     "unit": "each",
+     "cost": 180,
+     "min": 2,
+     "start": 4,
+     "supplier": "tillcraft"
+    },
+    {
+     "sku": "cat6",
+     "name": "CAT6 cable",
+     "unit": "m",
+     "cost": 0.6,
+     "min": 100,
+     "start": 200,
+     "supplier": "lscw"
+    }
    ]
   },
   "suppliers": [
@@ -4557,6 +4798,14 @@
     "phone": "555-0166",
     "leadHours": 2,
     "terms": "On account"
+   },
+   {
+    "code": "tillcraft",
+    "name": "Tillcraft Retail Systems",
+    "contact": "trade@tillcraft.sa",
+    "phone": "555-0163",
+    "leadHours": 2,
+    "terms": "30 days"
    }
   ],
   "certs": [
@@ -5111,6 +5360,56 @@
       "ok": 0
      }
     ]
+   },
+   {
+    "code": "pos_install",
+    "company": "pos",
+    "name": "POS installation",
+    "validDays": 60,
+    "for": [
+     "pos_install",
+     "pos_lane",
+     "pos_reader",
+     "pos_support"
+    ],
+    "questions": [
+     {
+      "q": "Which piece of kit lets a store take card and phone payments?",
+      "a": [
+       "The card reader",
+       "The receipt printer",
+       "The cash drawer"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "How close must the kit be to the terminal to join the till?",
+      "a": [
+       "Within a few metres, on the same counter",
+       "Anywhere in the city",
+       "In another building"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "Where does a card payment's money go?",
+      "a": [
+       "The business account, less the processing fee",
+       "The cashier's pocket",
+       "The cash drawer"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "Which way should the customer display face?",
+      "a": [
+       "Towards the customer",
+       "Towards the wall",
+       "Towards the cashier"
+      ],
+      "ok": 0
+     }
+    ]
    }
   ],
   "warrantyDays": 30,
@@ -5208,7 +5507,8 @@
   "track": "track",
   "fuel": "fuel",
   "power": "sapl",
-  "solar": "solar"
+  "solar": "solar",
+  "pos": "pos"
  },
  "market": {
   "_about": "Sub-companies, wholesale and leasing. Players (or you) run sub-companies under the main company (companyRoles.main); they lease fibre lines, mobile network access, masts and other kit from the provider companies and sell their own packages, plans and products in their own store. Wholesale prices start here and are then edited per provider on OPS Hub → Market.",

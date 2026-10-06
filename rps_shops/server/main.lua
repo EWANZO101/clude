@@ -410,6 +410,10 @@ local function canCarryCart(
     return true
 end
 
+local function opsPos()
+    return GetResourceState('opslabs-pos') == 'started'
+end
+
 local function refundCurrency(
     source,
     amount
@@ -506,34 +510,59 @@ lib.callback.register(
                 source
             )
 
-        if currencyCount
-            < cart.total then
+        -- OPS POS (opslabs-pos): a shop run from an OPS POS till with a card reader takes card / phone payments
+        -- when the customer is short of cash
+        local paidByCard = false
 
-            return {
-                success = false,
-                message =
-                    locale.NoMoney
-                        :format(
-                            Config.Currency.Label
-                        )
-            }
+        if currencyCount
+            < cart.total
+            and opsPos() then
+
+            local ok, paid = pcall(function()
+                return exports['opslabs-pos']:NpcCardPay(
+                    source,
+                    shopId,
+                    shop.label,
+                    shop.coords,
+                    cart.total,
+                    cart.items
+                )
+            end)
+
+            paidByCard =
+                ok and paid == true
         end
 
-        local removed =
-            Bridge.RemoveCurrency(
-                source,
-                cart.total
-            )
+        if not paidByCard then
+            if currencyCount
+                < cart.total then
 
-        if not removed then
-            return {
-                success = false,
-                message =
-                    locale.NoMoney
-                        :format(
-                            Config.Currency.Label
-                        )
-            }
+                return {
+                    success = false,
+                    message =
+                        locale.NoMoney
+                            :format(
+                                Config.Currency.Label
+                            )
+                }
+            end
+
+            local removed =
+                Bridge.RemoveCurrency(
+                    source,
+                    cart.total
+                )
+
+            if not removed then
+                return {
+                    success = false,
+                    message =
+                        locale.NoMoney
+                            :format(
+                                Config.Currency.Label
+                            )
+                }
+            end
         end
 
         local addedItems = {}
@@ -556,10 +585,19 @@ lib.callback.register(
                     addedItems
                 )
 
-                refundCurrency(
-                    source,
-                    cart.total
-                )
+                if paidByCard then
+                    pcall(function()
+                        exports['opslabs-pos']:NpcCardRefund(
+                            source,
+                            cart.total
+                        )
+                    end)
+                else
+                    refundCurrency(
+                        source,
+                        cart.total
+                    )
+                end
 
                 return {
                     success = false,
@@ -623,6 +661,20 @@ lib.callback.register(
                     receiptMetadata
                 )
             end
+        end
+
+        -- OPS POS: the takings go to the business whose till runs this shop
+        if opsPos() then
+            pcall(function()
+                exports['opslabs-pos']:NpcSale(
+                    source,
+                    shopId,
+                    shop.label,
+                    shop.coords,
+                    cart,
+                    paidByCard and 'card' or 'cash'
+                )
+            end)
         end
 
         local stockPayload =

@@ -140,6 +140,7 @@ Config.Cabling = {
         { id = 'data', label = 'OPS Data', sub = 'Data centres · racks, servers, storage, UPS, cooling — runs OPS Cloud', icon = 'server', color = '#5e5ce6' },
         { id = 'track', label = 'OPS Track', sub = 'Vehicle GPS trackers · install, test, live tracking, theft alerts', icon = 'location-crosshairs', color = '#30d158' },
         { id = 'fuel', label = 'OPS Fuel', sub = 'Fuel stations · tanks, pipework, dispensers, tanker deliveries', icon = 'gas-pump', color = '#e2202a' },
+        { id = 'pos', label = 'OPS POS Systems', sub = 'Store tills · terminal, card reader, cash drawer, printer, scanner, customer display', icon = 'cash-register', color = '#ff9f0a' },
         -- OPS America (US fiber-to-the-home): OPS America Fiber · Outside Plant · Network Ops — US names for the same kit
         { id = 'usfiber', label = 'OPS America Fiber', sub = 'US FTTH · central office, outside plant, drops & customer premises', icon = 'flag-usa', color = '#2f6bff' },
     },
@@ -323,6 +324,13 @@ Config.Cabling = {
         { net = 'solar', cat = 'Inverters & batteries', label = 'Home battery 13.5 kWh', model = 'opslabs_solar_battery', about = 'Within 4 m of the inverter: stores daytime solar and keeps the house on at night / in a power cut.' },
         { net = 'solar', cat = 'Isolators & protection', label = 'PV DC isolator', model = 'opslabs_solar_dciso', about = '[E] isolates the panels from the inverter (safe working)' },
         -- OPS Secure: CCTV (Config.Cctv) — cameras on walls / poles, recorders + viewing kit on desks
+        -- OPS POS Systems (opslabs-pos): everything within a few metres of a terminal joins that till
+        { net = 'pos', cat = 'Point of sale', label = 'POS terminal 15.6" (the till)', model = 'opslabs_pos_terminal', about = 'On the counter, screen towards the cashier. A boss of the business sets it up at the terminal.' },
+        { net = 'pos', cat = 'Point of sale', label = 'Card reader (contactless)', model = 'opslabs_pos_cardreader', about = 'Keypad towards the customer, beside the terminal. Card and phone (OPS Pay) payments.' },
+        { net = 'pos', cat = 'Point of sale', label = 'Cash drawer', model = 'opslabs_pos_drawer', about = 'Under or beside the terminal, front towards the cashier. Opens on cash sales.' },
+        { net = 'pos', cat = 'Point of sale', label = 'Receipt printer', model = 'opslabs_pos_printer', about = 'Beside the terminal: customers get a printed receipt.' },
+        { net = 'pos', cat = 'Point of sale', label = 'Barcode scanner + cradle', model = 'opslabs_pos_scanner', about = 'Beside the terminal: scan to add products.' },
+        { net = 'pos', cat = 'Point of sale', label = 'Customer display', model = 'opslabs_pos_display', about = 'Screen towards the customer: shows the basket and total.' },
         { net = 'secure', cat = 'IP cameras (PoE)', label = 'Bullet camera 4K (IP, PoE, IR 40 m)', model = 'opslabs_cctv_bullet', about = 'CAT6 to the NVR or a PoE switch. Looks out from the wall.' },
         { net = 'secure', cat = 'IP cameras (PoE)', label = 'Dome camera (IP, PoE)', model = 'opslabs_cctv_dome' },
         { net = 'secure', cat = 'IP cameras (PoE)', label = 'Turret camera (IP, PoE)', model = 'opslabs_cctv_turret' },
@@ -718,6 +726,8 @@ Config.OpsIsp = {
 -- Recorders need a live socket within 3 m. Monitors, video walls and PTZ keyboards show the nearest recorder's cameras.
 -- Remote viewing (phone app): the system's remote viewing is on and its NVR is cabled to an online gateway router.
 Config.Cctv = {
+    RelayCulling = 600.0,         -- /cctvrelay: how far (m) round its ped a relay is sent players and cars (OneSync culling)
+    RelayMoveBeyond = 450.0,      -- cameras further than this from where the relay stands: its hidden ped goes there too
     Enabled = true,
     SiteRadius = 60.0, WifiRange = 40.0, PlugReach = 3.0, EventEvery = 5, MotionCooldown = 30, AnprCooldown = 90,
     FaultsPerCameraHour = 0.01,       -- chance per camera per real hour of a fault (dirty lens, cable, dead camera)
