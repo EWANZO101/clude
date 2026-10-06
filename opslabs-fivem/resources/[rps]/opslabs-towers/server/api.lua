@@ -140,6 +140,13 @@ SetHttpHandler(function(req, res)
             if not fr then return reply(res, 404, { error = 'No picture yet' }) end
             return reply(res, 200, { data = fr })
         end
+        local ptzId = path:match('^/api/cctv/ptz/(%d+)$')
+        if ptzId and req.method == 'POST' then
+            if not CctvPtzSet then return reply(res, 404, { error = 'CCTV live is off' }) end
+            local p, err = CctvPtzSet(ptzId, data, viewer or data.viewer)
+            if not p then return reply(res, 400, { error = err }) end
+            return reply(res, 200, { data = p })
+        end
         local mapId = path:match('^/api/cctv/map/(%d+)$')
         if mapId and req.method == 'GET' then
             local m = CctvMap and CctvMap(mapId, viewer)

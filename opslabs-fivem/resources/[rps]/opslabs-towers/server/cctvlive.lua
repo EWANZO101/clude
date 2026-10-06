@@ -12,7 +12,8 @@ local Wanted = {}       -- camera id -> unix time an OPS Hub viewer last showed 
 local Focus = {}        -- camera id -> unix time an OPS Hub viewer last had it open big
 local Watching = {}     -- src -> { [cameraId] = true } (in-game viewers)
 local Relays = {}       -- src -> true
-local MAX_B64 = 400000
+local MAX_B64 = 900000         -- a 1280×720 high-quality picture of the focused camera
+local Ptz = {}                 -- camera id -> { pan, tilt, zoom } set from OPS Hub (applied by the relay)
 
 function CctvLiveWatching(src, cams)
     local set = {}
@@ -36,9 +37,24 @@ end)
 -- in-game viewer stopped watching
 RegisterNetEvent('opslabs-towers:cctv:stopWatching', function() Watching[source] = nil end)
 
-local function staff(src)
-    return (IsTowerAdmin and IsTowerAdmin(src)) or (CanCable and CanCable(src))
+local function relayAccount(src)
+    local list = CV.RelayAccounts or {}
+    if #list == 0 then return false end
+    for _, id in ipairs(GetPlayerIdentifiers(src)) do
+        for _, want in ipairs(list) do if id == want then return true end end
+    end
+    return false
 end
+
+local function staff(src)
+    return (IsTowerAdmin and IsTowerAdmin(src)) or (CanCable and CanCable(src)) or relayAccount(src)
+end
+
+-- an always-on relay account joined: it starts relaying by itself
+AddEventHandler('playerJoining', function()
+    local src = source
+    if relayAccount(src) then SetTimeout(20000, function() if GetPlayerName(src) then TriggerClientEvent('opslabs-towers:cctv:autorelay', src) end end) end
+end)
 
 lib.callback.register('opslabs-towers:cctv:relay', function(src, on)
     if on and not staff(src) then return { error = 'Only OPS Secure staff and admins can run a CCTV relay' } end
@@ -67,10 +83,33 @@ lib.callback.register('opslabs-towers:cctv:relayNext', function(src)
         if (a.focus ~= nil) ~= (b.focus ~= nil) then return a.focus ~= nil end
         return a.age > b.age
     end)
+    for _, c in ipairs(list) do
+        local p = Ptz[c.id]
+        if p then c.pan, c.tilt, c.zoom = p.pan, p.tilt, p.zoom end
+    end
+    -- someone has a camera open full size on OPS Hub: the relay stays on it and streams it (high quality, several a second)
+    if list[1] and list[1].focus then
+        list[1].hold = true
+        return { list[1] }
+    end
     local out = {}
     for i = 1, math.min(8, #list) do out[i] = list[i] end
-    -- a focused camera comes round twice as often
-    if out[1] and out[1].focus and #out > 2 then table.insert(out, 3, out[1]) end
+    -- room to spare: keep every other online camera fresh too (stalest first), so every tile is ready before it's opened
+    if #out < 8 then
+        local have, rest = {}, {}
+        for _, c in ipairs(out) do have[c.id] = true end
+        for _, c in ipairs(CctvAllCams and CctvAllCams() or {}) do
+            local fr = Frames[c.id]
+            local a = fr and now - fr.at or 9999
+            if c.online and not have[c.id] and a > (CV.BackgroundEvery or 60) then c.age = a rest[#rest + 1] = c end
+        end
+        table.sort(rest, function(a, b) return a.age > b.age end)
+        for i = 1, math.min(8 - #out, #rest) do
+            local p = Ptz[rest[i].id]
+            if p then rest[i].pan, rest[i].tilt, rest[i].zoom = p.pan, p.tilt, p.zoom end
+            out[#out + 1] = rest[i]
+        end
+    end
     return out
 end)
 
@@ -117,6 +156,7 @@ function CctvLive(want, focus, viewer)
         local fr = Frames[c.id]
         c.frameAt = fr and fr.at or nil
         c.frameBy = (not viewer and fr) and fr.by or nil      -- customers don't see who relayed it
+        if c.ptz and Ptz[c.id] then c.ptzState = Ptz[c.id] end
     end
     focus = tonumber(focus)
     if focus then Focus[focus] = now Wanted[focus] = now end
@@ -166,9 +206,32 @@ function CctvMap(id, viewer)
             end
         end
     end
+    local p = v.ptz and Ptz[id] or nil
     return { id = id, name = v.name, online = v.online, statusText = v.statusText, fov = v.fov, ptz = v.ptz, anpr = v.anpr,
+        aim = p and p.pan or 0, zoom = p and p.zoom or 1,
         range = range, people = people, cars = cars, now = os.time(), night = hour >= 20 or hour < 6 }
 end
+
+--- OPS Hub: point a PTZ camera. pan (degrees from where it's mounted), tilt (-80..10), zoom (1..8); `d.move` nudges.
+function CctvPtzSet(id, d, viewer)
+    id = tonumber(id)
+    if not id or not CctvViewerMay(id, viewer) then return nil, 'No such camera' end
+    local v = CctvCamView and CctvCamView(id)
+    if not v or not v.ptz then return nil, 'Not a PTZ camera' end
+    local p = Ptz[id] or { pan = 0.0, tilt = -15.0, zoom = 1.0 }
+    d = type(d) == 'table' and d or {}
+    if d.home then p = { pan = 0.0, tilt = -15.0, zoom = 1.0 } end
+    p.pan = tonumber(d.pan) or (p.pan + (tonumber(d.dpan) or 0))
+    p.tilt = tonumber(d.tilt) or (p.tilt + (tonumber(d.dtilt) or 0))
+    p.zoom = tonumber(d.zoom) or (p.zoom * (tonumber(d.dzoom) or 1))
+    p.pan = ((p.pan + 180) % 360) - 180
+    p.tilt = math.max(-80.0, math.min(10.0, p.tilt))
+    p.zoom = math.max(1.0, math.min(8.0, p.zoom))
+    Ptz[id] = p
+    Focus[id], Wanted[id] = os.time(), os.time()
+    return p
+end
+function CctvPtzGet(id) return Ptz[tonumber(id) or -1] end
 
 function CctvFrame(id, viewer)
     if not CctvViewerMay(id, viewer) then return nil end
