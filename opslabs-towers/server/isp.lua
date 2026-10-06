@@ -132,10 +132,11 @@ function RecomputeIsp()
             local s = Since[id]
             if path then s.lit = s.lit or now else s.lit = nil end
             local dead = FE.fixtures[id] == 'dead'                   -- ONT hardware fault
+            local nopower = OntPowered and not OntPowered(id)         -- not plugged into a live socket
             local rx
             if path then rx = 3.0 - 0.35 * (path.metres / 1000) - 0.1 * path.joints - 10.5 * math.min(2, math.max(1, path.joints - 1)) - 4.0 - (path.loss or 0) end
             local lowLight = rx and rx < -28.0                        -- below the ONT's sensitivity: drops out
-            if dead or lowLight then path = nil end
+            if dead or lowLight or nopower then path = nil end
             local live = path and svc and svc.status == 'active'
             if live then s.auth = s.auth or now else s.auth = nil end
             -- optical budget (above): launch +3 dBm, 0.35 dB/km, 0.1 dB per splice, 1:8 splitter at each CBT ≈ 10.5 dB, + fault loss
@@ -143,10 +144,11 @@ function RecomputeIsp()
             local pl = svc and plan(p, svc.plan)
             local lan = lanOf[id]
             local lanTower = lan and Towers[lan]
+            if nopower then lan = nil end
             if live and lan then GatewayOnline[lan] = true end
             status[id] = {
-                hardware = dead and 'failed' or nil, lowLight = lowLight or nil,
-                pon = dead and 'off' or path and 'on' or 'off',
+                hardware = dead and 'failed' or nil, lowLight = lowLight or nil, power = not nopower, noPower = nopower or nil,
+                pon = (dead or nopower) and 'off' or path and 'on' or 'off',
                 ponBlink = path and math.max(0, 20 - (now - s.lit)) or 0,
                 los = not path,
                 lan = lan and (live and 'traffic' or 'on') or 'off',
@@ -178,6 +180,17 @@ end
 
 --- is this gateway's WAN cabled to an ONT with internet right now (whatever RequireIspForGateways says)
 function IspGatewayLive(towerId) return GatewayOnline[towerId] == true end
+
+--- ONT repair kit: power-cycle (ranging + login start again), new hardware serial after a swap, service state
+function IspRebootOnt(id) Since[id] = nil if CablingChanged then CablingChanged() else RecomputeIsp() end end
+function IspNewSerial(id)
+    local svc = Services[id]
+    if not svc then return serialFor(id) end
+    svc.serial = ('OPSN%08X'):format(math.random(0x10000000, 0x7FFFFFFF))
+    MySQL.update('UPDATE opslabs_towers_isp SET serial = ? WHERE fixture_id = ?', { svc.serial, id })
+    return svc.serial
+end
+function IspServiceStatus(id) return Services[id] and Services[id].status or 'none' end
 
 function IspFixtureRemoved(id)
     if Services[id] then

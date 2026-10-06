@@ -27,7 +27,7 @@ local function nearestPole(maxDist)
     local pos = GetEntityCoords(PlayerPedId())
     local best, bd
     for _, p in ipairs(AllPoles()) do
-        local d = not p.house and #(vector2(pos.x, pos.y) - vector2(p.x, p.y)) or math.huge
+        local d = not p.house and not (CC.NoClimb and CC.NoClimb[p.model]) and #(vector2(pos.x, pos.y) - vector2(p.x, p.y)) or math.huge
         if d < (bd or maxDist) and pos.z > p.z - 1.5 and pos.z < p.z + 3.0 then best, bd = p, d end
     end
     return best, bd
@@ -129,22 +129,27 @@ local function poleMenu(pole, H, angle, h, onClose)
     local z = pole.z + h + 1.2                      -- roughly chest height
     local d = vector2(math.cos(angle), math.sin(angle))
     local r = PoleRadius(pole, z - pole.z)
-    -- only kit that belongs on this kind of pole: power kit on power poles, telecom kit on telegraph / metal poles
+    -- only kit that belongs on this kind of pole: power kit on power poles, telecom kit on telegraph / metal poles /
+    -- roof masts, and nothing on a house pole or wall anchor (the drop just clamps to those while you lay it)
     local power = (pole.model or ''):find('^opslabs_power_pole') ~= nil
-    local nets = power and { 'sapl' } or { 'openline', 'streamfibre' }
+    local nets = (pole.house or pole.anchor) and {} or power and { 'sapl' } or { 'openline', 'streamfibre', 'usfiber' }
+    local NET_LABEL = {}
+    for _, n in ipairs(CC.Networks or {}) do NET_LABEL[n.id] = { n.label, n.color } end
     local list = {}
     for _, netId in ipairs(nets) do
-        local first = true
+        local order, bucket = {}, {}
         for _, e in ipairs(CC.Equipment) do
             if e.pole and (e.net or 'openline') == netId then
-                if first then
-                    first = false
-                    for _, n in ipairs(CC.Networks or {}) do
-                        if n.id == netId then list[#list + 1] = { header = n.label .. (power and ' · power kit' or ' · telecom kit'), color = n.color } end
-                    end
-                end
-                list[#list + 1] = e
+                local cat = e.cat or 'On the pole'
+                if not bucket[cat] then bucket[cat] = {} order[#order + 1] = cat end
+                table.insert(bucket[cat], e)
             end
+        end
+        local nl = NET_LABEL[netId] or { netId, '#8e8e93' }
+        for _, cat in ipairs(order) do
+            local what = cat == 'Copper phone line' and 'copper' or cat == 'On the pole' and (netId == 'sapl' and 'pole kit' or 'fibre') or cat:lower()
+            list[#list + 1] = { header = nl[1] .. ' · ' .. what, color = nl[2] }
+            for _, e in ipairs(bucket[cat]) do list[#list + 1] = e end
         end
     end
     for _, e in ipairs(list) do
@@ -198,9 +203,36 @@ local function poleMenu(pole, H, angle, h, onClose)
         table.insert(options, 1, { title = 'Cordless drill · drill a bolt hole', description = ('Through-bolt hole for a bracket at %.1f m'):format(z - pole.z), icon = 'screwdriver-wrench', iconColor = '#0a84ff',
             onSelect = function() ToolDrillPole(z - pole.z) onClose() end })
     end
-    if #options == 0 then options[1] = { title = 'Nothing to fit here', readOnly = true } end
+    if #options == 0 then
+        options[1] = { title = (pole.house or pole.anchor) and 'Nothing is fitted to a house pole' or 'Nothing to fit here',
+            description = (pole.house or pole.anchor) and 'The drop clamps to it on its own while you lay the cable' or nil, readOnly = true }
+    end
     lib.registerContext({ id = 'pole_equipment', root = true, title = 'On the pole', options = options, onExit = onClose })
     lib.showContext('pole_equipment')
+end
+
+---------------------------------------------------------------------------
+-- quick menu up the pole (Z): always the small classic menu, whatever menu style the player picked
+---------------------------------------------------------------------------
+
+local QUICK_KEY = (Config.MenuStyle or {}).PoleQuickKey or 20
+local function quickMenu(pole, H, angle, h, onClose, climbDown)
+    ForceClassicMenus = true
+    local function done() ForceClassicMenus = false onClose() end
+    local power = (pole.model or ''):find('^opslabs_power_pole') ~= nil
+    local options = {
+        { title = 'Fit / remove kit here', description = ('At %.1f m'):format(h + 1.0), icon = 'screwdriver-wrench', onSelect = function() poleMenu(pole, H, angle, h, done) end },
+        { title = 'Cut a cable within reach', icon = 'scissors', onSelect = function() CreateThread(function() if CableCutAtHand then CableCutAtHand() end done() end) end },
+        { title = (HarnessClipped and HarnessClipped()) and 'Unclip the harness' or 'Clip the harness on', icon = 'user-shield',
+            onSelect = function() if HarnessMenu then HarnessMenu() end done() end },
+    }
+    if power and not pole.world and LineToolInspect then
+        options[#options + 1] = { title = 'Line Tool on this pole', description = 'Live data, what’s connected, snap jumpers off / on', icon = 'person-digging',
+            onSelect = function() LineToolInspect(pole.id, done) end }
+    end
+    options[#options + 1] = { title = 'Climb down', icon = 'person-arrow-down-to-line', onSelect = function() done() climbDown() end }
+    lib.registerContext({ id = 'pole_quick', root = true, title = ('Pole · %.1f m up'):format(h + 1.0), options = options, onExit = done })
+    lib.showContext('pole_quick')
 end
 
 ---------------------------------------------------------------------------
@@ -236,8 +268,8 @@ local function climb(pole, startH, startAngle)
 
     local leaners = LaddersOnPole and LaddersOnPole(pole) or {}
     local sf = PlaceHud.buttons(#leaners > 0
-        and { { 'Climb', { 32, 33 } }, { 'Move round', { 34, 35 } }, { 'Equipment', 47 }, { 'Cut cable', 26 }, { 'Onto the ladder', 23 }, { 'Climb down', 73 } }
-        or { { 'Climb', { 32, 33 } }, { 'Move round', { 34, 35 } }, { 'Equipment', 47 }, { 'Cut cable', 26 }, { 'Climb down', 73 } })
+        and { { 'Climb', { 32, 33 } }, { 'Move round', { 34, 35 } }, { 'Equipment', 47 }, { 'Quick menu', QUICK_KEY }, { 'Cut cable', 26 }, { 'Onto the ladder', 23 }, { 'Climb down', 73 } }
+        or { { 'Climb', { 32, 33 } }, { 'Move round', { 34, 35 } }, { 'Equipment', 47 }, { 'Quick menu', QUICK_KEY }, { 'Cut cable', 26 }, { 'Climb down', 73 } })
     local hudSub = function() return HarnessClipped and HarnessClipped() and '   ·   harness clipped on' or '' end
     local leaving, toLadder = false, nil
     local last = GetGameTimer()
@@ -246,7 +278,7 @@ local function climb(pole, startH, startAngle)
         local now = GetGameTimer()
         local dt = math.min(0.1, (now - last) / 1000)
         last = now
-        for _, ctl in ipairs({ 21, 22, 23, 24, 25, 26, 30, 31, 32, 33, 34, 35, 36, 37, 44, 47, 73, 140, 141, 142 }) do DisableControlAction(0, ctl, true) end
+        for _, ctl in ipairs({ 21, 22, 23, 24, 25, 26, 30, 31, 32, 33, 34, 35, 36, 37, 44, 47, 73, 140, 141, 142, QUICK_KEY }) do DisableControlAction(0, ctl, true) end
         DisablePlayerFiring(PlayerId(), true)
 
         local state = 'hold'
@@ -277,6 +309,14 @@ local function climb(pole, startH, startAngle)
             if IsDisabledControlJustPressed(0, 47) then
                 menuOpen = true
                 poleMenu(pole, H, angle, h, function() menuOpen = false end)
+            end
+            if IsDisabledControlJustPressed(0, QUICK_KEY) then                    -- Z: the small quick menu
+                menuOpen = true
+                quickMenu(pole, H, angle, h, function() menuOpen = false end, function()
+                    if HarnessClipped and HarnessClipped() then
+                        lib.notify({ type = 'error', description = 'Unclip your harness before you climb down' })
+                    else leaving = true end
+                end)
             end
             if IsDisabledControlJustPressed(0, 26) and CableCutAtHand then       -- C: cut a cable within reach
                 menuOpen = true
@@ -318,6 +358,7 @@ local function climb(pole, startH, startAngle)
 
     PlaceHud.release(sf)
     lib.hideContext(false)
+    ForceClassicMenus = false
     PoleClimb = nil
     if HarnessForceOff then HarnessForceOff() end       -- dead / resource stop: let go of the pole
     if toLadder and ClimbLadderFrom then
@@ -341,7 +382,8 @@ end
 CreateThread(function()
     local shown = false
     while true do
-        local pole = not climbing and not NearLadder and not NearLooseEnd and not IsPedInAnyVehicle(PlayerPedId(), false) and nearestPole(1.3)
+        -- third eye (client/target.lua) does the bottom of poles when a target resource runs; this prompt is the fallback
+        local pole = not climbing and not NearLadder and not NearLooseEnd and not (TargetOn and TargetOn()) and not IsPedInAnyVehicle(PlayerPedId(), false) and nearestPole(1.3)
         if pole then
             if not shown then lib.showTextUI('[E] Climb the pole', { icon = 'person-arrow-up-from-line' }) shown = true end
             Wait(0)
@@ -367,6 +409,14 @@ AddEventHandler('onResourceStop', function(res)
         FreezeEntityPosition(ped, false)
     end
 end)
+
+--- climb from the bottom (client/target.lua), with the same job check as [E]
+function TryClimbPole(pole)
+    if climbing then return end
+    if not canClimb() then return lib.notify({ type = 'error', description = 'You need climbing gear and training for that' }) end
+    climb(pole)
+end
+function IsClimbingPole() return climbing end
 
 --- start climbing a pole part-way up (stepping across from a ladder)
 function ClimbPole(pole, h, angle) climb(pole, h, angle) end

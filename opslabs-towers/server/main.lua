@@ -23,8 +23,38 @@ local function normalize(t)
     return t
 end
 
+-- Model files were renamed from real-brand names to neutral OPS names. Kit placed under the old names is converted
+-- once, here, before anything loads (towers, fixtures, saved job checks, edited job types and settings).
+local RENAMED_MODELS = {
+    { 'opslabs_omada_eap_ceiling', 'opslabs_ap_beam_ceiling' },
+    { 'opslabs_unifi_ap_ceiling', 'opslabs_ap_halo_ceiling' },
+    { 'opslabs_tplink_extender', 'opslabs_range_extender' },
+    { 'opslabs_tplink_archer', 'opslabs_homerouter_ax4' },
+    { 'opslabs_omada_er7206', 'opslabs_edge_e7' },
+    { 'opslabs_omada_switch', 'opslabs_poe_switch8' },
+    { 'opslabs_omada_er605', 'opslabs_edge_e5' },
+    { 'opslabs_omada_oc200', 'opslabs_ctrl_c2' },
+    { 'opslabs_tplink_deco', 'opslabs_mesh_m1' },
+    { 'opslabs_ucg_ultra', 'opslabs_gw_mini' },
+    { 'opslabs_omada_eap', 'opslabs_ap_beam' },
+    { 'opslabs_unifi_ap', 'opslabs_ap_halo' },
+    { 'opslabs_udm_pro', 'opslabs_gw_pro' },
+}
+local function migrateModels()
+    for _, m in ipairs(RENAMED_MODELS) do
+        for _, sql in ipairs({
+            'UPDATE opslabs_towers SET model = ? WHERE model = ?',
+            'UPDATE opslabs_towers_fixtures SET model = ? WHERE model = ?',
+        }) do pcall(MySQL.update.await, sql, { m[2], m[1] }) end
+        for _, t in ipairs({ { 'ops_jobs', 'verify' }, { 'ops_job_overrides', 'data' }, { 'ops_settings', 'value' } }) do
+            pcall(MySQL.update.await, ('UPDATE %s SET %s = REPLACE(%s, ?, ?) WHERE %s LIKE ?'):format(t[1], t[2], t[2], t[2]), { m[1], m[2], '%' .. m[1] .. '%' })
+        end
+    end
+end
+
 local function load()
     Towers = {}
+    migrateModels()
     for _, t in ipairs(MySQL.query.await('SELECT * FROM opslabs_towers') or {}) do
         Towers[t.id] = normalize(t)
     end
@@ -242,7 +272,7 @@ function ComputeCoverage(coords, src)
     local wifi, nearby = nil, {}
     for _, t in pairs(Towers) do
         -- fibre-only access points stay silent until they're cabled to a gateway with a live fibre line
-        if t.active and not (FaultEffects and FaultEffects.towers[t.id]) and not (t.fibre_only and not (WifiOnFibre and WifiOnFibre(t.id))) then
+        if t.active and not (FaultEffects and FaultEffects.towers[t.id]) and not (TowerPowered and not TowerPowered(t.id)) and not (t.fibre_only and not (WifiOnFibre and WifiOnFibre(t.id))) then
             local dx, dy = coords.x - t.x, coords.y - t.y
             local d2 = math.sqrt(dx * dx + dy * dy)
             if t.type == 'cell' then
@@ -371,6 +401,11 @@ lib.callback.register('opslabs-towers:save', function(src, data)
         local c = GetEntityCoords(GetPlayerPed(src))
         data.x, data.y, data.z = data.x or c.x, data.y or c.y, data.z or c.z
         data.heading = data.heading or GetEntityHeading(GetPlayerPed(src))
+        -- items mode (opslabs-phone): a router / access point placed as a tower uses its inventory item
+        if data.model and GetResourceState('opslabs-phone') == 'started' then
+            local okc, allowed, why = pcall(function() return exports['opslabs-phone']:WorkTakeForModel(src, data.model) end)
+            if okc and allowed == false then return { error = why or 'You need the item for that' } end
+        end
     end
     local t, err = SaveTower(id, data, GetPlayerName(src))
     if not t then return { error = err } end
@@ -389,6 +424,7 @@ lib.callback.register('opslabs-towers:delete', function(src, id)
     if not IsTowerAdmin(src) then return false end
     local t = Towers[tonumber(id)]
     local ok = DeleteTower(tonumber(id))
+    if ok and t and t.model and GetResourceState('opslabs-phone') == 'started' then pcall(function() exports['opslabs-phone']:WorkGiveForModel(src, t.model) end) end
     if ok then print(('[opslabs-towers] %s deleted tower #%s "%s"'):format(GetPlayerName(src), id, t and t.name or '')) end
     return ok
 end)

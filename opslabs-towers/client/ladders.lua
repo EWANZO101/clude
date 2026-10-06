@@ -375,19 +375,48 @@ end
 -- climbing
 ---------------------------------------------------------------------------
 
---- fitting equipment to the wall in front while standing on a ladder (aim & place)
--- only things that go on a wall (no poles, cabinets, buildings or exchange plant)
-local WALL_CATS = { ['Customer premises · outside'] = true, ['Customer premises · inside'] = true, ['On the pole'] = true }
+--- fitting equipment while standing on a ladder (aim & place): only what really goes up there.
+--- Outside: the drop / wall kit at the eaves (CSP, anchor, entry bushing, house pole, J-hook, copper DP) and the drill.
+--- Inside a building: ceiling lights and the high-level kit (fibre entry box, junction box).
+local BUILDING_HALF = { opslabs_grid_subbuilding = { 9.0, 5.0 }, opslabs_grid_subshell = { 9.0, 5.0 }, opslabs_house_customer = { 6.0, 4.5 }, opslabs_depot = { 11.0, 7.0 }, opslabs_exchange_building = { 8.0, 5.0 } }
+
+local function indoors()
+    local ped = PlayerPedId()
+    if GetInteriorFromEntity(ped) ~= 0 then return true end
+    local p = GetEntityCoords(ped)
+    for _, f in pairs(CablingFixtures and CablingFixtures() or {}) do
+        local h = BUILDING_HALF[f.model]
+        if h then
+            local a = math.rad(-(f.heading or 0.0))
+            local dx, dy = p.x - f.x, p.y - f.y
+            local lx, ly = dx * math.cos(a) - dy * math.sin(a), dx * math.sin(a) + dy * math.cos(a)
+            if math.abs(lx) < h[1] - 0.15 and math.abs(ly) < h[2] - 0.15 and p.z > f.z - 0.5 and p.z < f.z + 4.5 then return true end
+        end
+    end
+    return false
+end
+
+local function byModel(model)
+    for _, e in ipairs(CC.Equipment) do
+        if e.model == model then return e end
+        for _, sz in ipairs(e.sizes or {}) do if sz.model == model then return { label = e.label .. ' · ' .. sz.label, model = sz.model } end end
+    end
+end
 
 function LadderWallEquipment(onClose, wallDir)
-    local options = {}
-    if ToolDrill then
+    local inside = indoors()
+    local options = {
+        { title = inside and 'Indoors · ceiling & high level' or 'Outside wall · at the eaves', icon = inside and 'house' or 'house-chimney', iconColor = '#636366', readOnly = true },
+    }
+    if ToolDrill and not inside then
         options[#options + 1] = { title = 'Cordless drill · drill an entry hole here', description = 'Through the wall in front of you, then fit the entry bushing', icon = 'screwdriver-wrench', iconColor = '#0a84ff',
             onSelect = function() ToolDrill({ dir = wallDir or vector3(-math.sin(math.rad(GetEntityHeading(PlayerPedId()))), math.cos(math.rad(GetEntityHeading(PlayerPedId()))), 0.0) }) onClose() end }
     end
-    for _, e in ipairs(CC.Equipment) do
-        if (WALL_CATS[e.cat] or e.model == 'opslabs_house_pole') and IsModelInCdimage(joaat(e.model)) then
-            options[#options + 1] = { title = 'Fit: ' .. e.label, description = 'Aim at the wall · scroll to rotate', icon = 'plus', onSelect = function()
+    local LK = CC.LadderKit or {}
+    for _, model in ipairs((inside and LK.inside or LK.outside) or {}) do
+        local e = byModel(model)
+        if e and IsModelInCdimage(joaat(e.model)) then
+            options[#options + 1] = { title = 'Fit: ' .. e.label, description = inside and 'Aim at the ceiling / wall · scroll to rotate' or 'Aim at the wall · scroll to rotate', icon = 'plus', onSelect = function()
                 local spot = PlacementMode('fixture', e.model, 1.0, nil, 'Fitting ' .. e.label)
                 if spot then
                     local r = lib.callback.await('opslabs-towers:fixture:save', false, { model = e.model, x = spot.x, y = spot.y, z = spot.z, heading = spot.heading })
@@ -398,7 +427,22 @@ function LadderWallEquipment(onClose, wallDir)
             end }
         end
     end
-    lib.registerContext({ id = 'ladder_equipment', root = true, title = 'Fit equipment', options = options, onExit = onClose })
+    -- what's already fitted within reach
+    local here = GetEntityCoords(PlayerPedId())
+    for _, f in pairs(CablingFixtures and CablingFixtures() or {}) do
+        for _, m in ipairs((inside and LK.inside or LK.outside) or {}) do
+            if f.model == m and #(here - vector3(f.x, f.y, f.z)) < 1.8 then
+                local e = byModel(m)
+                options[#options + 1] = { title = 'Remove: ' .. (e and e.label or m), icon = 'trash', iconColor = '#ff5a5f', onSelect = function()
+                    if lib.progressBar({ duration = 3000, label = 'Taking it off the wall', canCancel = true, disable = { move = true, combat = true } }) then
+                        if not lib.callback.await('opslabs-towers:fixture:delete', false, f.id) then lib.notify({ type = 'error', description = 'Only network engineers can remove equipment' }) end
+                    end
+                    onClose()
+                end }
+            end
+        end
+    end
+    lib.registerContext({ id = 'ladder_equipment', root = true, title = 'Up the ladder', options = options, onExit = onClose })
     lib.showContext('ladder_equipment')
 end
 

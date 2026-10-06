@@ -484,6 +484,44 @@ function FaultOnOnt(ontId)
     end
 end
 
+--- clear every active fault on this piece of kit (the ONT repair kit swaps a failed ONT); returns how many
+function RepairFixtureFaults(fixtureId, src, note)
+    local n = 0
+    for _, f in pairs(Faults) do
+        if ACTIVE[f.status] and f.asset.kind == 'fixture' and f.asset.id == fixtureId then
+            finish(f, 'fixed', src, GetPlayerName(src), note or 'Repaired on site')
+            n = n + 1
+        end
+    end
+    return n
+end
+
+--- repair one fault (the power restoration kit); returns true when it was open
+function RepairFault(id, src, actor, note)
+    local f = Faults[tonumber(id)]
+    if not f or not ACTIVE[f.status] then return false end
+    finish(f, 'fixed', src, actor or (src and GetPlayerName(src)) or 'crew', note or 'Repaired on site')
+    return true
+end
+--- active faults that cut power: { id, type, label, location, asset = { kind, id } }
+function PowerFaults()
+    local out = {}
+    for _, f in pairs(Faults) do
+        if ACTIVE[f.status] and (f.type == 'cabinet_power' or f.type == 'tower_power' or f.type == 'ont_failure' or f.type == 'olt_card') then
+            out[#out + 1] = { id = f.id, type = f.type, label = f.label, location = f.location, asset = f.asset }
+        end
+    end
+    return out
+end
+
+--- what an engineer at an ONT needs to know about a fault elsewhere that's taking it down
+function FaultBrief(id)
+    local f = Faults[tonumber(id)]
+    if not f or not ACTIVE[f.status] then return nil end
+    return { id = f.id, type = f.type, label = f.label, asset = f.asset and f.asset.label, kind = f.asset and f.asset.kind, fixture = f.asset and f.asset.kind == 'fixture' and f.asset.id or nil,
+        x = f.x, y = f.y, z = f.z, at_height = f.at_height, severity = f.severity, status = f.status }
+end
+
 function FaultsOnPole(poleId)
     local ids = {}
     for _, f in pairs(Faults) do if ACTIVE[f.status] and f.pole_id == poleId then ids[#ids + 1] = f.id end end
@@ -528,9 +566,9 @@ function CloseFault(id, actor, note)
 end
 
 -- Wi-Fi kit and its nominal indoor range (metres), for the range tester in Ops-Networks
-local WIFI_RANGE = { opslabs_unifi_ap_ceiling = 45, opslabs_unifi_ap = 38, opslabs_ucg_ultra = 30, opslabs_udm_pro = 32, opslabs_omada_eap_ceiling = 45,
-    opslabs_omada_eap = 38, opslabs_omada_er605 = 0, opslabs_omada_er7206 = 0, opslabs_omada_switch = 0, opslabs_omada_oc200 = 0,
-    opslabs_tplink_deco = 30, opslabs_tplink_archer = 35, opslabs_tplink_extender = 18, h4_prop_h4_router_01a = 30 }
+local WIFI_RANGE = { opslabs_ap_halo_ceiling = 45, opslabs_ap_halo = 38, opslabs_gw_mini = 30, opslabs_gw_pro = 32, opslabs_ap_beam_ceiling = 45,
+    opslabs_ap_beam = 38, opslabs_edge_e5 = 0, opslabs_edge_e7 = 0, opslabs_poe_switch8 = 0, opslabs_ctrl_c2 = 0,
+    opslabs_mesh_m1 = 30, opslabs_homerouter_ax4 = 35, opslabs_range_extender = 18, h4_prop_h4_router_01a = 30 }
 exports('GetWifiModels', function()
     local out = {}
     for _, p in ipairs(Config.Wifi.Props or {}) do
@@ -540,6 +578,22 @@ exports('GetWifiModels', function()
     end
     return out
 end)
+
+-- faults on kit that's been removed (by hand, the Danger zone, the city builder…) close themselves
+local function sweepGone()
+    if not CablingLoaded then return end
+    for _, f in pairs(Faults) do
+        local a = f.asset
+        if ACTIVE[f.status] and a and a.id then
+            local id = tonumber(a.id)
+            local gone = (a.kind == 'fixture' and not Cabling.fixtures[id]) or (a.kind == 'run' and not Cabling.runs[id])
+                or (a.kind == 'tower' and not (Towers or {})[id]) or (a.kind == 'pole' and id and id > 0 and not Cabling.fixtures[id])
+            if gone then pcall(finish, f, 'closed', nil, 'system', 'The kit was removed') end
+        end
+    end
+end
+AddEventHandler('opslabs-towers:fixtureRemoved', function() SetTimeout(500, sweepGone) end)
+CreateThread(function() Wait(30000) while true do pcall(sweepGone) Wait(60000) end end)
 
 exports('GetFaultSettings', GetFaultSettings)
 exports('SetFaultSettings', SetFaultSettings)

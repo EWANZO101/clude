@@ -83,6 +83,9 @@ local function repair(f)
     working = false
 end
 
+--- client/target.lua: is there a fault here this player can repair?
+function FaultAtHand() return engineer and not working and nearest() ~= nil end
+
 RegisterCommand('opsrepair', function()
     if not engineer or working then return end
     local f = nearest()

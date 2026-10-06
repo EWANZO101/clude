@@ -9,6 +9,35 @@ end
 
 lib.callback.register('opslabs-towers:power:states', function() return Power end)
 
+--- fuses out / earthed on a placed power pole (the mains network reads this)
+function PolePowerState(id) return Power[id] end
+--- OPS Hub (server/grid.lua GridAction): pull / refit a pole's cut-out fuses or take its earths off from control
+function PoleSetPower(id, key, value)
+    id = tonumber(id)
+    local f = id and Cabling.fixtures[id]
+    if not f or not f.model:find('^opslabs_power_pole') then return nil, 'Not a power pole' end
+    local s = Power[id] or { fusesOut = false, earthed = false }
+    if key == 'fusesOut' then
+        if not value and s.earthed then return nil, 'Working earths are on — take them off first' end
+        s.fusesOut = value == true
+    elseif key == 'earthed' then
+        if value then return nil, 'Earths can only be fitted on site' end
+        s.earthed = false
+    else return nil, 'bad request' end
+    Power[id] = s
+    TriggerClientEvent('opslabs-towers:power', -1, id, s)
+    if MainsDirty then MainsDirty() end
+    return true
+end
+
+--- the power restoration kit: earths off, fuses in
+function PoleRestore(id)
+    id = tonumber(id)
+    Power[id] = { fusesOut = false, earthed = false }
+    TriggerClientEvent('opslabs-towers:power', -1, id, Power[id])
+    if MainsDirty then MainsDirty() end
+end
+
 lib.callback.register('opslabs-towers:power:set', function(src, id, key, value)
     id = tonumber(id)
     if not CanCable(src) then return { error = 'Only engineers can work on the network' } end
@@ -28,5 +57,6 @@ lib.callback.register('opslabs-towers:power:set', function(src, id, key, value)
     end
     Power[id] = s
     TriggerClientEvent('opslabs-towers:power', -1, id, s)
+    if MainsDirty then MainsDirty() end
     return { ok = true, state = s }
 end)

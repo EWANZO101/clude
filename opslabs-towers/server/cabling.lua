@@ -79,6 +79,7 @@ MySQL.ready(function()
     for _, b in ipairs(MySQL.query.await('SELECT * FROM opslabs_towers_cable_boxes') or {}) do Cabling.boxes[b.id] = b end
     for _, r in ipairs(MySQL.query.await('SELECT * FROM opslabs_towers_cables') or {}) do Cabling.runs[r.id] = decodeRun(r) end
     ready = true
+    CablingLoaded = true          -- server/grid.lua only forgets state for removed kit once everything has loaded
     RecomputeUplinks()
 end)
 
@@ -95,7 +96,8 @@ end
 function RecomputeUplinks()
     local adj = {}
     for _, r in pairs(Cabling.runs) do
-        if r.kind ~= 'trunk' and r.start_term and r.end_term and r.start_tower and r.end_tower then
+        if r.kind ~= 'trunk' and r.start_term and r.end_term and r.start_tower and r.end_tower
+            and not (TowerPowered and (not TowerPowered(r.start_tower) or not TowerPowered(r.end_tower))) then
             adj[r.start_tower] = adj[r.start_tower] or {}
             adj[r.end_tower] = adj[r.end_tower] or {}
             table.insert(adj[r.start_tower], r.end_tower)
@@ -104,7 +106,7 @@ function RecomputeUplinks()
     end
     local up, queue = {}, {}
     for id, t in pairs(Towers or {}) do
-        if isGateway(t) and t.active and (not IspGatewayOnline or IspGatewayOnline(id)) then up[id] = true; queue[#queue + 1] = id end
+        if isGateway(t) and t.active and not (TowerPowered and not TowerPowered(id)) and (not IspGatewayOnline or IspGatewayOnline(id)) then up[id] = true; queue[#queue + 1] = id end
     end
     while #queue > 0 do
         local id = table.remove(queue)
@@ -117,7 +119,7 @@ function RecomputeUplinks()
     local fibre = {}
     queue = {}
     for id, t in pairs(Towers or {}) do
-        if isGateway(t) and t.active and IspGatewayLive and IspGatewayLive(id) then fibre[id] = true; queue[#queue + 1] = id end
+        if isGateway(t) and t.active and not (TowerPowered and not TowerPowered(id)) and IspGatewayLive and IspGatewayLive(id) then fibre[id] = true; queue[#queue + 1] = id end
     end
     while #queue > 0 do
         local id = table.remove(queue)
@@ -151,8 +153,34 @@ local function payload()
     return { boxes = boxes, runs = runs, fixtures = fixtures }
 end
 
+-- Everyone gets only what changed since the last broadcast (a city-wide network is thousands of items: re-sending all of
+-- it on every edit was megabytes per change); a player who joins gets the whole lot once.
+local Sent = { f = {}, r = {}, b = {} }
+local function delta()
+    local d = { fixtures = {}, runs = {}, boxes = {}, removed = { f = {}, r = {}, b = {} } }
+    local n, total = 0, 0
+    for _, spec in ipairs({ { 'f', Cabling.fixtures, d.fixtures }, { 'r', Cabling.runs, d.runs }, { 'b', Cabling.boxes, d.boxes } }) do
+        local k, src, out = spec[1], spec[2], spec[3]
+        local seen = {}
+        for id, item in pairs(src) do
+            total = total + 1
+            seen[id] = true
+            local sig = json.encode(item)
+            if Sent[k][id] ~= sig then Sent[k][id] = sig out[#out + 1] = item n = n + 1 end
+        end
+        for id in pairs(Sent[k]) do
+            if not seen[id] then Sent[k][id] = nil table.insert(d.removed[k], id) n = n + 1 end
+        end
+    end
+    return d, n, total
+end
+
 function BroadcastCabling(target)
-    TriggerClientEvent('opslabs-towers:cabling', target or -1, payload())
+    if target then return TriggerClientEvent('opslabs-towers:cabling', target, payload()) end
+    local d, n, total = delta()
+    if n == 0 then return end
+    if n > total * 0.6 then return TriggerClientEvent('opslabs-towers:cabling', -1, payload()) end
+    TriggerClientEvent('opslabs-towers:cablingDelta', -1, d)
 end
 
 RegisterNetEvent('opslabs-towers:ready', function() BroadcastCabling(source) end)
@@ -161,6 +189,10 @@ local function changed()
     if RecomputeIsp then RecomputeIsp() end
     RecomputeUplinks()
     BroadcastCabling()
+    if MainsDirty then MainsDirty() end
+    if GridDirty then GridDirty() end
+    if FuelDirty then FuelDirty() end
+    if CctvDirty then CctvDirty() end
 end
 CablingChanged = changed
 -- towers change (gateway added, AP moved...) can change who has an uplink
@@ -309,7 +341,7 @@ end)
 --- save a laid cable or trunking run. d: { kind, color, points, box_id, end_tower }
 lib.callback.register('opslabs-towers:cable:saveRun', function(src, d)
     if not canCable(src) or type(d) ~= 'table' then return { error = 'not allowed' } end
-    local kind = (d.kind == 'trunk' or d.kind == 'fibre' or d.kind == 'power' or d.kind == 'copper') and d.kind or 'cable'
+    local kind = (d.kind == 'trunk' or d.kind == 'fibre' or d.kind == 'power' or d.kind == 'copper' or d.kind == 'pipe') and d.kind or 'cable'
     local points, length = cleanPoints(d.points)
     if not points then return { error = length } end
     local color = 'black'
@@ -322,6 +354,11 @@ lib.callback.register('opslabs-towers:cable:saveRun', function(src, d)
         color = 'lv'
         for _, c in ipairs(CC.PowerColors or {}) do if c == d.color then color = c end end
         if length > (CC.MaxPowerLength or 600) + 0.5 then return { error = 'power run too long' } end
+    elseif kind == 'pipe' then
+        color = nil
+        for _, c in ipairs(CC.PipeColors or {}) do if c == d.color then color = c end end
+        if not color then return { error = 'unknown pipe' } end
+        if length > (CC.MaxPipeLength or 300) + 0.5 then return { error = 'pipe run too long' } end
     elseif kind == 'copper' then
         color = 'drop'
         for _, c in ipairs(CC.CopperColors or {}) do if c == d.color then color = c end end
@@ -510,7 +547,7 @@ end)
 lib.callback.register('opslabs-towers:cable:terminate', function(src, id, which, towerId, fixtureId)
     if not canCable(src) then return { error = 'not allowed' } end
     local r = Cabling.runs[tonumber(id)]
-    if not r or r.kind == 'trunk' or r.kind == 'power' then return { error = 'not found' } end
+    if not r or r.kind == 'trunk' or r.kind == 'power' or r.kind == 'pipe' then return { error = 'not found' } end
     if which == 'start' and r.box_id then return { error = 'cut the cable from the box first' } end
     if r.loose and r.loose[which] then return { error = 'That end is lying loose — pick it up and fix it first' } end
     towerId = Towers[tonumber(towerId) or -1] and tonumber(towerId) or nil
@@ -556,6 +593,7 @@ local function deleteRuns(ids, src)
     return n
 end
 CablingDeleteRuns = deleteRuns
+CablingDecodeRun = decodeRun          -- server/danger.lua restores removed runs
 CablingLooseJson = looseJson
 
 lib.callback.register('opslabs-towers:cable:deleteRun', function(src, id)
@@ -689,11 +727,17 @@ lib.callback.register('opslabs-towers:fixture:save', function(src, d)
         local f = Cabling.fixtures[id]
         if not f then return { error = 'not found' } end
         f.x, f.y, f.z, f.heading = x, y, z, num(d.heading) or f.heading
-        if d.data ~= nil then f.data = cleanData(f.model, d.data) end
+        -- sockets, meters, laptops... keep their own state (switches, readings, battery) when moved
+        if d.data ~= nil and not (MainsOwnsData and MainsOwnsData(f.model)) then f.data = cleanData(f.model, d.data) end
         MySQL.update.await('UPDATE opslabs_towers_fixtures SET x = ?, y = ?, z = ?, heading = ?, data = ? WHERE id = ?',
             { f.x, f.y, f.z, f.heading, f.data and json.encode(f.data) or nil, id })
     else
         if not equipmentAllowed(d.model) then return { error = 'unknown equipment' } end
+        -- items mode (opslabs-phone Config.Work.Mode = 'items'): placing kit uses its inventory item
+        if GetResourceState('opslabs-phone') == 'started' then
+            local okc, allowed, why = pcall(function() return exports['opslabs-phone']:WorkTakeForModel(src, d.model) end)
+            if okc and allowed == false then return { error = why or 'You need the item for that' } end
+        end
         local data = cleanData(d.model, d.data)
         id = MySQL.insert.await('INSERT INTO opslabs_towers_fixtures (model, x, y, z, heading, data, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
             { d.model, x, y, z, num(d.heading) or 0.0, data and json.encode(data) or nil, GetPlayerName(src) })
@@ -742,6 +786,7 @@ lib.callback.register('opslabs-towers:fixture:delete', function(src, id)
     if not canCable(src) then return false end
     id = tonumber(id)
     if not Cabling.fixtures[id] then return false end
+    if GetResourceState('opslabs-phone') == 'started' then pcall(function() exports['opslabs-phone']:WorkGiveForModel(src, Cabling.fixtures[id].model) end) end
     MySQL.update.await('DELETE FROM opslabs_towers_fixtures WHERE id = ?', { id })
     MySQL.update.await('UPDATE opslabs_towers_cables SET start_fixture = NULL WHERE start_fixture = ?', { id })
     MySQL.update.await('UPDATE opslabs_towers_cables SET end_fixture = NULL WHERE end_fixture = ?', { id })

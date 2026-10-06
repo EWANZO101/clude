@@ -46,33 +46,49 @@ for _, e in ipairs(CC.Equipment or {}) do
 end
 StreamWake = false
 
-RegisterNetEvent('opslabs-towers:cabling', function(d)
-    local boxes, runs, fixtures, newSigs = {}, {}, {}, {}
+--- work out what is drawn from data.* and redraw only what changed
+local function resync()
+    local fixtures, newSigs = data.fixtures, {}
     local poleSig = {}
-    for _, f in ipairs(d.fixtures or {}) do
-        fixtures[f.id] = f
-        if POLE_MODELS[f.model] then poleSig[#poleSig + 1] = ('%d:%d,%d'):format(f.id, mm(f.x), mm(f.y)) end
+    for id, f in pairs(fixtures) do
+        if POLE_MODELS[f.model] then poleSig[#poleSig + 1] = ('%d:%d,%d'):format(id, mm(f.x), mm(f.y)) end
     end
-    poleSig = table.concat(poleSig, ';')   -- pole kit's bands depend on which pole it sits on
+    table.sort(poleSig)
+    poleSig = tostring(GetHashKey(table.concat(poleSig, ';')))   -- pole kit's bands depend on which pole it sits on (hashed: a city has thousands)
     for id, f in pairs(fixtures) do
         newSigs['f' .. id] = ('%s|%d|%d|%d|%d|%s|%s'):format(f.model, mm(f.x), mm(f.y), mm(f.z), mm(f.heading), POLE_KIT[f.model] and poleSig or '', f.data and json.encode(f.data) or '')
     end
-    for _, b in ipairs(d.boxes or {}) do
-        boxes[b.id] = b
-        newSigs['b' .. b.id] = ('%s|%d|%d|%d|%d'):format(b.kind or 'cat6', mm(b.x), mm(b.y), mm(b.z), mm(b.heading))
-    end
-    for _, r in ipairs(d.runs or {}) do
-        runs[r.id] = r
-        runBounds(r)
-        newSigs['r' .. r.id] = runSig(r)
-    end
-    data.boxes, data.runs, data.fixtures = boxes, runs, fixtures
+    for id, b in pairs(data.boxes) do newSigs['b' .. id] = ('%s|%d|%d|%d|%d'):format(b.kind or 'cat6', mm(b.x), mm(b.y), mm(b.z), mm(b.heading)) end
+    for id, r in pairs(data.runs) do newSigs['r' .. id] = r._sig or runSig(r) end
     local redraw = false
     for key in pairs(spawned) do
         if newSigs[key] ~= sigs[key] then DespawnKey(key) redraw = true end   -- gone or changed: redraw just this one
     end
     sigs = newSigs
     if redraw then StreamWake = true end                                 -- respawn straight away, not on the next tick
+end
+
+local function addRun(r) runBounds(r) r._sig = runSig(r) data.runs[r.id] = r end
+
+-- the whole network (when you join, or after a big change)
+RegisterNetEvent('opslabs-towers:cabling', function(d)
+    data.boxes, data.runs, data.fixtures = {}, {}, {}
+    for _, f in ipairs(d.fixtures or {}) do data.fixtures[f.id] = f end
+    for _, b in ipairs(d.boxes or {}) do data.boxes[b.id] = b end
+    for _, r in ipairs(d.runs or {}) do addRun(r) end
+    resync()
+end)
+
+-- only what changed since the last broadcast (server/cabling.lua BroadcastCabling)
+RegisterNetEvent('opslabs-towers:cablingDelta', function(d)
+    for _, f in ipairs(d.fixtures or {}) do data.fixtures[f.id] = f end
+    for _, b in ipairs(d.boxes or {}) do data.boxes[b.id] = b end
+    for _, r in ipairs(d.runs or {}) do addRun(r) end
+    local rm = d.removed or {}
+    for _, id in ipairs(rm.f or {}) do data.fixtures[id] = nil end
+    for _, id in ipairs(rm.b or {}) do data.boxes[id] = nil end
+    for _, id in ipairs(rm.r or {}) do data.runs[id] = nil end
+    resync()
 end)
 
 ---------------------------------------------------------------------------
@@ -183,11 +199,12 @@ local function towerName(id)
     return t and t.name or nil
 end
 
--- equipment a cable end can plug into: fibre → cabinets, joints, CBT, CSP, ONT · CAT6 → the ONT's LAN port
+-- equipment a cable end can plug into: fibre → cabinets, joints, CBT, CSP, ONT · CAT6 → the ONT's LAN port, a laptop
 local function setOf(list) local o = {} for _, v in ipairs(list or {}) do o[v] = true end return o end
 local FIBRE_KIT = setOf(Config.Isp and Config.Isp.Headends)
 for k in pairs(setOf(Config.Isp and Config.Isp.PassThrough)) do FIBRE_KIT[k] = true end
 local ONT_MODEL = Config.Isp and Config.Isp.Ont or 'opslabs_ont'
+local LAPTOPS = setOf(Config.Laptop and Config.Laptop.Models)   -- CAT6 → a laptop's Ethernet port
 FIBRE_KIT[ONT_MODEL] = true
 local PL = Config.PhoneLine or {}
 local COPPER_KIT = setOf(PL.Exchange)
@@ -195,7 +212,10 @@ for _, list in ipairs({ PL.PassThrough, PL.Sockets }) do for k in pairs(setOf(li
 local function connectable(kind, model)
     if kind == 'fibre' then return FIBRE_KIT[model] == true end
     if kind == 'copper' then return COPPER_KIT[model] == true end
-    return kind == 'cable' and model == ONT_MODEL
+    -- CAT6: the ONT's LAN port, a laptop, CCTV cameras (PoE) and recorders (NVR / DVR)
+    local CV = Config.Cctv or {}
+    if kind == 'cable' and Config.DataCentre and model == Config.DataCentre.Rack then return true end   -- the rack's switch uplink
+    return kind == 'cable' and (model == ONT_MODEL or LAPTOPS[model] == true or ((CV.Cameras or {})[model] ~= nil and (CV.Cameras[model].kind == 'ip' or CV.Cameras[model].kind == 'analog')) or (CV.Recorders or {})[model] ~= nil)
 end
 local function fixtureLabel(id)
     local f = id and data.fixtures[id]
@@ -277,11 +297,13 @@ local function fixings(list, pts)
     end
 end
 
-POWER_R = { hv = 0.007, lv = 0.012, service = 0.006 }
+POWER_R = { transmission = 0.02, hv = 0.007, lv = 0.012, service = 0.006, mains = 0.0055, flex = 0.0045, flexblack = 0.0055 }
 COPPER_R = { drop = 0.003, internal = 0.0026, multipair = 0.0085 }
+PIPE_R = { ul = 0.032, sup = 0.032, dsl = 0.032, vent = 0.026 }
 
 local function runLabel(r)
     if r.kind == 'copper' then return (CC.CopperLabels or {})[r.color] or 'Phone cable' end
+    if r.kind == 'pipe' then return (CC.PipeLabels or {})[r.color] or 'Fuel pipe' end
     return r.kind == 'trunk' and ((CC.TrunkLabels or {})[r.color] or ('Trunking (' .. r.color .. ')'))
         or r.kind == 'fibre' and ((CC.FibreLabels or {})[r.color] or ('Fibre (' .. r.color .. ')'))
         or r.kind == 'power' and ((CC.PowerLabels or {})[r.color] or 'Power cable') or 'CAT6'
@@ -352,9 +374,9 @@ function BuildRun(r, list)
             drawLoose(r, list, ('opslabs_fibre_%s_'):format(col), ('opslabs_fibre_%s_joint'):format(col), FIBRE_R[col])
         else drawLoose(r, list, 'opslabs_cat6_seg_', 'opslabs_cat6_joint', CABLE_R) end
     end
-    if r.kind == 'power' or r.kind == 'copper' then
-        local R, fam = r.kind == 'copper' and COPPER_R or POWER_R, r.kind
-        local col = R[r.color] and r.color or (fam == 'copper' and 'drop' or 'lv')
+    if r.kind == 'power' or r.kind == 'copper' or r.kind == 'pipe' then
+        local R, fam = r.kind == 'copper' and COPPER_R or r.kind == 'pipe' and PIPE_R or POWER_R, r.kind
+        local col = R[r.color] and r.color or (fam == 'copper' and 'drop' or fam == 'pipe' and 'vent' or 'lv')
         local lift, prefix, joint = R[col], ('opslabs_%s_%s_'):format(fam, col), ('opslabs_%s_%s_joint'):format(fam, col)
         for i = 1, #pts - 1 do
             local a, b = pts[i], pts[i + 1]
@@ -607,7 +629,7 @@ end
 
 --- the run under the crosshair: works for cable on walls and for spans hanging in the air.
 --- Cables behind the surface you're looking at don't count.
-local function pickRun(onlyId, tol)
+local function pickRun(onlyId, tol, kind)
     local camPos, camRot = GetGameplayCamCoord(), GetGameplayCamRot(2)
     local u = rotToDir(camRot)
     local maxS = 25.0
@@ -615,7 +637,7 @@ local function pickRun(onlyId, tol)
     local wall = at and #(at - camPos) + 0.3 or maxS
     local bestRun, bestSeg, bestPt, bestD, bestS
     for id, r in pairs(data.runs) do
-        if (not onlyId or id == onlyId) and (not r._c or #(camPos - r._c) - r._r < maxS) then
+        if (not onlyId or id == onlyId) and (not kind or r.kind == kind) and (not r._c or #(camPos - r._c) - r._r < maxS) then
             local pts = r.points or {}
             for i = 1, #pts - 1 do
                 local a, b = pts[i], pts[i + 1]
@@ -695,7 +717,7 @@ local function layRun(kind, color, box, opts)
     local boxed = kind == 'cable' or kind == 'fibre'          -- pulled from a box / drum, ends plug into kit
     local plugs = boxed or kind == 'copper'                   -- ends finish on kit
     local maxLen = (opts and opts.start) and (opts.maxLen or 0) or kind == 'cable' and math.min(CC.MaxRunLength, box.remaining) or kind == 'fibre' and math.min(CC.MaxFibreLength or 1000, box.remaining)
-        or kind == 'power' and (CC.MaxPowerLength or 600) or kind == 'copper' and (CC.MaxCopperLength or 800) or 200.0
+        or kind == 'power' and (CC.MaxPowerLength or 600) or kind == 'pipe' and (CC.MaxPipeLength or 300) or kind == 'copper' and (CC.MaxCopperLength or 800) or 200.0
     local carry = opts and opts.start
     if carry then
         pts[1] = opts.start                                     -- carrying a loose end from its last fixing
@@ -738,8 +760,9 @@ local function layRun(kind, color, box, opts)
         or { { 'Fix point', 24 }, { 'Finish & connect', 191 }, { 'Put it down & walk away', 47 }, { 'Undo', { 25, 177 } }, { 'Straight line', 21 }, { 'Cancel', 200 } })
     local title = kind == 'cable' and 'Pulling CAT6' or kind == 'fibre' and ('Pulling ' .. ((CC.FibreLabels or {})[color] or ('fibre · ' .. color)):lower())
         or kind == 'power' and ('Running ' .. ((CC.PowerLabels or {})[color] or 'power cable'):lower())
+        or kind == 'pipe' and ('Laying ' .. ((CC.PipeLabels or {})[color] or 'fuel pipe'):lower())
         or kind == 'copper' and ('Running ' .. ((CC.CopperLabels or {})[color] or 'phone cable'):lower()) or ('Fitting ' .. ((CC.TrunkLabels or {})[color] or ('trunking · ' .. color)):lower())
-    local accent = kind == 'power' and { 255, 214, 10 } or kind == 'copper' and { 191, 90, 242 } or kind == 'fibre' and (color == 'yellow' and { 255, 214, 10 } or { 120, 120, 125 }) or kind == 'trunk' and { 48, 209, 88 } or { 10, 132, 255 }
+    local accent = kind == 'pipe' and { 226, 32, 42 } or kind == 'power' and { 255, 214, 10 } or kind == 'copper' and { 191, 90, 242 } or kind == 'fibre' and (color == 'yellow' and { 255, 214, 10 } or { 120, 120, 125 }) or kind == 'trunk' and { 48, 209, 88 } or { 10, 132, 255 }
     while true do
         Wait(0)
         for _, ctl in ipairs({ 24, 25, 37, 44, 47, 140, 141, 142, 177, 191, 199, 200, 257, 263 }) do DisableControlAction(0, ctl, true) end
@@ -772,6 +795,16 @@ local function layRun(kind, color, box, opts)
             local rr = PoleRadius(pole, z - pole.z) + 0.012
             at, normal, ent = vector3(pole.x + dir.x * rr, pole.y + dir.y * rr, z), dir, nil
             poleHint = pole.anchor and 'clamped to the wall anchor' or ringHead and 'clamped to the pole’s ring head' or ('on the pole at %.1f m'):format(z - pole.z)
+            -- a pylon: the conductor hangs from the end of the cross-arm on the side it comes from
+            local arm = CC.PylonArm and CC.PylonArm[pole.model]
+            if arm then
+                local h = math.rad(pole.heading or 0.0)
+                local ax, ay = math.cos(h), math.sin(h)
+                local side = (dir.x * ax + dir.y * ay) >= 0 and 1 or -1
+                at = vector3(pole.x + ax * arm.x * side, pole.y + ay * arm.x * side, pole.z + arm.z)
+                normal = vector3(0.0, 0.0, -1.0)
+                poleHint = 'on the pylon’s cross-arm insulator'
+            end
         end
         if at and not poleHint and #(at - GetGameplayCamCoord()) > 14.0 then at = nil end   -- far points only for poles
         if at then
@@ -1329,8 +1362,47 @@ end
 
 
 --- what the player is aiming at: a box (by its prop or within 35 cm) or the nearest run
+-- equipment the aim tools (Remove / Move) can pick: everything except buildings, underground pieces, fencing,
+-- poles and the big grid kit (those are moved / removed from their own menus so a stray click can't take them)
+local AIM_SKIP = {}
+for _, e in ipairs(CC.Equipment or {}) do
+    if e.building or e.underground or e.fence or e.reach or (CC.PoleHeights or {})[e.model] then
+        AIM_SKIP[e.model] = true
+        for _, sz in ipairs(e.sizes or {}) do AIM_SKIP[sz.model] = true end
+    end
+end
+local function aimableFixture(f)
+    if not f or AIM_SKIP[f.model] then return false end
+    if f.model:find('^opslabs_gate_') or f.model:find('^opslabs_door_') then return false end
+    for _, e in ipairs(CC.Equipment or {}) do
+        if e.model == f.model then return true end
+        for _, sz in ipairs(e.sizes or {}) do if sz.model == f.model then return true end end
+    end
+    return false
+end
+function FixtureLabel(model)
+    for _, e in ipairs(CC.Equipment or {}) do
+        if e.model == model then return (e.label:gsub(' %(.*%)', '')) end
+        for _, sz in ipairs(e.sizes or {}) do if sz.model == model then return (e.label:gsub(' %(.*%)', '')) .. ' · ' .. sz.label end end
+    end
+    return model
+end
+
 local function aimTarget()
     local at, _, ent = aim()
+    -- equipment: the entity under the crosshair, or small kit without collision (sockets, switches…) within 40 cm
+    if at then
+        local bestF, bd = nil, 0.4
+        for id, f in pairs(data.fixtures) do
+            if aimableFixture(f) then
+                local sp = spawned['f' .. id]
+                if ent and ent ~= 0 and sp and sp[1] == ent then bestF = f break end
+                local d = #(at - vector3(f.x, f.y, f.z + 0.05))
+                if d < bd then bestF, bd = f, d end
+            end
+        end
+        if bestF then return { fixture = bestF, key = 'f' .. bestF.id } end
+    end
     local bestBox
     if at then
         local bd = 0.35
@@ -1502,17 +1574,22 @@ local function RemoveMode()
         else
             hold, holdKey = 0.0, nil
         end
-        local what = t and (t.box and (boxType(t.box).label .. ' box · ' .. math.floor(t.box.remaining or 0) .. ' m left') or ('%s #%d · %.1f m'):format(runLabel(t.run), t.run.id, t.run.length or 0))
-        PlaceHud.draw(sf, 'Remove cable, trunking or a box', not t and 'Aim at a cable, fibre, trunking or a box'
+        local what = t and (t.fixture and ('%s #%d'):format(FixtureLabel(t.fixture.model), t.fixture.id)
+            or t.box and (boxType(t.box).label .. ' box · ' .. math.floor(t.box.remaining or 0) .. ' m left') or ('%s #%d · %.1f m'):format(runLabel(t.run), t.run.id, t.run.length or 0))
+        PlaceHud.draw(sf, 'Remove cable, trunking, a box or equipment', not t and 'Aim at a cable, trunking, a box, a socket, a switch…'
             or (hold > 0 and (what .. '   ' .. bar(math.min(1, hold / 0.6))) or what), { 255, 69, 58 })
         if t and hold >= 0.6 then
             hold, holdKey = 0.0, nil
             local ok
-            if t.box then ok = lib.callback.await('opslabs-towers:cable:deleteBox', false, t.box.id)
+            if t.fixture then ok = lib.callback.await('opslabs-towers:fixture:delete', false, t.fixture.id)
+            elseif t.box then ok = lib.callback.await('opslabs-towers:cable:deleteBox', false, t.box.id)
             else ok = lib.callback.await('opslabs-towers:cable:deleteRun', false, t.run.id) end
             if ok then
                 PlaySoundFrontend(-1, 'DELETE', 'HUD_DEATHMATCH_SOUNDSET', true)
-                lib.notify({ type = 'success', description = (t.box and 'Box removed' or t.run.kind == 'trunk' and 'Trunking removed — cable inside stays on the wall' or 'Cable removed') .. ' · Z to undo' })
+                lib.notify({ type = 'success', description = t.fixture and (FixtureLabel(t.fixture.model) .. ' removed')
+                    or ((t.box and 'Box removed' or t.run.kind == 'trunk' and 'Trunking removed — cable inside stays on the wall' or 'Cable removed') .. ' · Z to undo') })
+            elseif t.fixture then
+                lib.notify({ type = 'error', description = 'Only engineers can remove equipment' })
             end
             outline(nil)
             Wait(250)
@@ -1646,13 +1723,21 @@ local function MoveMode()
         DisablePlayerFiring(PlayerId(), true)
         local t = aimTarget()
         outline(t and t.key, 10, 132, 255)
-        PlaceHud.draw(sf, 'Move cable, trunking or a box', not t and 'Aim at what you want to move'
+        PlaceHud.draw(sf, 'Move cable, trunking, a box or equipment', not t and 'Aim at what you want to move'
+            or t.fixture and ('%s · click to pick it up and put it somewhere else'):format(FixtureLabel(t.fixture.model))
             or t.box and ('%s box · click to pick it up'):format(boxType(t.box).label)
             or ('%s #%d · click to reshape its route'):format(runLabel(t.run), t.run.id), { 10, 132, 255 })
         if t and IsDisabledControlJustPressed(0, 24) then
             outline(nil)
             PlaceHud.release(sf)
-            if t.box then moveBox(t.box) else EditRoute(t.run) end
+            if t.fixture then
+                local f = t.fixture
+                local spot = PlacementMode('fixture', f.model, 1.0, f.heading, 'Moving ' .. FixtureLabel(f.model))
+                if spot then
+                    local r = lib.callback.await('opslabs-towers:fixture:save', false, { id = f.id, x = spot.x, y = spot.y, z = spot.z, heading = spot.heading })
+                    lib.notify({ type = r and r.ok and 'success' or 'error', description = r and r.ok and (FixtureLabel(f.model) .. ' moved') or (r and r.error) or 'Failed' })
+                end
+            elseif t.box then moveBox(t.box) else EditRoute(t.run) end
             Wait(250)
             sf = PlaceHud.buttons({ { 'Move this', 24 }, { 'Done', { 25, 177, 200 } } })
         end
@@ -1952,7 +2037,11 @@ local function categoryMenu(net, cat)
     local options = {}
     for _, e in ipairs(CC.Equipment) do
         if (e.net or 'openline') == net.id and e.cat == cat and IsModelInCdimage(joaat((e.sizes and e.sizes[1].model) or e.model)) then
-            options[#options + 1] = { title = e.label, description = (e.sizes and (#e.sizes .. ' sizes') or '') .. (e.pole and ((e.sizes and ' · ' or '') .. 'can be fitted from the pole menu') or ''),
+            local bits = {}
+            if e.about then bits[#bits + 1] = e.about end
+            if e.sizes then bits[#bits + 1] = #e.sizes .. ' ' .. ((e.sizeLabel or 'size'):lower() .. 's') end
+            if e.pole then bits[#bits + 1] = 'also fitted from the pole menu (G)' end
+            options[#options + 1] = { title = e.label, description = #bits > 0 and table.concat(bits, ' · ') or nil,
                 icon = 'plus', onSelect = function() placeEquipment(e, function() categoryMenu(net, cat) end) end }
         end
     end
@@ -1981,6 +2070,11 @@ local CAT_ICON = {
     ['Underground joints'] = 'circle-down', ['On the pole'] = 'arrow-up-from-bracket', ['Customer premises · outside'] = 'house-chimney',
     ['Customer premises · inside'] = 'house-laptop', ['Power poles'] = 'tower-observation', ['On the power pole'] = 'bolt',
     ['Safety & earthing'] = 'triangle-exclamation', ['Buildings'] = 'city', ['Exchange power & cooling'] = 'plug', ['Copper phone line'] = 'phone',
+    ['Customer supply & metering'] = 'gauge-high', ['Fuse boards & isolators'] = 'toggle-on', ['Sockets & switches'] = 'plug', ['Lighting'] = 'lightbulb',
+    ['Plug-in devices & chargers'] = 'charging-station', ['EV charging'] = 'car-battery', ['Temporary power'] = 'gas-pump', ['Office & IT'] = 'laptop',
+    ['Generation'] = 'industry', ['Transmission'] = 'tower-broadcast', ['Substations'] = 'bolt-lightning',
+    ['Solar panels'] = 'solar-panel', ['Inverters & batteries'] = 'car-battery', ['Isolators & protection'] = 'power-off',
+    ['Street lighting'] = 'road', ['Public safety'] = 'shield-halved', ['Security & fencing'] = 'shield-halved', ['Underground chambers & tunnels'] = 'dungeon',
 }
 
 function EquipmentNetMenu(net)
@@ -2099,10 +2193,11 @@ BoxesMenu = function()
     lib.showContext('cable_boxes')
 end
 
-function RunPowerCable()
+--- kinds: which cables to offer (overhead network or wiring inside a building); all when nil
+function RunPowerCable(kinds)
     local opts = {}
-    for _, c in ipairs(CC.PowerColors or {}) do opts[#opts + 1] = { value = c, label = (CC.PowerLabels or {})[c] or c } end
-    local v = lib.inputDialog('Power cable', { { type = 'select', label = 'Cable', options = opts, default = opts[1] and opts[1].value, required = true } })
+    for _, c in ipairs(kinds or CC.PowerColors or {}) do opts[#opts + 1] = { value = c, label = (CC.PowerLabels or {})[c] or c } end
+    local v = lib.inputDialog(kinds == CC.PowerInside and 'Mains cable / flex' or 'Power cable', { { type = 'select', label = 'Cable', options = opts, default = opts[1] and opts[1].value, required = true } })
     if v then
         local pts = layRun('power', v[1])
         if pts then
@@ -2115,13 +2210,53 @@ function RunPowerCable()
     menuBack()
     end
 
+--- SAPL Line Tool (client/powerline.lua): run one conductor of this class now → the saved run, or nil + error
+function LayPowerRun(color)
+    local pts = layRun('power', color)
+    if not pts then return nil end
+    local res = lib.callback.await('opslabs-towers:cable:saveRun', false, { kind = 'power', color = color, points = pts })
+    if not res or res.error then return nil, (res and res.error) or 'Failed' end
+    return res.run
+end
+
+--- Line Tool: place one model with the normal placement tool (pole kit snaps to poles as usual) → true when placed
+function PlaceEquipmentModel(model)
+    local spot = PlacementMode('fixture', model, 1.0, nil, 'Placing ' .. equipLabelFor(model))
+    if not spot then return false end
+    local r = lib.callback.await('opslabs-towers:fixture:save', false, { model = model, x = spot.x, y = spot.y, z = spot.z, heading = spot.heading })
+    if r and r.ok then lib.notify({ type = 'success', description = equipLabelFor(model) .. ' placed' }) return true end
+    lib.notify({ type = 'error', description = (r and r.error) or 'Failed' })
+    return false
+end
+
+--- Line Tool: the power conductor under the crosshair → run, segment, point on it, distance along the aim
+function PickPowerRunAtAim(tol) return pickRun(nil, tol or 0.25, 'power') end
+
+--- lay fuel pipe (OPS Fuel): product line / fill line / vent line between tanks, dispensers, the fill point and the vent stack
+function RunPipe()
+    local opts = {}
+    for _, c in ipairs(CC.PipeColors or {}) do opts[#opts + 1] = { value = c, label = (CC.PipeLabels or {})[c] or c } end
+    local v = lib.inputDialog('Fuel pipe', { { type = 'select', label = 'Pipe', options = opts, default = opts[1] and opts[1].value, required = true,
+        description = 'Start and finish each run on the kit (within 1.5 m): tank ⇄ dispenser, fill point → tank, tank → vent stack' } })
+    if v then
+        local pts = layRun('pipe', v[1])
+        if pts then
+            local res = lib.callback.await('opslabs-towers:cable:saveRun', false, { kind = 'pipe', color = v[1], points = pts })
+            if not res or res.error then lib.notify({ type = 'error', description = (res and res.error) or 'Failed' })
+            else lib.notify({ type = 'success', description = ('%.1f m of %s laid'):format(res.run.length, ((CC.PipeLabels or {})[v[1]] or 'pipe'):lower()) }) end
+            Wait(250)
+        end
+    end
+    menuBack()
+end
+
 ---------------------------------------------------------------------------
 -- remove cable in a box drawn on the ground (any size, every height) — cable in people's hands inside it goes too
 ---------------------------------------------------------------------------
 local AREA_KINDS = { cabling = { cable = true, fibre = true }, cable = { cable = true }, fibre = { fibre = true }, copper = { copper = true },
-    power = { power = true }, trunk = { trunk = true }, wires = { cable = true, fibre = true, copper = true, power = true } }
+    power = { power = true }, trunk = { trunk = true }, pipe = { pipe = true }, wires = { cable = true, fibre = true, copper = true, power = true } }
 local AREA_ORDER = { { 'wires', 'All cable (CAT6, fibre, phone, power)' }, { 'all', 'Everything (cable + trunking & ducts)' }, { 'cabling', 'CAT6 & fibre' },
-    { 'cable', 'CAT6 only' }, { 'fibre', 'Fibre only' }, { 'copper', 'Phone cable only' }, { 'power', 'Power cable only' }, { 'trunk', 'Trunking & ducts only' } }
+    { 'cable', 'CAT6 only' }, { 'fibre', 'Fibre only' }, { 'copper', 'Phone cable only' }, { 'power', 'Power cable only' }, { 'pipe', 'Fuel pipe only' }, { 'trunk', 'Trunking & ducts only' } }
 function AREA_KIND_OK(what, kind) return what == 'all' or (AREA_KINDS[what] or {})[kind] == true end
 
 AreaCleared = nil
@@ -2349,6 +2484,9 @@ CableActions.placeBox = wrap(placeBox)
 CableActions.pull = wrap(pullCable)
 CableActions.trunking = wrap(layTrunking)
 CableActions.power = wrap(RunPowerCable)
+CableActions.powerOverhead = function(back) ReturnMenu = back RunPowerCable(CC.PowerOverhead) end
+CableActions.powerInside = function(back) ReturnMenu = back RunPowerCable(CC.PowerInside) end
+CableActions.pipe = function(back) ReturnMenu = back RunPipe() end
 CableActions.copper = wrap(RunCopperCable)
 CableActions.move = wrapMode(MoveMode)
 CableActions.remove = wrapMode(RemoveMode)

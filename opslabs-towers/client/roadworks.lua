@@ -583,7 +583,7 @@ CreateThread(function()
         local pos = GetEntityCoords(PlayerPedId())
         local near = {}
         for _, f in pairs(CablingFixtures and CablingFixtures() or {}) do
-            if BUILDING_LIGHTS[f.model] and #(pos - vector3(f.x, f.y, f.z)) < 50.0 then near[#near + 1] = f end
+            if BUILDING_LIGHTS[f.model] and #(pos - vector3(f.x, f.y, f.z)) < 50.0 and (not BuildingPowered or BuildingPowered(f)) then near[#near + 1] = f end
         end
         if #near == 0 then Wait(1000) else
             for _ = 1, 30 do                                     -- re-scan every ~30 frames

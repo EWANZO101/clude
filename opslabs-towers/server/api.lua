@@ -4,6 +4,8 @@
 -- GET /isp · POST /isp/:id/provision { provider, plan, customer } · POST /isp/:id/status { status = active|suspended|cease }
 -- POST /poles/:id/status { status = auto|planned|building|maintenance }
 -- GET /faults?status=active|all · POST /faults/:id/ack { actor } · /faults/:id/close { actor, note } · /faults/:id/note { actor, text }
+-- GET /grid · POST /grid/action { action, id, unit, level, audience, area, text, proc, step, actor }
+-- GET /gunshots?status=active|all · POST /gunshots/:id/ack|close|reopen { actor, note }
 
 local KEY = GetConvar('opslabs_towers_api_key', '') ~= '' and GetConvar('opslabs_towers_api_key', '') or GetConvar('opslabs_phone_api_key', '')
 local numbers = {}  -- identifier -> phone number (cache)
@@ -19,8 +21,10 @@ local function authorized(req)
 end
 
 local function reply(res, status, body)
-    res.writeHead(status, { ['Content-Type'] = 'application/json', ['Cache-Control'] = 'no-store' })
-    res.send(json.encode(body))
+    -- the caller may have given up (OPS Hub times out): a write to a closed request must never take the server down
+    local ok, err = pcall(res.writeHead, status, { ['Content-Type'] = 'application/json', ['Cache-Control'] = 'no-store' })
+    if ok then ok, err = pcall(res.send, json.encode(body)) end
+    if not ok then print(('^3[opslabs-towers] API reply dropped (%s)^7'):format(tostring(err))) end
 end
 
 local function list()
@@ -108,6 +112,114 @@ SetHttpHandler(function(req, res)
             if not ok then return reply(res, 400, { error = err }) end
             return reply(res, 200, { data = { ok = true } })
         end
+        -- grid control (server/grid.lua)
+        if path == '/api/grid' and req.method == 'GET' then
+            if not GridState then return reply(res, 404, { error = 'Grid control is off' }) end
+            return reply(res, 200, { data = GridState() })
+        end
+        if path == '/api/grid/action' and req.method == 'POST' then
+            if not GridAction then return reply(res, 404, { error = 'Grid control is off' }) end
+            local ok, err = GridAction(data, data.actor or 'website')
+            if not ok then return reply(res, 400, { error = err or 'Failed' }) end
+            return reply(res, 200, { data = { ok = true } })
+        end
+        -- OPS Secure CCTV live (server/cctvlive.lua)
+        if path == '/api/cctv/live' and req.method == 'GET' then
+            if not CctvLive then return reply(res, 404, { error = 'CCTV live is off' }) end
+            local want = query:match('want=([%w,]+)')
+            local set = nil
+            if want == 'all' then set = 'all' elseif want then set = {} for id in want:gmatch('%d+') do set[tonumber(id)] = true end end
+            return reply(res, 200, { data = CctvLive(set, query:match('focus=(%d+)')) })
+        end
+        local frameId = path:match('^/api/cctv/frame/(%d+)$')
+        if frameId and req.method == 'GET' then
+            local fr = CctvFrame and CctvFrame(frameId)
+            if not fr then return reply(res, 404, { error = 'No picture yet' }) end
+            return reply(res, 200, { data = fr })
+        end
+        -- OPS City network builder (server/citybuild.lua)
+        if path == '/api/city' and req.method == 'GET' then
+            if not CityBuildState then return reply(res, 404, { error = 'The city builder is off' }) end
+            return reply(res, 200, { data = CityBuildState() })
+        end
+        if path == '/api/city/action' and req.method == 'POST' then
+            if not CityBuildStart then return reply(res, 404, { error = 'The city builder is off' }) end
+            local actor = type(data.actor) == 'string' and data.actor:sub(1, 60) or 'OPS Hub'
+            local ok, err
+            if data.action == 'build' then ok, err = CityBuildStart(type(data.systems) == 'table' and data.systems or nil, actor)
+            elseif data.action == 'remove' then ok, err = CityBuildRemove(actor)
+            elseif data.action == 'cancel' then ok, err = CityBuildCancel()
+            else return reply(res, 400, { error = 'Unknown action' }) end
+            if not ok then return reply(res, 400, { error = err or 'Failed' }) end
+            return reply(res, 200, { data = CityBuildState() })
+        end
+        -- OPS Network ISP (server/opsisp.lua)
+        if path == '/api/isp/lines' and req.method == 'GET' then
+            if not OpsIspState then return reply(res, 404, { error = 'ISP is off' }) end
+            return reply(res, 200, { data = OpsIspState() })
+        end
+        -- OPS Secure CCTV (server/cctv.lua)
+        if path == '/api/cctv' and req.method == 'GET' then
+            if not CctvState then return reply(res, 404, { error = 'CCTV is off' }) end
+            return reply(res, 200, { data = CctvState() })
+        end
+        if path == '/api/cctv/action' and req.method == 'POST' then
+            if not CctvAction then return reply(res, 404, { error = 'CCTV is off' }) end
+            local ok, err = CctvAction(data.system, data, data.actor or 'website')
+            if not ok then return reply(res, 400, { error = err or 'Failed' }) end
+            return reply(res, 200, { data = { ok = true } })
+        end
+        -- OPS Data centres (server/datacentre.lua)
+        if path == '/api/dc' and req.method == 'GET' then
+            if not DcState then return reply(res, 404, { error = 'Data centres are off' }) end
+            return reply(res, 200, { data = DcState() })
+        end
+        if path == '/api/dc/action' and req.method == 'POST' then
+            if not DcAction then return reply(res, 404, { error = 'Data centres are off' }) end
+            local ok, err = DcAction(data.rack, data, data.actor or 'website')
+            if not ok then return reply(res, 400, { error = err or 'Failed' }) end
+            return reply(res, 200, { data = { ok = true } })
+        end
+        -- vehicle trackers (server/track.lua)
+        if path == '/api/track' and req.method == 'GET' then
+            if not TrackState then return reply(res, 404, { error = 'OPS Track is off' }) end
+            return reply(res, 200, { data = TrackState() })
+        end
+        if path == '/api/track/action' and req.method == 'POST' then
+            if not TrackAction then return reply(res, 404, { error = 'OPS Track is off' }) end
+            local ok, err = TrackAction(data.plate, data.action, data.actor or 'website')
+            if not ok then return reply(res, 400, { error = err or 'Failed' }) end
+            return reply(res, 200, { data = { ok = true } })
+        end
+        -- fuel stations (server/fuel.lua)
+        if path == '/api/fuel' and req.method == 'GET' then
+            if not FuelState then return reply(res, 404, { error = 'Fuel is off' }) end
+            return reply(res, 200, { data = FuelState() })
+        end
+        if path == '/api/fuel/action' and req.method == 'POST' then
+            if not FuelAction then return reply(res, 404, { error = 'Fuel is off' }) end
+            local ok, err = FuelAction(data.station, data.action, data, data.actor or 'website')
+            if not ok then return reply(res, 400, { error = err or 'Failed' }) end
+            return reply(res, 200, { data = { ok = true } })
+        end
+        -- power & solar summary (server/mains.lua)
+        if path == '/api/power' and req.method == 'GET' then
+            if not MainsSummary then return reply(res, 404, { error = 'Mains is off' }) end
+            return reply(res, 200, { data = MainsSummary() })
+        end
+        -- gunshot detection (OPS Sentinel sensors)
+        if path == '/api/gunshots' and req.method == 'GET' then
+            if not GunshotList then return reply(res, 404, { error = 'Gunshot detection is off' }) end
+            return reply(res, 200, { data = GunshotList(query:match('status=(%a+)') == 'all') })
+        end
+        local gsId, gsAction = path:match('^/api/gunshots/(%d+)/(%a+)$')
+        if gsId and req.method == 'POST' and GunshotSetStatus then
+            local status = gsAction == 'ack' and 'ack' or gsAction == 'close' and 'closed' or gsAction == 'reopen' and 'new' or nil
+            if not status then return reply(res, 404, { error = 'Not found' }) end
+            local ok, err = GunshotSetStatus(gsId, status, data.actor or 'website', data.note)
+            if not ok then return reply(res, 400, { error = err }) end
+            return reply(res, 200, { data = { ok = true } })
+        end
         -- internet service (fibre broadband on ONTs)
         if path == '/api/isp' and req.method == 'GET' then return reply(res, 200, { data = IspList() }) end
         local poleId = tonumber(path:match('^/api/poles/(%d+)/status$'))
@@ -145,10 +257,17 @@ SetHttpHandler(function(req, res)
         end
         return reply(res, 404, { error = 'Not found' })
     end
+    local function run(body)
+        local ok, err = pcall(handle, body)
+        if not ok then
+            print(('^1[opslabs-towers] API request %s %s failed: %s^7'):format(tostring(req.method), tostring(path), tostring(err)))
+            reply(res, 500, { error = 'Internal error' })
+        end
+    end
     if req.method == 'GET' or req.method == 'DELETE' then
-        CreateThread(function() handle(nil) end)
+        CreateThread(function() run(nil) end)
     else
-        req.setDataHandler(function(body) CreateThread(function() handle(body) end) end)
+        req.setDataHandler(function(body) CreateThread(function() run(body) end) end)
     end
 end)
 

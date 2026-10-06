@@ -16,6 +16,8 @@ end)
 --- is the climber wearing a harness (poles.lua warns when not)
 function HarnessOn() return PPE.harness end
 function HarnessSet(on) PPE.harness = on == true end
+--- client/powerline.lua (Line Tool): is this PPE on? ('gloves', 'arc', 'insulated', 'harness')
+function PpeWorn(key) return PPE[key] == true end
 
 ---------------------------------------------------------------------------
 -- helpers
@@ -222,14 +224,17 @@ local function ontDiagnose(f)
         end
     end
     local leds = {
-        { 'POWER', failed and 'off' or 'on' },
+        { 'POWER', (failed or o.noPower) and 'off' or 'on' },
         { 'PON', o.pon or 'off' },
-        { 'LOS', o.los and 'red' or 'off' },
+        { 'LOS', o.los and not (failed or o.noPower) and 'red' or 'off' },
         { 'LAN', o.lan or 'off' },
         { 'INTERNET', o.internet or 'off' },
     }
     local title, steps, ok
-    if failed then
+    if o.noPower then
+        title = 'POWER off — no supply at the ONT'
+        steps = { 'The ONT PSU needs a live wall socket within 3 m', 'Check the socket has power (consumer unit on, building fed from the grid)', 'Fit a socket and wire it from the consumer unit if there isn’t one' }
+    elseif failed then
         title = 'POWER off — the ONT has failed'
         steps = { 'Check the ONT power supply is plugged in and switched on', 'If it still won’t power up the ONT itself is dead', 'Swap the ONT (repair the fault with the repair key at the ONT) and re-provision it' }
     elseif o.los then
@@ -293,6 +298,181 @@ local function ontTester()
     ontDiagnose(f)
 end
 OntDiagnostics = ontTester
+
+--- ONT repair kit: inspect the ONT, then fix whatever can be fixed from here, step by step (server/ontrepair.lua)
+local REPAIR_STEPS = {
+    swap = { { 'Isolating the ONT power supply', 'hands', 'pliers' }, { 'Unclipping the failed ONT and its pigtail', 'hands', 'pliers' },
+        { 'Fitting the new ONT and power supply', 'hands', 'pliers' }, { 'Registering the new serial with the OLT', 'tablet', 'tablet' } },
+    psu = { { 'Unplugging the old power supply', 'hands' }, { 'Fitting a new 12 V power supply', 'hands', 'pliers' } },
+    splice = { { 'Stripping the jacket and Kevlar', 'hands', 'pliers' }, { 'Cleaning and cleaving the fibre', 'hands', 'pliers' },
+        { 'Fusion splicing into the ONT pigtail', 'hands' }, { 'Shrinking the splice protector', 'hands' } },
+    resplice = { { 'Cleaning the ONT optics', 'hands', 'pliers' }, { 'Cutting out the old splice', 'hands', 'pliers' },
+        { 'Re-splicing the ONT pigtail', 'hands' }, { 'Checking the light level', 'hands', 'meter' } },
+    patch = { { 'Stripping the CAT6 sheath', 'hands', 'pliers' }, { 'Arranging the pairs (T568B) and crimping the RJ45', 'hands', 'pliers' } },
+    reboot = { { 'Power-cycling the ONT', 'hands' } },
+    resume = { { 'Resuming the account with the provider', 'tablet', 'tablet' } },
+}
+local SEV_COLOR = { high = '#ff453a', medium = '#ff9f0a', low = '#0a84ff' }
+
+--- server call that gives up after a while instead of waiting forever (e.g. the server side isn't loaded yet)
+local function ask(name, ...)
+    local p = promise.new()
+    lib.callback(name, false, function(r) p:resolve(r or false) end, ...)
+    SetTimeout(10000, function() p:resolve({ error = 'The server didn’t answer — the ONT repair kit isn’t loaded on the server yet (refresh + restart opslabs-towers)' }) end)
+    return Citizen.Await(p)
+end
+
+local function ontRepairMenu(f, info)
+    local LEDC = { on = '#30d158', blink = '#ff9f0a', traffic = '#30d158', red = '#ff453a', off = '#8e8e93' }
+    local l = info.leds or {}
+    local options = {
+        { title = ('POWER %s · PON %s · LOS %s · LAN %s · INTERNET %s'):format((l.power or 'off'):upper(), (l.pon or 'off'):upper(), l.los and 'RED' or 'OFF', (l.lan or 'off'):upper(), (l.internet or 'off'):upper()),
+          description = ('%s%s%s'):format(info.serial or ('ONT #' .. f.id), info.provider and (' · ' .. info.provider .. (info.plan and (' ' .. info.plan) or '')) or '', info.rx and (' · %.1f dBm'):format(info.rx) or ' · no light'),
+          icon = 'microchip', iconColor = (l.power == 'off' or l.los) and '#ff453a' or l.internet == 'on' and '#30d158' or '#ff9f0a', readOnly = true },
+    }
+    local function run(issue)
+        local action = issue.action
+        if action == 'locate' then
+            SetNewWaypoint(issue.x + 0.0, issue.y + 0.0)
+            lib.notify({ type = 'inform', description = 'Waypoint set to the fault' })
+            return ontRepairMenu(f, info)
+        elseif action == 'provision' then
+            return IspMenu(f, function() ontRepairMenu(f, info) end)
+        end
+        local steps = REPAIR_STEPS[action] or { { issue.label or 'Repairing', 'hands' } }
+        local each = math.max(2500, math.floor(((issue.secs or 10) * 1000) / #steps))
+        for _, st in ipairs(steps) do
+            if not work(st[1], each, st[2], st[3]) then return lib.notify({ type = 'error', description = 'Repair stopped' }) end
+        end
+        local r = ask('opslabs-towers:ont:repair', f.id, action, issue.arg)
+        if not r or r.error then return lib.notify({ type = 'error', description = (r and r.error) or 'Repair failed' }) end
+        lib.notify({ type = 'success', title = 'ONT repair kit', description = r.text, duration = 7000 })
+        Wait(400)
+        ontRepairMenu(f, r.after or info)
+    end
+    if #(info.issues or {}) == 0 then
+        options[#options + 1] = { title = 'Nothing wrong at this ONT', description = 'Lights are good and the line is up', icon = 'circle-check', iconColor = '#30d158', readOnly = true }
+    end
+    for _, issue in ipairs(info.issues or {}) do
+        options[#options + 1] = {
+            title = issue.title, description = issue.text .. (issue.action and ('  →  ' .. issue.label) or ''),
+            icon = issue.action and 'screwdriver-wrench' or 'circle-info', iconColor = SEV_COLOR[issue.sev] or '#ff9f0a',
+            disabled = not issue.action, onSelect = issue.action and function() run(issue) end or nil,
+        }
+    end
+    -- jobs you can always do at an ONT
+    options[#options + 1] = { title = 'Reboot the ONT', description = 'Power-cycle it: ranges and logs in again', icon = 'rotate', onSelect = function() run({ action = 'reboot', secs = 6 }) end }
+    options[#options + 1] = { title = 'Replace the power supply', description = '12 V plug-in PSU', icon = 'plug', onSelect = function() run({ action = 'psu', secs = 8 }) end }
+    options[#options + 1] = { title = 'Swap the ONT', description = 'Fit a new ONT (new serial) and power supply', icon = 'arrows-rotate', onSelect = function()
+        if lib.alertDialog({ header = 'Swap this ONT?', content = 'The customer will be offline for a minute while the new one ranges and logs in.', centered = true, cancel = true }) == 'confirm' then
+            run({ action = 'swap', secs = 20 })
+        else ontRepairMenu(f, info) end
+    end }
+    options[#options + 1] = { title = 'Inspect again', icon = 'stethoscope', onSelect = function()
+        local r = ask('opslabs-towers:ont:inspect', f.id)
+        if r and not r.error then ontRepairMenu(f, r) else lib.notify({ type = 'error', description = (r and r.error) or 'Failed' }) end
+    end }
+    lib.registerContext({ id = 'ont_repair', title = 'ONT repair kit · ' .. (info.serial or ('#' .. f.id)), options = options })
+    lib.showContext('ont_repair')
+end
+
+local function ontRepair()
+    local id, f = nearestOntId(3.0)
+    if not id then return need('ONT', 'stand at the ONT you are repairing') end
+    if not work('Opening the ONT repair kit and testing the unit', 3000, 'tablet', 'tablet') then return end
+    local info = ask('opslabs-towers:ont:inspect', id)
+    if not info or info.error then return lib.notify({ type = 'error', description = (info and info.error) or 'Failed' }) end
+    ontRepairMenu(f, info)
+end
+OntRepairKit = ontRepair
+
+--- San Andreas Power & Light: power fault finder + power restoration kit (server/powerdiag.lua)
+local PTC = Config.PowerTools or {}
+local showPower
+local function powerRestore()
+    local r = lib.callback.await('opslabs-towers:powerdiag:test', false)
+    if not r or r.error then return lib.notify({ type = 'error', description = r and r.error or 'Failed' }) end
+    local n = 0
+    for _, x in ipairs(r.issues or {}) do if x.fixable then n = n + 1 end end
+    if n == 0 then
+        if r.powered then return lib.notify({ type = 'success', description = r.label .. ' has power — nothing to fix' }) end
+        return showPower(r)
+    end
+    local ok = lib.alertDialog({ header = 'Restore power · ' .. r.label, centered = true, cancel = true,
+        content = ('Fix %d cause(s) on the supply to this kit?  \nThis switches kit on, puts pole fuses back in (earths off), closes breakers and reclosers and repairs faults upstream. Make sure nobody is working on the line.'):format(n) })
+    if ok ~= 'confirm' then return end
+    if not PPE.gloves then lib.notify({ type = 'warning', description = 'Dielectric gloves should be on for switching' }) end
+    if not work('Restoring power', math.max(4, n * (PTC.SecondsPerFix or 4)) * 1000, 'hands', 'meter') then return end
+    local res = lib.callback.await('opslabs-towers:powerdiag:fix', false)
+    if not res or res.error then return lib.notify({ type = 'error', description = res and res.error or 'Failed' }) end
+    lib.notify({ type = res.powered and 'success' or 'warning', description = res.powered and ('Power restored · ' .. res.label) or ('%d fixed — still no power, see what has to be built'):format(#(res.done or {})) })
+    showPower(res)
+end
+
+showPower = function(r)
+    local options = {
+        { title = (r.powered and 'POWERED · ' or 'NO POWER · ') .. r.label, icon = r.powered and 'bolt' or 'plug-circle-xmark', iconColor = r.powered and '#30d158' or '#ff453a',
+            description = r.powered and 'Supply is healthy all the way back' or (#(r.issues or {}) .. ' cause(s) found'), readOnly = true },
+    }
+    if r.done and #r.done > 0 then
+        options[#options + 1] = { title = ('Fixed %d thing(s)'):format(#r.done), icon = 'circle-check', iconColor = '#30d158', description = r.done[1],
+            onSelect = function()
+                local lines = {}
+                for i, t in ipairs(r.done) do lines[#lines + 1] = ('%d. %s'):format(i, t) end
+                lib.alertDialog({ header = 'What was fixed', content = table.concat(lines, '  \n'), centered = true })
+                showPower(r)
+            end }
+    end
+    for _, x in ipairs(r.issues or {}) do
+        options[#options + 1] = { title = x.text, description = (x.fixable and 'Fix: ' or 'To do (build): ') .. (x.fix or ''), icon = x.fixable and 'screwdriver-wrench' or 'helmet-safety',
+            iconColor = x.fixable and '#ff9f0a' or '#ff453a', readOnly = true }
+    end
+    if r.note then options[#options + 1] = { title = r.note, icon = 'circle-info', readOnly = true } end
+    if #(r.chain or {}) > 0 then
+        options[#options + 1] = { title = ('Supply path · %d step(s)'):format(#r.chain), description = 'From the source to this kit — red is where it stops', icon = 'route', arrow = true,
+            onSelect = function()
+                local o = {}
+                for i, s in ipairs(r.chain) do
+                    o[#o + 1] = { title = ('%d. %s'):format(i, s.label), description = s.note, icon = 'circle', iconColor = s.ok and '#30d158' or '#ff453a', readOnly = true }
+                end
+                lib.registerContext({ id = 'power_path', title = 'Supply path', menu = 'power_diag', options = o })
+                lib.showContext('power_path')
+            end }
+    end
+    local fixable = 0
+    for _, x in ipairs(r.issues or {}) do if x.fixable then fixable = fixable + 1 end end
+    if fixable > 0 and r.crew then
+        options[#options + 1] = { title = ('Restore power — fix %d cause(s)'):format(fixable), description = 'Power restoration kit: works every fixable cause, upstream first', icon = 'bolt', iconColor = '#ffd60a', onSelect = powerRestore }
+    end
+    options[#options + 1] = { title = 'Test again', icon = 'rotate', onSelect = function() if PowerFaultFinder then PowerFaultFinder() end end }
+    lib.registerContext({ id = 'power_diag', title = 'Power fault finder', options = options })
+    lib.showContext('power_diag')
+end
+
+function PowerFaultFinder()
+    if not work('Testing the supply with the fault finder', 3000, 'tablet', 'tablet') then return end
+    local r = lib.callback.await('opslabs-towers:powerdiag:test', false)
+    if not r or r.error then return lib.notify({ type = 'error', description = r and r.error or 'Failed' }) end
+    showPower(r)
+end
+PowerRestore = powerRestore
+
+--- handheld power repair tool: no test, no questions — repairs the kit you're at and everything wrong on its supply
+function PowerRepairTool()
+    if not PPE.gloves then lib.notify({ type = 'warning', description = 'Dielectric gloves should be on for electrical repairs' }) end
+    if not work('Repairing with the power repair tool', (PTC.RepairSeconds or 6) * 1000, 'hands', 'meter') then return end
+    local r = lib.callback.await('opslabs-towers:powerdiag:fix', false, { tool = true })
+    if not r or r.error then return lib.notify({ type = 'error', description = r and r.error or 'Failed' }) end
+    local n = #(r.done or {})
+    if r.powered then
+        PlaySoundFrontend(-1, 'Hack_Success', 'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS', true)
+        return lib.notify({ type = 'success', title = 'Power repair tool', description = n > 0 and ('%s repaired — %d fix(es), power is back'):format(r.label, n) or (r.label .. ' already has power — nothing to repair') })
+    end
+    lib.notify({ type = 'error', title = 'Power repair tool', description = n > 0 and ('%d fixed, but it still needs building work — see the list'):format(n) or 'Nothing the tool can repair — it needs building work, see the list' })
+    showPower(r)
+end
+if PTC.Enabled ~= false and PTC.RepairCommand then RegisterCommand(PTC.RepairCommand, function() PowerRepairTool() end, false) end
+if PTC.Enabled ~= false and PTC.Command then RegisterCommand(PTC.Command, function() PowerFaultFinder() end, false) end
 
 local function strippers()
     if not work('Stripping the jacket and cutting back the Kevlar', 4000, 'hands', 'pliers') then return end
@@ -758,6 +938,7 @@ local FIBRE = {
     { 'OTDR', 'Shoot the fibre beside you — finds breaks, open ends and the length', 'chart-line', otdr },
     { 'Visual fault locator (red light)', 'Breaks and open ends glow red for 30 s', 'lightbulb', vfl },
     { 'ONT diagnostic tester', 'Reads POWER · PON · LOS · LAN · INTERNET, says what\'s wrong and how to fix it', 'stethoscope', ontTester },
+    { 'ONT repair kit', 'Finds everything wrong at an ONT and fixes it: swap a failed ONT / PSU, splice the fibre in, patch the LAN, reboot, resume service', 'toolbox', ontRepair },
     { 'Optical power meter', 'Light level arriving at the ONT (dBm)', 'gauge', powerMeter },
     { 'Fibre strippers & Kevlar shears', 'Prep the fibre — your next splice is cleaner', 'scissors', strippers },
     { 'One-click fibre cleaner', 'Clean a CBT port, CSP or ONT connector', 'pen', cleaner },
@@ -781,6 +962,10 @@ local COPPER_TOOLS = {
 }
 local POWER = {
     { 'Insulated hand tools (1000 V)', 'VDE screwdrivers, pliers & cutters', 'screwdriver', ppeToggle('insulated', 'Insulated tools in hand', 'Insulated tools away') },
+    { 'Power fault finder', 'At any socket, light, kit, consumer unit, pole, mast or router: traces the supply and says why there’s no power', 'stethoscope', function() PowerFaultFinder() end },
+    { 'Power repair tool', 'Use it at broken kit: repairs it and everything wrong on its supply straight away', 'screwdriver-wrench', function() PowerRepairTool() end },
+    { 'Power restoration kit', 'Fixes every cause it can find on the supply (switches, fuses, breakers, faults, transformers, generation)', 'kit-medical', function() PowerRestore() end },
+    { 'Line Tool (insulated hot stick)', 'Aim at any power kit or conductor: live data, what’s connected, missing steps (place the kit or be shown where), connect, snap jumpers off / on, move a line onto another pole, re-string', 'person-digging', function() if PowerLineTool then PowerLineTool() end end },
     { 'Voltage detector & phasing stick', 'Is the pole / line live or dead?', 'wave-square', voltage },
     { 'Dielectric rubber gloves', 'HV gloves with leather over-gloves', 'mitten', ppeToggle('gloves', 'Dielectric gloves on', 'Gloves off') },
     { 'Arc flash PPE', 'FR suit and switching visor', 'shield-halved', ppeToggle('arc', 'Arc flash PPE on', 'Arc flash PPE off') },
@@ -813,7 +998,7 @@ function ToolKitMenu()
             onSelect = function() kitMenu('toolkit_fibre', 'Fibre & telecom tools', FIBRE, '#0a84ff') end },
         { title = 'OPS Openline · copper phone line tools', description = 'Drill, butt set, tone & probe, line tester, punch-down tool, UY crimpers, multimeter, NTE5 test socket', icon = 'phone', iconColor = '#bf5af2', arrow = true,
             onSelect = function() kitMenu('toolkit_copper', 'Copper phone line tools', COPPER_TOOLS, '#bf5af2') end },
-        { title = 'San Andreas Power & Light · electrical tools', description = 'Insulated tools, voltage detector, gloves, arc PPE, earths, operating rod, thermal camera, spiking gun, sockets, MEWP', icon = 'bolt', iconColor = '#ffd60a', arrow = true,
+        { title = 'San Andreas Power & Light · electrical tools', description = 'Power fault finder, restoration kit, insulated tools, voltage detector, gloves, arc PPE, earths, operating rod, thermal camera, spiking gun, sockets, MEWP', icon = 'bolt', iconColor = '#ffd60a', arrow = true,
             onSelect = function() kitMenu('toolkit_power', 'Electrical tools', POWER, '#ffd60a') end },
     } })
     lib.showContext('toolkit')

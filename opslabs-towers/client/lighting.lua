@@ -39,6 +39,8 @@ CreateThread(function()
         if night then
             for id, f in pairs(CablingFixtures and CablingFixtures() or {}) do
                 local L = LT.Models[f.model]
+                -- SAPL street lights need a live pole transformer near them (road works lighting runs off its own generator)
+                if L and f.model:find('^opslabs_streetlight') and StreetLightSupplied and not StreetLightSupplied(f) then L = nil end
                 if L then
                     local dist = #(pos - vector3(f.x, f.y, f.z))
                     if dist < LT.Distance then

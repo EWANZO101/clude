@@ -41,7 +41,7 @@ function AllPoles()
     for id, f in pairs(CablingFixtures and CablingFixtures() or {}) do
         local H = PLACED_H[f.model]
         if H then
-            out[#out + 1] = { id = id, model = f.model, x = f.x, y = f.y, z = f.z, H = H }
+            out[#out + 1] = { id = id, model = f.model, x = f.x, y = f.y, z = f.z, H = H, heading = f.heading }
         elseif f.model == 'opslabs_wall_anchor' then
             -- eyebolt in the brickwork: cable clamps to its eye, 6 cm out from the wall
             local h = math.rad(f.heading or 0.0)

@@ -87,6 +87,9 @@
   #coachOffer small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
   @keyframes cpop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.04); opacity: 1; } 100% { transform: none; } }
 </style>
+<link rel="stylesheet" href="vendor/inter/inter.css">
+<link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+<link rel="stylesheet" href="console.css">
 </head>
 <body>
 <div id="ont">
@@ -130,16 +133,18 @@
   }
 
   function render(o) {
-    led('power', 'on');
+    const off = o.noPower || o.hardware === 'failed';
+    led('power', off ? 'off' : 'on');
     led('pon', o.pon);
-    led('los', o.los ? 'red' : 'off');
+    led('los', o.los && !off ? 'red' : 'off');
     led('lan', o.lan);
     led('internet', o.internet === 'red' ? 'redblink' : o.internet);
     $('serial').textContent = o.serial || '—';
     $('sub').textContent = o.customer ? o.customer : (o.label || 'Wall-mounted ONT');
 
     let cls = 'bad', text = 'No fibre signal (LOS) — check the splices back to the cabinet';
-    if (!o.los) {
+    if (o.noPower) text = 'No power — plug the ONT PSU into a live socket (within 3 m)';
+    else if (!o.los) {
       if (o.pon === 'blink') { cls = 'warn'; text = 'Ranging — the ONT is registering with the exchange…'; }
       else if (o.service === 'none') { cls = 'warn'; text = 'Fibre is live — no internet service on this line yet'; }
       else if (o.service === 'suspended') { cls = 'bad'; text = 'Service suspended by the provider'; }
@@ -168,6 +173,11 @@
     $('rows').innerHTML = rows.map(([k, v]) => `<div class="row"><b>${k}</b><em>${v}</em></div>`).join('');
   }
 
+  // menu links to OPS Hub open in the player's own browser
+  window.addEventListener('message', (e) => {
+    const m = e.data || {};
+    if (m.action === 'openUrl' && /^https:\/\//.test(m.url || '') && typeof window.invokeNative === 'function') window.invokeNative('openUrl', m.url);
+  });
   window.addEventListener('message', (e) => {
     const m = e.data || {};
     if (m.action === 'ont') { render(m.ont); $('ont').classList.add('show'); }
@@ -196,5 +206,7 @@
     el.classList.add('show');
   }
 </script>
+<script src="console.js"></script>
+<script src="cctvcap.js"></script>
 </body>
 </html>

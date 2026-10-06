@@ -241,6 +241,7 @@ function PlacementMode(kind, model, range, startHeading, title, opts)
     local reach = (opts and opts.reach) or 25.0
     for _, e in ipairs((Config.Cabling or {}).Equipment or {}) do
         if e.building and e.model == model then reach = math.max(reach, 90.0) end
+        if e.reach and e.model == model then reach = math.max(reach, e.reach) end
     end
     local hash = model and model ~= '' and joaat(model) or nil
     if hash and not IsModelInCdimage(hash) then hash = nil end
@@ -590,6 +591,8 @@ local function mobileSection()
             RefreshOverlay()
             mobileSection()
         end },
+        { title = 'Open in OPS Hub', description = 'Live tower map: coverage, dead zones, players · opens in your browser', icon = 'arrow-up-right-from-square', iconColor = BLUE,
+          onSelect = function() if OpenHub then OpenHub('mobile') end end },
     } })
     lib.showContext('towers_sec_mobile')
 end
@@ -606,6 +609,60 @@ local function buildingIcon(model)
     return model:find('house') and 'house' or model:find('depot') and 'warehouse' or 'building'
 end
 
+--- the page for this service on OPS Hub, opened in the player's browser
+function OpenHub(section)
+    local H = Config.Hub or {}
+    local url = (H.Url or ''):gsub('/*$', '/') .. ((H.Pages or {})[section] or '')
+    SendNUIMessage({ action = 'openUrl', url = url })
+    lib.notify({ type = 'inform', description = 'Opening OPS Hub in your browser' })
+end
+local function hubLink(section, what)
+    return { title = 'Open in OPS Hub', description = (what or 'The staff website') .. ' · opens in your browser', icon = 'arrow-up-right-from-square', iconColor = '#0a84ff',
+        onSelect = function() OpenHub(section) end }
+end
+
+--- a section heading inside a menu (not selectable)
+local function head(title, icon) return { title = title, icon = icon or 'minus', iconColor = '#636366', readOnly = true } end
+
+--- ONTs within 150 m → their internet service (provision, change plan, suspend / resume, cease)
+local function ontServiceList(back)
+    local pos = GetEntityCoords(PlayerPedId())
+    local ONT = (Config.Isp or {}).Ont or 'opslabs_ont'
+    local list = {}
+    for _, f in pairs(CablingFixtures and CablingFixtures() or {}) do
+        if f.model == ONT then
+            local d = #(pos - vector3(f.x, f.y, f.z))
+            if d <= 150.0 then list[#list + 1] = { f = f, d = d } end
+        end
+    end
+    table.sort(list, function(a, b) return a.d < b.d end)
+    local options = {}
+    for _, n in ipairs(list) do
+        local o = OntReading and OntReading(n.f.id) or {}
+        local state = o.los and 'No light (LOS)' or o.service == 'none' and 'Fibre live · no service' or o.service == 'suspended' and 'Suspended'
+            or (o.internet == 'on' and 'Online' or 'Not online')
+        options[#options + 1] = { title = ('ONT #%d · %s'):format(n.f.id, o.customer or state), arrow = true,
+            description = ('%d m away · %s%s'):format(math.floor(n.d), state, o.provider and (' · ' .. o.provider .. ' ' .. (o.plan or '')) or ''),
+            icon = 'wifi', iconColor = o.los and RED or o.internet == 'on' and GREEN or ORANGE,
+            onSelect = function() if IspMenu then IspMenu(n.f, function() ontServiceList(back) end) end end }
+    end
+    if #options == 0 then options[1] = { title = 'No ONTs within 150 m', description = 'Fit one: Telecom equipment → Customer premises · inside', readOnly = true } end
+    lib.registerContext({ id = 'towers_onts', title = 'Internet service · nearby ONTs', options = options })
+    lib.showContext('towers_onts')
+end
+
+--- every category of one network's equipment, as arrows (optionally only some)
+local function cats(add, net, list)
+    local A = CableActions or {}
+    for _, c in ipairs(list) do
+        local n = 0
+        for _, e in ipairs(Config.Cabling.Equipment or {}) do if (e.net or 'openline') == net.id and e.cat == c[1] then n = n + 1 end end
+        if n > 0 then
+            add({ title = c[1], description = c[2], icon = c[3] or 'boxes-stacked', iconColor = c[4] or net.color, arrow = true, onSelect = function() A.equipmentCat(net, c[1]) end })
+        end
+    end
+end
+
 SectionMenu = function(id)
     local A = CableActions or {}
     local back = function() SectionMenu(id) end
@@ -613,39 +670,152 @@ SectionMenu = function(id)
     local options = {}
     local function add(o) options[#options + 1] = o end
     if id == 'openline' then
-        add({ title = 'Telecom equipment', description = 'Poles · exchange kit · cabinets & chambers · pole kit · customer premises', icon = 'boxes-stacked', iconColor = net.color, arrow = true, onSelect = function() A.equipment(net) end })
+        add(head('Equipment', 'boxes-stacked'))
+        add({ title = 'Telecom equipment', description = 'Poles · exchange kit & plant · cabinets & chambers · underground joints · pole kit · customer premises · copper', icon = 'boxes-stacked', iconColor = net.color, arrow = true, onSelect = function() A.equipment(net) end })
+        add(head('Fibre & CAT6', 'ethernet'))
         add({ title = 'Place a cable box or drum', description = 'CAT6, black / yellow fibre, spine feed or ULW drop', icon = 'box-open', iconColor = BLUE, onSelect = function() A.placeBox(back) end })
-        add({ title = 'Pull cable from the nearest box', description = 'CAT6 or fibre · fix along walls and poles, finish on the kit · G puts it down', icon = 'ethernet', iconColor = BLUE, onSelect = function() A.pull(back) end })
-        add({ title = 'Cable you put down', description = 'Loose ends lying nearby · waypoint to one, press E there to pick it up and carry on', icon = 'hand', iconColor = BLUE, arrow = true, onSelect = function() if LooseEndsMenu then LooseEndsMenu() end end })
-        add({ title = 'Trunking, capping & ducts', description = 'Trunking, steel / plastic capping, sub-duct, blown fibre tubing', icon = 'grip-lines', iconColor = BLUE, onSelect = function() A.trunking(back) end })
-        add({ title = 'Run phone cable (copper)', description = 'Drop wire, internal cable or 50-pair · clamps to poles · punch down on DPs, sockets, cabinets, the MDF', icon = 'phone', iconColor = '#bf5af2', onSelect = function() A.copper(back) end })
-        add({ title = 'Copper phone line equipment', description = 'DP, splice box, aerial joint, master socket, extension socket, junction box, VDSL faceplate', icon = 'phone-volume', iconColor = '#bf5af2', arrow = true,
-            onSelect = function() A.equipmentCat(net, 'Copper phone line') end })
-        add({ title = 'Internet service', description = 'Fit an ONT (Customer premises · inside), then open it from Tools → Nearby equipment to provision it', icon = 'globe', readOnly = true })
+        add({ title = 'Pull cable from the nearest box', description = 'Fix along walls and poles, finish on the kit · G puts it down', icon = 'ethernet', iconColor = BLUE, onSelect = function() A.pull(back) end })
+        add({ title = 'Cable you put down', description = 'Loose ends lying nearby · waypoint to one, press E there to carry on', icon = 'hand', iconColor = BLUE, arrow = true, onSelect = function() if LooseEndsMenu then LooseEndsMenu() end end })
+        add(head('Copper', 'phone'))
+        add({ title = 'Run phone cable (copper)', description = 'Drop wire, internal CW1308 or 50-pair · punch down on DPs, sockets, cabinets, the MDF', icon = 'phone', iconColor = '#bf5af2', onSelect = function() A.copper(back) end })
+        add(head('Overhead & containment', 'grip-lines'))
+        add({ title = 'Guild wires', description = 'Steel support wire between poles · lash fibre to it · hook heights', icon = 'grip-lines', iconColor = '#98989d', arrow = true, onSelect = function() if GuyMenu then GuyMenu() end end })
+        add({ title = 'Trunking, capping & ducts', description = 'Trunking, steel / plastic capping, sub-duct, blown fibre tubing', icon = 'grip-lines-vertical', iconColor = BLUE, onSelect = function() A.trunking(back) end })
+        add(head('Customers', 'house-signal'))
+        add({ title = 'Internet service', description = 'Nearby ONTs · provision, change plan, suspend / resume, cease', icon = 'globe', iconColor = GREEN, arrow = true, onSelect = function() ontServiceList(back) end })
+        add(head('Public safety', 'shield-halved'))
+        cats(add, net, { { 'Public safety', 'OPS Sentinel gunshot sensors — on poles or walls, alert police over LTE', 'shield-halved' } })
+        add(hubLink('openline', 'Internet service, ONTs, poles & faults'))
+        add(hubLink('gunshots', 'Gunshot detection: live incidents & sensor status'))
+    elseif id == 'usfiber' then
+        -- OPS America Fiber (US FTTH): OPS America Fiber · Outside Plant · Network Ops share this menu
+        add(head('Central office · OPS America Network Ops', 'building'))
+        cats(add, net, {
+            { 'Central office · optical & routing', 'OLT · ODF · aggregation / core router · internet edge router / BNG', 'server' },
+            { 'Central office · power & HVAC', 'Rectifiers · DC plant · battery string · standby generator · HVAC', 'car-battery' },
+        })
+        add(head('Outside plant · OPS America Outside Plant', 'person-digging'))
+        cats(add, net, {
+            { 'Utility poles', '25 / 35 / 45 ft poles', 'tower-observation' },
+            { 'Outside plant · cabinets & underground', 'FDH · handholes · vaults · manholes · underground closures', 'box-archive' },
+            { 'Outside plant · aerial', 'FDT · aerial & dome closures · snowshoe · brackets · drop hooks — also from the pole (G)', 'diagram-project' },
+        })
+        add({ title = 'Place a fiber reel', description = 'Feeder, distribution or drop fiber', icon = 'box-open', iconColor = net.color, onSelect = function() A.placeBox(back) end })
+        add({ title = 'Pull fiber from the nearest reel', description = 'Lash to strand on poles, or through conduit · finish on the kit', icon = 'ethernet', iconColor = net.color, onSelect = function() A.pull(back) end })
+        add({ title = 'Messenger strand & guy wires', description = 'Steel strand between poles · lash fiber to it · anchors & guys', icon = 'grip-lines', iconColor = '#98989d', arrow = true, onSelect = function() if GuyMenu then GuyMenu() end end })
+        add({ title = 'Conduit & innerduct', description = 'Sub-duct, blown fiber tubing, trunking', icon = 'grip-lines-vertical', iconColor = net.color, onSelect = function() A.trunking(back) end })
+        add({ title = 'Cable you put down', description = 'Loose ends lying nearby · waypoint to one, press E there to carry on', icon = 'hand', iconColor = net.color, arrow = true, onSelect = function() if LooseEndsMenu then LooseEndsMenu() end end })
+        add(head('Customers · OPS America Fiber', 'house-signal'))
+        cats(add, net, { { 'Customer premises', 'NID / drop box · drop clamp · feed-through · ONT · splice tray', 'house-signal' } })
+        add({ title = 'Internet service (activation)', description = 'Nearby ONTs · register, provision an OPS America Fiber plan, suspend, cease', icon = 'globe', iconColor = GREEN, arrow = true, onSelect = function() ontServiceList(back) end })
+        add(hubLink('openline', 'Internet service, ONTs, poles & faults'))
     elseif id == 'streamfibre' then
         add({ title = 'StreamFibre equipment', description = 'Alt-net CBT, provider tags, shared (PIA) brackets', icon = 'boxes-stacked', iconColor = net.color, arrow = true, onSelect = function() A.equipment(net) end })
         add({ title = 'Place a fibre drum', description = 'Black / yellow fibre, spine feed or ULW drop', icon = 'box-open', iconColor = net.color, onSelect = function() A.placeBox(back) end })
         add({ title = 'Pull fibre from the nearest drum', description = 'Shares the poles with OPS Openline', icon = 'ethernet', iconColor = net.color, onSelect = function() A.pull(back) end })
         add({ title = 'Cable you put down', description = 'Loose ends lying nearby · waypoint to one, press E there to pick it up', icon = 'hand', iconColor = net.color, arrow = true, onSelect = function() if LooseEndsMenu then LooseEndsMenu() end end })
+        add(hubLink('streamfibre', 'Internet service & faults'))
     elseif id == 'sapl' then
-        add({ title = 'Power equipment', description = 'Power poles · transformers, cut-outs, PMAR, pothead · safety & earthing', icon = 'boxes-stacked', iconColor = net.color, arrow = true, onSelect = function() A.equipment(net) end })
-        add({ title = 'Run power cable', description = 'HV conductor, LV bundled cable or a service drop · clamps to power poles', icon = 'bolt', iconColor = net.color, onSelect = function() A.power(back) end })
+        add(head('Bulk grid · generation & substations', 'industry'))
+        cats(add, net, {
+            { 'Generation', 'Gas power station (4 × 120 MW) · wind turbines', 'industry' },
+            { 'Transmission', '400 kV lattice pylons — carry 400 kV conductor between stations and substations', 'tower-broadcast' },
+            { 'Substations', 'Outdoor yard · substation building fully fitted · empty building · RTU pole (turns any building into a substation)', 'building-shield' },
+            { 'Substation plant', 'Transformers, 400 kV GIS, 11 kV switchgear, busbars, protection, metering, DC battery, earth bar, control desk, cable ends', 'gears' },
+        })
+        add({ title = 'How a substation works', description = '400 kV line → GIS incomer → busbar → transformer → busbar → 11 kV switchgear → feeder. Needs protection, DC battery and earthing to energise; an RTU gives Grid control remote switching.', icon = 'circle-info', readOnly = true })
+        add(hubLink('grid', 'Grid control: switching, load, faults'))
+        add(head('Overhead network', 'tower-observation'))
+        cats(add, net, {
+            { 'Power poles', 'Wooden power poles with cross-arms & insulators', 'tower-observation' },
+            { 'On the power pole', 'Transformer, cut-outs, PMAR, pothead, LV connectors — also fitted from the pole (G)', 'bolt' },
+            { 'Safety & earthing', 'Earth tape, anti-climbing device, Danger of Death sign', 'triangle-exclamation' },
+            { 'Street lighting', 'Lighting columns and pole-mounted lanterns', 'road' },
+        })
+        add({ title = 'Run power cable', description = 'HV conductor, LV bundled cable or a service drop to a house · clamps to power poles', icon = 'bolt', iconColor = net.color, onSelect = function() A.powerOverhead(back) end })
+        add(head('Customer supply', 'gauge-high'))
+        cats(add, net, { { 'Customer supply & metering', 'Service cut-out, smart meter, outside meter cabinet — where the service drop lands', 'gauge-high' } })
+        add(head('Electrical installation', 'plug'))
+        cats(add, net, {
+            { 'Fuse boards & isolators', 'Consumer unit (feeds the sockets & lights around it) · rotary isolator', 'toggle-on' },
+            { 'Sockets & switches', 'Twin / USB / steel / single / outdoor sockets, fused spur, light switch', 'plug' },
+            { 'Lighting', 'LED ceiling panel and batten — worked from a light switch', 'lightbulb' },
+            { 'EV charging', 'Wallbox and charging post', 'car-battery' },
+        })
+        add({ title = 'Run mains cable / flex', description = 'Grey twin & earth, white or black flex · joins supply kit, consumer units and sockets', icon = 'plug-circle-bolt', iconColor = net.color, onSelect = function() A.powerInside(back) end })
+        add(head('Plug-in & portable', 'charging-station'))
+        cats(add, net, {
+            { 'Plug-in devices & chargers', 'Phone charging cable, wireless pad / stand, laptop charger, desk lamp — plug themselves into the nearest socket', 'charging-station' },
+            { 'Temporary power', 'Portable generator, cable reel, extension lead', 'gas-pump' },
+        })
+        add(hubLink('sapl', 'Power: meters, load and solar'))
+    elseif id == 'solar' then
+        add(head('Install', 'solar-panel'))
+        cats(add, net, {
+            { 'Solar panels', 'Roof panels on rails · ground-mount arrays — feed the inverter within 30 m', 'solar-panel' },
+            { 'Inverters & batteries', 'Hybrid inverter (feeds the consumer unit nearby) · home battery beside it', 'car-battery' },
+            { 'Isolators & protection', 'PV DC isolator — make the array safe before working on it', 'power-off' },
+        })
+        add({ title = 'Run mains cable / flex', description = 'Only if the inverter is too far from the consumer unit to be wired through the walls', icon = 'plug-circle-bolt', iconColor = net.color, onSelect = function() A.powerInside(back) end })
+        add(head('How it works', 'circle-info'))
+        add({ title = 'Panels → DC isolator → inverter → consumer unit', description = 'Daytime the panels power the house (and charge the battery); after dark or in a power cut the battery takes over. [E] on the inverter shows output and charge.', icon = 'circle-info', readOnly = true })
+        add(hubLink('solar', 'Solar output and batteries'))
+    elseif id == 'secure' then
+        add(head('Design & install', 'video'))
+        cats(add, net, {
+            { 'IP cameras (PoE)', 'Bullet, dome, turret, fisheye — CAT6 to the NVR or a PoE switch', 'video' },
+            { 'Specialist cameras', 'PTZ speed dome, ANPR / LPR, thermal, analogue (DVR)', 'binoculars' },
+            { 'Wireless & doorbells', 'Wi-Fi indoor camera, video doorbell', 'wifi' },
+            { 'Recorders & viewing', 'NVR (PoE), DVR, monitors, video wall, PTZ keyboard', 'server' },
+            { 'Access & signage', 'Access-control reader, CCTV warning sign', 'id-card' },
+        })
+        add({ title = 'Pull CAT6 from the nearest box', description = 'Camera → NVR (or PoE switch). Crimp both ends onto the kit.', icon = 'ethernet', iconColor = BLUE, onSelect = function() A.pull(back) end })
+        add(head('How it works', 'circle-info'))
+        add({ title = 'Camera → CAT6 → NVR (PoE) → monitor · router for remote viewing', description = 'NVR needs a socket within 3 m. [E] at the NVR: set up, watch, events, ANPR. Customers watch remotely in OPS Secure View on the phone.', icon = 'circle-info', readOnly = true })
+        add(hubLink('secure', 'All CCTV systems, cameras, events and ANPR'))
+    elseif id == 'track' then
+        add(head('In the vehicle you’re sitting in', 'car'))
+        add({ title = 'Install a tracker', description = 'Mini (plug-and-play) or Pro (hard-wired, antennas, backup battery, inputs, immobiliser) · step by step under the dash', icon = 'screwdriver-wrench', iconColor = net.color, onSelect = function() if TrackInstall then TrackInstall() end end })
+        add({ title = 'Check the tracker (LEDs)', description = 'PWR · GNSS fix · GSM signal on OPS Mobile', icon = 'stethoscope', iconColor = BLUE, onSelect = function() if TrackDiagnose then TrackDiagnose() end end })
+        add({ title = 'Reconnect tracker power', description = 'After a tamper / service', icon = 'plug', iconColor = GREEN, onSelect = function() if TrackCut then TrackCut(true) end end })
+        add({ title = 'Decommission (remove) the tracker', description = 'Take it out and close the account', icon = 'trash-can', iconColor = RED, onSelect = function() if TrackRemove then TrackRemove() end end })
+        add(head('Tracking', 'location-crosshairs'))
+        add({ title = 'Tracked vehicles', description = 'Locate, arm theft alerts, immobilise (also /track for owners)', icon = 'location-crosshairs', iconColor = net.color, arrow = true, onSelect = function() if TrackList then TrackList() end end })
+        add(head('Fitting bay', 'warehouse'))
+        cats(add, net, { { 'Fitting bay', 'Bay sign, installer tool case, units, antennas, batteries, looms on the bench', 'warehouse' } })
+        add(hubLink('track', 'Live map of every tracked vehicle, alerts'))
+    elseif id == 'fuel' then
+        add(head('Build a station', 'gas-pump'))
+        cats(add, net, {
+            { 'Storage tanks', 'Underground tanks (unleaded / super / diesel) · bunded above-ground diesel tank', 'oil-well' },
+            { 'Dispensers & forecourt', 'Dispenser (needs power) · lit canopy · emergency stop', 'gas-pump' },
+            { 'Deliveries & venting', 'Tanker fill point · vent stack', 'truck-droplet' },
+            { 'Station control', 'Tank gauge & pump controller (ATG) — authorises the pumps', 'gauge' },
+        })
+        add({ title = 'Lay fuel pipe', description = 'Product lines tank ⇄ dispenser · fill lines fill point → tank · vent lines tank → vent stack', icon = 'faucet', iconColor = net.color, onSelect = function() A.pipe(back) end })
+        add({ title = 'Run mains cable / flex', description = 'Only if the dispensers / gauge are too far from the consumer unit to be wired through the walls', icon = 'plug-circle-bolt', iconColor = '#ffd60a', onSelect = function() A.powerInside(back) end })
+        add(head('Supply', 'truck'))
+        cats(add, net, { { 'Bulk terminal', 'Loading gantry — road tankers fill up here', 'industry' } })
+        add(head('How it works', 'circle-info'))
+        add({ title = 'Tanker → fill point → tank → pipe → dispenser → nozzle → vehicle', description = 'Every tank needs a fill pipe and a vent pipe. Dispensers and the gauge need power from the grid. Vehicles only fill up at stations built here.', icon = 'circle-info', readOnly = true })
+        add(hubLink('fuel', 'Fuel stations: stock, alarms, sales and prices'))
     elseif id == 'buildings' then
         local sites = Config.Cabling.Sites or { id = 'sites', label = 'Buildings & sites' }
         local pos = GetEntityCoords(PlayerPedId())
+        add(head('Put down a building', 'city'))
         for _, e in ipairs(Config.Cabling.Equipment or {}) do
             if e.building then
                 local ok = IsModelInCdimage(joaat(e.model))
-                add({ title = 'Place: ' .. e.label, description = ok and e.about or 'Restart opslabs-props to place this', disabled = not ok,
+                add({ title = e.label, description = ok and e.about or 'Restart opslabs-props to place this', disabled = not ok,
                     icon = buildingIcon(e.model), iconColor = '#5e5ce6', onSelect = function() A.placeBuilding(e, back) end })
             end
         end
+        add(head('Civils & site', 'helmet-safety'))
         add({ title = 'Underground chambers & tunnels', description = 'Walk-in chambers with access hatches under the road · lay a tunnel line or place pieces one by one', icon = 'dungeon', iconColor = '#8e8e93', arrow = true,
             onSelect = function() if UndergroundMenu then UndergroundMenu() end end })
-        add({ title = 'Security & fencing', description = 'Branded fencing & signs · auto gates, barriers & rising bollards with PIN locks · bollards', icon = 'shield-halved', iconColor = '#5e5ce6', arrow = true,
+        add({ title = 'Security & fencing', description = 'Fencing & signs · auto gates, barriers & rising bollards with PIN locks · bollards', icon = 'shield-halved', iconColor = '#5e5ce6', arrow = true,
             onSelect = function() A.equipmentCat(sites, 'Security & fencing') end })
-        add({ title = 'Exchange power & cooling', description = 'Rectifiers, batteries, standby generator, DC power plant, HVAC', icon = 'plug', iconColor = '#ff9f0a', arrow = true,
-            onSelect = function() A.equipmentCat(sites, 'Exchange power & cooling') end })
+        cats(add, sites, { { 'Office & IT', 'Laptop (OPS OS, online over Ethernet)', 'laptop', '#5e5ce6' } })
         -- every placed building, wherever it is (they're saved and come back after restarts)
         local placed = {}
         for _, f in pairs(CablingFixtures and CablingFixtures() or {}) do
@@ -654,7 +824,7 @@ SectionMenu = function(id)
             end
         end
         table.sort(placed, function(a, b) return a.d < b.d end)
-        if #placed > 0 then add({ title = ('Placed buildings (%d)'):format(#placed), description = 'Saved in the database · open one to move, fine-tune, teleport or remove it', icon = 'database', readOnly = true }) end
+        if #placed > 0 then add(head(('Placed buildings (%d) · move, fine-tune, teleport or remove'):format(#placed), 'database')) end
         for _, n in ipairs(placed) do
             local street = GetStreetNameFromHashKey(GetStreetNameAtCoord(n.f.x, n.f.y, n.f.z))
             add({ title = ('%s #%d'):format((n.e.label:gsub(' %(walk%-in%)', '')), n.f.id),
@@ -664,20 +834,28 @@ SectionMenu = function(id)
     elseif id == 'roadworks' then
         return OpenRoadworksMenu and OpenRoadworksMenu()
     elseif id == 'tools' then
-        add({ title = 'Uniform', description = 'Put on / take off the OPS Network uniform · hard hat · admins can restyle it (/uniform)', icon = 'user-tie', iconColor = BLUE, arrow = true, onSelect = function() if UniformMenu then UniformMenu() end end })
-        add({ title = 'Tool kit', description = 'Fibre tools (splicer, OTDR, red light, power meter…) and electrical tools (voltage detector, earths, MEWP…)', icon = 'toolbox', iconColor = BLUE, arrow = true, onSelect = function() if ToolKitMenu then ToolKitMenu() end end })
-        add({ title = 'ONT diagnostic tester', description = 'At an ONT: reads POWER · PON · LOS · LAN · INTERNET, says what\'s wrong and how to fix it', icon = 'stethoscope', iconColor = GREEN, onSelect = function() if OntDiagnostics then OntDiagnostics() end end })
-        add({ title = 'Cordless drill', description = 'Face an outside wall · drills the cable entry hole and fits the entry bushing', icon = 'screwdriver-wrench', iconColor = BLUE, onSelect = function() if ToolDrill then ToolDrill() end end })
+        add(head('You & your van', 'user-gear'))
+        add({ title = 'Tool kit', description = 'Fibre & telecom (ONT tester & repair kit, splicer, OTDR…) · copper · electrical (power fault finder & restoration kit, voltage detector, earths, MEWP…)', icon = 'toolbox', iconColor = BLUE, arrow = true, onSelect = function() if ToolKitMenu then ToolKitMenu() end end })
+        add({ title = 'Power repair tool', description = 'At broken power kit, a house or a street light: repairs it and its supply straight away (/powerrepair)', icon = 'screwdriver-wrench', iconColor = '#ffd60a', onSelect = function() if PowerRepairTool then PowerRepairTool() end end })
+        add({ title = 'Power fault finder', description = 'At anything electrical: traces the supply back to the power station, says why there’s no power and can fix it (/powercheck)', icon = 'bolt', iconColor = '#ffd60a', onSelect = function() if PowerFaultFinder then PowerFaultFinder() end end })
+        add({ title = 'Place a ladder', description = 'Telescopic 0.9 → 3.2 m, extension 6.9 m or 13 m · carry it, lean it, climb it (/' .. (Config.Cabling.LadderCommand or 'ladder') .. ')', icon = 'stairs', iconColor = BLUE, onSelect = function() if PlaceLadder then PlaceLadder() end end })
         add({ title = 'OPS Network van', description = 'Branded van with beacons (K) and stores at the back · use again to send it back (/' .. ((Config.Van or {}).Command or 'opsvan') .. ')', icon = 'truck', iconColor = BLUE, onSelect = function() if SpawnOpsVan then SpawnOpsVan() end end })
+        add({ title = 'Uniform', description = 'OPS Network uniform & hard hat · admins can restyle it (/uniform)', icon = 'user-tie', iconColor = BLUE, arrow = true, onSelect = function() if UniformMenu then UniformMenu() end end })
+        add(head('What’s around you', 'location-dot'))
         add({ title = 'Nearby equipment', description = 'Everything placed within 60 m · open one to move, remove, provision or brand it', icon = 'location-dot', iconColor = BLUE, arrow = true, onSelect = function() A.nearby() end })
-        add({ title = 'Nearby cables & trunking', description = 'CAT6, fibre, phone cable, power cable and trunking within 80 m', icon = 'list', arrow = true, onSelect = function() A.runs() end })
-        add({ title = 'Cable boxes & drums', description = 'See, teleport to or remove boxes and drums', icon = 'boxes-stacked', arrow = true, onSelect = function() A.boxes() end })
+        add({ title = 'Nearby cables & trunking', description = 'CAT6, fibre, phone, power cable and trunking within 80 m', icon = 'list', iconColor = BLUE, arrow = true, onSelect = function() A.runs() end })
+        add({ title = 'Cable boxes & drums', description = 'See, teleport to or remove boxes and drums', icon = 'boxes-stacked', iconColor = BLUE, arrow = true, onSelect = function() A.boxes() end })
+        add(head('Change what’s there', 'pen-ruler'))
         add({ title = 'Move cable, trunking or a box', description = 'Aim and click · reshape a route or carry a box', icon = 'up-down-left-right', iconColor = BLUE, onSelect = function() A.move(back) end })
-        add({ title = 'Cut a cable', description = 'Aim anywhere along it · or press C on a pole / ladder', icon = 'scissors', iconColor = RED, onSelect = function() A.cut(back) end })
-        add({ title = 'Remove cable, trunking or a box', description = 'Aim and hold · Z puts it back', icon = 'trash-can', iconColor = RED, onSelect = function() A.remove(back) end })
-        add({ title = 'Remove cable in an area (draw a box)', description = 'Click two corners · any size, every height · Tab picks what · cable in players’ hands inside it goes too', icon = 'vector-square', iconColor = RED, onSelect = function() A.removeArea(back) end })
-        add({ title = 'Remove all cable within a range…', description = 'Pick what (cable, fibre, power, trunking or everything) and how far', icon = 'circle-radiation', iconColor = RED, onSelect = function() A.removeRange(back) end })
-        add({ title = 'Place a ladder', description = 'Telescopic 0.9 → 3.2 m, extension 6.9 m or 13 m · carry it, lean it, climb it (also /' .. (Config.Cabling.LadderCommand or 'ladder') .. ')', icon = 'stairs', onSelect = function() if PlaceLadder then PlaceLadder() end end })
+        add({ title = 'Cut a cable', description = 'Aim anywhere along it · or press C up a pole / ladder', icon = 'scissors', iconColor = ORANGE, onSelect = function() A.cut(back) end })
+        add({ title = 'Remove…', description = 'Aim & hold · an area you draw · everything within a range', icon = 'trash-can', iconColor = RED, arrow = true, onSelect = function()
+            lib.registerContext({ id = 'towers_remove', title = 'Remove', options = {
+                { title = 'Remove cable, trunking or a box', description = 'Aim and hold · Z puts it back', icon = 'trash-can', iconColor = RED, onSelect = function() A.remove(function() SectionMenu('tools') end) end },
+                { title = 'Remove cable in an area (draw a box)', description = 'Click two corners · any size, every height · Tab picks what', icon = 'vector-square', iconColor = RED, onSelect = function() A.removeArea(function() SectionMenu('tools') end) end },
+                { title = 'Remove all cable within a range…', description = 'Pick what (cable, fibre, power, trunking or everything) and how far', icon = 'circle-radiation', iconColor = RED, onSelect = function() A.removeRange(function() SectionMenu('tools') end) end },
+            } })
+            lib.showContext('towers_remove')
+        end })
     elseif id == 'guides' then
         add({ title = 'Pole work guide — step by step', description = 'Fibre to a house · pole & ladder basics · power line — ticks off each step as you do it (F7)', icon = 'list-check', iconColor = GREEN,
             onSelect = function() if PoleGuideMenu then PoleGuideMenu() end end })
@@ -686,30 +864,58 @@ SectionMenu = function(id)
             else lib.notify({ type = 'error', description = 'The guide isn’t running — start opslabs-guide on the server' }) end
         end })
     end
-    local titles = { buildings = 'Buildings & sites', openline = 'OPS Openline · fibre & copper', streamfibre = 'StreamFibre · alt-net fibre', sapl = 'San Andreas Power & Light · electricity', tools = 'Tools', guides = 'Guides' }
+    local titles = { secure = 'OPS Secure · CCTV & security', track = 'OPS Track · vehicle trackers', fuel = 'OPS Fuel · fuel stations', solar = 'San Andreas Solar · solar PV', buildings = 'Buildings & sites', openline = 'OPS Openline · fibre & copper', usfiber = 'OPS America Fiber · US FTTH', streamfibre = 'StreamFibre · alt-net fibre', sapl = 'San Andreas Power & Light · electricity', tools = 'Tools', guides = 'Guides' }
     lib.registerContext({ id = 'towers_sec_' .. id, title = titles[id] or id, options = options })
     lib.showContext('towers_sec_' .. id)
 end
 
+local adminCache = nil
 MainMenu = function(field)
     if field ~= nil then fieldMode = field end
     local options = {}
     local function add(o) options[#options + 1] = o end
-    add({ title = 'Guides', description = 'Step-by-step pole work coach (F7) · animated how-it-works guide', icon = 'circle-question', iconColor = '#8e7dff', arrow = true, onSelect = function() SectionMenu('guides') end })
+    add(head('Networks', 'diagram-project'))
     if not fieldMode then
         local cells, wifis = 0, 0
         for _, t in pairs(towers) do if t.type == 'wifi' then wifis = wifis + 1 else cells = cells + 1 end end
         add({ title = 'OPS Mobile · cell & Wi-Fi', description = ('Mobile coverage · %d cell towers · %d Wi-Fi access points'):format(cells, wifis), icon = 'tower-cell', iconColor = BLUE, arrow = true, onSelect = function() mobileSection() end })
     end
-    for _, net in ipairs(Config.Cabling.Networks or {}) do
-        local what = net.id == 'sapl' and 'Electricity' or 'Networking'
-        add({ title = net.label, description = what .. ' · ' .. (net.sub or ''), icon = net.icon or 'network-wired', iconColor = net.color, arrow = true, onSelect = function() SectionMenu(net.id) end })
+    local subs = {
+        openline = 'Fibre & copper · poles, exchange, cabinets, pole kit, customer premises, cable, guild wires, internet service',
+        streamfibre = 'Alt-net fibre on shared poles',
+        usfiber = 'OPS America (US) · central office, outside plant (FDH, FDT, strand, handholes), drops, ONTs & activation',
+        sapl = 'Electricity · power poles & pole kit, supply & meters, fuse boards, sockets, lighting, EV, chargers, generators',
+        solar = 'Solar PV installs · roof & ground panels, hybrid inverters, home batteries, DC isolators',
+        secure = 'CCTV & security · IP / PTZ / ANPR / thermal cameras, NVR / DVR, monitors, doorbells, remote viewing',
+        track = 'Vehicle GPS trackers · install under the dash, LED checks, live tracking, theft alerts, immobiliser',
+        fuel = 'Fuel stations · underground tanks, pipework, dispensers, canopy, e-stop, tank gauge, tanker deliveries',
+    }
+    for _, n in ipairs(Config.Cabling.Networks or {}) do
+        if n.id ~= 'sites' then
+            add({ title = n.label, description = subs[n.id] or n.sub, icon = n.icon or 'network-wired', iconColor = n.color, arrow = true, onSelect = function() SectionMenu(n.id) end })
+        end
     end
-    add({ title = 'Network faults', description = FaultSummary and FaultSummary() or 'Open faults on the network · go there and repair them', icon = 'triangle-exclamation', iconColor = '#ff453a', arrow = true, onSelect = function() if FaultsMenu then FaultsMenu() end end })
-    add({ title = 'Guild wires', description = 'Steel support wire between poles · lash fibre to it · adjust hook heights', icon = 'grip-lines', iconColor = '#98989d', arrow = true, onSelect = function() if GuyMenu then GuyMenu() end end })
-    add({ title = 'Buildings & sites', description = 'Walk-in house, depot & exchange · fencing, gates & bollards · exchange power & cooling', icon = 'city', iconColor = '#5e5ce6', arrow = true, onSelect = function() SectionMenu('buildings') end })
+    add({ title = 'Network faults', description = FaultSummary and FaultSummary() or 'Open faults on every network · go there and repair them', icon = 'triangle-exclamation', iconColor = '#ff453a', arrow = true, onSelect = function() if FaultsMenu then FaultsMenu() end end })
+    add(head('On site', 'helmet-safety'))
+    add({ title = 'OPS Hub', description = 'The staff website for every service · lines, towers, internet, power & solar, gunshot detection', icon = 'arrow-up-right-from-square', iconColor = '#0a84ff', onSelect = function() OpenHub() end })
+    add({ title = 'Buildings & sites', description = 'Walk-in house, depot & exchange · underground · fencing & gates · office & IT', icon = 'city', iconColor = '#5e5ce6', arrow = true, onSelect = function() SectionMenu('buildings') end })
     add({ title = 'Road safety', description = 'Cones, barriers, works signs, traffic lights, cordon tape', icon = 'triangle-exclamation', iconColor = ORANGE, arrow = true, onSelect = function() SectionMenu('roadworks') end })
-    add({ title = 'Tools', description = 'Uniform · tool kit · van · nearby equipment & cables · move, cut, remove · ladders', icon = 'screwdriver-wrench', iconColor = GREY, arrow = true, onSelect = function() SectionMenu('tools') end })
+    add({ title = 'Tools', description = 'Tool kit · ladders · van · uniform · nearby kit & cable · move, cut, remove', icon = 'screwdriver-wrench', iconColor = GREY, arrow = true, onSelect = function() SectionMenu('tools') end })
+    add({ title = 'Guides', description = 'Step-by-step pole work coach (F7) · animated how-it-works guide', icon = 'circle-question', iconColor = '#8e7dff', arrow = true, onSelect = function() SectionMenu('guides') end })
+    add(head('Settings', 'gear'))
+    local style = MenuStyle and MenuStyle() or 'console'
+    add({ title = 'Menu style: ' .. (style == 'classic' and 'Classic (small menus)' or 'Console (full screen)'),
+        description = 'Switch to ' .. (style == 'classic' and 'the full-screen engineer console' or 'the small classic menus') .. ' · just for you · up a pole Z always opens the small quick menu',
+        icon = 'table-columns', iconColor = GREY, onSelect = function()
+            if SetMenuStyle then SetMenuStyle(style == 'classic' and 'console' or 'classic') end
+            if lib.hideContext then lib.hideContext(false) end
+            SetTimeout(150, function() MainMenu() end)
+        end })
+    if adminCache == nil then adminCache = lib.callback.await('opslabs-towers:isAdmin', false) == true end
+    if adminCache and OpenDangerZone then
+        add({ title = 'Danger zone', description = 'Mass delete parts of the power network or anything else · needs the danger zone username & password', icon = 'radiation', iconColor = '#ff453a',
+            onSelect = function() OpenDangerZone() end })
+    end
     lib.registerContext({ id = 'towers_main', title = fieldMode and 'Field engineering' or 'OPS Network · control', options = options, root = true })
     lib.showContext('towers_main')
 end
