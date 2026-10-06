@@ -29,9 +29,10 @@ const GameView = {
         const prog = gl.createProgram();
         gl.attachShader(prog, sh(gl.VERTEX_SHADER, `
             attribute vec2 p; varying vec2 vUv; varying vec2 vPos;
-            uniform vec4 uCrop; uniform float uMirror;
+            uniform vec4 uCrop; uniform float uMirror; uniform float uFlipY;
             void main() {
-                vec2 t = vec2(p.x * 0.5 + 0.5, 0.5 - p.y * 0.5);
+                // FiveM's game-view texture is already bottom-up like GL: only the preview canvas (uploaded top-down) needs flipping
+                vec2 t = vec2(p.x * 0.5 + 0.5, uFlipY > 0.5 ? 0.5 - p.y * 0.5 : 0.5 + p.y * 0.5);
                 if (uMirror > 0.5) t.x = 1.0 - t.x;
                 vUv = uCrop.xy + t * uCrop.zw;
                 vPos = p;
@@ -56,7 +57,7 @@ const GameView = {
         if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
         gl.useProgram(prog);
         this.prog = prog;
-        for (const n of ['uCrop', 'uMirror', 'uTex', 'uExp', 'uSat', 'uCon', 'uMono', 'uVig', 'uTint']) this.u[n] = gl.getUniformLocation(prog, n);
+        for (const n of ['uCrop', 'uMirror', 'uFlipY', 'uTex', 'uExp', 'uSat', 'uCon', 'uMono', 'uVig', 'uTint']) this.u[n] = gl.getUniformLocation(prog, n);
 
         const buf = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -105,6 +106,7 @@ const GameView = {
         const s = look.style;
         gl.uniform4fv(this.u.uCrop, this.crop(w / h));
         gl.uniform1f(this.u.uMirror, look.mirror ? 1 : 0);
+        gl.uniform1f(this.u.uFlipY, this.fake ? 1 : 0);
         gl.uniform1f(this.u.uExp, Math.pow(2, look.ev || 0));
         gl.uniform1f(this.u.uSat, s.sat);
         gl.uniform1f(this.u.uCon, s.con);
@@ -277,10 +279,25 @@ Apps.register({
 
         /* ---------------- render loop ---------------- */
         let raf = 0;
+        // a black feed (the game camera lost its picture): restart the game camera, up to a few times
+        const watch = { last: 0, dark: 0, restarts: 0 };
         const frame = () => {
             raf = 0;
             if (!S.running) return;
             drawPreview();
+            const now = performance.now();
+            if (IN_GAME && !S.recording && now - watch.last > 1000) {
+                watch.last = now;
+                const lit = GameView.brightness() > 0.004;          // read in the same task as the draw
+                watch.dark = lit ? 0 : watch.dark + 1;
+                $('.cam-err', root).textContent = watch.dark >= 2 ? I18N.t('No picture — restarting the camera…') : '';
+                if (watch.dark >= 3 && watch.restarts < 3) {
+                    watch.dark = 0;
+                    watch.restarts++;
+                    nui('cameraStop').then(() => startGame());
+                }
+                if (lit) watch.restarts = 0;
+            }
             raf = requestAnimationFrame(frame);
         };
         /** one viewfinder frame at the size it's shown on screen (or the recording size) */
@@ -441,6 +458,8 @@ Apps.register({
                 const { w, h } = outSize(S.aspect === '16:9' ? 1920 : 1600);
                 // render one full-size frame (the selfie preview is mirrored, the photo is not)
                 GameView.draw(w, h, { mirror: false, ev: S.ev, style: S.style, vignette: S.mode === 'portrait' });
+                // never save a black frame (the game camera had no picture)
+                if (IN_GAME && GameView.brightness() <= 0.004) { $('.cam-retina', root).classList.remove('on'); toast(I18N.t('No picture from the camera — try again'), 2200); return; }
                 const data = canvas.toDataURL('image/jpeg', 0.9);
                 $('.cam-retina', root).classList.remove('on');
                 Sound.play('shutter');

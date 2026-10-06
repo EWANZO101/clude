@@ -3,7 +3,7 @@
 -- needed). The phone stays open: drag on the viewfinder to aim, WASD to walk.
 --   rear  : held at eye height in front of the face, ped turns with it
 --   front : selfie at arm's length, looking back at the player
--- Zoom changes the FOV like the iPhone lenses, Portrait uses real depth of field.
+-- Zoom changes the FOV like real phone camera lenses, Portrait uses real depth of field.
 
 CameraActive = false
 
@@ -47,6 +47,20 @@ local function probe(pos, p, y, u, v)
     local _, hit, at = GetShapeTestResult(ray)
     if hit == 1 then return #(at - pos) end
     return 40.0
+end
+
+--- keep the lens on our side of walls / doors: a camera that ends up inside or behind geometry shows nothing (black)
+local clearCache = { at = 0, d = nil }
+local function clearDistance(from, dirv, want, ped)
+    local now = GetGameTimer()
+    if now - clearCache.at < 150 and clearCache.want == want then return clearCache.d end
+    local to = from + dirv * (want + 0.12)
+    local ray = StartExpensiveSynchronousShapeTestLosProbe(from.x, from.y, from.z, to.x, to.y, to.z, 1 + 16, ped, 4)
+    local _, hit, at = GetShapeTestResult(ray)
+    local d = want
+    if hit == 1 then d = math.max(0.22, #(at - from) - 0.12) end
+    clearCache = { at = now, d = d, want = want }
+    return d
 end
 
 local function stopCamera(silent)
@@ -101,14 +115,16 @@ local function startCamera(data)
             local pos, rp, ry
             if front then
                 local h = GetEntityHeading(ped) + sYaw
-                pos = head + dir(sPitch, h) * 0.62 + vector3(0.0, 0.0, 0.02)
+                local dv = dir(sPitch, h)
+                pos = head + dv * clearDistance(head, dv, 0.62, ped) + vector3(0.0, 0.0, 0.02)
                 rp, ry = lookRot(pos, head + vector3(0.0, 0.0, 0.01))
             else
                 if not inVeh then
                     SetEntityHeading(ped, yaw)
                     SetGameplayCamRelativeHeading(0.0)
                 end
-                pos = head + dir(0.0, yaw) * 0.42 + vector3(0.0, 0.0, 0.03) -- just past the phone in the hands
+                local dv = dir(0.0, yaw)
+                pos = head + dv * clearDistance(head, dv, 0.42, ped) + vector3(0.0, 0.0, 0.03) -- just past the phone in the hands
                 rp, ry = pitch, yaw
             end
 
@@ -116,7 +132,8 @@ local function startCamera(data)
             SetCamCoord(cam, pos.x, pos.y, pos.z)
             SetCamRot(cam, rp, 0.0, ry, 2)
             SetCamFov(cam, fov)
-            SetFocusPosAndVel(pos.x, pos.y, pos.z, 0.0, 0.0, 0.0)
+            -- indoors keep the player's interior / room streamed (a focus point outside it renders black)
+            if GetInteriorFromEntity(ped) ~= 0 then SetFocusEntity(ped) else SetFocusPosAndVel(pos.x, pos.y, pos.z, 0.0, 0.0, 0.0) end
 
             -- Portrait: real depth of field focused on the subject
             if portrait then
