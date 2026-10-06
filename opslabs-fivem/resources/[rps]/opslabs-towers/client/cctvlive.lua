@@ -59,11 +59,14 @@ local function txt(x, y, s, scale, r, g, b)
     BeginTextCommandDisplayText('STRING') AddTextComponentSubstringPlayerName(s) EndTextCommandDisplayText(x, y)
 end
 
-local function relay()
+--- auto = resuming by itself: a refusal (job / admin rights not loaded yet) doesn't switch auto-resume off
+local function relay(auto)
     local r = lib.callback.await('opslabs-towers:cctv:relay', false, true)
     if not r or r.error then
+        if auto then return false end
         SetResourceKvpInt('cctv_relay', 0)
-        return lib.notify({ type = 'error', description = (r and r.error) or 'Failed' })
+        lib.notify({ type = 'error', description = (r and r.error) or 'Failed' })
+        return false
     end
     relaying = true
     SetResourceKvpInt('cctv_relay', 1)      -- this game resumes relaying after restarts / reconnects until it's switched off
@@ -182,21 +185,29 @@ end
 
 RegisterCommand('cctvrelay', function()
     if relaying then relaying = false SetResourceKvpInt('cctv_relay', 0) return end
-    CreateThread(relay)
+    CreateThread(function() relay(false) end)
 end, false)
 
--- this game was relaying when the server / resource restarted or it disconnected: carry on by itself
+-- this game was relaying when the server / resource restarted or it disconnected: carry on by itself. Its job and
+-- admin rights may not be loaded yet, so keep trying (every 20 s) until the server says yes.
 CreateThread(function()
     if GetResourceKvpInt('cctv_relay') ~= 1 then return end
     while not NetworkIsPlayerActive(PlayerId()) do Wait(1000) end
-    Wait(15000)                             -- let the character load in first
-    if not relaying then relay() end
+    Wait(10000)
+    while GetResourceKvpInt('cctv_relay') == 1 and not relaying do
+        if relay(true) == false then Wait(20000) end
+    end
 end)
 
 -- an always-on relay account (Config.Cctv.RelayAccounts) joined: start by itself
 RegisterNetEvent('opslabs-towers:cctv:autorelay', function()
     if relaying then return end
-    CreateThread(relay)
+    SetResourceKvpInt('cctv_relay', 1)
+    CreateThread(function()
+        while GetResourceKvpInt('cctv_relay') == 1 and not relaying do
+            if relay(true) == false then Wait(20000) end
+        end
+    end)
 end)
 
 AddEventHandler('onResourceStop', function(res)
