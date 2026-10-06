@@ -406,7 +406,8 @@ lib.callback.register('opslabs-towers:cctv:site', function(src, fid)
 end)
 
 --- watch: the cameras of a system (local at the site, or remote from the phone)
-lib.callback.register('opslabs-towers:cctv:watch', function(src, rid, remote)
+--- `peek` = only looking at the system's details (phone Secure View list): no 'view' event, not counted as watching
+lib.callback.register('opslabs-towers:cctv:watch', function(src, rid, remote, peek)
     rid = tonumber(rid)
     local f = rid and Cabling.fixtures[rid]
     if not f or not REC[f.model] then return { error = 'No such system' } end
@@ -419,9 +420,11 @@ lib.callback.register('opslabs-towers:cctv:watch', function(src, rid, remote)
         if s.remote ~= 1 then return { error = 'Remote viewing is off for this system' } end
         if not r.internet then return { error = 'The recorder isn’t connected to the internet' } end
     end
-    event(rid, nil, 'view', ('%s watched%s'):format(GetPlayerName(src), remote and ' remotely' or ''))
     local v = systemView(rid, src)
-    if CctvLiveWatching then CctvLiveWatching(src, v.cams) end      -- server/cctvlive.lua: their view feeds OPS Hub
+    if not peek then
+        event(rid, nil, 'view', ('%s watched%s'):format(GetPlayerName(src), remote and ' remotely' or ''))
+        if CctvLiveWatching then CctvLiveWatching(src, v.cams) end  -- server/cctvlive.lua: their view feeds OPS Hub
+    end
     return v
 end)
 

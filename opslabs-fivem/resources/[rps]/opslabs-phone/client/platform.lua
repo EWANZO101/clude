@@ -82,7 +82,7 @@ RegisterNUICallback('cctvList', function(_, cb)
 end)
 RegisterNUICallback('cctvSystem', function(body, cb)
     if not towersUp() then return cb({ offline = true }) end
-    cb(lib.callback.await('opslabs-towers:cctv:watch', false, body and body.id, true) or {})
+    cb(lib.callback.await('opslabs-towers:cctv:watch', false, body and body.id, true, true) or {})   -- peek: details only
 end)
 RegisterNUICallback('cctvEvents', function(body, cb)
     if not towersUp() then return cb({}) end
