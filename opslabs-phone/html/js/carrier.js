@@ -87,6 +87,8 @@ const CARRIER_MSG = {
     limit_sms: ['Out of Texts', "You've used all the texts in your plan. Add more or upgrade."],
     limit_call: ['Out of Minutes', "You've used all the call minutes in your plan. Add more or upgrade."],
     limit_data: ['Out of Data', "You've used all your mobile data. Add a data boost or upgrade."],
+    no_ethernet: ['No Internet Connection', "This laptop isn't connected to the internet. Check the Ethernet cable in Network."],
+    laptop_call: ['Use Your Phone', "Laptops can't make phone calls. Use your phone."],
 };
 
 let carrierAlertAt = 0;
@@ -101,7 +103,8 @@ async function carrierBlocked(gate, reason) {
     else if (reason === 'not_installed') buttons.push({ label: I18N.t('Install eSIM'), value: 'settings', style: 'bold' });
     else if (reason === 'limit') buttons.push({ label: I18N.t('Add More'), value: 'store', style: 'bold' });
     else if (reason === 'no_internet') buttons.push({ label: I18N.t('Wi-Fi Settings'), value: 'wifi', style: 'bold' });
-    else if (reason !== 'suspended' && reason !== 'no_signal') buttons.push({ label: I18N.t('Get a Plan'), value: 'store', style: 'bold' });
+    else if (reason === 'no_ethernet') buttons.push({ label: I18N.t('Network'), value: 'wifi', style: 'bold' });
+    else if (reason !== 'suspended' && reason !== 'no_signal' && reason !== 'laptop_call') buttons.push({ label: I18N.t('Get a Plan'), value: 'store', style: 'bold' });
     const v = await UI.alert({ title: I18N.t(title), message: I18N.t(msg).replace('%s', CarrierState.name()), buttons });
     if (v === 'settings') Phone.openApp('settings', { page: reason === 'airplane' ? null : 'cellular' });
     if (v === 'wifi') Phone.openApp('settings', { page: 'wifi' });

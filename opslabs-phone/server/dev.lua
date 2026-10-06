@@ -214,6 +214,39 @@ end)
 -- players / numbers / broadcast / stats
 ---------------------------------------------------------------------------
 
+---------------------------------------------------------------------------
+-- world cleanup (opslabs-towers Config.WorldCleanup): hide GTA fuel pumps, poles, traffic lights
+---------------------------------------------------------------------------
+local TOWERS = 'opslabs-towers'
+local CLEAN_KEYS = { Enabled = 'boolean', GasStations = 'boolean', Poles = 'boolean', TrafficLights = 'boolean', Radius = 'number', Extra = 'table' }
+
+DevRegister('devWorldCleanup', function()
+    if GetResourceState(TOWERS) ~= 'started' then return { error = 'opslabs-towers is not running' } end
+    local W = exports[TOWERS]:GetSetting('WorldCleanup') or {}
+    local M = W.Models or {}
+    return { enabled = W.Enabled ~= false, gas = W.GasStations ~= false, poles = W.Poles ~= false, lights = W.TrafficLights ~= false, radius = W.Radius or 400,
+        extra = W.Extra or {}, counts = { gas = #(M.GasStations or {}), poles = #(M.Poles or {}), lights = #(M.TrafficLights or {}) } }
+end)
+
+DevRegister('devSetWorldCleanup', function(src, _, data)
+    if GetResourceState(TOWERS) ~= 'started' then return { error = 'opslabs-towers is not running' } end
+    local key = tostring(data.key or '')
+    if not CLEAN_KEYS[key] then return { error = 'Unknown setting' } end
+    local v = data.value
+    if CLEAN_KEYS[key] == 'number' then v = math.max(100, math.min(1500, tonumber(v) or 400)) end
+    if CLEAN_KEYS[key] == 'table' then
+        local list = {}
+        for _, m in ipairs(type(v) == 'table' and v or {}) do
+            m = tostring(m):lower():gsub('[^%w_]', '')
+            if m ~= '' and not m:find('^opslabs_') and #list < 100 then list[#list + 1] = m end
+        end
+        v = list
+    end
+    if CLEAN_KEYS[key] == 'boolean' then v = v == true end
+    exports[TOWERS]:SetSetting('WorldCleanup.' .. key, v, GetPlayerName(src) .. ' (dev app)')
+    return { ok = true }
+end)
+
 DevRegister('devStats', function()
     local online = 0
     for _ in pairs(Phones) do online = online + 1 end
@@ -275,6 +308,37 @@ DevRegister('devSetMailDomain', function(src, phone, data)
     SetKV('mail_domain', domain)
     print(('^3[opslabs-phone]^7 %s changed the mail domain %s -> %s%s'):format(phone.name, old, domain, data.migrate and ' (migrated)' or ''))
     return { ok = true, domain = domain }
+end)
+
+---------------------------------------------------------------------------
+-- OPS Hub connection (multi-server, opslabs-connect): status, pairing code, forget the paired token
+
+local function hubConnect()
+    return GetResourceState('opslabs-connect') == 'started' and exports['opslabs-connect'] or nil
+end
+
+DevRegister('devHubStatus', function()
+    local c = hubConnect()
+    if not c then return { installed = false } end
+    local s = c:status()
+    s.installed = true
+    return s
+end)
+
+DevRegister('devHubPair', function(src, phone)
+    local c = hubConnect()
+    if not c then return { error = 'Install and start the opslabs-connect resource first.' } end
+    local r = c:startPairing()
+    if not r.error then print(('^3[opslabs-phone]^7 %s (%s) requested an OPS Hub pairing code'):format(phone.name, phone.identifier)) end
+    return r
+end)
+
+DevRegister('devHubForget', function(src, phone)
+    local c = hubConnect()
+    if not c then return { error = 'opslabs-connect is not running.' } end
+    local r = c:forget()
+    if r.ok then print(('^3[opslabs-phone]^7 %s (%s) removed the paired OPS Hub token'):format(phone.name, phone.identifier)) end
+    return r
 end)
 
 DevRegister('devBroadcast', function(_, _, data)

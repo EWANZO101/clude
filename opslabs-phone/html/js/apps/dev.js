@@ -349,6 +349,46 @@ const DevPages = {
         });
     },
 
+    // hide GTA's fuel pumps, power / phone poles and traffic lights (opslabs-towers Config.WorldCleanup) — live, no restart
+    worldclean(nav) {
+        nav.push({
+            title: 'World Cleanup',
+            grouped: true,
+            backLabel: 'Developer',
+            render(c) {
+                c.innerHTML = '<div class="spinner"></div>';
+                const set = async (key, value) => {
+                    const r = await devRpc('devSetWorldCleanup', { key, value });
+                    if (!r || r.error) return UI.alert({ title: "Couldn't save", message: (r && r.error) || '' });
+                    UI.toast('Saved — applies in game within 15 seconds', 'fa-solid fa-broom');
+                };
+                devRpc('devWorldCleanup').then((d) => {
+                    if (!d || d.error) { c.innerHTML = `<div class="group-footer" style="margin:20px 16px">${esc((d && d.error) || 'Unavailable')}</div>`; return; }
+                    const row = (k, label, sub, on) => `<div class="row"><div class="grow">${label}<div class="sub" style="white-space:normal">${sub}</div></div>${UI.switchHtml(on, `data-k="${k}"`)}</div>`;
+                    c.innerHTML = `
+                        <div class="group" style="margin-top:12px">${row('Enabled', 'World cleanup', 'Master switch', d.enabled)}</div>
+                        <div class="group-header">Hide GTA's own</div>
+                        <div class="group">
+                            ${row('GasStations', 'Fuel pumps', `${d.counts.gas} GTA pump models · your OPS Fuel stations stay`, d.gas)}
+                            ${row('Poles', 'Power & phone poles', `${d.counts.poles} GTA pole, wall-bracket and pylon models · your OPS poles stay`, d.poles)}
+                            ${row('TrafficLights', 'Traffic lights', `${d.counts.lights} GTA traffic-light and crossing models`, d.lights)}
+                        </div>
+                        <div class="group">
+                            <div class="row"><span class="lbl">Radius</span><input class="field" type="number" min="100" max="1500" data-f="Radius" value="${esc(String(d.radius))}"><span class="value">m</span></div>
+                            <div class="row"><span class="lbl">Also hide</span><input class="field" data-f="Extra" spellcheck="false" placeholder="prop_elecbox_01a, prop_streetlight_01" value="${esc((d.extra || []).join(', '))}"></div>
+                        </div>
+                        <div class="group-footer">Only GTA models are hidden — OPS kit never is. Changes reach every player within 15 seconds; turning a group off brings the props back. Also on OPS Hub → Settings → World cleanup, and in opslabs-towers/config.lua (Config.WorldCleanup).</div>`;
+                    c.addEventListener('change', (e) => {
+                        const k = e.target.dataset.k, f = e.target.dataset.f;
+                        if (k) return set(k, e.target.checked);
+                        if (f === 'Radius') return set('Radius', +e.target.value);
+                        if (f === 'Extra') return set('Extra', e.target.value.split(/[\s,]+/).filter(Boolean));
+                    });
+                });
+            },
+        });
+    },
+
     // Ops-Networks / opslabs-towers settings (editors live in apps/opsnet.js)
     netfaults(nav) {
         if (typeof OpsNetEditors === 'undefined') return UI.alert({ title: 'Unavailable', message: 'The Ops-Networks app is not loaded.' });
@@ -363,6 +403,71 @@ const DevPages = {
     render(nav) {
         if (typeof OpsNetEditors === 'undefined') return UI.alert({ title: 'Unavailable', message: 'The Ops-Networks app is not loaded.' });
         OpsNetEditors.render(nav, { call: devRpc, load: 'devOpsRender', save: 'devOpsSaveRender', backLabel: 'Developer' });
+    },
+
+    // multi-server OPS: connect this server to the OPS Hub (/new-hub) with a pairing code — no file editing
+    opshub(nav) {
+        nav.push({
+            title: 'OPS Hub Connection',
+            grouped: true,
+            backLabel: 'Developer',
+            render(c, ctx) {
+                let timer = null;
+                const draw = async () => {
+                    const s = await devRpc('devHubStatus');
+                    if (!s) return;
+                    if (!s.installed) {
+                        c.innerHTML = `<div class="group-footer" style="margin:20px 16px">The <b data-no-i18n>opslabs-connect</b> resource isn't running. Download it from your server's page on the OPS Hub (<span data-no-i18n>/new-hub</span>), start it before opslabs-towers and opslabs-phone, then come back here.</div>`;
+                        return;
+                    }
+                    const st = !s.hosted ? ['Not connected', '#8e8e93', 'OPS uses this server\'s own database.']
+                        : s.connected && s.dbReady ? ['Connected', '#34c759', `OPS data is in ${esc((s.server && s.server.name) || 'your server')}'s hosted database.`]
+                        : s.connected ? ['Setting up', '#ff9500', 'Connected — the hosted database is still being set up.']
+                        : ['Can\'t connect', '#ff3b30', esc(s.lastError || 'The OPS Hub is not reachable.')];
+                    const left = s.pairing ? Math.max(0, s.pairing.expires - Math.floor(Date.now() / 1000)) : 0;
+                    c.innerHTML = `
+                        <div class="group" style="margin-top:12px">
+                            <div class="row has-icon"><span class="ri" style="background:${st[1]}"><i class="fa-solid fa-tower-broadcast"></i></span><div class="grow">${st[0]}<div class="sub" style="white-space:normal">${st[2]}</div></div></div>
+                            ${s.server ? `<div class="row"><span class="lbl">Server</span><span class="value" data-no-i18n>${esc(s.server.name)} · #${esc(String(s.server.id))}</span></div>` : ''}
+                            ${s.hub ? `<div class="row tap" data-act="copyhub"><span class="lbl">Hub</span><span class="value" data-no-i18n>${esc(s.hub)}</span><i class="fa-solid fa-copy muted"></i></div>` : ''}
+                            ${s.tokenPrefix ? `<div class="row"><span class="lbl">Token</span><span class="value" data-no-i18n>${esc(s.tokenPrefix)}… (${s.source === 'convar' ? 'server.cfg' : 'paired'})</span></div>` : ''}
+                            ${!s.publicUrl && s.hosted ? `<div class="row"><div class="grow sub" style="white-space:normal;color:#ff9500">The Hub can't reach this server's REST API yet — set <span data-no-i18n>ops_public_url</span> in server.cfg if the server isn't listed on cfx.re.</div></div>` : ''}
+                        </div>
+                        ${s.pairing ? `
+                        <div class="group-header">Pairing code</div>
+                        <div class="group"><div class="row" style="justify-content:center;padding:18px 0"><b data-no-i18n style="font:800 34px ui-monospace,monospace;letter-spacing:.14em">${esc(s.pairing.code)}</b></div>
+                            <div class="row"><div class="grow sub" style="white-space:normal">Enter it on <b data-no-i18n>${esc(s.api.replace(/^https?:\/\//, ''))}/new-hub/pair</b> within ${Math.ceil(left / 60)} min. This page updates when it's done.</div></div></div>` : ''}
+                        ${s.restartNeeded ? `<div class="group-footer" style="color:#ff9500">Paired. Restart the server to move OPS to the hosted database — then run <span data-no-i18n>opsconnect upload</span> in the server console once to copy your existing OPS data.</div>` : ''}
+                        <div class="group" style="margin-top:12px">
+                            ${s.source !== 'convar' ? `<div class="row tap has-icon" data-act="pair"><span class="ri" style="background:#007aff"><i class="fa-solid fa-link"></i></span><div class="grow">${s.pairing ? 'New pairing code' : (s.hosted ? 'Pair again' : 'Get a pairing code')}</div></div>` : ''}
+                            ${s.source === 'devapp' ? `<div class="row tap has-icon" data-act="forget"><span class="ri" style="background:#ff3b30"><i class="fa-solid fa-link-slash"></i></span><div class="grow">Disconnect this server</div></div>` : ''}
+                        </div>
+                        <div class="group-footer">Create a free account and a server on the OPS Hub (<span data-no-i18n>/new-hub</span>) first. A token in server.cfg (<span data-no-i18n>ops_server_token</span>) works too and takes priority.</div>`;
+                    clearTimeout(timer);
+                    if (s.pairing || (s.hosted && !(s.connected && s.dbReady))) timer = setTimeout(() => { if (c.isConnected) draw(); }, 4000);
+                };
+                c.innerHTML = '<div class="spinner"></div>';
+                draw();
+                c.addEventListener('click', async (e) => {
+                    const a = e.target.closest('[data-act]');
+                    if (!a) return;
+                    if (a.dataset.act === 'copyhub') return copyText(a.querySelector('.value').textContent);
+                    if (a.dataset.act === 'pair') {
+                        const r = await devRpc('devHubPair');
+                        if (!r) return;
+                        if (r.error) return UI.alert({ title: "Couldn't get a code", message: r.error });
+                        draw();
+                    }
+                    if (a.dataset.act === 'forget') {
+                        if (!(await UI.confirm('Disconnect?', 'The paired token is removed. After a restart OPS uses this server\'s own database again.', 'Disconnect', true))) return;
+                        const r = await devRpc('devHubForget');
+                        if (r && r.error) return UI.alert({ title: "Couldn't disconnect", message: r.error });
+                        draw();
+                    }
+                });
+                ctx.opts.onLeave = () => clearTimeout(timer);
+            },
+        });
     },
 
     broadcast(nav) {
@@ -484,6 +589,7 @@ const DevApp = {
                     <div class="group">
                         <div class="row tap has-icon" data-p="locations"><span class="ri" style="background:#ff3b30"><i class="fa-solid fa-map-location-dot"></i></span><div class="grow">Map Locations</div><span class="value" data-count="places"></span><i class="fa-solid fa-chevron-right chev"></i></div>
                         <div class="row tap has-icon" data-p="coords"><span class="ri" style="background:#007aff"><i class="fa-solid fa-crosshairs"></i></span><div class="grow">Coordinates</div><i class="fa-solid fa-chevron-right chev"></i></div>
+                        <div class="row tap has-icon" data-p="worldclean"><span class="ri" style="background:#ff9500"><i class="fa-solid fa-broom"></i></span><div class="grow">World Cleanup</div><i class="fa-solid fa-chevron-right chev"></i></div>
                         <div class="row tap has-icon" data-act="tpwaypoint"><span class="ri" style="background:#5856d6"><i class="fa-solid fa-person-walking-arrow-right"></i></span><div class="grow">Teleport to Waypoint</div></div>
                     </div>
                     <div class="group-header">Phone</div>
@@ -498,6 +604,7 @@ const DevApp = {
                         <div class="row tap has-icon" data-p="netfaults"><span class="ri" style="background:#ff3b30"><i class="fa-solid fa-triangle-exclamation"></i></span><div class="grow">Network Faults</div><i class="fa-solid fa-chevron-right chev"></i></div>
                         <div class="row tap has-icon" data-p="engpay"><span class="ri" style="background:#34c759"><i class="fa-solid fa-sack-dollar"></i></span><div class="grow">Engineer Pay</div><i class="fa-solid fa-chevron-right chev"></i></div>
                         <div class="row tap has-icon" data-p="render"><span class="ri" style="background:#5856d6"><i class="fa-solid fa-eye"></i></span><div class="grow">Render Distance</div><i class="fa-solid fa-chevron-right chev"></i></div>
+                        <div class="row tap has-icon" data-p="opshub"><span class="ri" style="background:#5b3df5"><i class="fa-solid fa-tower-broadcast"></i></span><div class="grow">OPS Hub Connection</div><i class="fa-solid fa-chevron-right chev"></i></div>
                     </div>
                     <div class="group-header">Debug</div>
                     <div class="group">

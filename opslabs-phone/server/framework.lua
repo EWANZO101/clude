@@ -133,6 +133,23 @@ function FW.ItemCount(src, item)
     return inv and (inv.count or inv.amount or 0) or 0
 end
 
+--- give / take an item (rps_lib's inventory when it has one, else the ESX inventory)
+local function invCall(fn, esxFn, src, item, count)
+    local L = rps()
+    if L then
+        local okName, name = pcall(L.GetInventoryName, L)
+        if okName and name and name ~= 'none' then
+            local ok, r = pcall(L[fn], L, src, item, count or 1)
+            if ok then return r ~= false end
+        end
+    end
+    local x = esx() and esx().GetPlayerFromId(src)
+    if x and x[esxFn] then x[esxFn](item, count or 1) return true end
+    return false
+end
+function FW.AddItem(src, item, count) return invCall('AddItem', 'addInventoryItem', src, item, count) end
+function FW.RemoveItem(src, item, count) return invCall('RemoveItem', 'removeInventoryItem', src, item, count) end
+
 --- run handler(src) when a player uses this item
 function FW.UsableItem(item, handler)
     local L = rps()

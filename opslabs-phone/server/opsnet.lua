@@ -1094,3 +1094,7 @@ DevOnly('devOpsPay', function() return payView() end)
 DevOnly('devOpsSavePay', function(_, phone, data) return savePaySettings(data, 'Developer/' .. phone.name) end)
 DevOnly('devOpsRender', function() return renderView() end)
 DevOnly('devOpsSaveRender', function(_, phone, data) return saveRender(data, 'Developer/' .. phone.name) end)
+
+-- the OPS platform (server/platform.lua) shares these accounts and sessions
+function OpsnetUser(src) return currentUser(src) end
+function OpsnetHasPerm(u, perm) return hasPerm(u, perm) end

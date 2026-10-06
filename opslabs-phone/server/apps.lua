@@ -71,8 +71,9 @@ function SendMail(toEmailOrSource, senderName, subject, body, senderEmail)
 
     Emit('mail.sent', { id = id, from = senderEmail, from_name = senderName, to = to, subject = subject })
 
+    local owner = WebMailOwner and WebMailOwner(to)       -- an address on a player's own domain (server/web.lua)
     for src, phone in pairs(Phones) do
-        if phone.email == to then
+        if phone.email == to or (owner and phone.number == owner) then
             Push(src, 'mail', { id = id })
             Notify(src, { app = 'mail', title = Clean(senderName, 100), body = Clean(subject, 160), icon = 'fa-envelope' })
         end
@@ -80,27 +81,64 @@ function SendMail(toEmailOrSource, senderName, subject, body, senderEmail)
     return id
 end
 
+--- the phone's own address plus any mailboxes on its owner's domains: WHERE fragment + values
+local function mailWhere(phone, col)
+    local list, catch = { phone.email }, {}
+    if WebMailAddresses then list, catch = WebMailAddresses(phone) end
+    local parts, vals = { col .. ' IN (' .. string.rep('?', #list, ', ') .. ')' }, {}
+    for _, a in ipairs(list) do vals[#vals + 1] = a end
+    for _, dom in ipairs(catch) do parts[#parts + 1] = col .. ' LIKE ?' vals[#vals + 1] = '%@' .. dom end
+    return '(' .. table.concat(parts, ' OR ') .. ')', vals, list
+end
+
 Register('getMail', function(_, phone, data)
     if data.box == 'sent' then
-        return MySQL.query.await('SELECT id, sender, sender_name, receiver, subject, body, 1 AS is_read, created_at FROM opslabs_phone_mail WHERE sender = ? ORDER BY id DESC LIMIT 100', { phone.email })
+        local w, vals = mailWhere(phone, 'sender')
+        return MySQL.query.await('SELECT id, sender, sender_name, receiver, subject, body, 1 AS is_read, created_at FROM opslabs_phone_mail WHERE ' .. w .. ' ORDER BY id DESC LIMIT 100', vals)
     end
-    return MySQL.query.await('SELECT id, sender, sender_name, receiver, subject, body, is_read, created_at FROM opslabs_phone_mail WHERE receiver = ? AND deleted = 0 ORDER BY id DESC LIMIT 100', { phone.email })
+    local w, vals = mailWhere(phone, 'receiver')
+    return MySQL.query.await('SELECT id, sender, sender_name, receiver, subject, body, is_read, created_at FROM opslabs_phone_mail WHERE ' .. w .. ' AND deleted = 0 ORDER BY id DESC LIMIT 100', vals)
 end)
 
 Register('readMail', function(_, phone, data)
-    MySQL.update('UPDATE opslabs_phone_mail SET is_read = 1 WHERE id = ? AND receiver = ?', { tonumber(data.id), phone.email })
+    local w, vals = mailWhere(phone, 'receiver')
+    table.insert(vals, 1, tonumber(data.id))
+    MySQL.update('UPDATE opslabs_phone_mail SET is_read = 1 WHERE id = ? AND ' .. w, vals)
     return true
 end)
 
 Register('deleteMail', function(_, phone, data)
-    MySQL.update.await('UPDATE opslabs_phone_mail SET deleted = 1 WHERE id = ? AND receiver = ?', { tonumber(data.id), phone.email })
+    local w, vals = mailWhere(phone, 'receiver')
+    table.insert(vals, 1, tonumber(data.id))
+    MySQL.update.await('UPDATE opslabs_phone_mail SET deleted = 1 WHERE id = ? AND ' .. w, vals)
     return true
+end)
+
+--- addresses this phone can send from (its own + mailboxes on its domains)
+Register('mailFrom', function(_, phone)
+    local _, _, list = mailWhere(phone, 'sender')
+    return list
 end)
 
 Register('sendMail', function(_, phone, data)
     local to = Clean(data.to, 100):lower()
-    if not to:match('^[%w%._%-]+@[%w%._%-]+$') then return false end
-    return SendMail(to, phone.name, data.subject, data.body, phone.email) and true
+    if not to:match('^[%w%._%-+]+@[%w%._%-]+$') then return false end
+    local from = phone.email
+    if data.from and data.from ~= phone.email then
+        local _, _, list = mailWhere(phone, 'sender')
+        for _, a in ipairs(list) do if a == Clean(data.from, 100):lower() then from = a end end
+    end
+    if WebDeliverable then
+        local ok, why = WebDeliverable(to)
+        if not ok then
+            -- it leaves the outbox like real mail, then bounces back
+            MySQL.insert.await('INSERT INTO opslabs_phone_mail (sender, sender_name, receiver, subject, body, deleted) VALUES (?, ?, ?, ?, ?, 1)',
+                { from, Clean(phone.name, 100), to, Clean(data.subject, 160), tostring(data.body or ''):sub(1, 10000) })
+            WebBounce(phone.email, to, data.subject, why)
+            return true
+        end
+    end
+    return SendMail(to, phone.name, data.subject, data.body, from) and true
 end)
 
 ---------------------------------------------------------------------------

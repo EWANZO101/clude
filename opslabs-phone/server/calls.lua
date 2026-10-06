@@ -69,7 +69,7 @@ Register('startCall', function(src, phone, data)
     }
 
     local target = GetSourceByNumber(number)
-    local reachable = target and not inCall[target] and HasPhoneItem(target)
+    local reachable = target and not inCall[target] and HasPhoneItem(target) and not (PhoneDead and PhoneDead(target))
         and not (Phones[target].settings.airplane) and not IsBlocked(number, phone.number)
         and (not Carrier or Carrier.HasService(Phones[target].identifier))
         and not (Carrier and Carrier.Network(target) and (Carrier.Network(target).cell or 0) <= 0)

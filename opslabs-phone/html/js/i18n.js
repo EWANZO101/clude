@@ -625,9 +625,12 @@ const I18N = {
     observer: null,
 
     t(s) {
-        if (!this.map) return s;
-        return this.map.get(s) || s;
+        const v = this.map ? (this.map.get(s) || s) : s;
+        return typeof Brand !== 'undefined' ? Brand.rw(v) : v;
     },
+
+    /** re-run the text pass (new language or new branding) */
+    refresh() { this.translateTree($('#screen')); const lt = $('#laptop'); if (lt) this.translateTree(lt); this.watch(); },
 
     weather(label) {
         const tr = WEATHER_T[label];
@@ -652,24 +655,26 @@ const I18N = {
     translateText(node) {
         const orig = node.__en ?? node.nodeValue;
         const trimmed = orig.trim();
-        if (!trimmed || trimmed.length > 60) return;
-        const tr = this.map ? this.map.get(trimmed) : null;
-        if (tr) {
+        if (!trimmed) return;
+        const tr = this.map && trimmed.length <= 60 ? this.map.get(trimmed) : null;
+        let next = tr ? orig.replace(trimmed, tr) : orig;
+        if (typeof Brand !== 'undefined' && Brand.active) next = Brand.rw(next);   // this server's names
+        if (next !== orig) {
             if (node.__en === undefined) node.__en = orig;
-            const next = orig.replace(trimmed, tr);
             if (node.nodeValue !== next) node.nodeValue = next;
         } else if (node.__en !== undefined && node.nodeValue !== node.__en) {
-            node.nodeValue = node.__en; // back to English
+            node.nodeValue = node.__en; // back to English / the built-in names
         }
     },
 
     translateAttrs(elm) {
-        for (const attr of ['placeholder', 'title']) {
+        for (const attr of ['placeholder', 'title', 'aria-label']) {
             if (!elm.hasAttribute || !elm.hasAttribute(attr)) continue;
             const key = '__en_' + attr;
             const orig = elm[key] ?? elm.getAttribute(attr);
-            const tr = this.map ? this.map.get(orig.trim()) : null;
-            if (tr) { elm[key] = orig; elm.setAttribute(attr, tr); }
+            let next = (this.map ? this.map.get(orig.trim()) : null) || orig;
+            if (typeof Brand !== 'undefined' && Brand.active) next = Brand.rw(next);
+            if (next !== orig) { elm[key] = orig; elm.setAttribute(attr, next); }
             else if (elm[key] !== undefined) elm.setAttribute(attr, elm[key]);
         }
     },
@@ -682,7 +687,7 @@ const I18N = {
         }
         if (root.nodeType !== 1 || root.closest(NO_I18N)) return;
         this.translateAttrs(root);
-        $$('[placeholder], [title]', root).forEach((e) => this.translateAttrs(e));
+        $$('[placeholder], [title], [aria-label]', root).forEach((e) => this.translateAttrs(e));
         const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
             acceptNode: (n) => (n.parentElement && n.parentElement.closest(NO_I18N) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
         });
@@ -692,7 +697,7 @@ const I18N = {
 
     watch() {
         if (this.observer) { this.observer.disconnect(); this.observer = null; }
-        if (!this.map) return; // English: zero cost
+        if (!this.map && !(typeof Brand !== 'undefined' && Brand.active)) return; // English + default branding: zero cost
         this.observer = new MutationObserver((muts) => {
             for (const m of muts) {
                 if (m.type === 'characterData') this.translateTree(m.target);
@@ -700,6 +705,8 @@ const I18N = {
             }
         });
         this.observer.observe($('#screen'), { childList: true, subtree: true, characterData: true });
+        const lt = $('#laptop');       // the laptop desktop (js/laptop.js) is translated the same way
+        if (lt) { this.observer.observe(lt, { childList: true, subtree: true, characterData: true }); this.translateTree(lt); }
     },
 };
 

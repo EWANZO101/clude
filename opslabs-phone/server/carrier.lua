@@ -158,6 +158,8 @@ CreateThread(function()
     end
     loadPlans()
     ready = true
+    -- plans made on OPS Hub (sub-company stores) appear within a minute
+    while true do Wait(60000) pcall(loadPlans) end
 end)
 
 ---------------------------------------------------------------------------
@@ -225,6 +227,26 @@ local function inService(line)
     return line and line.status == 'active' and line.installed and (line.period_end or 0) > os.time()
 end
 
+--- the company a plan belongs to: a sub-company selling on the network (opslabs_phone_carrier_plans.company_id,
+--- server/market.lua) — its name is what the customer's phone shows — or nil for the carrier itself
+local function providerOf(plan)
+    local id = plan and tonumber(plan.company_id)
+    local c = id and Ops and Ops.byId(id)
+    return c and { id = c.id, code = c.code, name = c.name, color = c.color, logo = c.logo } or nil
+end
+Carrier.ProviderOf = providerOf
+--- the network name a customer sees (status bar, texts, receipts)
+local function brandOf(identifier, plan)
+    local line = not plan and getLine(identifier)
+    local p = providerOf(plan or (line and plans[line.plan_id]))
+    return p and p.name or settings().Name
+end
+--- plan money for a sub-company's plan goes to that company (the carrier's own plans keep Config.Carrier.Society)
+local function payProvider(plan, amount, label)
+    local p = providerOf(plan)
+    if p and (tonumber(amount) or 0) > 0 and OpsCompanyMove then OpsCompanyMove(p.id, 'income', amount, label, 'carrier_plan', plan.id, nil, 'billing') end
+end
+
 --- What the phone UI shows (also returned by the API)
 function Carrier.View(identifier)
     local s = settings()
@@ -232,6 +254,8 @@ function Carrier.View(identifier)
     local view = { enabled = s.Enabled ~= false, name = s.Name, storeUrl = s.StoreUrl, number = s.Number, credit = getCredit(identifier) }
     if not line then return view end
     local plan = plans[line.plan_id]
+    local prov = providerOf(plan)
+    if prov then view.name, view.provider = prov.name, prov end
     view.line = {
         status = line.status, installed = line.installed, service = inService(line),
         plan = plan and { code = plan.code, name = plan.name, color = plan.color, price = plan.price, period_days = plan.period_days } or nil,
@@ -261,7 +285,7 @@ AddEventHandler('playerDropped', function() pushAt[source] = nil end)
 --- text from the carrier to a player's phone
 local function carrierText(identifier, message)
     local number = MySQL.scalar.await('SELECT phone_number FROM opslabs_phone_users WHERE identifier = ?', { identifier })
-    if number then SendMessage(settings().Number, number, message, nil, settings().Name) end
+    if number then SendMessage(settings().Number, number, message, nil, brandOf(identifier)) end
 end
 Carrier.Text = carrierText
 
@@ -409,8 +433,15 @@ function Carrier.Check(phone, kind, data, src)
     local target = data and NormalizeNumber(data.number or '') or ''
     -- 911 & co always go through, even with no signal and no plan
     if kind == 'call' and isService(target) then return true end
+    -- at a laptop its Ethernet port is the only connection (the phone itself keeps its signal for incoming calls)
+    local cov = (Laptop and Laptop.Coverage(src)) or Carrier.Network(src)
+    -- laptop: texts and apps go over Ethernet (no plan needed), there are no voice calls
+    if cov and cov.laptop then
+        if kind == 'call' then return false, 'laptop_call' end
+        if cov.wifi then return true end
+        return false, 'no_ethernet'
+    end
     if phone.settings and phone.settings.airplane then return false, 'airplane' end
-    local cov = Carrier.Network(src)
     if cov then
         if kind == 'data' then
             if cov.wifi then return true end            -- on Wi-Fi: apps work, no plan or signal needed
@@ -461,11 +492,10 @@ CarrierGates.carrierRadioMinute = 'data' -- the music apps report each minute of
 --- called by Register() after a gated action succeeded
 function Carrier.AfterAction(phone, name, kind, data, result, src)
     if not result or (type(result) == 'table' and result.error) then return end
-    -- Wi-Fi doesn't use the plan's data
-    if kind == 'data' then
-        local cov = Carrier.Network(src)
-        if cov and cov.wifi then return end
-    end
+    -- Wi-Fi doesn't use the plan's data; a laptop on Ethernet uses nothing from the plan
+    local cov = (Laptop and Laptop.Coverage(src)) or Carrier.Network(src)
+    if cov and cov.laptop then return end
+    if kind == 'data' and cov and cov.wifi then return end
     if kind == 'sms' then
         if not isEmergency(NormalizeNumber(data.number or '')) then Carrier.Record(phone.identifier, 'sms', 1) end
     elseif kind == 'data' then
@@ -482,9 +512,11 @@ end
 function Carrier.Subscribe(identifier, plan, opts)
     opts = opts or {}
     if not plan or plan.kind ~= 'plan' then return nil, 'invalid_plan' end
+    if plan.company_id and Market and not Market.canSell(tonumber(plan.company_id), 'mobile_access') then return nil, 'provider_unavailable' end
     if opts.charge ~= false then
-        local ok, err; ok, err, paidWith = charge(identifier, plan.price, ('%s: %s plan'):format(settings().Name, plan.name))
+        local ok, err; ok, err, paidWith = charge(identifier, plan.price, ('%s: %s plan'):format(brandOf(identifier, plan), plan.name))
         if not ok then return nil, err end
+        payProvider(plan, plan.price, 'Mobile plan · ' .. plan.name)
     end
     local line = getLine(identifier)
     local now = os.time()
@@ -509,9 +541,9 @@ function Carrier.Subscribe(identifier, plan, opts)
     if not opts.quiet then
         local src = GetSourceByIdentifier(identifier)
         if status == 'pending' then
-            if src then Notify(src, { app = 'settings', title = settings().Name, icon = 'fa-sim-card', body = 'Your eSIM is ready. Tap to install it.', data = { page = 'cellular' } }) end
+            if src then Notify(src, { app = 'settings', title = brandOf(identifier, plan), icon = 'fa-sim-card', body = 'Your eSIM is ready. Tap to install it.', data = { page = 'cellular' } }) end
             carrierText(identifier, ('Thanks for joining %s! Your %s eSIM is ready: open Settings > Mobile Service on your phone to install it. Activation code: %s')
-                :format(settings().Name, plan.name, line.activation_code))
+                :format(brandOf(identifier, plan), plan.name, line.activation_code))
         else
             carrierText(identifier, ('You are now on the %s plan%s. It renews %s.'):format(plan.name,
                 plan.price > 0 and (' ($%d / %d days)'):format(plan.price, plan.period_days) or '', autoRenew and 'automatically' or 'manually'))
@@ -545,8 +577,9 @@ function Carrier.AddOn(identifier, addon, opts)
     if not addon or addon.kind ~= 'addon' then return nil, 'invalid_addon' end
     if not inService(line) then return nil, 'no_active_line' end
     if opts.charge ~= false then
-        local ok, err; ok, err, paidWith = charge(identifier, addon.price, ('%s: %s'):format(settings().Name, addon.name))
+        local ok, err; ok, err, paidWith = charge(identifier, addon.price, ('%s: %s'):format(brandOf(identifier), addon.name))
         if not ok then return nil, err end
+        payProvider(plans[line.plan_id], addon.price, 'Mobile extra · ' .. addon.name)
     end
     MySQL.update.await('UPDATE opslabs_phone_carrier_lines SET extra_sms = extra_sms + ?, extra_minutes = extra_minutes + ?, extra_data_mb = extra_data_mb + ? WHERE id = ?',
         { math.max(0, addon.sms), math.max(0, addon.minutes), math.max(0, addon.data_mb), line.id })
@@ -567,8 +600,9 @@ function Carrier.Renew(identifier, opts)
     if not plan then return nil, 'no_line' end
     if not plan.active then return nil, 'plan_retired' end
     if opts.charge ~= false then
-        local ok, err; ok, err, paidWith = charge(identifier, plan.price, ('%s: %s renewal'):format(settings().Name, plan.name))
+        local ok, err; ok, err, paidWith = charge(identifier, plan.price, ('%s: %s renewal'):format(brandOf(identifier, plan), plan.name))
         if not ok then return nil, err end
+        payProvider(plan, plan.price, 'Mobile plan renewal · ' .. plan.name)
     end
     local now = os.time()
     MySQL.update.await([[UPDATE opslabs_phone_carrier_lines SET status = ?, period_start = ?, period_end = ?, sms_used = 0, seconds_used = 0,
@@ -719,6 +753,7 @@ function planOut(p)
         id = p.id, code = p.code, kind = p.kind, name = p.name, description = p.description, price = p.price,
         period_days = p.period_days, sms = p.sms, minutes = p.minutes, data_mb = p.data_mb, color = p.color,
         featured = p.featured, public = p.public, active = p.active, sort = p.sort,
+        company_id = p.company_id, provider = (providerOf(p) or {}).name,
     }
 end
 

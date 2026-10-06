@@ -73,6 +73,9 @@ function HasPhoneItem(src)
     for item, color in pairs(Config.Items) do
         if FW.ItemCount(src, item) > 0 then return true, color end
     end
+    -- the phone is lying on a wireless charger (server/dock.lua): still yours, still rings
+    local docked = DockedPhoneOf and DockedPhoneOf(src)
+    if docked then return true, Config.Items[docked.item] or 'black' end
     return false
 end
 
@@ -155,6 +158,8 @@ function Register(name, handler)
         local phone = GetPhone(src)
         if not phone then return nil end
         data = type(data) == 'table' and data or {}
+        -- at a laptop with no working Ethernet nothing online goes through
+        if Laptop and Laptop.Offline(src, name) then return { __carrier = 'data', reason = 'no_ethernet' } end
         -- mobile plan: texts / calls / online apps need service and allowance
         local gate = Carrier and CarrierGates and CarrierGates[name]
         if gate then
@@ -217,12 +222,14 @@ end
 function BuildInit(src, phone)
     local _, color = HasPhoneItem(src)
     local unreadMessages = MySQL.scalar.await('SELECT COUNT(*) FROM opslabs_phone_messages WHERE receiver = ? AND is_read = 0', { phone.number })
-    local unreadMail = MySQL.scalar.await('SELECT COUNT(*) FROM opslabs_phone_mail WHERE receiver = ? AND is_read = 0 AND deleted = 0', { phone.email })
+    local addrs = WebMailAddresses and WebMailAddresses(phone) or { phone.email }
+    local unreadMail = MySQL.scalar.await('SELECT COUNT(*) FROM opslabs_phone_mail WHERE receiver IN (' .. string.rep('?', #addrs, ', ') .. ') AND is_read = 0 AND deleted = 0', addrs)
     local missedCalls = MySQL.scalar.await([[SELECT COUNT(*) FROM opslabs_phone_calls
         WHERE callee = ? AND status = 'missed' AND created_at > NOW() - INTERVAL 1 DAY]], { phone.number })
 
     if Carrier then Carrier.EnsureStarter(phone.identifier) end
     return {
+        brand = GlobalState['ops:brand'],
         carrier = Carrier and Carrier.View(phone.identifier) or nil,
         number = phone.number,
         email = phone.email,
@@ -259,6 +266,9 @@ local SETTING_TYPES = {
     language = 'string', region = 'string', units = 'string', clock24 = 'boolean',
     unitTemp = 'string', unitDistance = 'string', unitSpeed = 'string', unitWeight = 'string',
     clockFormat = 'string', dateFormat = 'string', weekStart = 'string', mapStyle = 'string', apps = 'table', homeOrder = 'table',
+    traffic = 'table',      -- OPS Traffic alert choices: { alerts = bool, accident = bool, closure = bool, … }
+    bluetooth = 'boolean',
+    buds = 'table',         -- OPS Buds: { paired, name, mode, earDetect, convAware } (server/buds.lua CleanBuds)
 }
 
 --- installed-apps map from the Store: only { appId = true/false }
@@ -283,6 +293,12 @@ function ApplySettings(phone, data)
                 if type(id) == 'string' and id:match('^[%w_]+$') and #list < 64 then list[#list + 1] = id end
             end
             v = list
+        end
+        if k == 'buds' and type(v) == 'table' then v = CleanBuds and CleanBuds(v) or nil end
+        if k == 'traffic' and type(v) == 'table' then
+            local t = {}
+            for key, on in pairs(v) do if type(key) == 'string' and key:match('^%a+$') and #key <= 12 and type(on) == 'boolean' then t[key] = on end end
+            v = t
         end
         if SETTING_TYPES[k] and type(v) == SETTING_TYPES[k] then
             if type(v) == 'string' then v = Clean(v, 600) end

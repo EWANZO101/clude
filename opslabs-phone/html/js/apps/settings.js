@@ -439,10 +439,14 @@ const SettingsPages = {
         nav.push({
             title: 'Battery', grouped: true, backLabel: 'Settings',
             render(c) {
-                const lvl = parseInt($('#sb-battery').style.width, 10) || 80;
+                const b = Phone.battery || { level: 100 };
+                const lvl = b.level;
+                const state = b.charging === 'full' ? 'Charged' : b.charging === 'wireless' ? 'Charging wirelessly' : b.charging === 'powerbank' ? 'Charging from a power bank' : b.charging ? 'Charging' : 'On battery';
                 c.innerHTML = `
                     <div class="group" style="margin-top:12px"><div class="row"><div class="grow">Battery Percentage</div><span class="value">${lvl}%</span></div>
+                    <div class="row"><div class="grow">Status</div><span class="value">${esc(I18N.t(state))}</span></div>
                     <div class="row"><div class="grow">Battery Health</div><span class="value">100%</span></div></div>
+                    <div class="group-footer">${esc(I18N.t('Charge at a phone charging cable, a wireless pad or a USB socket, or with a power bank. At 0% the phone switches off until it is charged.'))}</div>
                     <div class="group" style="padding:16px">
                         <div class="muted" style="font-size:13px;margin-bottom:8px">BATTERY LEVEL · LAST 24 HOURS</div>
                         <div class="bat-chart">${Array.from({ length: 24 }, (_, i) => `<i style="height:${30 + ((i * 37) % 60)}%"></i>`).join('')}</div>
@@ -530,10 +534,11 @@ Apps.register({
                             ${avatar(p.name, null, 'lg')}
                             <div class="grow"><div class="title" style="font-size:20px">${esc(p.name || '')}</div><div class="sub" style="font-size:13px">${esc(p.number || '')} · ${esc(p.email || '')}</div></div>
                             <i class="fa-solid fa-chevron-right chev"></i></div></div>
+                        ${typeof Buds !== 'undefined' ? Buds.settingsRow() : ''}
                         <div class="group">
                             ${sRow('airplane', 'Airplane Mode', { toggle: !!s.airplane })}
                             ${sRow('wifi', 'Wi-Fi', { value: s.airplane ? 'Off' : (typeof Network !== 'undefined' && Network.active ? (Network.wifi ? Network.wifi.ssid : 'Not Connected') : 'LS-Public') })}
-                            ${sRow('bluetooth', 'Bluetooth', { value: 'On', act: 'none' })}
+                            ${sRow('bluetooth', 'Bluetooth', { value: s.bluetooth === false ? 'Off' : (typeof Buds !== 'undefined' && Buds.connected ? Buds.name() : 'On') })}
                             ${sRow('cellular', 'Mobile Service', { value: s.airplane ? 'Airplane Mode' : (typeof CarrierState !== 'undefined' && CarrierState.enabled() ? (CarrierState.service() ? CarrierState.name() : 'No Service') : '') })}
                         </div>
                         <div class="group">

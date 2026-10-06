@@ -97,6 +97,67 @@ The **OPS OS Store** (home label "OPS Store") lets players remove and reinstall 
 - Removed apps disappear from the home screen and send no notifications. Opening one from an old link goes to its Store page.
 - Choices are saved per phone. Every app starts out installed.
 
+### Battery
+
+The battery is real (`Config.Battery`). It drains slowly in your pocket, faster with the phone open and fastest in a call, and it **only
+charges on a live charger**: stand beside a phone **charging cable**, a **wireless pad / stand** or a **USB socket** (opslabs-towers mains kit,
+plugged into a live socket) — the status bar shows a bolt — or use a **power bank** item.
+
+- At **0 %** the phone switches off: it won't open, notifications don't pop up and it can't be called. It turns back on as soon as it charges.
+- Low battery warnings at 20 %, 10 % and 5 %. **Settings → Battery** shows the level and whether it's charging.
+- **Power banks:** using a `powerbank` adds 50 % over about 12 minutes and leaves a `powerbank_empty`; use the empty one beside a live charger
+  to recharge it (60 s). Both items are added to the ESX `items` table automatically; give them out however you like (shops, admin).
+- The level is kept per character and survives reconnects.
+
+### Wireless charger dock
+
+Walk up to a **wireless charging pad or stand** (opslabs-towers, `/towers` → SAPL → Plug-in devices & chargers) and press **E**
+(`Config.Dock`). The phone leaves your inventory and **lies on the charger** as a prop everyone can see: screen-up on the flat pad, leaning
+back on the stand. The lock screen lights up with "Charging" while the charger has power and goes dark when it doesn't.
+
+- It **charges wirelessly** there wherever you go, and it's still your phone: it rings, gets messages and shows notifications.
+- **Use it on the charger:** press F1 while you're within `UseDistance` (2.2 m). No phone in your hand. Walk away and the screen closes.
+- **E** beside it picks it back up into your inventory. With `OwnerOnly = false` anyone can take it.
+- Calls on a docked phone are on speaker. With OPS Buds in, you can answer it from across the room (see below).
+- `Auto = true` puts the phone down by itself when you stand still beside a free charger.
+- Docked phones are kept in a resource KVP: they stay on the charger across disconnects and restarts until the owner picks them up.
+- Needs the `opslabs_phone_dock` / `_on` models from opslabs-props (otherwise `Config.Prop` is used) and opslabs-towers' `WirelessChargerNear`
+  / `GetFixture` exports.
+
+### OPS Buds
+
+`ops_buds` is a pair of wireless earbuds in a charging case (`Config.Buds`, image `html/img/opsbuds_case.png`). They work like AirPods:
+
+- **Use the item** to open the case. The first time, a **Connect** card slides up on the phone. After that, opening the case shows the
+  battery card and the buds go in your ears. The Dynamic Island shows "OPS Buds" with a battery ring when they connect. **Use it again** to
+  take them out. Other players see a bud in each ear.
+- **Batteries:** left, right and case. Buds last about 6 hours of listening, recharge in the case (≈ 15 min), and the case charges beside any
+  live charger (cable, pad or USB socket). Low-battery notifications at 20 % and 10 %.
+- **Noise Control** (Settings → Bluetooth → OPS Buds, a Control Center tile, or hold the buds key): **Noise Cancellation** mutes the world
+  around you (a GTA audio scene, voice chat isn't affected), **Adaptive** does the same but lets gunfire and explosions through, and
+  **Transparency** / **Off** leave everything as it is.
+- **Conversation Awareness:** your music drops while you talk on voice chat.
+- **Automatic Ear Detection:** taking them out pauses your music, and putting them back in within a minute carries on. Losing the connection
+  (out of range of a docked phone, flat battery, Bluetooth off) also pauses it.
+- **Hands-free calls:** with the buds connected you don't hold the phone to your ear.
+- **Press control** (`Page Up`, rebind under Settings → Key Bindings → FiveM → "OPS Buds"): press to play / pause or answer / hang up, press twice
+  for the next track, three times for the previous one, hold for Noise Control.
+- **Range:** if your phone is on a charger, the buds stay connected within `Range` (12 m).
+- Settings → Bluetooth lists them under My Devices, with rename and Forget This Device. Batteries and settings are saved per character.
+- The item is added to the ESX `items` table automatically; for ox_inventory / qb add the entries from `items/`.
+
+### Laptop (OPS OS desktop)
+
+Engineers place an **OPS laptop** (`/cable` → OPS Openline → Telecom equipment → Customer premises · inside → *Laptop*) on a desk, and anyone can walk up and press **E** to use it. OPS OS opens as a desktop with a menu bar, a dock and windows. The same apps run in the windows, with the same accounts as your phone: Ops-Networks, OPS Mobile, Mail, Messages, Contacts, Notes, Calendar, Wallet, Chirp, Maps, Photos, Garage, Services, Weather and Calculator. There's also a **Network** panel.
+
+- **Battery:** the laptop runs on its battery (shown in the menu bar) unless a live **laptop charger** sits beside it. A flat laptop won't start.
+- **Ethernet only:** the laptop has no Wi-Fi or mobile signal. It's online when a CAT6 cable, terminated at both ends, runs from its port to a router / switch / AP that has an uplink (cabled through to a gateway), or straight into an ONT with an active service. Unplug or cut the cable and every window is covered with *Cable unplugged* / *No internet* until it comes back. The server refuses online requests from an offline laptop as well.
+- **No mobile plan used:** texts and apps on the laptop don't use plan allowance or data. Laptops can't make voice calls, and your phone still rings while you're at one.
+- **Network panel:** link speed, what it's plugged into, gateway, IP / router / MAC, the broadband provider and plan behind it, a speed test, and a plain-language reason when it's offline.
+- **Windows:** drag by the title bar, resize from the corner, double-click the title bar or press the green button to maximise, yellow minimises, red closes. Links between apps (e.g. *Message* on a contact) open another window, and notifications show as banners at the top right.
+- **Esc** or the power button leaves the laptop (you also leave it by walking away). Your windows are still there next time on the same laptop.
+- Browser preview: `Mock.laptop()` in the console opens it; `Mock.unplug()` / `Mock.plugIn()` change the cable.
+
 ### Developer app
 
 The **Developer** app is on every phone (second home-screen page), but it only works after signing in. The login is set in **`config_server.lua`**:
@@ -129,6 +190,46 @@ Expensive live blur is limited to small, static elements, and animations only mo
 The Camera app works like the real one: the live view is shown inside the phone (read straight from the game view, no `screenshot-basic` needed), with Video / Photo / Portrait, .5× 1× 2× 5× lenses (scroll to zoom), selfie camera, flash Auto/On/Off, timer, 4:3 / 1:1 / 16:9, exposure, grid and photographic styles. Drag the viewfinder to aim, tap to focus (Portrait uses real depth of field), hold for AE/AF lock. Take a picture with the shutter, Space/Enter, the volume buttons or Camera Control. It also opens from the lock screen (swipe left) without unlocking.
 
 Photos (jpg) and videos (webm, up to `Config.Camera.MaxVideoSeconds`) are uploaded to this server, stored in `opslabs-phone/media/` and served from `ServerConfig.OAuth.PublicUrl` (or the cfx.re address), so that address must be reachable over https. Deleting one in Photos also deletes the file once nothing else (a message, a Chirp post, a wallpaper) still uses it. The resource serves the files itself; behind nginx, allow large uploads with `client_max_body_size 64m;` on the phone's location.
+
+### Browser — the in-game internet (`server/web.lua`, `html/js/apps/browser.js`)
+
+A real web for the city, on the phone (mobile data) and on laptops (Ethernet). Tables: `sql/ops_web.sql` (created on start); prices, endings and plans: `sql/ops_catalog.json` → `web`. Staff manage everything on OPS Hub → **Web & Domains**.
+
+- **OPS Search** (`ops.sa`) indexes every published site (title, description, keywords and page text) plus the OPS sites.
+- **OPS Domains** (`opsdomains.sa`): search and register `.ls .sa .biz .shop .club` (`.gov.sa` is for government / emergency services, registered by staff), renew, auto-renew, WHOIS privacy, transfer lock + transfer codes, a full DNS editor (A, AAAA, CNAME, MX, TXT) and WHOIS lookup.
+- **OPS Web** (`opsweb.sa`): hosting plans (Starter / Business / Pro), a block-based site builder (header, text, image, features, menu/price list, gallery, contact form, opening hours, links, quote, call to action, divider; up to 8 pages, colours, light/dark, fonts), one-click “connect domain” (sets the DNS), free SSL with hosting, mailboxes on your domain, and paid services (*build my site*, *set up SSL*, *set up email*) that become OPS Web jobs, checked automatically when the employee completes them.
+- **How a page loads** — DNS first: unknown names get `DNS_PROBE_FINISHED_NXDOMAIN`; expired / suspended domains show a parked page. `A 198.18.10.80` is OPS Web hosting. Pointing at your own **OPS Network static IP** self-hosts the site: the line must be up (else `ERR_CONNECTION_TIMED_OUT`) and the router must forward port 80 and/or 443 (else `ERR_CONNECTION_REFUSED`); with no site on that IP you get the server’s “It works!” page.
+- **HTTPS** needs a valid OPS Trust CA certificate for the name (DV / OV / EV / wildcard). Without one the site is “Not secure”; typing `https://` to a site with a missing, expired or revoked certificate shows the full-page warning (with *Proceed anyway*).
+- **Email** — a mailbox (`info@yourname.ls`) delivers into a phone’s Mail app and can be picked as the sender; mail to an address that doesn’t exist, a domain without an MX record or an expired domain bounces back from the Mail Delivery Subsystem.
+- **Billing** every `periodDays`: domains renew from the owner’s bank (warning mail first); unpaid → expired (site and mail stop) → released after `graceDays`. Hosting unpaid → overdue → suspended. Free certificates renew with the hosting; others expire.
+- Sites are data only — the builder’s blocks are sanitised on the server and rendered with escaping, so no player HTML or script ever runs in anyone’s phone. Images must be `https://` links.
+- Uses data (`Config.Carrier.DataCost`: `webBrowse`, `webSearch`, …).
+
+### OPS Cloud (`server/cloud.lua`, console at `opscloud.sa`)
+
+Virtual servers (Nano → X-Large, images: OPS Web server, Ubuntu, Debian, Rocky, Windows Server) with a public IP from `198.18.20.0/24`, a firewall (open ports), snapshots / restore, resize, start / stop / reboot and a console log, billed every period. They run on OPS Data hardware (opslabs-towers `server/datacentre.lua`): a VM is only up while a healthy host in its region has room for it. Host a website on a VM: create the site on opsweb.sa → *host it on* the VM's IP (or *Move to another server…* for an existing one), open 80 / 443 — the browser then serves it from the VM. *Set up my server* and *Migrate my website* are paid OPS Cloud jobs, checked automatically. `sql/ops_cloud.sql`; plans in `sql/ops_catalog.json` → `cloud`.
+
+### OPS business layer (`server/business.lua` · OPS Hub → each company's tabs)
+
+Quotes, contracts, stock, assets, certifications, fleet and support for every OPS company. Tables: `sql/ops_business.sql`; stock lines, parts per job, suppliers, certification exams, SLA tiers and contract types: `sql/ops_catalog.json` → `business`.
+- **Quotes → work orders:** staff build a quote on OPS Hub from job types, stock items, contracts and free lines, then send it. The customer accepts it in OPS Work → *Quotes, contracts & warranties* or in the website's customer portal. Accepted quotes become jobs (with the price agreed), and contract lines become contracts.
+- **Contracts & SLAs:** billed every period. A job for a customer gets a due time: the contract's response hours, otherwise the customer's SLA tier, and 4 h for emergencies. Overdue work raises SLA alerts, and SLA performance shows on the dashboards. *Support* contracts cover repairs; *Managed* covers everything.
+- **Stock & purchasing:** completed jobs take their parts from the company's stock. Low stock raises alerts. Purchase orders to suppliers are paid from the company account and arrive after the supplier's lead time.
+- **Assets & warranty:** kit fitted on a job is registered to the customer with a serial and a warranty. Repairs to kit still under warranty are free.
+- **Certifications:** installation job types need a certification. Staff take the exam in OPS Work → *Training*, and managers can grant or revoke on OPS Hub.
+- **Fleet & tools:** company vans (spawned at the nearest road from OPS Work → *My van & tools*, mileage logged) and tools (issue, condition, calibration).
+- **Support tickets:** from OPS Work → *Support* or the customer portal. Staff reply, close or book a job from the ticket on OPS Hub, and the customer is notified in game.
+- **Alerts:** low stock, SLA, unpaid contracts, new tickets, certifications expiring and vans due a service. Managers get them on the phone, and they're listed on OPS Hub → *Alerts* and the *Operations centre*.
+
+### Training, job assistant, health & safety, live settings (`server/training.lua`, `server/settings.lua`, `server/admin.lua`)
+
+See `../OPS-SETUP.md` for the overview. In short:
+- **Content:** `sql/ops_guides.json` holds 21 job families covering every job type: equipment, tools & PPE, steps (each with an animation key), hazards & controls, mistakes & consequences, a safety quiz and an exam. It also holds 12 system explainers for the OPS Hub classroom.
+- **OPS Academy (learn anywhere):** the `academy` app (`html/js/apps/academy.js`, phone + laptop dock), the Browser site `opsacademy.sa` (`web.lua` internal page, `browser.js` `BrInternal.academy`) and OPS Hub → Classroom all read `sql/ops_guides.json`. `opsAcademy` / `opsLesson` / `opsSystem` / `opsSlides` need no login; quizzes, exams and the practical do. Progress is shared everywhere.
+- **Certification:** exam ≥ `Work.PassMark`, plus the practical at a `Work.TrainingCentres` spot when `Work.RequirePractical` is on. Each family's safety module is needed before its jobs (`Work.RequireSafetyTraining`). Records: `ops_training`, `ops_member_certs`.
+- **Job assistant:** OPS Work → the job → *Guide me*, or `/jobhelp`. Risk assessment (`Work.SafetyBriefing`) is needed before work and before completing; skipped controls can cause incidents (`Work.SafetyIncidents`, logged in `ops_incidents`). On-site work runs the family's steps with their animations (`Work.Anims`).
+- **Items mode:** `Work.Mode = 'items'`, with depots, `ModelItems` and the definitions in `items/`.
+- **Live settings:** `ops_settings` overrides any `Config` value (OPS Hub → Settings, OPS Work → Admin settings) within 15 s. Clients get them via `GlobalState['opscfg:<resource>']`. Defaults and comments are published to `ops_config_dump`. Job types are edited in `ops_job_overrides` (live within 30 s). Catalogue sections (`catalog:<section>`) are written into `sql/ops_catalog.json` on start, so they apply after a restart; the original is kept as `sql/ops_catalog.default.json`.
 
 ### Preview the UI in a browser
 
@@ -228,3 +329,10 @@ Add URLs to `ApiConfig.Webhooks` in `server/api_config.lua`. Every event is POST
 Each request has an `X-OpsLabs-Event` header, plus `X-OpsLabs-Secret` when you set `set opslabs_phone_webhook_secret "..."` in `server.cfg`.
 
 Events: `user.created`, `message.sent`, `call.ended`, `mail.sent`, `chirp.posted`, `bank.transfer`, `service.request`.
+
+## OPS Traffic and Sparks
+
+**OPS Traffic** (`Config.Traffic`): live incidents across the state — accidents, road closures, fires, shots fired (OPS Sentinel sensors), active police pursuits (10-80), hazards and planned work (street works sites, planned network outages, crews on site). Players report what they see; the same thing reported nearby adds a confirmation; "still there" / "it's gone" votes keep or clear reports. Hard crashes and nearby fires are reported automatically. Police (`PoliceJobs`) start and end 10-80s — the lead unit's position updates live — and close roads (also `ClosureJobs`). Phones within `AlertRadius` get a notification (players choose which kinds in the app). Other resources can add incidents with `exports['opslabs-phone']:ReportTrafficIncident(kind, x, y, z, detail, street)`.
+
+**Sparks** (`Config.Dating`): dating — a profile per character (18+, photos from the library, bio, job, area, interests, who you want to see), a swipe deck, a match when the like is mutual, private chat, unmatch and report (reports are printed to the server console and stored in `opslabs_phone_dating_reports`).
+

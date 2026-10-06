@@ -132,8 +132,7 @@ local function page(res, status, title, message, ok)
 h1{font-size:24px;margin:0 0 10px}p{color:#b8b8c0;line-height:1.5;margin:0}</style></head>
 <body><div class="c"><div class="i">%s</div><h1>%s</h1><p>%s</p></div></body></html>]]):format(
         title, ok and '#34c759' or '#ff3b30', ok and '&#10003;' or '!', title, message)
-    res.writeHead(status, { ['Content-Type'] = 'text/html; charset=utf-8', ['Cache-Control'] = 'no-store' })
-    res.send(html)
+    if pcall(res.writeHead, status, { ['Content-Type'] = 'text/html; charset=utf-8', ['Cache-Control'] = 'no-store' }) then pcall(res.send, html) end
 end
 
 local function htmlEscape(s) return (tostring(s or ''):gsub('[<>&"]', { ['<'] = '&lt;', ['>'] = '&gt;', ['&'] = '&amp;', ['"'] = '&quot;' })) end

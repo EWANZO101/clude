@@ -8,10 +8,15 @@ function MailCompose(to = '', subject = '', onSent) {
             body.innerHTML = `
                 <div class="group" style="margin:0;border-radius:0;background:transparent">
                     <div class="row" style="background:transparent"><span class="muted">To:</span><input class="field" data-f="to" value="${esc(to)}"></div>
-                    <div class="row" style="background:transparent"><span class="muted">Cc/Bcc, From:</span><span class="muted" style="font-size:15px">${esc(Phone.profile?.email || '')}</span></div>
+                    <div class="row" style="background:transparent"><span class="muted">Cc/Bcc, From:</span><span class="muted mail-from" style="font-size:15px">${esc(Phone.profile?.email || '')}</span></div>
                     <div class="row" style="background:transparent"><span class="muted">Subject:</span><input class="field" data-f="subject" value="${esc(subject)}"></div>
                 </div>
                 <textarea class="mail-body" data-f="body" placeholder=""></textarea>`;
+            // your own domains' mailboxes (OPS Web) can be picked as the sender
+            rpc('mailFrom').then((list) => {
+                if (!Array.isArray(list) || list.length < 2) return;
+                $('.mail-from', body).innerHTML = `<select class="field" data-f="from" style="font-size:15px">${list.map((a) => `<option>${esc(a)}</option>`).join('')}</select>`;
+            });
             const check = () => api.setRightEnabled(/@/.test($('[data-f=to]', body).value));
             body.addEventListener('input', check);
             check();
@@ -21,6 +26,7 @@ function MailCompose(to = '', subject = '', onSent) {
             const b = api.body;
             const ok = await rpc('sendMail', {
                 to: $('[data-f=to]', b).value.trim(),
+                from: $('[data-f=from]', b) ? $('[data-f=from]', b).value : undefined,
                 subject: $('[data-f=subject]', b).value.trim() || '(No Subject)',
                 body: $('[data-f=body]', b).value,
             });

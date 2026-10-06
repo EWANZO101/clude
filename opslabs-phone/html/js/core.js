@@ -42,7 +42,7 @@ const Apps = {
    --------------------------------------------------------------------- */
 
 const SYSTEM_APPS = new Set(['phone', 'messages', 'contacts', 'mail', 'camera', 'photos', 'settings', 'services', 'dev', 'store']);
-const HOME_ORDER = ['wallet', 'chirp', 'maps', 'weather', 'clock', 'photos', 'notes', 'calendar', 'services', 'garage', 'contacts', 'settings', 'store', 'calculator', 'dev'];
+const HOME_ORDER = ['wallet', 'chirp', 'browser', 'maps', 'weather', 'clock', 'photos', 'notes', 'calendar', 'services', 'garage', 'contacts', 'settings', 'store', 'calculator', 'dev'];
 const HOME_DOCK = ['phone', 'messages', 'mail', 'camera'];
 
 function isInstalled(id) {
@@ -118,7 +118,7 @@ function setState(state) {
 }
 
 Phone.peek = (ms = 4500) => {
-    if (Phone.state === 'open') return;
+    if (Phone.state === 'open' || battery <= 0) return;
     setState('peek');
     Phone._peekHold = ms === 0;
     if (ms > 0) Phone._peekTimer = setTimeout(() => { if (Phone.state === 'peek') setState('hidden'); }, ms);
@@ -198,12 +198,17 @@ function tick(force) {
 }
 
 /* battery slowly drains while the phone is used, recharges when closed */
-let battery = 78 + Math.floor(Math.random() * 20);
+/* battery: the real level comes from the game (client/battery.lua) — drains with use, charges on a charger */
+let battery = 100;
+Phone.battery = { level: 100, charging: null };
 function batteryTick() {
-    if (Phone.state === 'open') battery = Math.max(5, battery - 1); else battery = Math.min(100, battery + 1);
     const b = $('#sb-battery');
-    b.style.width = battery + '%';
-    b.classList.toggle('low', battery <= 20);
+    if (!b) return;
+    b.style.width = Math.max(3, battery) + '%';
+    b.classList.toggle('low', battery <= 20 && !Phone.battery.charging);
+    const wrap = b.parentElement;
+    wrap.classList.toggle('charging', !!Phone.battery.charging);
+    wrap.title = battery + '%';
 }
 
 /* ---------------------------------------------------------------------
@@ -949,12 +954,13 @@ function renderControlCenter() {
             <button class="cc-tile ${s.silent ? 'on' : ''}" data-cc="silent"><i class="fa-solid ${s.silent ? 'fa-bell-slash' : 'fa-bell'}"></i></button>
             <button class="cc-tile ${s.rotationLock ? 'on' : ''}" data-cc="rotation"><i class="fa-solid fa-arrows-rotate"></i></button>
             <div class="cc-slider" data-slider="brightness"><div class="fill" style="height:${(s.brightness ?? 1) * 100}%"></div><i class="fa-solid fa-sun"></i></div>
-            <div class="cc-slider" data-slider="volume"><div class="fill" style="height:${(s.volume ?? 0.7) * 100}%"></div><i class="fa-solid fa-volume-high"></i></div>
+            <div class="cc-slider" data-slider="volume"><div class="fill" style="height:${(s.volume ?? 0.7) * 100}%"></div><i class="fa-solid ${typeof Buds !== 'undefined' && Buds.connected ? 'fa-headphones' : 'fa-volume-high'}"></i></div>
             <button class="cc-tile cc-wide ${s.dnd ? 'on' : ''}" data-cc="dnd"><i class="fa-solid fa-moon"></i>${s.dnd ? 'Do Not Disturb' : 'Focus'}</button>
             <button class="cc-tile ${Phone.flashlight ? 'on' : ''}" data-cc="flashlight"><svg viewBox="0 0 24 24"><path d="M8 2h8a1 1 0 0 1 1 1v3.2a3 3 0 0 1-.6 1.8L15 10v11a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V10L7.6 8A3 3 0 0 1 7 6.2V3a1 1 0 0 1 1-1zm0 2.5h8M12 13v2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             <button class="cc-tile" data-cc="timer"><i class="fa-solid fa-stopwatch"></i></button>
             <button class="cc-tile" data-cc="calculator"><i class="fa-solid fa-calculator"></i></button>
             <button class="cc-tile" data-cc="camera"><i class="fa-solid fa-camera"></i></button>
+            ${typeof Buds !== 'undefined' ? Buds.ccTile() : ''}
         </div>`;
     if (typeof CarrierState !== 'undefined') CarrierState.apply();
 }
@@ -991,7 +997,8 @@ function setupOverlays() {
         switch (t.dataset.cc) {
             case 'airplane': Phone.saveSetting('airplane', !s.airplane); break;
             case 'cellular': case 'wifi': Phone.saveSetting('airplane', !s.airplane); break;
-            case 'bluetooth': Phone.settings.bluetooth = s.bluetooth === false; break;
+            case 'bluetooth': Phone.saveSetting('bluetooth', s.bluetooth === false); nui('budsSet', { bluetooth: Phone.settings.bluetooth }); break;
+            case 'budsmode': if (typeof Buds !== 'undefined') Buds.cycleMode(); break;
             case 'silent': toggleSilent(); break;
             case 'rotation': Phone.settings.rotationLock = !s.rotationLock; break;
             case 'dnd': Phone.saveSetting('dnd', !s.dnd); break;
@@ -1064,7 +1071,7 @@ function changeVolume(delta) {
     if (typeof Music !== 'undefined') Music.setVolume(v);
     const hud = $('#volume-hud');
     $('.volume-fill', hud).style.height = v * 100 + '%';
-    $('i', hud).className = 'fa-solid ' + (v === 0 ? 'fa-volume-xmark' : v < 0.5 ? 'fa-volume-low' : 'fa-volume-high');
+    $('i', hud).className = 'fa-solid ' + (typeof Buds !== 'undefined' && Buds.connected ? 'fa-headphones' : v === 0 ? 'fa-volume-xmark' : v < 0.5 ? 'fa-volume-low' : 'fa-volume-high');
     hud.classList.add('show');
     clearTimeout(volTimer);
     volTimer = setTimeout(() => { hud.classList.remove('show'); Phone.saveSetting('volume', v); }, 1200);
@@ -1166,6 +1173,12 @@ const handlers = {
         Phone.emit('reset');
     },
     notify(n) { Phone.notify(n); },
+    battery(d) {
+        if (!d) return;
+        battery = Math.max(0, Math.min(100, d.level | 0));
+        Phone.battery = { level: battery, charging: d.charging || null };
+        batteryTick();
+    },
     placesUpdated(list) { Phone.config.places = list || []; },
     wallpapersUpdated(list) { Phone.config.wallpapers = list || []; applySettings(); },
     cameraFlash() {
@@ -1225,7 +1238,6 @@ function bootPhone() {
     tick();
     batteryTick();
     setInterval(tick, 1000);
-    setInterval(batteryTick, 90000);
     $('.wallpaper').style.background = wallpaperCss();
     layoutPhone();
 }

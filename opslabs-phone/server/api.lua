@@ -45,8 +45,10 @@ local function send(res, status, body, origin)
         headers['Access-Control-Allow-Methods'] = 'GET, POST, PATCH, DELETE, OPTIONS'
         headers['Vary'] = 'Origin'
     end
-    res.writeHead(status, headers)
-    res.send(body ~= nil and json.encode(body) or '')
+    -- the caller may have given up (OPS Hub times out): never let a write to a closed request take the server down
+    local ok, err = pcall(res.writeHead, status, headers)
+    if ok then ok, err = pcall(res.send, body ~= nil and json.encode(body) or '') end
+    if not ok then print(('^3[opslabs-phone] API reply dropped (%s)^7'):format(tostring(err))) end
 end
 
 local function authorized(req)
@@ -440,13 +442,21 @@ local function dispatch(req, res, rawBody)
     send(res, methodMatched and 405 or 404, { error = methodMatched and 'Method not allowed' or 'Not found' }, origin)
 end
 
+local function safeDispatch(req, res, data)
+    local ok, err = pcall(dispatch, req, res, data)
+    if not ok then
+        print(('^1[opslabs-phone] API request %s %s failed: %s^7'):format(tostring(req.method), tostring(req.path), tostring(err)))
+        pcall(send, res, 500, { error = 'Internal error' }, nil)
+    end
+end
+
 SetHttpHandler(function(req, res)
     if req.method == 'GET' or req.method == 'OPTIONS' or req.method == 'DELETE' then
-        CreateThread(function() dispatch(req, res, nil) end)
+        CreateThread(function() safeDispatch(req, res, nil) end)
         return
     end
     req.setDataHandler(function(data)
-        CreateThread(function() dispatch(req, res, data) end)
+        CreateThread(function() safeDispatch(req, res, data) end)
     end)
 end)
 

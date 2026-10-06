@@ -1,0 +1,5963 @@
+{
+ "version": 1,
+ "anims": [
+  "crimp",
+  "drill",
+  "reach",
+  "kneel",
+  "type",
+  "inspect",
+  "splice",
+  "clipboard",
+  "phone",
+  "carry",
+  "ladder",
+  "dig",
+  "test"
+ ],
+ "tools": {
+  "hivis": {
+   "name": "Hi-vis vest & hard hat",
+   "what": "Makes you visible to traffic and protects your head from falling objects and low beams.",
+   "ppe": true
+  },
+  "gloves": {
+   "name": "Insulated gloves",
+   "what": "Rated gloves for work near live electrical parts and for sharp metal edges.",
+   "ppe": true
+  },
+  "harness": {
+   "name": "Fall-arrest harness",
+   "what": "Clipped to a pole or anchor point, it stops a fall when you work above 2 m.",
+   "ppe": true
+  },
+  "glasses": {
+   "name": "Safety glasses",
+   "what": "Protect your eyes from fibre shards, drilling dust and laser light.",
+   "ppe": true
+  },
+  "esd": {
+   "name": "ESD wrist strap",
+   "what": "Grounds you so static electricity doesn't destroy server and network boards.",
+   "ppe": true
+  },
+  "ladder": {
+   "name": "Ladder",
+   "what": "Reaches walls, ceilings and pole steps. Place it at a 1-in-4 angle on firm ground."
+  },
+  "crimper": {
+   "name": "RJ45 crimper & cable tester",
+   "what": "Fits RJ45 plugs onto CAT6 and proves all eight cores are connected in the right order."
+  },
+  "splicer": {
+   "name": "Fibre fusion splicer",
+   "what": "Melts two cleaned and cleaved fibres together into one low-loss joint."
+  },
+  "lightmeter": {
+   "name": "Optical light meter / OTDR",
+   "what": "Measures how much light arrives down a fibre, and where along it a break or bad splice is."
+  },
+  "buttset": {
+   "name": "Lineman's butt set",
+   "what": "A test handset you clip onto a copper pair to hear dial tone and make test calls."
+  },
+  "toner": {
+   "name": "Tone & probe kit",
+   "what": "Puts a tone on a copper pair or cable so you can find the same cable at the other end."
+  },
+  "multimeter": {
+   "name": "Multimeter / voltage tester",
+   "what": "Proves a circuit is dead before you touch it, and measures voltage, continuity and resistance."
+  },
+  "drill": {
+   "name": "Cordless drill & fixings",
+   "what": "Drills walls for cable entry and fixes brackets, cameras and boxes with the right plugs and screws."
+  },
+  "laptop": {
+   "name": "Engineer laptop & console cable",
+   "what": "Configures routers, NVRs and servers, runs speed tests and opens OPS Hub."
+  },
+  "torque": {
+   "name": "Torque driver",
+   "what": "Tightens electrical terminals and rack rails to the correct torque — not too loose, not stripped."
+  },
+  "thermal": {
+   "name": "Thermal camera",
+   "what": "Shows hot spots: overloaded cables, failing fans, blocked server airflow."
+  },
+  "cones": {
+   "name": "Cones & barriers",
+   "what": "Keeps people and traffic away from open chambers, cabinets and ladders on the pavement."
+  },
+  "lockoff": {
+   "name": "Lock-off kit",
+   "what": "Padlocks and tags that stop anyone switching a circuit back on while you work on it."
+  },
+  "labeler": {
+   "name": "Label printer",
+   "what": "Labels both ends of every cable and port so the next engineer knows what is what."
+  },
+  "spade": {
+   "name": "Spade & draw rope",
+   "what": "Opens chamber lids and pulls cables through underground ducts."
+  }
+ },
+ "families": {
+  "net_router": {
+   "name": "Router installation & replacement",
+   "company": "network",
+   "cert": "network_install",
+   "certName": "Network installation",
+   "certRequired": true,
+   "jobs": [
+    "net_router",
+    "net_router_swap"
+   ],
+   "summary": "Fit or swap the customer's gateway router so the whole property gets internet. The router takes the line from the ONT and shares it over Wi-Fi and Ethernet.",
+   "overview": "The gateway router is the heart of every customer network. Its WAN port takes the internet from the fibre ONT. Every switch, access point, laptop, NVR and server in the building then gets online through it. A router on the wrong port, with no power or not cabled to a live ONT, leaves the customer with nothing — and their CCTV remote viewing, laptops and self-hosted websites go down with it.",
+   "equipment": [
+    {
+     "name": "Gateway router (OPS Gateway Pro / Mini, OPS EdgeLink E5 / E7, OPS HomeRouter AX4)",
+     "what": "Routes traffic between the customer's LAN and the internet, hands out addresses (DHCP) and runs the firewall and Wi-Fi.",
+     "how": "Placed as a Wi-Fi/router tower from the /towers menu. It must be powered (socket nearby or PoE) and cabled to the ONT to show as online."
+    },
+    {
+     "name": "Fibre ONT",
+     "what": "Turns the light on the customer's fibre into Ethernet. It needs light from a cabinet and an active OPS Network service.",
+     "how": "Usually already fitted on the wall. [E] shows its light and service status."
+    },
+    {
+     "name": "CAT6 patch lead",
+     "what": "Connects the ONT LAN port to the router WAN port.",
+     "how": "Pull CAT6 from the nearest box, then terminate one end on the ONT and the other on the router."
+    }
+   ],
+   "tools": [
+    "crimper",
+    "drill",
+    "laptop",
+    "labeler"
+   ],
+   "ppe": [
+    "hivis"
+   ],
+   "steps": [
+    {
+     "title": "Check the ONT has light",
+     "detail": "Walk to the ONT and press [E]. You need a lit ONT with an active service before a router can get online. If it's dark, the job is really a fibre fault — tell dispatch.",
+     "tool": "lightmeter",
+     "anim": "inspect",
+     "where": "At the customer's ONT, usually by the front door",
+     "secs": 8
+    },
+    {
+     "title": "Fit the router",
+     "detail": "Open /towers → OPS Network and place the router somewhere central, near a socket. If you're swapping, remove the old router first.",
+     "tool": "drill",
+     "anim": "drill",
+     "where": "/towers → your network section",
+     "secs": 8
+    },
+    {
+     "title": "Pull and terminate CAT6",
+     "detail": "Use 'Pull CAT6 from the nearest box' and run the cable from the ONT to the router along the walls. Crimp an RJ45 onto each end and terminate it into the kit.",
+     "tool": "crimper",
+     "anim": "crimp",
+     "where": "From the nearest CAT6 box",
+     "secs": 8
+    },
+    {
+     "title": "Test the cable",
+     "detail": "Use the cable tester. An unterminated or loose end means no link.",
+     "tool": "crimper",
+     "anim": "test",
+     "where": "Both ends of the run",
+     "secs": 8
+    },
+    {
+     "title": "Power on and check it's online",
+     "detail": "Make sure the router has a socket within reach. Open the job in OPS Work and press Check — it must show the router powered and online.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "OPS Work → the job → Work check",
+     "secs": 8
+    },
+    {
+     "title": "Label and tidy",
+     "detail": "Label both ends of the cable and clip loose runs to the wall.",
+     "tool": "labeler",
+     "anim": "clipboard",
+     "where": "At the router",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Working at height",
+     "risk": "A fall from a ladder or pole can cause serious injury.",
+     "control": "Use a ladder at a 1-in-4 angle on firm ground with three points of contact. Above 2 m on a pole, clip on your harness."
+    },
+    {
+     "hazard": "Electricity",
+     "risk": "Mains voltage can give a fatal shock and cause burns.",
+     "control": "Never open powered kit. Isolate and prove dead with a voltage tester before touching terminals."
+    },
+    {
+     "hazard": "Trailing cables",
+     "risk": "Customers and staff trip over loose cable during the job.",
+     "control": "Route cable along walls, clip or trunk it, and never leave a run across a walkway."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Router placed with no socket nearby",
+     "consequence": "It shows unpowered, the Work check fails and the job stays open until you fix it."
+    },
+    {
+     "mistake": "Cable not terminated at both ends",
+     "consequence": "There's no link. The router stays offline and everything behind it — Wi-Fi, CCTV remote viewing, laptops — has no internet."
+    },
+    {
+     "mistake": "Installed before accepting the job",
+     "consequence": "Only kit placed after you accept counts. The check won't see it, so you redo the work."
+    },
+    {
+     "mistake": "ONT had no light and you fitted the router anyway",
+     "consequence": "The router never gets online. The real fault (fibre) goes unreported and the customer's SLA deadline passes."
+    },
+    {
+     "mistake": "Finished after the SLA due time",
+     "consequence": "The job is logged as an SLA breach against the company, and it shows on the dashboard."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "What angle should a ladder be set at?",
+     "a": [
+      "About 1 in 4 (1 out for every 4 up)",
+      "Straight up",
+      "Lying flat"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Before working near mains sockets you should…",
+     "a": [
+      "Work faster",
+      "Never open powered kit, and prove dead if you must",
+      "Touch the terminals to check"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Where should loose cable go?",
+     "a": [
+      "Clipped along the walls or in trunking",
+      "Under a rug",
+      "Across the walkway"
+     ],
+     "ok": 0
+    }
+   ],
+   "exam": [
+    {
+     "q": "Which port on the router connects to the ONT?",
+     "a": [
+      "WAN",
+      "Console",
+      "LAN 1"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "The ONT is dark. What does that usually mean?",
+     "a": [
+      "There's a fibre fault or no service back to the cabinet",
+      "The Wi-Fi password is wrong",
+      "The router needs a reboot"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Why didn't the Work check count the router you fitted earlier today?",
+     "a": [
+      "Only kit fitted after accepting the job counts",
+      "Routers never count",
+      "It needs a different colour"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "What must a CAT6 run have at both ends to give a link?",
+     "a": [
+      "A crimped RJ45 terminated into the kit",
+      "Nothing",
+      "Tape"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "A router with no power…",
+     "a": [
+      "Shows offline and the check fails",
+      "Charges itself",
+      "Still works over Wi-Fi"
+     ],
+     "ok": 0
+    }
+   ]
+  },
+  "net_lan": {
+   "name": "LAN, Wi-Fi & PoE installation",
+   "company": "network",
+   "cert": "network_install",
+   "certName": "Network installation",
+   "certRequired": true,
+   "jobs": [
+    "net_switch",
+    "net_poe",
+    "net_wifi",
+    "net_cat6",
+    "net_business"
+   ],
+   "summary": "Build the network inside a building: switches, PoE, access points and structured CAT6 cabling. A business network ties all of it together.",
+   "overview": "Behind every router there's a local network. Switches add ports, PoE switches power access points and cameras down the cable, and access points spread Wi-Fi through the building. Good cabling makes it all reliable: runs under 100 m, terminated properly, labelled and tidy. A business installation is the full set: gateway, PoE switch, two access points and all the CAT6 between them.",
+   "equipment": [
+    {
+     "name": "PoE switch",
+     "what": "Adds Ethernet ports and powers devices such as access points and IP cameras over the same cable, up to its PoE budget.",
+     "how": "Placed from /towers. Cable it back to the router; every device you plug in uses part of its PoE budget."
+    },
+    {
+     "name": "Wi-Fi access point (ceiling or wall)",
+     "what": "Broadcasts the customer's Wi-Fi. Phones in range use Wi-Fi instead of mobile data.",
+     "how": "Placed from /towers and cabled to a PoE switch, or powered from a socket."
+    },
+    {
+     "name": "CAT6 cable & box",
+     "what": "305 m boxes of network cable. Each run should stay under 100 m.",
+     "how": "'Pull CAT6 from the nearest box', route along the walls, then crimp and terminate both ends."
+    },
+    {
+     "name": "Trunking",
+     "what": "Plastic channel that hides and protects cable runs.",
+     "how": "Placed from the cabling menu along walls and ceilings."
+    }
+   ],
+   "tools": [
+    "crimper",
+    "drill",
+    "ladder",
+    "labeler",
+    "laptop"
+   ],
+   "ppe": [
+    "hivis",
+    "glasses"
+   ],
+   "steps": [
+    {
+     "title": "Survey the building",
+     "detail": "Walk the site and decide where the switch and access points go. Access points should be central and high; switches go near the router.",
+     "tool": null,
+     "anim": "clipboard",
+     "where": "On site",
+     "secs": 8
+    },
+    {
+     "title": "Fit the switch",
+     "detail": "Place the (PoE) switch from /towers near the router.",
+     "tool": "drill",
+     "anim": "drill",
+     "where": "/towers → OPS Network",
+     "secs": 8
+    },
+    {
+     "title": "Fit the access points",
+     "detail": "Use the ladder to place ceiling or wall access points.",
+     "tool": "ladder",
+     "anim": "reach",
+     "where": "/towers → OPS Network",
+     "secs": 8
+    },
+    {
+     "title": "Run the CAT6",
+     "detail": "Pull CAT6 from the box: router → switch, then switch → each access point. Keep runs under 100 m and in trunking where people walk.",
+     "tool": "crimper",
+     "anim": "carry",
+     "where": "From the nearest CAT6 box",
+     "secs": 8
+    },
+    {
+     "title": "Crimp and terminate",
+     "detail": "Crimp an RJ45 on every end and terminate it into the kit.",
+     "tool": "crimper",
+     "anim": "crimp",
+     "where": "Every cable end",
+     "secs": 8
+    },
+    {
+     "title": "Test and check",
+     "detail": "Test each run, then press Check on the job in OPS Work. Every device must be powered and linked.",
+     "tool": "crimper",
+     "anim": "test",
+     "where": "OPS Work → the job",
+     "secs": 8
+    },
+    {
+     "title": "Label everything",
+     "detail": "Label both ends of each run and each switch port.",
+     "tool": "labeler",
+     "anim": "clipboard",
+     "where": "Switch and outlets",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Working at height",
+     "risk": "A fall from a ladder or pole can cause serious injury.",
+     "control": "Use a ladder at a 1-in-4 angle on firm ground with three points of contact. Above 2 m on a pole, clip on your harness."
+    },
+    {
+     "hazard": "Trailing cables",
+     "risk": "Customers and staff trip over loose cable during the job.",
+     "control": "Route cable along walls, clip or trunk it, and never leave a run across a walkway."
+    },
+    {
+     "hazard": "Drilling",
+     "risk": "Drilling into hidden cables or pipes, and dust in your eyes.",
+     "control": "Check walls before drilling and wear safety glasses."
+    },
+    {
+     "hazard": "Electricity",
+     "risk": "Mains voltage can give a fatal shock and cause burns.",
+     "control": "Never open powered kit. Isolate and prove dead with a voltage tester before touching terminals."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Too many PoE devices on one switch",
+     "consequence": "Devices past the PoE budget get no power and show as unpowered. Add a second switch or use sockets."
+    },
+    {
+     "mistake": "Access point not cabled back to the router",
+     "consequence": "It powers up but has no uplink, so phones connect to Wi-Fi with no internet."
+    },
+    {
+     "mistake": "Loose or unterminated cable ends",
+     "consequence": "No link. The Work check shows the device as not connected and the job can't be completed."
+    },
+    {
+     "mistake": "Fewer devices than the job needs",
+     "consequence": "'All parts' checks need every item. The check lists what's missing and the job stays open."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "What should you wear when drilling overhead?",
+     "a": [
+      "Safety glasses",
+      "Nothing",
+      "Sunglasses"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Above what height on a pole must you clip on a harness?",
+     "a": [
+      "10 m",
+      "2 m",
+      "Never"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Cable crossing a walkway should be…",
+     "a": [
+      "Left loose",
+      "Re-routed or put in trunking",
+      "Taped to the floor"
+     ],
+     "ok": 1
+    }
+   ],
+   "exam": [
+    {
+     "q": "What does PoE do?",
+     "a": [
+      "Encrypts traffic",
+      "Speeds up Wi-Fi",
+      "Powers devices through the network cable"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "A Wi-Fi access point shows no internet. The likeliest cause is…",
+     "a": [
+      "It isn't cabled back to the router",
+      "It's too new",
+      "The ceiling is white"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "What is the maximum length of a CAT6 run?",
+     "a": [
+      "About 100 m",
+      "1 km",
+      "10 m"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "A camera on a full PoE switch…",
+     "a": [
+      "Gets no power",
+      "Goes faster",
+      "Uses Wi-Fi"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "A business network installation needs…",
+     "a": [
+      "A router only",
+      "Just an access point",
+      "A gateway, PoE switch, access points and cabling"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "net_support": {
+   "name": "Network fault finding & support",
+   "company": "network",
+   "cert": "network_support",
+   "certName": "Network support",
+   "certRequired": false,
+   "jobs": [
+    "net_speed",
+    "net_troubleshoot",
+    "net_outage"
+   ],
+   "summary": "Find out why a customer's internet is slow or down and put it right. Speed issues are signed off with a speed test that reaches 70% of the package.",
+   "overview": "Most 'no internet' calls are one of four things: the ONT has no light (fibre fault), the line is suspended or unpaid, the router is unplugged or misconfigured, or Wi-Fi coverage is poor. Work from the outside in: the line on OPS Hub, then the ONT, the router, and the Wi-Fi. A speed job is finished when an OPS Work speed test at the property reaches at least 70% of the customer's package.",
+   "equipment": [
+    {
+     "name": "Customer line on OPS Hub",
+     "what": "Shows the line state (up, degraded or down), billing, IP addresses and router settings.",
+     "how": "OPS Hub → OPS Network ISP → the line, or OPS Work → 'Line at this address'."
+    },
+    {
+     "name": "OPS Work speed test",
+     "what": "Measures download, upload and ping at the property against the package speed.",
+     "how": "OPS Work → 'Line at this address' → Run a speed test, while standing inside."
+    },
+    {
+     "name": "ONT status",
+     "what": "Light and service state of the fibre terminal.",
+     "how": "[E] at the ONT."
+    }
+   ],
+   "tools": [
+    "laptop",
+    "lightmeter",
+    "crimper"
+   ],
+   "ppe": [
+    "hivis"
+   ],
+   "steps": [
+    {
+     "title": "Check the line",
+     "detail": "In OPS Work → 'Line at this address' (or on OPS Hub), check the line state, billing and any outage in the area.",
+     "tool": "laptop",
+     "anim": "phone",
+     "where": "OPS Work → Line at this address",
+     "secs": 8
+    },
+    {
+     "title": "Check the ONT",
+     "detail": "[E] at the ONT. If it's dark it's a fibre fault — raise it. If it's lit but has no service, the line needs provisioning.",
+     "tool": "lightmeter",
+     "anim": "inspect",
+     "where": "At the ONT",
+     "secs": 8
+    },
+    {
+     "title": "Check the router and cabling",
+     "detail": "Make sure the router is powered and the ONT → router cable is terminated at both ends. Re-crimp anything loose.",
+     "tool": "crimper",
+     "anim": "crimp",
+     "where": "Router and cable runs",
+     "secs": 8
+    },
+    {
+     "title": "Check Wi-Fi coverage",
+     "detail": "Weak signal in part of the building needs another access point (raise a Wi-Fi installation job).",
+     "tool": null,
+     "anim": "inspect",
+     "where": "Around the property",
+     "secs": 8
+    },
+    {
+     "title": "Run the speed test",
+     "detail": "Stand inside and run the speed test. It needs at least 70% of the package for a speed job.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "OPS Work → speed test",
+     "secs": 8
+    },
+    {
+     "title": "Close it off",
+     "detail": "Press Check on the job. Tell the customer what was wrong.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Electricity",
+     "risk": "Mains voltage can give a fatal shock and cause burns.",
+     "control": "Never open powered kit. Isolate and prove dead with a voltage tester before touching terminals."
+    },
+    {
+     "hazard": "Customer data & privacy",
+     "risk": "Router settings, passwords and camera footage are private.",
+     "control": "Only change what the job needs. Never share Wi-Fi passwords or footage, and log out of customer systems when you finish."
+    },
+    {
+     "hazard": "Trailing cables",
+     "risk": "Customers and staff trip over loose cable during the job.",
+     "control": "Route cable along walls, clip or trunk it, and never leave a run across a walkway."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Speed test run outside the property",
+     "consequence": "It doesn't count — the test has to be near the line's address."
+    },
+    {
+     "mistake": "Speed test below 70% of the package",
+     "consequence": "The speed check fails. Fix the cause (bad cable, too many devices, router placement) and test again."
+    },
+    {
+     "mistake": "Ignoring an area outage",
+     "consequence": "You can't fix it on site. The outage is the network team's job, and you lose time and the SLA."
+    },
+    {
+     "mistake": "Suspended line for non-payment",
+     "consequence": "The ONT is cut off on purpose. Nothing works until the customer pays; it isn't a fault."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Can you share a customer's Wi-Fi password with a neighbour?",
+     "a": [
+      "No — it's private customer data",
+      "Only on Sundays",
+      "Yes"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Before re-crimping a cable you should…",
+     "a": [
+      "Unplug the ONT forever",
+      "Check you have the right cable at both ends",
+      "Cut every cable"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "A loose cable across the hallway is…",
+     "a": [
+      "A feature",
+      "A trip hazard to fix",
+      "Fine"
+     ],
+     "ok": 1
+    }
+   ],
+   "exam": [
+    {
+     "q": "What do you check first on a 'no internet' call?",
+     "a": [
+      "The weather",
+      "The line state and ONT light",
+      "The customer's TV"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "What score does a speed test need to sign off a speed job?",
+     "a": [
+      "70% of the package",
+      "200%",
+      "10%"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "The ONT is lit but has no service. What does that mean?",
+     "a": [
+      "The router is broken",
+      "The fibre is cut",
+      "The line needs provisioning or is suspended"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Where must you be to run the speed test?",
+     "a": [
+      "At the customer's property",
+      "At the depot",
+      "Anywhere"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Wi-Fi is weak upstairs. The proper fix is…",
+     "a": [
+      "Turning the router off",
+      "Another access point",
+      "Shouting"
+     ],
+     "ok": 1
+    }
+   ]
+  },
+  "isp_install": {
+   "name": "New fibre broadband installation",
+   "company": "network",
+   "cert": "fibre_splice",
+   "certName": "Fibre splicing & testing",
+   "certRequired": true,
+   "jobs": [
+    "isp_newcustomer"
+   ],
+   "summary": "Connect a new OPS Network customer: fibre to the property, a lit ONT and a router. When you finish, the line goes live and is billed automatically.",
+   "overview": "A new line runs from the street cabinet through the distribution point (CBT) on the pole, down a drop cable to the house, and into an ONT on the wall. When the ONT has light and the job is completed, OPS Network activates the line: it links the ONT, assigns public IP addresses, pushes the router settings and takes the first bill. If any link in that chain is missing, the customer gets nothing.",
+   "equipment": [
+    {
+     "name": "Distribution point (CBT)",
+     "what": "The box on the pole where customer drops are spliced to the network fibre.",
+     "how": "Fitted from the pole menu (G while climbing) or /towers → OPS Openline."
+    },
+    {
+     "name": "Fibre drop cable",
+     "what": "Carries light from the CBT to the house.",
+     "how": "Run fibre from the CBT to the house with the fibre cabling tools."
+    },
+    {
+     "name": "ONT",
+     "what": "Turns light into Ethernet. 'Online' means light plus service.",
+     "how": "Placed inside on a wall from /towers, then terminated with the drop."
+    },
+    {
+     "name": "Router",
+     "what": "Shares the connection around the home.",
+     "how": "Placed and cabled to the ONT LAN port with CAT6."
+    }
+   ],
+   "tools": [
+    "ladder",
+    "splicer",
+    "lightmeter",
+    "drill",
+    "crimper"
+   ],
+   "ppe": [
+    "hivis",
+    "harness",
+    "glasses"
+   ],
+   "steps": [
+    {
+     "title": "Set out the site",
+     "detail": "Put out cones at the pole and wear your hi-vis.",
+     "tool": "cones",
+     "anim": "carry",
+     "where": "At the customer's pole",
+     "secs": 8
+    },
+    {
+     "title": "Climb and connect at the CBT",
+     "detail": "Climb the pole with the ladder, clip on, and fit or use the CBT. Splice the drop to a spare fibre.",
+     "tool": "splicer",
+     "anim": "splice",
+     "where": "Pole → CBT (G menu while climbing)",
+     "secs": 8
+    },
+    {
+     "title": "Run the drop to the house",
+     "detail": "Run the drop cable from the CBT to the house wall and through to the ONT position.",
+     "tool": "drill",
+     "anim": "drill",
+     "where": "Pole to house",
+     "secs": 8
+    },
+    {
+     "title": "Fit and terminate the ONT",
+     "detail": "Place the ONT inside and terminate the drop into it. Check it lights up with [E].",
+     "tool": "lightmeter",
+     "anim": "test",
+     "where": "Inside the property",
+     "secs": 8
+    },
+    {
+     "title": "Fit the router",
+     "detail": "Place the router and connect it to the ONT with CAT6.",
+     "tool": "crimper",
+     "anim": "crimp",
+     "where": "Inside the property",
+     "secs": 8
+    },
+    {
+     "title": "Complete the job",
+     "detail": "Press Check: the ONT must be online. Completing the job activates the line automatically.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Working at height",
+     "risk": "A fall from a ladder or pole can cause serious injury.",
+     "control": "Use a ladder at a 1-in-4 angle on firm ground with three points of contact. Above 2 m on a pole, clip on your harness."
+    },
+    {
+     "hazard": "Working in the street",
+     "risk": "Traffic and pedestrians around open chambers, cabinets and poles.",
+     "control": "Wear hi-vis and set out cones and barriers before you start. Never leave a chamber open and unattended."
+    },
+    {
+     "hazard": "Laser light",
+     "risk": "Fibre carries invisible laser light that can damage your eyes.",
+     "control": "Never look into a fibre end or connector. Use the light meter."
+    },
+    {
+     "hazard": "Fibre shards",
+     "risk": "Cleaved glass splinters get into skin and eyes.",
+     "control": "Wear safety glasses and bin offcuts in the shard pot."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Drop connected to a CBT with no light from the cabinet",
+     "consequence": "The ONT stays dark. The check 'ONT online' fails and the line can't be activated."
+    },
+    {
+     "mistake": "ONT placed before accepting the job",
+     "consequence": "It doesn't count for the check — fit a fresh one after accepting."
+    },
+    {
+     "mistake": "No router fitted",
+     "consequence": "The line goes live, but the customer has no Wi-Fi and calls back with a fault (a new job, possibly an SLA breach)."
+    },
+    {
+     "mistake": "Working on the pole without a harness",
+     "consequence": "With safety incidents on, you can fall and get hurt. The job is logged with the safety briefing skipped."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Should you look into a fibre end to see if it's lit?",
+     "a": [
+      "Yes",
+      "No — use the light meter, laser light damages eyes",
+      "Only quickly"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "What do you do before climbing a pole beside a road?",
+     "a": [
+      "Set out cones and wear hi-vis",
+      "Nothing",
+      "Close the road yourself"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Fibre offcuts go…",
+     "a": [
+      "In the shard pot",
+      "On the floor",
+      "In your pocket"
+     ],
+     "ok": 0
+    }
+   ],
+   "exam": [
+    {
+     "q": "What has to be true for the 'ONT online' check?",
+     "a": [
+      "The ONT is blue",
+      "The ONT has light and an active service",
+      "The router is on"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Where are customer drops connected to the network?",
+     "a": [
+      "The distribution point (CBT) on the pole",
+      "The gas meter",
+      "The street light"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "What happens automatically when a new-line job is completed?",
+     "a": [
+      "The customer is charged twice",
+      "Nothing",
+      "The line is activated: ONT linked, IPs assigned, first bill taken"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "An ONT is dark. Where is the fault?",
+     "a": [
+      "In the router",
+      "In the TV",
+      "Somewhere back towards the cabinet/OLT"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "What joins two fibres?",
+     "a": [
+      "Tape",
+      "Glue",
+      "A fusion splice"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "isp_config": {
+   "name": "Router & network configuration",
+   "company": "network",
+   "cert": "isp_config",
+   "certName": "Network configuration",
+   "certRequired": false,
+   "jobs": [
+    "net_cfg_firewall",
+    "net_cfg_forward",
+    "net_cfg_vlan",
+    "net_cfg_vpn",
+    "net_cfg_dns",
+    "net_cfg_dhcp",
+    "net_cfg_wifi"
+   ],
+   "summary": "Change the customer's router settings remotely: firewall, port forwards, VLANs, VPN, DNS, DHCP and Wi-Fi. The check confirms the setting changed after you accepted the job.",
+   "overview": "OPS Network keeps every customer's router configuration on OPS Hub. Changes are pushed to the router in game within a minute, and Wi-Fi settings change the real router's network. Port forwards decide whether a self-hosted website works: forward 80 and 443 to the web server or visitors get 'connection refused'. A configuration job is checked by looking at the line's settings, which must have been changed after you accepted the job.",
+   "equipment": [
+    {
+     "name": "Router settings editor",
+     "what": "LAN, DHCP and reservations, DNS, Wi-Fi, guest Wi-Fi, VLANs, firewall rules, port forwards and VPN.",
+     "how": "OPS Hub → OPS Network ISP → the customer's line → Router settings → Save."
+    },
+    {
+     "name": "Port forward",
+     "what": "Sends traffic arriving on an outside port to a device inside (e.g. 443 → the web server).",
+     "how": "Router settings → Port forwards → + Add."
+    },
+    {
+     "name": "VLAN",
+     "what": "Splits one network into isolated parts (e.g. guests and CCTV away from staff).",
+     "how": "Router settings → VLANs → + Add, tick 'isolated'."
+    }
+   ],
+   "tools": [
+    "laptop"
+   ],
+   "ppe": [],
+   "steps": [
+    {
+     "title": "Read the request",
+     "detail": "Open the job in OPS Work and read exactly what the customer wants.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    },
+    {
+     "title": "Open the line",
+     "detail": "On OPS Hub, open OPS Network ISP → the customer's line → Router settings.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "OPS Hub",
+     "secs": 8
+    },
+    {
+     "title": "Make the change",
+     "detail": "Add the firewall rule, forward, VLAN, VPN, DNS, DHCP reservation or Wi-Fi password the job asks for.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "Router settings editor",
+     "secs": 8
+    },
+    {
+     "title": "Save and wait",
+     "detail": "Save. The router picks the change up in game within a minute.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "OPS Hub",
+     "secs": 8
+    },
+    {
+     "title": "Check",
+     "detail": "Press Check on the job — it reads the saved settings and confirms the change.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Customer data & privacy",
+     "risk": "Router settings, passwords and camera footage are private.",
+     "control": "Only change what the job needs. Never share Wi-Fi passwords or footage, and log out of customer systems when you finish."
+    },
+    {
+     "hazard": "Locking the customer out",
+     "risk": "A wrong firewall rule or Wi-Fi change cuts the customer off.",
+     "control": "Change only what was asked, note the old value, and test afterwards."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Settings changed before accepting the job",
+     "consequence": "The check needs a change after acceptance. Make the change again, or tweak and save."
+    },
+    {
+     "mistake": "Wrong port forwarded for a website",
+     "consequence": "Visitors get 'connection refused' and the customer's self-hosted site stays down."
+    },
+    {
+     "mistake": "Open Wi-Fi left behind",
+     "consequence": "The Wi-Fi job fails: it needs a password set."
+    },
+    {
+     "mistake": "Firewall default changed to allow",
+     "consequence": "Everything inside is exposed. It's a serious security mistake that the customer can complain about."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "May you read through a customer's network traffic while configuring?",
+     "a": [
+      "Yes",
+      "If bored",
+      "No — only change what the job needs"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Before changing a setting you should…",
+     "a": [
+      "Reboot the city",
+      "Delete everything",
+      "Note the current value"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "After the job you should…",
+     "a": [
+      "Post it online",
+      "Log out of the customer's systems",
+      "Keep their password"
+     ],
+     "ok": 1
+    }
+   ],
+   "exam": [
+    {
+     "q": "What makes a self-hosted website reachable from outside?",
+     "a": [
+      "Forwarding ports 80/443 to it",
+      "A brighter router",
+      "VLAN 1"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Where do you edit a customer's router settings?",
+     "a": [
+      "On the pole",
+      "OPS Hub → the line → Router settings",
+      "In Maps"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Why might your configuration job's check fail?",
+     "a": [
+      "The router is red",
+      "The setting wasn't changed after you accepted the job",
+      "It's raining"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "A VLAN is used to…",
+     "a": [
+      "Make cables longer",
+      "Split the network into isolated parts",
+      "Charge phones"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "How long do changes take to reach the router in game?",
+     "a": [
+      "Never",
+      "A week",
+      "About a minute"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "fibre_build": {
+   "name": "Fibre network build",
+   "company": "fibre",
+   "cert": "fibre_splice",
+   "certName": "Fibre splicing & testing",
+   "certRequired": true,
+   "jobs": [
+    "fibre_install",
+    "fibre_cabinet",
+    "fibre_dp"
+   ],
+   "summary": "Build the fibre network: street cabinets, distribution points on poles, and the fibre that links them back to the exchange.",
+   "overview": "Light starts at the OLT in the exchange, travels out through cabinets, along aerial or underground fibre to distribution points (CBTs) on poles, then down drop cables to each home's ONT. A cabinet or DP with no fibre back to a lit source is useless: every ONT behind it stays dark. Fibre installation jobs are checked by the cable you actually lay; cabinet and DP jobs by the kit you fit near the job site.",
+   "equipment": [
+    {
+     "name": "Street cabinet (PCP / FTTC)",
+     "what": "Houses splitters and joints where feeder fibre fans out to an area.",
+     "how": "/towers → OPS Openline → street cabinets."
+    },
+    {
+     "name": "Distribution point (CBT)",
+     "what": "Pole-top box that serves up to 4–8 homes.",
+     "how": "Fitted from the pole menu (G while climbing)."
+    },
+    {
+     "name": "Fibre cable (aerial / underground)",
+     "what": "Carries the light between exchange, cabinets and DPs.",
+     "how": "Fibre cabling tools: run between kit, clamp to poles, or pull through ducts."
+    },
+    {
+     "name": "Splice enclosure / joint",
+     "what": "Protects splices where two cables meet.",
+     "how": "Placed on poles or in chambers from /towers."
+    }
+   ],
+   "tools": [
+    "splicer",
+    "lightmeter",
+    "ladder",
+    "spade",
+    "cones"
+   ],
+   "ppe": [
+    "hivis",
+    "harness",
+    "glasses",
+    "gloves"
+   ],
+   "steps": [
+    {
+     "title": "Set out the work area",
+     "detail": "Put out cones and barriers around the pole, cabinet or chamber.",
+     "tool": "cones",
+     "anim": "carry",
+     "where": "At the job site",
+     "secs": 8
+    },
+    {
+     "title": "Fit the cabinet or DP",
+     "detail": "Place the street cabinet from /towers, or climb and fit the CBT from the pole menu.",
+     "tool": "ladder",
+     "anim": "reach",
+     "where": "/towers → OPS Openline / pole G menu",
+     "secs": 8
+    },
+    {
+     "title": "Lay the fibre",
+     "detail": "Run fibre from the lit network to the new kit: clamp it to poles, or open a chamber and pull it through the duct with the draw rope.",
+     "tool": "spade",
+     "anim": "dig",
+     "where": "Along the route",
+     "secs": 8
+    },
+    {
+     "title": "Splice and protect",
+     "detail": "Splice the fibres and seal the joint in an enclosure.",
+     "tool": "splicer",
+     "anim": "splice",
+     "where": "At the joint",
+     "secs": 8
+    },
+    {
+     "title": "Test the light",
+     "detail": "Use the light meter at the new kit. No light means a break or bad splice — find it with the OTDR.",
+     "tool": "lightmeter",
+     "anim": "test",
+     "where": "At the new cabinet/DP",
+     "secs": 8
+    },
+    {
+     "title": "Check and clear up",
+     "detail": "Press Check on the job, then close chambers and remove cones.",
+     "tool": null,
+     "anim": "clipboard",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Working at height",
+     "risk": "A fall from a ladder or pole can cause serious injury.",
+     "control": "Use a ladder at a 1-in-4 angle on firm ground with three points of contact. Above 2 m on a pole, clip on your harness."
+    },
+    {
+     "hazard": "Working in the street",
+     "risk": "Traffic and pedestrians around open chambers, cabinets and poles.",
+     "control": "Wear hi-vis and set out cones and barriers before you start. Never leave a chamber open and unattended."
+    },
+    {
+     "hazard": "Underground chambers",
+     "risk": "Lids are heavy, and gas can build up in chambers.",
+     "control": "Lift lids with the proper key using your legs, let chambers vent, and never climb in alone."
+    },
+    {
+     "hazard": "Laser light",
+     "risk": "Invisible laser light damages eyes.",
+     "control": "Never look into fibre ends."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Fibre run not connected back to a lit source",
+     "consequence": "The new cabinet/DP gets no light, and every home behind it stays dark."
+    },
+    {
+     "mistake": "Too little cable laid for a fibre install",
+     "consequence": "The 'cable laid' check counts metres since you accepted the job. Too short and it fails."
+    },
+    {
+     "mistake": "Chamber left open",
+     "consequence": "A hazard to the public. With incidents on, someone can get hurt and it's logged against you."
+    },
+    {
+     "mistake": "Wrong kit model fitted",
+     "consequence": "The fixtures check only counts the models the job lists, so the job stays open."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Before entering an underground chamber you should…",
+     "a": [
+      "Let it vent and never enter alone",
+      "Light a match",
+      "Jump straight in"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "An open chamber on the pavement needs…",
+     "a": [
+      "Nothing",
+      "Barriers around it and you nearby",
+      "A sign saying 'sorry'"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "How do you lift a chamber lid?",
+     "a": [
+      "With the lid key, lifting with your legs",
+      "With your fingers",
+      "With your back"
+     ],
+     "ok": 0
+    }
+   ],
+   "exam": [
+    {
+     "q": "Where does the light in the network start?",
+     "a": [
+      "The ONT",
+      "The router",
+      "The OLT in the exchange"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "A new DP shows no light. The first thing to do is…",
+     "a": [
+      "Wait",
+      "Replace the customer's router",
+      "Test with the light meter / OTDR to find the break"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "What protects splices where cables meet?",
+     "a": [
+      "A splice enclosure / joint",
+      "A bag",
+      "Tape"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "A fibre installation job is checked by…",
+     "a": [
+      "The colour of the van",
+      "Phone calls",
+      "The metres of cable you laid after accepting"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "How many homes does a typical CBT serve?",
+     "a": [
+      "4–8",
+      "500",
+      "1"
+     ],
+     "ok": 0
+    }
+   ]
+  },
+  "fibre_maint": {
+   "name": "Fibre testing & repair",
+   "company": "fibre",
+   "cert": "fibre_splice",
+   "certName": "Fibre splicing & testing",
+   "certRequired": true,
+   "jobs": [
+    "fibre_test",
+    "fibre_repair"
+   ],
+   "summary": "Find and fix breaks and bad splices in the fibre network so every ONT behind them lights up again.",
+   "overview": "When several ONTs in one area go dark together, OPS Network raises an outage. The cause is usually a break in the fibre, a damaged joint or a failed splice. Work methodically: test light at the DP, then at the cabinet, then use the OTDR to measure exactly how far along the cable the break is. Repair jobs are timed on site, so you must stay at the location while the work progress fills.",
+   "equipment": [
+    {
+     "name": "OTDR / light meter",
+     "what": "Shows the light level and the distance to a fault.",
+     "how": "Use it at the DP or cabinet during the job."
+    },
+    {
+     "name": "Fusion splicer",
+     "what": "Re-joins broken fibres with a low-loss splice.",
+     "how": "Used during the on-site work."
+    },
+    {
+     "name": "Joint / splice tray",
+     "what": "Holds and protects the repaired splices.",
+     "how": "Placed on the pole or in the chamber from /towers."
+    }
+   ],
+   "tools": [
+    "lightmeter",
+    "splicer",
+    "ladder",
+    "cones"
+   ],
+   "ppe": [
+    "hivis",
+    "glasses",
+    "harness"
+   ],
+   "steps": [
+    {
+     "title": "Check the outage on OPS Hub",
+     "detail": "See which lines are down and where — the break is between the last working point and the first dark one.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Hub → OPS Network ISP → Outages",
+     "secs": 8
+    },
+    {
+     "title": "Go to the job location",
+     "detail": "Set the GPS from the job page and set out cones on arrival.",
+     "tool": "cones",
+     "anim": "carry",
+     "where": "Job address",
+     "secs": 8
+    },
+    {
+     "title": "Test the light",
+     "detail": "Measure at the DP or cabinet and use the OTDR to find the distance to the fault.",
+     "tool": "lightmeter",
+     "anim": "test",
+     "where": "DP or cabinet",
+     "secs": 8
+    },
+    {
+     "title": "Start the repair",
+     "detail": "Press 'Start work' on the job and stay on site. Re-splice the broken fibres.",
+     "tool": "splicer",
+     "anim": "splice",
+     "where": "At the fault",
+     "secs": 8
+    },
+    {
+     "title": "Seal the joint",
+     "detail": "Put the splices in a tray and close the enclosure.",
+     "tool": null,
+     "anim": "kneel",
+     "where": "At the joint",
+     "secs": 8
+    },
+    {
+     "title": "Confirm and complete",
+     "detail": "When the time on site is reached, press Complete. Check lines come back on OPS Hub.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Working in the street",
+     "risk": "Traffic and pedestrians around open chambers, cabinets and poles.",
+     "control": "Wear hi-vis and set out cones and barriers before you start. Never leave a chamber open and unattended."
+    },
+    {
+     "hazard": "Working at height",
+     "risk": "A fall from a ladder or pole can cause serious injury.",
+     "control": "Use a ladder at a 1-in-4 angle on firm ground with three points of contact. Above 2 m on a pole, clip on your harness."
+    },
+    {
+     "hazard": "Laser light",
+     "risk": "Live fibres carry laser light.",
+     "control": "Never look into a cut fibre — assume it's live."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Leaving the site before the work time is done",
+     "consequence": "The on-site timer stops: you must stay within range until it's complete."
+    },
+    {
+     "mistake": "Looking into a live fibre",
+     "consequence": "A serious eye-safety breach. With incidents on, it's logged."
+    },
+    {
+     "mistake": "Not checking that lines came back",
+     "consequence": "The outage stays open and customers stay offline, even though you closed the job."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "How should you treat a cut fibre?",
+     "a": [
+      "Lick it",
+      "As safe",
+      "As live — never look into it"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "A repair beside a road needs…",
+     "a": [
+      "Hi-vis and cones",
+      "Nothing",
+      "Headphones"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Splice offcuts go…",
+     "a": [
+      "In the drain",
+      "On the grass",
+      "In the shard pot"
+     ],
+     "ok": 2
+    }
+   ],
+   "exam": [
+    {
+     "q": "Several ONTs in one street go dark at once. That's most likely…",
+     "a": [
+      "Each customer's router",
+      "Bad weather in the house",
+      "A fibre break upstream of them"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "What tells you the distance to a break?",
+     "a": [
+      "OTDR",
+      "Multimeter",
+      "Butt set"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "On an on-site job you must…",
+     "a": [
+      "Stay within range until the work time is done",
+      "Leave straight away",
+      "Drive around"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Where do you see which lines are down?",
+     "a": [
+      "OPS Hub → OPS Network ISP / Outages",
+      "Chirp",
+      "The bank"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "What holds repaired splices?",
+     "a": [
+      "Nothing",
+      "A splice tray in an enclosure",
+      "A sock"
+     ],
+     "ok": 1
+    }
+   ]
+  },
+  "comms": {
+   "name": "Telephone lines (copper)",
+   "company": "comms",
+   "cert": "copper_line",
+   "certName": "Copper line installation",
+   "certRequired": true,
+   "jobs": [
+    "comms_line",
+    "comms_fault"
+   ],
+   "summary": "Install and repair copper telephone lines so the customer's master socket has dial tone.",
+   "overview": "A copper line runs from the MDF in the exchange through a street cabinet (PCP), on multipair cable to a pole, down a drop wire to the house, and into the master socket (NTE). A line is only working when the whole pair is continuous and the exchange end is powered. The installation job checks for dial tone at the master socket near the job.",
+   "equipment": [
+    {
+     "name": "Master socket (NTE5C)",
+     "what": "Where the line enters the customer's home. Phones plug into it.",
+     "how": "/towers → OPS Openline → copper kit, fitted on the inside wall."
+    },
+    {
+     "name": "Copper drop wire",
+     "what": "Carries the pair from the pole to the house.",
+     "how": "Copper cabling: run from the pole's joint to the NTE."
+    },
+    {
+     "name": "Butt set",
+     "what": "Test handset clipped onto the pair to listen for dial tone.",
+     "how": "Used during testing."
+    },
+    {
+     "name": "Tone & probe",
+     "what": "Identifies the right pair among many.",
+     "how": "Used at the cabinet or pole."
+    }
+   ],
+   "tools": [
+    "buttset",
+    "toner",
+    "ladder",
+    "drill"
+   ],
+   "ppe": [
+    "hivis",
+    "harness"
+   ],
+   "steps": [
+    {
+     "title": "Find the pair",
+     "detail": "At the cabinet or pole, put a tone on the line and find the right pair with the probe.",
+     "tool": "toner",
+     "anim": "test",
+     "where": "Street cabinet / pole",
+     "secs": 8
+    },
+    {
+     "title": "Run the drop",
+     "detail": "Climb the pole and run copper drop wire to the house.",
+     "tool": "ladder",
+     "anim": "reach",
+     "where": "Pole to house",
+     "secs": 8
+    },
+    {
+     "title": "Fit the master socket",
+     "detail": "Place the NTE inside and terminate the drop into it.",
+     "tool": "drill",
+     "anim": "drill",
+     "where": "Inside the property",
+     "secs": 8
+    },
+    {
+     "title": "Test for dial tone",
+     "detail": "Clip the butt set on and listen for dial tone.",
+     "tool": "buttset",
+     "anim": "test",
+     "where": "At the master socket",
+     "secs": 8
+    },
+    {
+     "title": "Check and complete",
+     "detail": "Press Check — it traces the line back for dial tone.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Working at height",
+     "risk": "A fall from a ladder or pole can cause serious injury.",
+     "control": "Use a ladder at a 1-in-4 angle on firm ground with three points of contact. Above 2 m on a pole, clip on your harness."
+    },
+    {
+     "hazard": "Working in the street",
+     "risk": "Traffic and pedestrians around open chambers, cabinets and poles.",
+     "control": "Wear hi-vis and set out cones and barriers before you start. Never leave a chamber open and unattended."
+    },
+    {
+     "hazard": "Ringing voltage",
+     "risk": "Copper lines carry about 80 V when a phone rings.",
+     "control": "Don't touch bare conductors when a call could come in."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Drop not continuous back to the exchange",
+     "consequence": "No dial tone, so the check fails."
+    },
+    {
+     "mistake": "NTE fitted before accepting",
+     "consequence": "It doesn't count — the check looks for kit fitted after acceptance."
+    },
+    {
+     "mistake": "Wrong pair connected",
+     "consequence": "Another customer's line gets crossed: one line works for the wrong house and the fault comes back."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "What voltage can a ringing phone line carry?",
+     "a": [
+      "240 V DC",
+      "0 V",
+      "About 80 V"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Working on a pole above 2 m you must…",
+     "a": [
+      "Stand on one leg",
+      "Use no hands",
+      "Clip on a harness"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "A ladder left against a pole while you're away should be…",
+     "a": [
+      "Left",
+      "Painted",
+      "Taken down or attended"
+     ],
+     "ok": 2
+    }
+   ],
+   "exam": [
+    {
+     "q": "What proves a copper line works?",
+     "a": [
+      "A light",
+      "Dial tone at the master socket",
+      "Wi-Fi"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Which tool finds the right pair?",
+     "a": [
+      "Tone & probe",
+      "Splicer",
+      "Thermal camera"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "The customer's socket is called…",
+     "a": [
+      "ONT",
+      "NTE / master socket",
+      "NVR"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Copper lines start at…",
+     "a": [
+      "The MDF in the exchange",
+      "The router",
+      "The fuel station"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "You test for dial tone with…",
+     "a": [
+      "A butt set",
+      "A multimeter only",
+      "Your phone app"
+     ],
+     "ok": 0
+    }
+   ]
+  },
+  "it_support": {
+   "name": "IT installation & support",
+   "company": "systems",
+   "cert": "it_support",
+   "certName": "IT support",
+   "certRequired": false,
+   "jobs": [
+    "sys_laptop",
+    "sys_support"
+   ],
+   "summary": "Set up workstations and look after a business's IT on site.",
+   "overview": "OPS Systems installs and supports the computers that businesses rely on. A workstation laptop only gets online through its Ethernet port, cabled to a router or switch with internet — there's no magic Wi-Fi. Support visits are timed on site: you fix what the staff need while you're there.",
+   "equipment": [
+    {
+     "name": "Workstation laptop",
+     "what": "A placed laptop that players open to use OPS OS (the phone's apps on a desktop).",
+     "how": "/towers → Buildings & sites → office & IT, or the job's kit list. Cable its Ethernet port to a switch/router."
+    },
+    {
+     "name": "Network uplink",
+     "what": "The CAT6 run from the laptop to a router/switch with internet.",
+     "how": "Pull CAT6 and terminate it into the laptop and the switch."
+    }
+   ],
+   "tools": [
+    "laptop",
+    "crimper",
+    "labeler"
+   ],
+   "ppe": [],
+   "steps": [
+    {
+     "title": "Place the workstation",
+     "detail": "Put the laptop on the desk where staff want it.",
+     "tool": null,
+     "anim": "carry",
+     "where": "/towers → office & IT",
+     "secs": 8
+    },
+    {
+     "title": "Cable it",
+     "detail": "Run CAT6 from the laptop to the switch or router and crimp both ends.",
+     "tool": "crimper",
+     "anim": "crimp",
+     "where": "From the nearest CAT6 box",
+     "secs": 8
+    },
+    {
+     "title": "Test it",
+     "detail": "Open the laptop — the Ethernet icon must show internet.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "At the laptop",
+     "secs": 8
+    },
+    {
+     "title": "Support visit",
+     "detail": "For support jobs press 'Start work' and stay on site while you help the staff.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "Customer's office",
+     "secs": 8
+    },
+    {
+     "title": "Complete",
+     "detail": "Press Check / Complete on the job.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Customer data & privacy",
+     "risk": "Router settings, passwords and camera footage are private.",
+     "control": "Only change what the job needs. Never share Wi-Fi passwords or footage, and log out of customer systems when you finish."
+    },
+    {
+     "hazard": "Trailing cables",
+     "risk": "Customers and staff trip over loose cable during the job.",
+     "control": "Route cable along walls, clip or trunk it, and never leave a run across a walkway."
+    },
+    {
+     "hazard": "Electricity",
+     "risk": "Mains voltage can give a fatal shock and cause burns.",
+     "control": "Never open powered kit. Isolate and prove dead with a voltage tester before touching terminals."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Laptop cabled to a switch with no uplink",
+     "consequence": "It shows 'No internet' — every online app on it fails."
+    },
+    {
+     "mistake": "Leaving a support visit early",
+     "consequence": "The on-site timer stops; the job isn't finished."
+    },
+    {
+     "mistake": "Fitted before accepting",
+     "consequence": "It isn't counted."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "While fixing a laptop you see private emails. You should…",
+     "a": [
+      "Ignore them and keep them private",
+      "Read them",
+      "Forward them"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Cables under desks should be…",
+     "a": [
+      "Spread out",
+      "Tidied away from feet",
+      "Cut"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Before opening a computer's case…",
+     "a": [
+      "Pour coffee on it",
+      "Unplug it",
+      "Nothing"
+     ],
+     "ok": 1
+    }
+   ],
+   "exam": [
+    {
+     "q": "How does a workstation laptop get online?",
+     "a": [
+      "Through its Ethernet port, cabled to a router/switch with internet",
+      "Magic",
+      "Bluetooth"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "A laptop shows 'Cable unplugged'. You should…",
+     "a": [
+      "Run and terminate a CAT6 run to it",
+      "Restart the city",
+      "Call the bank"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "A support visit is finished when…",
+     "a": [
+      "You leave",
+      "You arrive",
+      "The on-site work time is complete"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "mobile_survey": {
+   "name": "Mobile coverage survey",
+   "company": "mobile",
+   "cert": "mobile_survey",
+   "certName": "Radio survey",
+   "certRequired": false,
+   "jobs": [
+    "mobile_coverage"
+   ],
+   "summary": "Survey mobile signal where customers report problems, to plan new masts and small cells.",
+   "overview": "Phones need signal from OPS Mobile towers to call, text and use data. Dead spots happen behind buildings, underground and far from masts. A survey records the signal at the reported spot so planners can add a mast or small cell.",
+   "equipment": [
+    {
+     "name": "Signal bars on your phone",
+     "what": "Live signal strength from the nearest tower.",
+     "how": "Shown in the status bar; walk the area."
+    },
+    {
+     "name": "Tower map",
+     "what": "Every mast and its coverage.",
+     "how": "OPS Hub → Tower map."
+    }
+   ],
+   "tools": [
+    "laptop"
+   ],
+   "ppe": [
+    "hivis"
+   ],
+   "steps": [
+    {
+     "title": "Go to the reported spot",
+     "detail": "Set GPS from the job.",
+     "tool": null,
+     "anim": "phone",
+     "where": "Job address",
+     "secs": 8
+    },
+    {
+     "title": "Start the survey",
+     "detail": "Press 'Start work' and walk the area while the timer runs.",
+     "tool": "laptop",
+     "anim": "clipboard",
+     "where": "On site",
+     "secs": 8
+    },
+    {
+     "title": "Note dead spots",
+     "detail": "Check your phone's bars at different points.",
+     "tool": null,
+     "anim": "phone",
+     "where": "Around the site",
+     "secs": 8
+    },
+    {
+     "title": "Complete",
+     "detail": "Press Complete when the time is done.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Working in the street",
+     "risk": "Traffic and pedestrians around open chambers, cabinets and poles.",
+     "control": "Wear hi-vis and set out cones and barriers before you start. Never leave a chamber open and unattended."
+    },
+    {
+     "hazard": "Lone working",
+     "risk": "Surveys are often done alone.",
+     "control": "Tell dispatch where you are and keep your phone charged."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Leaving the area",
+     "consequence": "The on-site timer pauses."
+    },
+    {
+     "mistake": "No signal to report back",
+     "consequence": "The survey still counts — note it as a dead spot for planners."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "When surveying alone you should…",
+     "a": [
+      "Hide",
+      "Tell dispatch where you are",
+      "Turn your phone off"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Walking beside roads needs…",
+     "a": [
+      "Nothing",
+      "Hi-vis",
+      "Sunglasses"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Your phone battery should be…",
+     "a": [
+      "Charged",
+      "Flat",
+      "Removed"
+     ],
+     "ok": 0
+    }
+   ],
+   "exam": [
+    {
+     "q": "What do phones need to call?",
+     "a": [
+      "A router",
+      "Signal from a tower",
+      "A fuel station"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Where can you see every mast?",
+     "a": [
+      "Chirp",
+      "OPS Hub → Tower map",
+      "Bank"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "A survey job is checked by…",
+     "a": [
+      "Time spent on site",
+      "Cable laid",
+      "Photos"
+     ],
+     "ok": 0
+    }
+   ]
+  },
+  "tracker": {
+   "name": "Vehicle tracker fitting",
+   "company": "track",
+   "cert": "tracker_fit",
+   "certName": "Vehicle tracker fitting",
+   "certRequired": true,
+   "jobs": [
+    "track_install"
+   ],
+   "summary": "Fit an OPS Track GPS tracker in a customer's vehicle so they can see it live and get theft alerts.",
+   "overview": "Trackers report position over OPS Mobile. With no signal the unit stores positions and sends them later. Mini units plug into a fuse tap; Pro units are hard-wired with external antennas, a backup battery, ignition/door inputs and an immobiliser relay. The job is checked by a tracker you installed after accepting.",
+   "equipment": [
+    {
+     "name": "OPS Track Mini",
+     "what": "Plug-and-play unit on a fuse tap, internal antennas, no backup battery.",
+     "how": "/towers → OPS Track → Install a tracker, sitting in the vehicle."
+    },
+    {
+     "name": "OPS Track Pro",
+     "what": "Hard-wired with antennas, 48 h backup battery, inputs and immobiliser.",
+     "how": "Same menu, choose Pro and follow the steps under the dash."
+    },
+    {
+     "name": "LEDs (PWR / GNSS / GSM)",
+     "what": "Show power, satellite fix and mobile signal.",
+     "how": "/towers → OPS Track → Check the tracker."
+    }
+   ],
+   "tools": [
+    "multimeter",
+    "drill",
+    "laptop"
+   ],
+   "ppe": [
+    "gloves"
+   ],
+   "steps": [
+    {
+     "title": "Sit in the vehicle",
+     "detail": "Get in the customer's vehicle with the engine off.",
+     "tool": null,
+     "anim": "inspect",
+     "where": "Customer's vehicle",
+     "secs": 8
+    },
+    {
+     "title": "Find a hidden spot",
+     "detail": "Behind the dash, away from the airbags.",
+     "tool": null,
+     "anim": "kneel",
+     "where": "Under the dash",
+     "secs": 8
+    },
+    {
+     "title": "Fit the unit",
+     "detail": "/towers → OPS Track → Install a tracker. Choose Mini or Pro and follow each step.",
+     "tool": "drill",
+     "anim": "kneel",
+     "where": "Under the dash",
+     "secs": 8
+    },
+    {
+     "title": "Check the LEDs",
+     "detail": "Check the tracker: PWR, GNSS fix and GSM signal should all be on.",
+     "tool": "multimeter",
+     "anim": "test",
+     "where": "/towers → OPS Track → Check",
+     "secs": 8
+    },
+    {
+     "title": "Complete",
+     "detail": "Press Check on the job.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Vehicle electrics",
+     "risk": "Shorting a battery feed can cause fire.",
+     "control": "Use a fused tap and disconnect before hard-wiring."
+    },
+    {
+     "hazard": "Airbags",
+     "risk": "Wiring near airbags can set them off.",
+     "control": "Keep clear of airbag modules and their yellow connectors."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Fitted by someone else, or before accepting",
+     "consequence": "The check needs a tracker installed by you after accepting."
+    },
+    {
+     "mistake": "Unit with no GSM signal",
+     "consequence": "It can't report live — it stores positions until it gets signal."
+    },
+    {
+     "mistake": "Immobiliser wired wrongly",
+     "consequence": "The customer's car won't start — a complaint and a callout."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Before hard-wiring you should…",
+     "a": [
+      "Lick the wires",
+      "Use a fused tap / disconnect power",
+      "Start the engine"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Yellow connectors under the dash are usually…",
+     "a": [
+      "Decoration",
+      "Free power",
+      "Airbags — keep clear"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "A short circuit can cause…",
+     "a": [
+      "Nothing",
+      "Better GPS",
+      "Fire"
+     ],
+     "ok": 2
+    }
+   ],
+   "exam": [
+    {
+     "q": "How does a tracker report its position?",
+     "a": [
+      "Over OPS Mobile signal",
+      "Bluetooth only",
+      "By post"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Which unit has a backup battery?",
+     "a": [
+      "Neither",
+      "Pro",
+      "Mini"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Where do you check the tracker's LEDs?",
+     "a": [
+      "Garage",
+      "Chirp",
+      "/towers → OPS Track → Check the tracker"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "With no signal the tracker…",
+     "a": [
+      "Stops forever",
+      "Stores positions and sends them later",
+      "Explodes"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "The job check needs…",
+     "a": [
+      "Any tracker",
+      "A photo",
+      "A tracker you installed after accepting"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "electrical": {
+   "name": "Electrical supply & EV charging",
+   "company": "sapl",
+   "cert": "electrical",
+   "certName": "Electrical installation (Part P)",
+   "certRequired": true,
+   "jobs": [
+    "sapl_supply",
+    "sapl_ev"
+   ],
+   "summary": "Connect new electricity supplies and EV chargers so sockets and chargers are live.",
+   "overview": "Power comes from the grid (substations and feeders) over poles to a service cut-out and meter at each property, then into a consumer unit that feeds sockets, lights and chargers. A supply is only live when every link is complete and the grid is energised — in a power cut nothing downstream works. Jobs check that the consumer unit or charger near the site is live.",
+   "equipment": [
+    {
+     "name": "Service cut-out & meter",
+     "what": "Where the supply enters the property and is measured.",
+     "how": "/towers → San Andreas Power & Light → Customer supply & metering."
+    },
+    {
+     "name": "Consumer unit",
+     "what": "Feeds sockets and lights around it through breakers.",
+     "how": "/towers → SAPL → Fuse boards & isolators."
+    },
+    {
+     "name": "EV charger (wallbox / post)",
+     "what": "Charges electric vehicles from its own circuit.",
+     "how": "/towers → SAPL → EV charging."
+    },
+    {
+     "name": "Power cable",
+     "what": "Service drop, LV and mains cable linking it all.",
+     "how": "Run power cable / Run mains cable from the SAPL menu."
+    }
+   ],
+   "tools": [
+    "multimeter",
+    "lockoff",
+    "torque",
+    "drill",
+    "ladder"
+   ],
+   "ppe": [
+    "gloves",
+    "glasses",
+    "hivis"
+   ],
+   "steps": [
+    {
+     "title": "Isolate and prove dead",
+     "detail": "Lock off the supply and prove dead with a voltage tester before touching anything.",
+     "tool": "lockoff",
+     "anim": "test",
+     "where": "At the cut-out / consumer unit",
+     "secs": 8
+    },
+    {
+     "title": "Fit the supply kit",
+     "detail": "Place the cut-out, meter and consumer unit (or the EV charger) from the SAPL menu.",
+     "tool": "drill",
+     "anim": "drill",
+     "where": "/towers → San Andreas Power & Light",
+     "secs": 8
+    },
+    {
+     "title": "Run the cables",
+     "detail": "Run the service drop from the pole and mains cable to the consumer unit / charger.",
+     "tool": "ladder",
+     "anim": "reach",
+     "where": "Pole to property",
+     "secs": 8
+    },
+    {
+     "title": "Terminate to torque",
+     "detail": "Tighten every terminal with the torque driver.",
+     "tool": "torque",
+     "anim": "crimp",
+     "where": "Each terminal",
+     "secs": 8
+    },
+    {
+     "title": "Test and energise",
+     "detail": "Remove the lock-off, switch on and test. The check needs the kit live.",
+     "tool": "multimeter",
+     "anim": "test",
+     "where": "Consumer unit / charger",
+     "secs": 8
+    },
+    {
+     "title": "Complete",
+     "detail": "Press Check on the job.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Electricity",
+     "risk": "Mains voltage can give a fatal shock and cause burns.",
+     "control": "Never open powered kit. Isolate and prove dead with a voltage tester before touching terminals."
+    },
+    {
+     "hazard": "Isolation",
+     "risk": "Someone switches the circuit back on while you work.",
+     "control": "Lock off and tag the isolator; keep the key with you."
+    },
+    {
+     "hazard": "Working at height",
+     "risk": "A fall from a ladder or pole can cause serious injury.",
+     "control": "Use a ladder at a 1-in-4 angle on firm ground with three points of contact. Above 2 m on a pole, clip on your harness."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Not proving dead",
+     "consequence": "With incidents on you can get a shock and be hurt. It's logged as a safety breach."
+    },
+    {
+     "mistake": "Supply not connected back to the grid",
+     "consequence": "The consumer unit is dead: sockets, chargers and lighting won't work, and the check fails."
+    },
+    {
+     "mistake": "Grid outage in the area",
+     "consequence": "Nothing is live until San Andreas Power & Light restores the feeder — the check fails until then."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Before touching any terminal you must…",
+     "a": [
+      "Ask the customer",
+      "Isolate, lock off and prove dead",
+      "Touch it quickly"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "A lock-off kit stops…",
+     "a": [
+      "Theft",
+      "Rain",
+      "Anyone switching the circuit back on"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Gloves for electrical work should be…",
+     "a": [
+      "Woollen",
+      "Any",
+      "Insulated and rated"
+     ],
+     "ok": 2
+    }
+   ],
+   "exam": [
+    {
+     "q": "What feeds the sockets in a property?",
+     "a": [
+      "The water main",
+      "The router",
+      "The consumer unit"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "During a grid power cut, a new supply…",
+     "a": [
+      "Works anyway",
+      "Isn't live until the feeder is restored",
+      "Explodes"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "What does a torque driver ensure?",
+     "a": [
+      "Terminals are tightened correctly",
+      "Colour coding",
+      "Faster drilling"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "An EV charger needs…",
+     "a": [
+      "An extension lead",
+      "USB",
+      "Its own circuit from the consumer unit"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "The job check looks for…",
+     "a": [
+      "The kit being live near the job",
+      "Photos",
+      "A receipt"
+     ],
+     "ok": 0
+    }
+   ]
+  },
+  "solar": {
+   "name": "Solar PV installation",
+   "company": "solar",
+   "cert": "electrical",
+   "certName": "Electrical installation (Part P)",
+   "certRequired": true,
+   "jobs": [
+    "solar_install"
+   ],
+   "summary": "Fit solar panels, an inverter and optionally a battery so the home makes its own power.",
+   "overview": "Panels make DC power in daylight. The DC isolator lets you make the array safe. The hybrid inverter turns DC into mains for the consumer unit and charges the home battery. After dark, or in a power cut, the battery takes over. Panels must be within 30 m of the inverter, and the inverter feeds the consumer unit beside it.",
+   "equipment": [
+    {
+     "name": "Solar panels",
+     "what": "Make DC power from daylight.",
+     "how": "/towers → San Andreas Solar → Solar panels (roof rails or ground arrays)."
+    },
+    {
+     "name": "PV DC isolator",
+     "what": "Disconnects the array so you can work safely.",
+     "how": "/towers → San Andreas Solar → Isolators & protection."
+    },
+    {
+     "name": "Hybrid inverter & battery",
+     "what": "Converts DC to mains, feeds the house and charges the battery.",
+     "how": "/towers → San Andreas Solar → Inverters & batteries. [E] shows output and charge."
+    }
+   ],
+   "tools": [
+    "ladder",
+    "drill",
+    "multimeter",
+    "torque"
+   ],
+   "ppe": [
+    "harness",
+    "gloves",
+    "glasses",
+    "hivis"
+   ],
+   "steps": [
+    {
+     "title": "Plan the roof",
+     "detail": "Find a sunny roof face within 30 m of where the inverter will go.",
+     "tool": null,
+     "anim": "clipboard",
+     "where": "On site",
+     "secs": 8
+    },
+    {
+     "title": "Fit the panels",
+     "detail": "Climb with your harness clipped on and place the panels.",
+     "tool": "ladder",
+     "anim": "reach",
+     "where": "/towers → San Andreas Solar",
+     "secs": 8
+    },
+    {
+     "title": "Fit the DC isolator",
+     "detail": "Place the isolator between the array and the inverter.",
+     "tool": "drill",
+     "anim": "drill",
+     "where": "Near the inverter",
+     "secs": 8
+    },
+    {
+     "title": "Fit the inverter and battery",
+     "detail": "Place the inverter next to the consumer unit, and the battery beside it.",
+     "tool": "drill",
+     "anim": "drill",
+     "where": "Beside the consumer unit",
+     "secs": 8
+    },
+    {
+     "title": "Test",
+     "detail": "[E] on the inverter: check output in daylight and the battery charge.",
+     "tool": "multimeter",
+     "anim": "test",
+     "where": "At the inverter",
+     "secs": 8
+    },
+    {
+     "title": "Complete",
+     "detail": "Press Check on the job.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Working at height",
+     "risk": "A fall from a ladder or pole can cause serious injury.",
+     "control": "Use a ladder at a 1-in-4 angle on firm ground with three points of contact. Above 2 m on a pole, clip on your harness."
+    },
+    {
+     "hazard": "DC from panels",
+     "risk": "Panels make dangerous DC whenever there's daylight.",
+     "control": "Open the DC isolator before working on the array or inverter."
+    },
+    {
+     "hazard": "Manual handling",
+     "risk": "Heavy kit such as racks, UPS cabinets and cable drums can injure your back.",
+     "control": "Lift with your legs, keep loads close, and use two people or a trolley for anything over 25 kg."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Panels further than 30 m from the inverter",
+     "consequence": "They don't feed it, so there's no output."
+    },
+    {
+     "mistake": "Inverter far from the consumer unit",
+     "consequence": "It doesn't feed the house — you'd need extra mains cable."
+    },
+    {
+     "mistake": "No inverter fitted",
+     "consequence": "The fixtures check for the inverter fails."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Solar panels make power…",
+     "a": [
+      "Whenever there's daylight",
+      "Never",
+      "Only at night"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Before working on the array…",
+     "a": [
+      "Open the DC isolator",
+      "Nothing",
+      "Cover it in water"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "On a roof you must…",
+     "a": [
+      "Run",
+      "Sit on the edge",
+      "Wear a harness clipped to an anchor"
+     ],
+     "ok": 2
+    }
+   ],
+   "exam": [
+    {
+     "q": "What turns DC into mains?",
+     "a": [
+      "The panel",
+      "The meter",
+      "The inverter"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "How far can panels be from the inverter?",
+     "a": [
+      "Any distance",
+      "30 m",
+      "300 m"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "After dark the house runs on…",
+     "a": [
+      "Panels",
+      "The battery (then the grid)",
+      "Nothing"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Where do you see output and charge?",
+     "a": [
+      "Chirp",
+      "[E] on the inverter",
+      "OPS Mobile"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "The job check looks for…",
+     "a": [
+      "Photos",
+      "A receipt",
+      "The inverter near the job"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "fuel": {
+   "name": "Fuel station service",
+   "company": "fuel",
+   "cert": "fuel_service",
+   "certName": "Fuel station service",
+   "certRequired": false,
+   "jobs": [
+    "fuel_service"
+   ],
+   "summary": "Service fuel stations: dispensers, tank gauges, emergency stops and deliveries.",
+   "overview": "OPS Fuel stations store unleaded, super and diesel in tanks with automatic tank gauges. Dispensers need power, and an emergency stop cuts every pump. Service visits keep everything working and safe; they're timed on site.",
+   "equipment": [
+    {
+     "name": "Dispenser",
+     "what": "The pump. It needs power and fuel in the tank.",
+     "how": "/towers → OPS Fuel → Dispensers & forecourt."
+    },
+    {
+     "name": "Tanks & gauge (ATG)",
+     "what": "Store fuel and report the level.",
+     "how": "/towers → OPS Fuel → Storage tanks."
+    },
+    {
+     "name": "Emergency stop",
+     "what": "Cuts all pumps at once.",
+     "how": "/towers → OPS Fuel."
+    }
+   ],
+   "tools": [
+    "multimeter",
+    "cones"
+   ],
+   "ppe": [
+    "hivis",
+    "gloves",
+    "glasses"
+   ],
+   "steps": [
+    {
+     "title": "Cone off the area",
+     "detail": "Set out cones around the pump you're servicing.",
+     "tool": "cones",
+     "anim": "carry",
+     "where": "Forecourt",
+     "secs": 8
+    },
+    {
+     "title": "Isolate the pump",
+     "detail": "Use the emergency stop / isolate the dispenser.",
+     "tool": "lockoff",
+     "anim": "test",
+     "where": "Forecourt",
+     "secs": 8
+    },
+    {
+     "title": "Service",
+     "detail": "Press 'Start work' and stay on site while you service the dispenser and nozzles.",
+     "tool": "multimeter",
+     "anim": "kneel",
+     "where": "Dispenser",
+     "secs": 8
+    },
+    {
+     "title": "Restore and test",
+     "detail": "Reset the emergency stop and test a pump.",
+     "tool": null,
+     "anim": "inspect",
+     "where": "Forecourt",
+     "secs": 8
+    },
+    {
+     "title": "Complete",
+     "detail": "Press Complete when the time is done.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Fuel vapour",
+     "risk": "Petrol vapour ignites easily.",
+     "control": "No phones, sparks or smoking near open fuel. Ventilate."
+    },
+    {
+     "hazard": "Working in the street",
+     "risk": "Traffic and pedestrians around open chambers, cabinets and poles.",
+     "control": "Wear hi-vis and set out cones and barriers before you start. Never leave a chamber open and unattended."
+    },
+    {
+     "hazard": "Electricity",
+     "risk": "Mains voltage can give a fatal shock and cause burns.",
+     "control": "Never open powered kit. Isolate and prove dead with a voltage tester before touching terminals."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Leaving early",
+     "consequence": "The timer stops."
+    },
+    {
+     "mistake": "Emergency stop left on",
+     "consequence": "No pump works and customers can't buy fuel."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Near open fuel you must not…",
+     "a": [
+      "Wear gloves",
+      "Smoke or make sparks",
+      "Wear hi-vis"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "The emergency stop…",
+     "a": [
+      "Starts music",
+      "Locks the shop",
+      "Cuts every pump"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Spilt fuel should be…",
+     "a": [
+      "Lit",
+      "Left",
+      "Contained and cleaned up straight away"
+     ],
+     "ok": 2
+    }
+   ],
+   "exam": [
+    {
+     "q": "What cuts every pump at once?",
+     "a": [
+      "The till",
+      "The air pump",
+      "The emergency stop"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "What reports the tank level?",
+     "a": [
+      "The automatic tank gauge",
+      "The canopy",
+      "The nozzle"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "A service visit is checked by…",
+     "a": [
+      "Cable laid",
+      "Speed test",
+      "Time on site"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "cctv_install": {
+   "name": "CCTV camera installation",
+   "company": "secure",
+   "cert": "cctv_install",
+   "certName": "CCTV installer",
+   "certRequired": true,
+   "jobs": [
+    "cctv_install",
+    "cctv_ptz",
+    "cctv_anpr",
+    "cctv_thermal",
+    "cctv_doorbell",
+    "cctv_upgrade",
+    "cctv_access",
+    "cctv_poe"
+   ],
+   "summary": "Fit IP, PTZ, ANPR, thermal and wireless cameras and get them live on the customer's recorder.",
+   "overview": "An OPS Secure system is a recorder (NVR for IP cameras, DVR for analogue ones) with cameras connected to it. IP cameras take power and data over CAT6 from the NVR's PoE ports (8 ports, 120 W budget) or a PoE switch cabled to the NVR. Wireless cameras and doorbells need a powered NVR on site and Wi-Fi in range. A camera is only 'online' when it has a path, power, a free channel and no fault. Jobs check for cameras online on a recorder near the site.",
+   "equipment": [
+    {
+     "name": "IP cameras (bullet, dome, turret, fisheye)",
+     "what": "Record video over the network, powered by PoE.",
+     "how": "/towers → OPS Secure → 'IP cameras (PoE)'. Cable to the NVR or a PoE switch."
+    },
+    {
+     "name": "PTZ / ANPR / thermal",
+     "what": "Pan-tilt-zoom with 30× zoom; number-plate reading; heat detection. They draw more PoE.",
+     "how": "/towers → OPS Secure → 'Specialist cameras'."
+    },
+    {
+     "name": "Wireless camera & video doorbell",
+     "what": "Need a socket (wireless camera) or nothing (doorbell), a powered NVR on site and Wi-Fi in range.",
+     "how": "/towers → OPS Secure → 'Wireless & doorbells'."
+    },
+    {
+     "name": "PoE switch",
+     "what": "Adds PoE ports when the NVR's are full, up to its own budget.",
+     "how": "Cable the switch to the NVR, and the cameras to the switch."
+    },
+    {
+     "name": "CAT6",
+     "what": "Data and power to each IP camera.",
+     "how": "'Pull CAT6 from the nearest box', crimp both ends onto camera and NVR/switch."
+    }
+   ],
+   "tools": [
+    "ladder",
+    "drill",
+    "crimper",
+    "laptop"
+   ],
+   "ppe": [
+    "hivis",
+    "harness",
+    "glasses"
+   ],
+   "steps": [
+    {
+     "title": "Agree camera positions",
+     "detail": "Walk the site with the customer: entrances, tills, car park. Avoid pointing at neighbours' windows.",
+     "tool": null,
+     "anim": "clipboard",
+     "where": "On site",
+     "secs": 8
+    },
+    {
+     "title": "Mount the cameras",
+     "detail": "Use the ladder and place each camera from the OPS Secure menu, aimed at the area to cover.",
+     "tool": "ladder",
+     "anim": "reach",
+     "where": "/towers → OPS Secure",
+     "secs": 8
+    },
+    {
+     "title": "Run CAT6 to each camera",
+     "detail": "Pull CAT6 from the box to each camera and back to the NVR or PoE switch.",
+     "tool": "crimper",
+     "anim": "carry",
+     "where": "From the nearest CAT6 box",
+     "secs": 8
+    },
+    {
+     "title": "Crimp and terminate",
+     "detail": "Crimp both ends and terminate them onto the camera and the NVR/switch.",
+     "tool": "crimper",
+     "anim": "crimp",
+     "where": "Each camera and the recorder",
+     "secs": 8
+    },
+    {
+     "title": "Check power & channels",
+     "detail": "[E] at the NVR → system: each camera should say 'ok'. 'No PoE' means the budget is full; 'No channel' means the NVR is full.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "[E] at the NVR",
+     "secs": 8
+    },
+    {
+     "title": "Watch and focus",
+     "detail": "Watch each camera from the NVR or monitor and check the view.",
+     "tool": "laptop",
+     "anim": "inspect",
+     "where": "[E] at the NVR → Watch",
+     "secs": 8
+    },
+    {
+     "title": "Complete",
+     "detail": "Press Check on the job.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Working at height",
+     "risk": "A fall from a ladder or pole can cause serious injury.",
+     "control": "Use a ladder at a 1-in-4 angle on firm ground with three points of contact. Above 2 m on a pole, clip on your harness."
+    },
+    {
+     "hazard": "Privacy",
+     "risk": "Cameras that film neighbours or public areas unfairly break privacy law.",
+     "control": "Point cameras at the customer's own property and put up 'CCTV in operation' signs."
+    },
+    {
+     "hazard": "Electricity",
+     "risk": "Mains voltage can give a fatal shock and cause burns.",
+     "control": "Never open powered kit. Isolate and prove dead with a voltage tester before touching terminals."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "More PoE cameras than the NVR budget",
+     "consequence": "Extra cameras show 'No PoE' and stay offline. Add a PoE switch."
+    },
+    {
+     "mistake": "Analogue camera cabled to an NVR (or IP to a DVR)",
+     "consequence": "'Wrong recorder' — that camera never comes online."
+    },
+    {
+     "mistake": "Wireless camera with no Wi-Fi in range",
+     "consequence": "'No Wi-Fi' — it can't reach the recorder."
+    },
+    {
+     "mistake": "Recorder with no socket within 3 m",
+     "consequence": "The whole system is unpowered: nothing records."
+    },
+    {
+     "mistake": "Cameras fitted before accepting",
+     "consequence": "They don't count — the check needs cameras added after acceptance."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Where should cameras point?",
+     "a": [
+      "At the customer's own property",
+      "Into neighbours' windows",
+      "At the sky"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Working above 2 m on a wall you need…",
+     "a": [
+      "Nothing",
+      "A chair",
+      "A ladder set properly, or a harness on a pole"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Signs saying CCTV is in use are…",
+     "a": [
+      "Banned",
+      "Required",
+      "Optional decoration"
+     ],
+     "ok": 1
+    }
+   ],
+   "exam": [
+    {
+     "q": "What is the NVR's PoE budget?",
+     "a": [
+      "Unlimited",
+      "5 W",
+      "120 W across 8 ports"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "A camera says 'No PoE'. You should…",
+     "a": [
+      "Add a PoE switch or free budget",
+      "Replace the router",
+      "Wait"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Analogue cameras record on…",
+     "a": [
+      "A DVR",
+      "A laptop",
+      "An NVR"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "What does a wireless camera need?",
+     "a": [
+      "A powered NVR on site and Wi-Fi in range",
+      "A fibre",
+      "Nothing"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Which camera reads number plates?",
+     "a": [
+      "Fisheye",
+      "ANPR",
+      "Dome"
+     ],
+     "ok": 1
+    }
+   ]
+  },
+  "cctv_recorders": {
+   "name": "CCTV recorders, recording & remote viewing",
+   "company": "secure",
+   "cert": "cctv_install",
+   "certName": "CCTV installer",
+   "certRequired": true,
+   "jobs": [
+    "cctv_nvr",
+    "cctv_dvr",
+    "cctv_remote",
+    "cctv_recording"
+   ],
+   "summary": "Install NVR/DVR recorders, set recording modes, and let customers watch remotely in OPS Secure View.",
+   "overview": "The recorder is the brain of a CCTV system. It must have a socket within 3 m, its owner set, and a recording mode (motion or continuous). Remote viewing on the phone needs the NVR cabled to a router that's online, plus remote viewing switched on. Police and organisations can be given access by job, and owners can share with other players.",
+   "equipment": [
+    {
+     "name": "NVR 16-channel PoE",
+     "what": "Records up to 16 IP cameras, with 8 PoE ports.",
+     "how": "/towers → OPS Secure → 'Recorders & viewing'. [E] → Set up."
+    },
+    {
+     "name": "DVR 8-channel",
+     "what": "Records analogue HD-TVI cameras.",
+     "how": "Same menu."
+    },
+    {
+     "name": "Monitor / video wall / PTZ keyboard",
+     "what": "Watch the system on site; the keyboard controls PTZ.",
+     "how": "Placed near the recorder; [E] → Watch."
+    },
+    {
+     "name": "OPS Secure View app",
+     "what": "The customer watches remotely on their phone.",
+     "how": "Install from the Store; needs remote viewing on and the NVR online."
+    }
+   ],
+   "tools": [
+    "laptop",
+    "crimper",
+    "drill"
+   ],
+   "ppe": [],
+   "steps": [
+    {
+     "title": "Place the recorder",
+     "detail": "Place the NVR/DVR within 3 m of a socket.",
+     "tool": "drill",
+     "anim": "carry",
+     "where": "/towers → OPS Secure → Recorders",
+     "secs": 8
+    },
+    {
+     "title": "Set it up",
+     "detail": "[E] at the recorder → Set up: name, owner, recording mode, organisation job (e.g. police), sharing.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "[E] at the recorder",
+     "secs": 8
+    },
+    {
+     "title": "Connect it to the internet",
+     "detail": "For remote viewing, run CAT6 from the NVR to the customer's router and terminate both ends.",
+     "tool": "crimper",
+     "anim": "crimp",
+     "where": "NVR to router",
+     "secs": 8
+    },
+    {
+     "title": "Turn on remote viewing",
+     "detail": "In Set up, switch on remote viewing.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "[E] at the recorder",
+     "secs": 8
+    },
+    {
+     "title": "Prove it",
+     "detail": "Open OPS Secure View on a phone and watch a camera.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Secure View app",
+     "secs": 8
+    },
+    {
+     "title": "Complete",
+     "detail": "Press Check on the job.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Electricity",
+     "risk": "Mains voltage can give a fatal shock and cause burns.",
+     "control": "Never open powered kit. Isolate and prove dead with a voltage tester before touching terminals."
+    },
+    {
+     "hazard": "Customer data & privacy",
+     "risk": "Router settings, passwords and camera footage are private.",
+     "control": "Only change what the job needs. Never share Wi-Fi passwords or footage, and log out of customer systems when you finish."
+    },
+    {
+     "hazard": "Manual handling",
+     "risk": "Heavy kit such as racks, UPS cabinets and cable drums can injure your back.",
+     "control": "Lift with your legs, keep loads close, and use two people or a trolley for anything over 25 kg."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "No socket within 3 m",
+     "consequence": "The recorder is unpowered, nothing records, and the recorder check fails."
+    },
+    {
+     "mistake": "Remote viewing on but the NVR not cabled to an online router",
+     "consequence": "The app says it can't watch remotely and the remote check fails."
+    },
+    {
+     "mistake": "Recording mode left 'off'",
+     "consequence": "The recording check fails and incidents go unrecorded."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Who may you share footage with?",
+     "a": [
+      "Anyone",
+      "Only people the owner authorises",
+      "Social media"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Before plugging in a recorder, check…",
+     "a": [
+      "Nothing",
+      "The weather",
+      "The socket and lead are undamaged"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Recorders are heavy — lift them…",
+     "a": [
+      "With your legs, close to your body",
+      "With your back",
+      "Above your head"
+     ],
+     "ok": 0
+    }
+   ],
+   "exam": [
+    {
+     "q": "How close must the recorder's socket be?",
+     "a": [
+      "100 m",
+      "Any distance",
+      "Within 3 m"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "What does remote viewing need?",
+     "a": [
+      "A fibre to the camera",
+      "Nothing",
+      "NVR cabled to an online router + remote viewing on"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Which recorder takes IP cameras?",
+     "a": [
+      "NVR",
+      "DVR",
+      "ONT"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Where do you set the recording mode?",
+     "a": [
+      "Bank",
+      "OPS Mobile",
+      "[E] at the recorder → Set up"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "How do police get access to a business's cameras?",
+     "a": [
+      "By email",
+      "They take it",
+      "The organisation job is set on the recorder"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "cctv_maint": {
+   "name": "CCTV maintenance, faults & removal",
+   "company": "secure",
+   "cert": "cctv_install",
+   "certName": "CCTV installer",
+   "certRequired": false,
+   "jobs": [
+    "cctv_fault",
+    "cctv_maintenance",
+    "cctv_cable",
+    "cctv_removal"
+   ],
+   "summary": "Keep systems healthy: clean lenses, replace damaged cables and dead cameras, and remove systems cleanly.",
+   "overview": "Cameras fail: lenses get dirty, cables get damaged and units die. Each fault raises an OPS Secure job and shows on the recorder ([E] → the camera). Repairs to kit under warranty, or covered by a support contract, are free for the customer. A removal job is only done when every camera at the site is gone.",
+   "equipment": [
+    {
+     "name": "Camera status",
+     "what": "ok, fault_lens (picture blurred), fault_cable, fault_dead, no_power…",
+     "how": "[E] at the NVR or the camera."
+    },
+    {
+     "name": "Replacement cable",
+     "what": "A new CAT6 run when the old one is damaged.",
+     "how": "Pull and terminate a new run."
+    }
+   ],
+   "tools": [
+    "ladder",
+    "crimper",
+    "laptop"
+   ],
+   "ppe": [
+    "hivis",
+    "glasses"
+   ],
+   "steps": [
+    {
+     "title": "Find the faulty camera",
+     "detail": "[E] at the NVR — check which cameras show a fault.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "[E] at the NVR",
+     "secs": 8
+    },
+    {
+     "title": "Fix it",
+     "detail": "Lens: [E] at the camera → clean. Cable: run a new CAT6 run. Dead: replace the camera.",
+     "tool": "ladder",
+     "anim": "reach",
+     "where": "At the camera",
+     "secs": 8
+    },
+    {
+     "title": "Check everything",
+     "detail": "Every camera on the site must be healthy for a fault job.",
+     "tool": "laptop",
+     "anim": "inspect",
+     "where": "[E] at the NVR",
+     "secs": 8
+    },
+    {
+     "title": "Removal",
+     "detail": "For removal jobs, take down every camera on the site.",
+     "tool": "drill",
+     "anim": "drill",
+     "where": "/towers edit mode → remove",
+     "secs": 8
+    },
+    {
+     "title": "Complete",
+     "detail": "Press Check on the job.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Working at height",
+     "risk": "A fall from a ladder or pole can cause serious injury.",
+     "control": "Use a ladder at a 1-in-4 angle on firm ground with three points of contact. Above 2 m on a pole, clip on your harness."
+    },
+    {
+     "hazard": "Electricity",
+     "risk": "Mains voltage can give a fatal shock and cause burns.",
+     "control": "Never open powered kit. Isolate and prove dead with a voltage tester before touching terminals."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Fixing one camera but leaving another faulty",
+     "consequence": "The 'all cameras working' check fails."
+    },
+    {
+     "mistake": "A camera left on the wall during removal",
+     "consequence": "The removal check lists cameras still fitted."
+    },
+    {
+     "mistake": "Charging a customer whose kit is under warranty",
+     "consequence": "Warranty or contract cover makes the job free automatically — the invoice is zero."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Before cleaning a lens on a high wall…",
+     "a": [
+      "Climb the drainpipe",
+      "Set the ladder safely",
+      "Throw water at it"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Old cables you remove should be…",
+     "a": [
+      "Burnt",
+      "Left hanging",
+      "Taken away and recycled"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Is a camera feed private?",
+     "a": [
+      "No",
+      "Yes",
+      "Only at night"
+     ],
+     "ok": 1
+    }
+   ],
+   "exam": [
+    {
+     "q": "Where do you see which camera is faulty?",
+     "a": [
+      "OPS Mobile",
+      "Maps",
+      "[E] at the NVR"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "A blurred picture means…",
+     "a": [
+      "A dead camera",
+      "No PoE",
+      "A dirty lens"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "A removal job is done when…",
+     "a": [
+      "The NVR is off",
+      "One is gone",
+      "Every camera at the site is gone"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Kit under warranty is repaired…",
+     "a": [
+      "Free",
+      "Never",
+      "At double price"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "A damaged cable fault is fixed by…",
+     "a": [
+      "Cleaning the lens",
+      "Rebooting",
+      "Running and terminating a new CAT6 run"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "web": {
+   "name": "Websites, SSL & business email",
+   "company": "web",
+   "cert": "web_dev",
+   "certName": "Web developer",
+   "certRequired": false,
+   "jobs": [
+    "web_build",
+    "web_ssl",
+    "web_mail"
+   ],
+   "summary": "Build and publish customer websites, secure them with SSL, and set up email on their domain.",
+   "overview": "OPS Web sites are built in the Browser at opsweb.sa → Control panel → the site. A site is live when it's published and its domain's DNS points at OPS Web (198.18.10.80) — or at the customer's own server. HTTPS needs a valid OPS Trust CA certificate; email needs a mailbox and an MX record pointing at mx.opsweb.sa. While you're on the job you can edit the customer's sites and domains.",
+   "equipment": [
+    {
+     "name": "Site builder",
+     "what": "Pages made of blocks (header, text, images, features, price list, gallery, contact form, hours, links, quote, call to action).",
+     "how": "Browser → opsweb.sa → Control panel → the site → Pages."
+    },
+    {
+     "name": "Connect domain",
+     "what": "Points the domain at the site and fixes the DNS for you.",
+     "how": "Site → Address → choose domain → Connect."
+    },
+    {
+     "name": "SSL certificate",
+     "what": "Turns on the padlock (HTTPS).",
+     "how": "Site → Get SSL, or opsdomains.sa → the domain → Security certificate."
+    },
+    {
+     "name": "Mailboxes",
+     "what": "info@domain etc., delivered into a phone's Mail app.",
+     "how": "opsweb.sa → Control panel → Email → + Mailbox."
+    }
+   ],
+   "tools": [
+    "laptop"
+   ],
+   "ppe": [],
+   "steps": [
+    {
+     "title": "Read the brief",
+     "detail": "Read the job description and the customer's brief.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    },
+    {
+     "title": "Open their site",
+     "detail": "In the Browser, go to opsweb.sa → Control panel. Your job's customer appears under the job reference.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "Browser → opsweb.sa",
+     "secs": 8
+    },
+    {
+     "title": "Build it",
+     "detail": "Add at least four content blocks, set colours and contact details, and fill every page.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "Site editor",
+     "secs": 8
+    },
+    {
+     "title": "Connect & publish",
+     "detail": "Connect the domain (it fixes the DNS) and switch the site Live.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "Site → Address / Live",
+     "secs": 8
+    },
+    {
+     "title": "SSL / email",
+     "detail": "For SSL jobs issue a certificate; for email jobs add a mailbox (the MX record is set for you).",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "opsweb.sa / opsdomains.sa",
+     "secs": 8
+    },
+    {
+     "title": "Check",
+     "detail": "Press Check on the job.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Customer data & privacy",
+     "risk": "Router settings, passwords and camera footage are private.",
+     "control": "Only change what the job needs. Never share Wi-Fi passwords or footage, and log out of customer systems when you finish."
+    },
+    {
+     "hazard": "Copyright & honesty",
+     "risk": "Using other people's images or making false claims gets the site taken down.",
+     "control": "Use the customer's own material and accurate details."
+    },
+    {
+     "hazard": "Screen time",
+     "risk": "Long sessions at a screen cause eye strain.",
+     "control": "Take regular short breaks."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Site saved but not published",
+     "consequence": "The check fails: 'isn't published'."
+    },
+    {
+     "mistake": "Domain not pointing at the site",
+     "consequence": "Visitors see a parked page or an error, and the check fails until DNS points at the site."
+    },
+    {
+     "mistake": "Fewer than four blocks",
+     "consequence": "The build check counts content blocks."
+    },
+    {
+     "mistake": "Certificate requested before DNS points at the server",
+     "consequence": "Validation fails — connect the domain first."
+    },
+    {
+     "mistake": "Mailbox created but MX pointing elsewhere",
+     "consequence": "Mail bounces and the email check fails."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Can you reuse the customer's admin access after the job?",
+     "a": [
+      "Yes",
+      "Sometimes",
+      "No"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Images on a customer site should be…",
+     "a": [
+      "Blurry",
+      "Theirs or properly licensed",
+      "Copied from anywhere"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "During long builds you should…",
+     "a": [
+      "Take short screen breaks",
+      "Work all night",
+      "Never blink"
+     ],
+     "ok": 0
+    }
+   ],
+   "exam": [
+    {
+     "q": "When is a site live?",
+     "a": [
+      "Published, with the domain pointing at the server",
+      "Never",
+      "When saved"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "What is the OPS Web hosting IP?",
+     "a": [
+      "198.18.10.80",
+      "127.0.0.1",
+      "8.8.8.8"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Email on a domain needs…",
+     "a": [
+      "A camera",
+      "SSL only",
+      "A mailbox and MX → mx.opsweb.sa"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "HTTPS needs…",
+     "a": [
+      "A password",
+      "A valid certificate for the name",
+      "A faster router"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "A build job checks…",
+     "a": [
+      "Colour only",
+      "Nothing",
+      "Published, live on the domain, 4+ blocks, edited after accepting"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "domains": {
+   "name": "Domains & DNS",
+   "company": "domains",
+   "cert": "web_dev",
+   "certName": "Web developer",
+   "certRequired": false,
+   "jobs": [
+    "dom_dns"
+   ],
+   "summary": "Make DNS changes for customers on their domains.",
+   "overview": "DNS turns names into addresses. A records point a name at an IPv4 address; CNAME points one name at another; MX says where mail goes; TXT holds verification text. A wrong record takes a website or email down instantly for everyone. A DNS job is checked by the domain's DNS having changed after you accepted.",
+   "equipment": [
+    {
+     "name": "DNS editor",
+     "what": "Add, edit or delete A, AAAA, CNAME, MX and TXT records.",
+     "how": "Browser → opsdomains.sa → My domains → the domain → DNS records."
+    },
+    {
+     "name": "WHOIS",
+     "what": "Who owns a domain and when it expires.",
+     "how": "opsdomains.sa → WHOIS."
+    }
+   ],
+   "tools": [
+    "laptop"
+   ],
+   "ppe": [],
+   "steps": [
+    {
+     "title": "Read the request",
+     "detail": "Exactly which record should change.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    },
+    {
+     "title": "Open the domain",
+     "detail": "opsdomains.sa → My domains — the customer's domains appear under your job.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "Browser",
+     "secs": 8
+    },
+    {
+     "title": "Change the record",
+     "detail": "Add or edit the record. A CNAME can't share its name with other records, and the bare domain (@) can't be a CNAME.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "DNS records",
+     "secs": 8
+    },
+    {
+     "title": "Test",
+     "detail": "Visit the site / send a test email.",
+     "tool": "laptop",
+     "anim": "inspect",
+     "where": "Browser / Mail",
+     "secs": 8
+    },
+    {
+     "title": "Check",
+     "detail": "Press Check on the job.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Customer data & privacy",
+     "risk": "Router settings, passwords and camera footage are private.",
+     "control": "Only change what the job needs. Never share Wi-Fi passwords or footage, and log out of customer systems when you finish."
+    },
+    {
+     "hazard": "Taking a service down",
+     "risk": "A wrong record breaks the customer's website or email.",
+     "control": "Write down the old value first and test straight after."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Deleting the A record for @",
+     "consequence": "The website stops resolving: ERR_NAME_NOT_RESOLVED."
+    },
+    {
+     "mistake": "Changing MX by mistake",
+     "consequence": "Email bounces."
+    },
+    {
+     "mistake": "Change made before accepting",
+     "consequence": "The check needs a change after acceptance."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Before changing a record, write down…",
+     "a": [
+      "The old value",
+      "Your lunch",
+      "Nothing"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "After changing DNS you should…",
+     "a": [
+      "Leave",
+      "Delete more",
+      "Test the website / email"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Domain owner details are…",
+     "a": [
+      "Private",
+      "Public gossip",
+      "For sale"
+     ],
+     "ok": 0
+    }
+   ],
+   "exam": [
+    {
+     "q": "Which record points a name at an IPv4 address?",
+     "a": [
+      "MX",
+      "A",
+      "TXT"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Which record says where email goes?",
+     "a": [
+      "A",
+      "CNAME",
+      "MX"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Can the bare domain (@) be a CNAME?",
+     "a": [
+      "Yes",
+      "Only on Fridays",
+      "No"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Where are DNS records edited?",
+     "a": [
+      "OPS Mobile",
+      "opsdomains.sa → My domains → the domain",
+      "Chirp"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "A missing A record gives…",
+     "a": [
+      "A faster site",
+      "ERR_NAME_NOT_RESOLVED",
+      "Free SSL"
+     ],
+     "ok": 1
+    }
+   ]
+  },
+  "dc": {
+   "name": "Data centre operations",
+   "company": "data",
+   "cert": "dc_ops",
+   "certName": "Data centre operations",
+   "certRequired": true,
+   "jobs": [
+    "dc_fault",
+    "dc_cooling",
+    "dc_power",
+    "dc_network",
+    "dc_capacity"
+   ],
+   "summary": "Keep OPS Data's halls running: replace failed parts, keep power and cooling up, keep racks online and add capacity.",
+   "overview": "A data hall is racks of servers with a UPS (on mains or a generator), CRAC cooling and network uplinks. Every running server makes heat. If cooling can't keep up, the hall warms, servers degrade at 32 °C and shut down at 40 °C. On battery, the UPS runs out. A rack needs a ToR switch and CAT6 to an online router. OPS Cloud customers' servers run on these hosts: when hosts fail, their servers restart elsewhere or go down, and OPS Web, DNS and mail can depend on them too.",
+   "equipment": [
+    {
+     "name": "42U rack",
+     "what": "Holds servers, storage, switch and firewall by rack unit.",
+     "how": "/towers → OPS Data. [E] on the rack → Install kit / the unit → Repair, Power, Role."
+    },
+    {
+     "name": "Compute / storage servers",
+     "what": "Halcyon C1/C2 run cloud VMs or OPS services; S4 is storage.",
+     "how": "Installed into the rack from [E] → Install kit."
+    },
+    {
+     "name": "ToR switch",
+     "what": "Puts the rack's servers on the network. No switch, no network.",
+     "how": "Install kit → Meridian TOR-48X."
+    },
+    {
+     "name": "UPS & generator",
+     "what": "Keep racks powered through power cuts.",
+     "how": "/towers → OPS Data → Racks & power. The UPS needs a socket within 3 m or a generator in the hall."
+    },
+    {
+     "name": "CRAC unit",
+     "what": "Removes 30 kW of heat each.",
+     "how": "/towers → OPS Data → Cooling. Needs a socket within 3 m."
+    }
+   ],
+   "tools": [
+    "laptop",
+    "torque",
+    "thermal",
+    "crimper"
+   ],
+   "ppe": [
+    "esd"
+   ],
+   "steps": [
+    {
+     "title": "Read the alert",
+     "detail": "OPS Hub → Data & Cloud shows which rack, unit and problem.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "OPS Hub → Data & Cloud",
+     "secs": 8
+    },
+    {
+     "title": "Go to the rack",
+     "detail": "Set GPS to the job address (the data hall).",
+     "tool": null,
+     "anim": "phone",
+     "where": "The data hall",
+     "secs": 8
+    },
+    {
+     "title": "Diagnose",
+     "detail": "[E] on the rack: power source, online, hall temperature and each unit's status and fault.",
+     "tool": "thermal",
+     "anim": "inspect",
+     "where": "[E] on the rack",
+     "secs": 8
+    },
+    {
+     "title": "Fix",
+     "detail": "Fault: the unit → Repair. Cooling: add or plug in CRAC units. Power: give the UPS mains or a generator. Network: fix the switch / CAT6 uplink. Capacity: install new compute servers.",
+     "tool": "torque",
+     "anim": "crimp",
+     "where": "In the hall",
+     "secs": 8
+    },
+    {
+     "title": "Confirm",
+     "detail": "Check the hall is healthy and the unit shows Running and online.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "[E] on the rack",
+     "secs": 8
+    },
+    {
+     "title": "Complete",
+     "detail": "Press Check on the job.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Static electricity",
+     "risk": "Static destroys server components.",
+     "control": "Wear an ESD wrist strap when handling boards and drives."
+    },
+    {
+     "hazard": "Manual handling",
+     "risk": "Heavy kit such as racks, UPS cabinets and cable drums can injure your back.",
+     "control": "Lift with your legs, keep loads close, and use two people or a trolley for anything over 25 kg."
+    },
+    {
+     "hazard": "Electricity",
+     "risk": "Mains voltage can give a fatal shock and cause burns.",
+     "control": "Never open powered kit. Isolate and prove dead with a voltage tester before touching terminals."
+    },
+    {
+     "hazard": "Heat & noise",
+     "risk": "Overheated halls and loud fans.",
+     "control": "Limit time in hot aisles, use hearing protection."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Leaving the hall overheating",
+     "consequence": "Servers degrade at 32 °C and shut down at 40 °C, cloud servers go down, and the cooling check needs cooling ≥ the full demand."
+    },
+    {
+     "mistake": "UPS without mains in a power cut",
+     "consequence": "The battery drains, every rack goes dark, and customers' servers and OPS services fail."
+    },
+    {
+     "mistake": "Rack without a working switch",
+     "consequence": "Everything in it is unreachable — the rack offline job stays open."
+    },
+    {
+     "mistake": "Installing compute servers with the wrong role",
+     "consequence": "Only 'cloud' role servers add capacity; the capacity check counts those."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "When handling server parts, wear…",
+     "a": [
+      "Nothing",
+      "An ESD wrist strap",
+      "Wool gloves"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "A UPS cabinet should be moved…",
+     "a": [
+      "Alone, quickly",
+      "By two people or with a trolley",
+      "By kicking"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Very hot aisles mean…",
+     "a": [
+      "Stay all day",
+      "Limit your time there",
+      "Turn off the cooling"
+     ],
+     "ok": 1
+    }
+   ],
+   "exam": [
+    {
+     "q": "At what temperature do servers shut down?",
+     "a": [
+      "20 °C",
+      "40 °C",
+      "100 °C"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "What must a rack have to be online?",
+     "a": [
+      "A working ToR switch and CAT6 to an online router",
+      "A camera",
+      "A blanking panel"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "How much heat does one CRAC remove?",
+     "a": [
+      "300 kW",
+      "30 kW",
+      "3 kW"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "In a power cut, racks run from…",
+     "a": [
+      "The UPS battery (or a generator)",
+      "The CRAC",
+      "Wi-Fi"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Which servers add cloud capacity?",
+     "a": [
+      "Firewalls",
+      "Storage only",
+      "Compute servers with the 'cloud' role"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "cloud": {
+   "name": "Cloud servers & website migration",
+   "company": "cloud",
+   "cert": "cloud_ops",
+   "certName": "Cloud operations",
+   "certRequired": false,
+   "jobs": [
+    "web_cloud_setup",
+    "web_cloud_migrate"
+   ],
+   "summary": "Set up customers' OPS Cloud servers and move their websites onto them.",
+   "overview": "An OPS Cloud server (VM) runs on OPS Data hardware and has its own public IP and firewall. To host a website on it: the VM must be running, ports 80/443 open, the site hosted on the VM's IP, and the domain pointing at that IP. 'Move to another server' in the site editor moves a site and updates the DNS for you.",
+   "equipment": [
+    {
+     "name": "Cloud console",
+     "what": "Create, start/stop, resize, firewall, snapshots, console log.",
+     "how": "Browser → opscloud.sa → Console."
+    },
+    {
+     "name": "Move to another server",
+     "what": "Moves a site between OPS Web hosting, a cloud server and the customer's own line.",
+     "how": "opsweb.sa → the site → Move to another server…"
+    }
+   ],
+   "tools": [
+    "laptop"
+   ],
+   "ppe": [],
+   "steps": [
+    {
+     "title": "Check the customer's server",
+     "detail": "opscloud.sa → Console. Your job's customer appears under the job reference. It should be Running.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "Browser → opscloud.sa",
+     "secs": 8
+    },
+    {
+     "title": "Open the firewall",
+     "detail": "Open ports 80 and 443.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "VM → Firewall → Edit",
+     "secs": 8
+    },
+    {
+     "title": "Put the site on it",
+     "detail": "opsweb.sa → the site → Move to another server → the VM's IP (or create the site on that IP).",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "opsweb.sa",
+     "secs": 8
+    },
+    {
+     "title": "Publish & test",
+     "detail": "Make sure the site is Live and visit the domain.",
+     "tool": "laptop",
+     "anim": "inspect",
+     "where": "Browser",
+     "secs": 8
+    },
+    {
+     "title": "Check",
+     "detail": "Press Check on the job.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Customer data & privacy",
+     "risk": "Router settings, passwords and camera footage are private.",
+     "control": "Only change what the job needs. Never share Wi-Fi passwords or footage, and log out of customer systems when you finish."
+    },
+    {
+     "hazard": "Downtime",
+     "risk": "Moving a site at the wrong moment takes it offline.",
+     "control": "Snapshot first, and move when the VM is running."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Ports 80/443 closed",
+     "consequence": "Visitors get 'connection refused' and the check fails."
+    },
+    {
+     "mistake": "VM stopped or host down",
+     "consequence": "The site times out."
+    },
+    {
+     "mistake": "Domain still pointing at OPS Web",
+     "consequence": "Visitors keep seeing the old copy and the check fails."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Before migrating, take…",
+     "a": [
+      "Nothing",
+      "A snapshot",
+      "A nap"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Opening every port on a server is…",
+     "a": [
+      "A security risk",
+      "Best practice",
+      "Required"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Customer server passwords are…",
+     "a": [
+      "Private",
+      "Public",
+      "Shareable"
+     ],
+     "ok": 0
+    }
+   ],
+   "exam": [
+    {
+     "q": "What does a website on a VM need open?",
+     "a": [
+      "Port 22 only",
+      "Nothing",
+      "Ports 80/443"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Where are cloud servers managed?",
+     "a": [
+      "OPS Mobile",
+      "opscloud.sa → Console",
+      "Chirp"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "What happens to a VM when its host fails?",
+     "a": [
+      "Nothing",
+      "It's deleted",
+      "It restarts on another host, or goes 'host down'"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "How do you move a site to a VM?",
+     "a": [
+      "Site → Move to another server",
+      "Delete it",
+      "Email it"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "The job check confirms…",
+     "a": [
+      "The price",
+      "The colour",
+      "The site is served from the customer's VM"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "us_ftth_install": {
+   "name": "US fiber install & activation",
+   "company": "usfiber",
+   "cert": "us_ftth",
+   "certName": "US FTTH installer",
+   "certRequired": true,
+   "jobs": [
+    "us_install",
+    "us_gateway",
+    "us_ont_swap",
+    "us_aerial_drop",
+    "us_buried_drop",
+    "us_business"
+   ],
+   "summary": "Connect homes and businesses to OPS America Fiber: the drop, the NID, the ONT, the gateway and activation.",
+   "overview": "A customer’s service runs from the OLT in the central office, over feeder fiber to a fiber distribution hub (FDH) where a passive splitter shares one PON port between many homes, over distribution fiber to a fiber distribution terminal (FDT) on a pole or in a pedestal, and finally down the drop to the house. The drop lands in a NID / drop box on the outside wall, comes inside to the ONT, and the ONT hands Ethernet to the customer’s gateway. The ONT has to be recognised by the OLT and given a service profile before anything works. Activation in the US follows the same order every time: fiber in, ONT in, optical power checked, serial verified, ONT registered, PON authenticated, service provisioned, gateway connected, IP assigned, internet tested, speed tested — then the job is complete.",
+   "equipment": [
+    {
+     "name": "ONT (optical network terminal)",
+     "what": "Terminates the fiber and turns light into Ethernet (1, 2.5 or 10 GbE). Lights: POWER, PON, LOS, LAN, INTERNET.",
+     "how": "/towers → OPS America Fiber → Customer premises → ONT."
+    },
+    {
+     "name": "Residential / Wi-Fi gateway",
+     "what": "The router: IPv4/IPv6, DHCP, NAT, firewall, Wi-Fi and the LAN. Plugs into the ONT’s Ethernet port.",
+     "how": "Placed like any Wi-Fi router (/towers → OPS Mobile → Wi-Fi) and cabled to the ONT with CAT6."
+    },
+    {
+     "name": "NID / fiber drop box",
+     "what": "The demarcation box on the outside wall where the drop fiber lands and is spliced to the inside fiber.",
+     "how": "/towers → OPS America Fiber → Customer premises → NID / drop box."
+    },
+    {
+     "name": "Drop fiber",
+     "what": "The last section from the FDT to the house — aerial from the pole, or buried through conduit.",
+     "how": "Pull from a drop drum and fix it pole to house, or run it through a handhole and conduit."
+    },
+    {
+     "name": "FDT (fiber distribution terminal)",
+     "what": "The terminal on the pole or in a pedestal that serves a handful of homes from the distribution fiber.",
+     "how": "Fitted by Outside Plant; you drop from its ports."
+    }
+   ],
+   "tools": [
+    "splicer",
+    "lightmeter",
+    "ladder",
+    "drill",
+    "crimper",
+    "laptop"
+   ],
+   "ppe": [
+    "hivis",
+    "harness",
+    "glasses"
+   ],
+   "steps": [
+    {
+     "title": "Survey the route",
+     "detail": "Find the FDT serving the address and decide aerial or buried. Call before you dig (811) for buried drops.",
+     "tool": null,
+     "anim": "clipboard",
+     "where": "At the property",
+     "secs": 8
+    },
+    {
+     "title": "Place the drop",
+     "detail": "Aerial: ladder to the FDT, run the drop to a drop clamp on the house. Buried: handhole at the property line and conduit to the house.",
+     "tool": "ladder",
+     "anim": "ladder",
+     "where": "FDT → house",
+     "secs": 8
+    },
+    {
+     "title": "Fit the NID / drop box",
+     "detail": "Mount the drop box on the outside wall and bring the fiber through the wall feed-through.",
+     "tool": "drill",
+     "anim": "drill",
+     "where": "Outside wall",
+     "secs": 8
+    },
+    {
+     "title": "Splice the drop",
+     "detail": "Strip, clean, cleave and fusion-splice the drop to the inside fiber; protect it with a sleeve in the tray.",
+     "tool": "splicer",
+     "anim": "splice",
+     "where": "NID / drop box",
+     "secs": 8
+    },
+    {
+     "title": "Mount the ONT",
+     "detail": "Fit the ONT inside near power and connect the fiber pigtail.",
+     "tool": null,
+     "anim": "reach",
+     "where": "Inside the house",
+     "secs": 8
+    },
+    {
+     "title": "Check optical power",
+     "detail": "Read the light at the ONT with the power meter — it must be in range (dBm) before activation.",
+     "tool": "lightmeter",
+     "anim": "test",
+     "where": "At the ONT",
+     "secs": 8
+    },
+    {
+     "title": "Register & activate",
+     "detail": "Verify the ONT serial and register it on OPS Hub so the OLT authenticates it and applies the service profile.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "OPS Hub / ONT menu",
+     "secs": 8
+    },
+    {
+     "title": "Connect the gateway",
+     "detail": "Cable the gateway to the ONT’s Ethernet port, power it and check it gets an IP address.",
+     "tool": "crimper",
+     "anim": "crimp",
+     "where": "Customer’s router",
+     "secs": 8
+    },
+    {
+     "title": "Test and hand over",
+     "detail": "Internet test and a speed test against the plan, then show the customer the Wi-Fi.",
+     "tool": "laptop",
+     "anim": "phone",
+     "where": "In the house",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Working at height",
+     "risk": "A fall from a ladder or pole when reaching the FDT or the house.",
+     "control": "Ladder at 1-in-4 on firm ground, three points of contact; harness on the pole above 2 m."
+    },
+    {
+     "hazard": "Buried utilities",
+     "risk": "Digging into gas, power or water lines can kill or cause an explosion.",
+     "control": "Locate utilities first (811 call before you dig) and hand-dig near marks."
+    },
+    {
+     "hazard": "Laser light & fiber shards",
+     "risk": "Invisible light can damage eyes; glass slivers pierce skin.",
+     "control": "Never look into a fiber; wear glasses; put shards in a sharps container."
+    },
+    {
+     "hazard": "Power lines on the pole",
+     "risk": "Electrocution if you enter the power space above the communications space.",
+     "control": "Stay in the communications space and keep clearances from power."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Activating without checking optical power",
+     "consequence": "The ONT ranges then drops — intermittent service and a repeat visit."
+    },
+    {
+     "mistake": "Dirty connector at the ONT",
+     "consequence": "High loss and reflection: slow or flapping service."
+    },
+    {
+     "mistake": "Drop not clamped or too tight",
+     "consequence": "The drop sags or snaps in wind — the customer goes down."
+    },
+    {
+     "mistake": "Wrong ONT serial registered",
+     "consequence": "The OLT never authenticates the ONT — no service."
+    },
+    {
+     "mistake": "Gateway on the wrong port",
+     "consequence": "No IP address — the customer has Wi-Fi but no internet."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Before digging for a buried drop you must…",
+     "a": [
+      "Ask the neighbour",
+      "Locate buried utilities first (call before you dig)",
+      "Dig fast and shallow"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "On a shared utility pole, where do you work?",
+     "a": [
+      "On the top of the pole",
+      "Next to the power conductors",
+      "In the communications space, below the power"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "What do you do with fiber offcuts?",
+     "a": [
+      "Put them in a sharps container",
+      "Blow them away",
+      "Drop them on the floor"
+     ],
+     "ok": 0
+    }
+   ],
+   "exam": [
+    {
+     "q": "Which device terminates the fiber at the customer and gives Ethernet?",
+     "a": [
+      "The FDH",
+      "The OLT",
+      "The ONT"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "What must be checked before activating an ONT?",
+     "a": [
+      "The paint colour",
+      "The Wi-Fi password",
+      "Optical power at the ONT is in range"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "What happens if the wrong ONT serial is registered?",
+     "a": [
+      "Nothing",
+      "It works faster",
+      "The OLT never authenticates it — no service"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Where does an aerial drop start?",
+     "a": [
+      "At the OLT",
+      "At the customer’s router",
+      "At the FDT on the pole"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "What is the last test before handing over?",
+     "a": [
+      "A paint check",
+      "An internet and speed test",
+      "A ladder check"
+     ],
+     "ok": 1
+    }
+   ]
+  },
+  "us_ftth_repair": {
+   "name": "US fiber repair & trouble tickets",
+   "company": "usfiber",
+   "cert": "us_ftth",
+   "certName": "US FTTH installer",
+   "certRequired": false,
+   "jobs": [
+    "us_no_service",
+    "us_speed"
+   ],
+   "summary": "Fix customers who are down or slow: the trouble-ticket workflow from ONT to drop.",
+   "overview": "When a customer reports no service, the NOC first checks the ONT and whether other customers on the same PON are affected. If only this customer is down, a tech is dispatched. On site, work from the customer outwards: ONT lights, optical power at the ONT, connector cleanliness under the inspection scope, the drop fiber, then the FDT. Use the visual fault locator for breaks near you and the OTDR for distance to a fault further out. After the repair, re-test optical levels, check the ONT is registered and the service is up, run a speed test and close the ticket. Slow-speed tickets are usually Wi-Fi placement, the gateway, or wiring — prove the fix with a speed test of at least 80% of the plan.",
+   "equipment": [
+    {
+     "name": "Optical power meter",
+     "what": "Reads received light in dBm to see if the signal is in range.",
+     "how": "Tool kit → optical power meter at the ONT."
+    },
+    {
+     "name": "Visual fault locator (VFL)",
+     "what": "Red light down the fiber that glows at breaks, bad connections and tight bends.",
+     "how": "Tool kit → visual fault locator."
+    },
+    {
+     "name": "OTDR",
+     "what": "Shoots light down the fiber and shows the distance to splices, connectors and breaks.",
+     "how": "Tool kit → OTDR."
+    },
+    {
+     "name": "Inspection scope & cleaner",
+     "what": "Shows dirt on a connector end face; the one-click cleaner removes it.",
+     "how": "Tool kit → cleaner."
+    },
+    {
+     "name": "ONT diagnostic tester",
+     "what": "Reads all five ONT lights and the light level and tells you what is wrong.",
+     "how": "Tool kit → ONT diagnostic tester."
+    }
+   ],
+   "tools": [
+    "lightmeter",
+    "splicer",
+    "laptop",
+    "ladder"
+   ],
+   "ppe": [
+    "hivis",
+    "glasses",
+    "harness"
+   ],
+   "steps": [
+    {
+     "title": "Read the ticket",
+     "detail": "Check the NOC notes: is anyone else on the PON down? If so it is a network fault, not this house.",
+     "tool": "laptop",
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    },
+    {
+     "title": "Check the ONT lights",
+     "detail": "POWER, PON, LOS, LAN, INTERNET tell you where to look. LOS red means no light reaching the ONT.",
+     "tool": null,
+     "anim": "inspect",
+     "where": "At the ONT",
+     "secs": 8
+    },
+    {
+     "title": "Measure optical power",
+     "detail": "Power meter at the ONT. Too low or none: the fault is in the fiber path.",
+     "tool": "lightmeter",
+     "anim": "test",
+     "where": "At the ONT",
+     "secs": 8
+    },
+    {
+     "title": "Inspect and clean connectors",
+     "detail": "Scope the connector end face and clean it; dirt causes loss and reflection.",
+     "tool": null,
+     "anim": "inspect",
+     "where": "ONT and NID",
+     "secs": 8
+    },
+    {
+     "title": "Test the drop",
+     "detail": "VFL for a nearby break, OTDR for distance to a fault further out. Re-splice or replace the drop.",
+     "tool": "splicer",
+     "anim": "splice",
+     "where": "NID → FDT",
+     "secs": 8
+    },
+    {
+     "title": "Re-test and close",
+     "detail": "Optical levels, ONT registered, service up, speed test — then close the ticket.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "At the ONT",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Working at height",
+     "risk": "A fall when checking the drop at the FDT.",
+     "control": "Ladder at 1-in-4, harness on the pole."
+    },
+    {
+     "hazard": "Laser light",
+     "risk": "Eye damage from live fiber.",
+     "control": "Never look into a fiber or connector, even with the VFL."
+    },
+    {
+     "hazard": "Customer premises",
+     "risk": "Trips over cables, pets, unsafe wiring.",
+     "control": "Keep the work area tidy and report unsafe electrics."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Replacing the ONT when the fiber is broken",
+     "consequence": "The new ONT still shows LOS — the customer stays down."
+    },
+    {
+     "mistake": "Not checking for other affected customers",
+     "consequence": "A PON-wide fault is treated as one house; dozens stay down."
+    },
+    {
+     "mistake": "Closing without a speed test",
+     "consequence": "The ticket reopens — repeat visit, SLA missed."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Can you look into a fiber to see if it is live?",
+     "a": [
+      "Never",
+      "Yes, quickly",
+      "Only at night"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Before climbing to the FDT you should…",
+     "a": [
+      "Lean the ladder on a power line",
+      "Run up the ladder",
+      "Set the ladder safely and clip the harness on the pole"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "You find unsafe electrics in the house. You…",
+     "a": [
+      "Ignore them",
+      "Stop and report them",
+      "Repair them yourself"
+     ],
+     "ok": 1
+    }
+   ],
+   "exam": [
+    {
+     "q": "LOS is red on the ONT. What does it mean?",
+     "a": [
+      "The Wi-Fi is off",
+      "The bill is unpaid",
+      "No light is reaching the ONT"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Which tool tells you the distance to a fiber break?",
+     "a": [
+      "The crimper",
+      "The power meter",
+      "The OTDR"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Many ONTs on the same PON went down together. The fault is probably…",
+     "a": [
+      "In each house",
+      "In shared infrastructure (feeder, splitter, OLT)",
+      "The customers’ phones"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "A slow-speed ticket is closed when…",
+     "a": [
+      "A speed test reaches at least 80% of the plan",
+      "The customer stops calling",
+      "The router is rebooted"
+     ],
+     "ok": 0
+    }
+   ]
+  },
+  "us_osp": {
+   "name": "US outside plant construction & splicing",
+   "company": "usosp",
+   "cert": "us_osp",
+   "certName": "US outside plant & splicing",
+   "certRequired": true,
+   "jobs": [
+    "us_fdh",
+    "us_fdt",
+    "us_strand",
+    "us_feeder",
+    "us_handhole",
+    "us_splice"
+   ],
+   "summary": "Build the outside plant: feeder and distribution fiber, FDHs, FDTs, aerial strand, handholes, vaults and splice closures.",
+   "overview": "Outside plant (OSP) is everything between the central office and the customer. Feeder fiber leaves the CO in high-count cables and runs to fiber distribution hubs (FDHs) — street cabinets holding passive splitters (1:8 up to 1:128) that share one PON port among many homes. Splitters need no power and do not switch traffic; they just divide the light. Distribution fiber continues from the FDH to fiber distribution terminals (FDTs) on poles or in pedestals, where drops are connected. Aerial plant uses utility poles: a steel messenger strand is placed between poles, held with anchors and guy wires, and the fiber is lashed to it. Underground plant uses conduit, handholes, vaults and manholes. Fibers are joined by fusion splicing inside splice closures, and every fiber is recorded in the network inventory and GIS so the NOC can trace any customer to the OLT port.",
+   "equipment": [
+    {
+     "name": "Fiber distribution hub (FDH)",
+     "what": "Cabinet where feeder meets distribution fiber and passive splitters share PON ports.",
+     "how": "/towers → OPS America Fiber → Outside plant · cabinets & underground → FDH."
+    },
+    {
+     "name": "Fiber distribution terminal (FDT)",
+     "what": "Terminal on a pole or pedestal with ports for customer drops.",
+     "how": "/towers → OPS America Fiber → Outside plant · aerial → FDT (also G on the pole)."
+    },
+    {
+     "name": "Splice closure",
+     "what": "Sealed enclosure protecting fusion splices — aerial on the strand, or underground in a handhole.",
+     "how": "Aerial closure / dome closure on the pole, or an underground closure in a vault."
+    },
+    {
+     "name": "Messenger strand, anchors & guys",
+     "what": "Steel strand between poles that carries the lashed fiber; anchors and guy wires balance the pull.",
+     "how": "/towers → OPS America Fiber → Messenger strand & guy wires."
+    },
+    {
+     "name": "Handholes, vaults & manholes",
+     "what": "Underground access points for conduit, slack and closures.",
+     "how": "/towers → OPS America Fiber → Outside plant · cabinets & underground."
+    },
+    {
+     "name": "Snowshoe / slack storage",
+     "what": "Stores spare fiber on the strand for future splicing and repairs.",
+     "how": "Fit on the pole (G) → slack storage."
+    }
+   ],
+   "tools": [
+    "splicer",
+    "lightmeter",
+    "ladder",
+    "spade",
+    "cones",
+    "labeler"
+   ],
+   "ppe": [
+    "hivis",
+    "harness",
+    "glasses",
+    "gloves"
+   ],
+   "steps": [
+    {
+     "title": "Set up the work zone",
+     "detail": "Cones, signs and barriers around the pole, cabinet or handhole; traffic control if in the road.",
+     "tool": "cones",
+     "anim": "carry",
+     "where": "At the job site",
+     "secs": 8
+    },
+    {
+     "title": "Locate utilities",
+     "detail": "Mark buried utilities before any digging (call before you dig).",
+     "tool": null,
+     "anim": "clipboard",
+     "where": "Along the route",
+     "secs": 8
+    },
+    {
+     "title": "Place the structure",
+     "detail": "Set the FDH, FDT, handhole or vault exactly where the design says.",
+     "tool": "spade",
+     "anim": "dig",
+     "where": "Design location",
+     "secs": 8
+    },
+    {
+     "title": "Place strand or conduit",
+     "detail": "Aerial: messenger strand between poles with anchors and guys. Underground: conduit between handholes.",
+     "tool": "ladder",
+     "anim": "ladder",
+     "where": "Along the route",
+     "secs": 8
+    },
+    {
+     "title": "Place and lash the fiber",
+     "detail": "Pull fiber from the reel, lash it to the strand or pull it through conduit; leave slack at closures.",
+     "tool": null,
+     "anim": "carry",
+     "where": "Along the route",
+     "secs": 8
+    },
+    {
+     "title": "Splice",
+     "detail": "Strip, clean, cleave, fusion-splice, sleeve and tray every fiber in the closure, FDH or FDT.",
+     "tool": "splicer",
+     "anim": "splice",
+     "where": "Closure / FDH / FDT",
+     "secs": 8
+    },
+    {
+     "title": "Label and record",
+     "detail": "Label every fiber and record splices, ports and routes in inventory and GIS.",
+     "tool": "labeler",
+     "anim": "type",
+     "where": "On site / OPS Hub",
+     "secs": 8
+    },
+    {
+     "title": "Test",
+     "detail": "OTDR each fiber and take power-meter readings; fix any high-loss splice.",
+     "tool": "lightmeter",
+     "anim": "test",
+     "where": "Both ends",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Work at height on utility poles",
+     "risk": "Falls; contact with power conductors above the communications space.",
+     "control": "Harness and pole strap; stay in the communications space; keep clearances."
+    },
+    {
+     "hazard": "Traffic",
+     "risk": "Being struck while working at the roadside or in the road.",
+     "control": "Hi-vis, cones, signs, and proper traffic control."
+    },
+    {
+     "hazard": "Confined spaces (vaults & manholes)",
+     "risk": "Bad air or gas can overcome you.",
+     "control": "Test the air, ventilate, never enter alone."
+    },
+    {
+     "hazard": "Strand tension",
+     "risk": "A strand or guy under tension can whip if it fails.",
+     "control": "Use proper anchors and tensioning tools; stand clear of the line of pull."
+    },
+    {
+     "hazard": "Excavation",
+     "risk": "Hitting buried power or gas; trench collapse.",
+     "control": "Locate utilities, hand-dig near marks, shore deep trenches."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Wrong splitter or port at the FDH",
+     "consequence": "Customers land on the wrong PON — services fail to activate."
+    },
+    {
+     "mistake": "High-loss splice",
+     "consequence": "Every customer behind it gets weak light — flapping service."
+    },
+    {
+     "mistake": "No slack left at closures",
+     "consequence": "Future repairs need new fiber pulled — long outages."
+    },
+    {
+     "mistake": "Unrecorded splices",
+     "consequence": "The NOC cannot trace faults — every outage takes longer."
+    },
+    {
+     "mistake": "Missing guy on a dead-end pole",
+     "consequence": "The pole leans and the strand sags or fails."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Before entering a vault you must…",
+     "a": [
+      "Test and ventilate the air, and never enter alone",
+      "Light a match",
+      "Jump in quickly"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "On a utility pole, communications work is done…",
+     "a": [
+      "Among the power conductors",
+      "In the communications space below power",
+      "Anywhere"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Working at the roadside requires…",
+     "a": [
+      "Hi-vis, cones, signs and traffic control",
+      "Headphones",
+      "Nothing special"
+     ],
+     "ok": 0
+    }
+   ],
+   "exam": [
+    {
+     "q": "What does a passive optical splitter do?",
+     "a": [
+      "Amplifies the signal",
+      "Divides the light between many customers, with no power",
+      "Switches Ethernet traffic"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Where are splitters usually located?",
+     "a": [
+      "In the FDH (and sometimes FDTs or closures)",
+      "In the customer’s router",
+      "In the core router"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "What carries aerial fiber between poles?",
+     "a": [
+      "Nothing",
+      "A messenger strand it is lashed to",
+      "The power conductor"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Why record every splice in inventory and GIS?",
+     "a": [
+      "So the NOC can trace a customer to the OLT and find faults",
+      "It is optional",
+      "For decoration"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Order for fusion splicing:",
+     "a": [
+      "Splice, strip, clean",
+      "Cleave, paint, splice",
+      "Strip, clean, cleave, splice, sleeve"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "us_osp_restore": {
+   "name": "US fiber restoration & testing",
+   "company": "usosp",
+   "cert": "us_osp",
+   "certName": "US outside plant & splicing",
+   "certRequired": true,
+   "jobs": [
+    "us_fiber_cut",
+    "us_otdr"
+   ],
+   "summary": "Restore fiber cuts fast and prove routes with OTDR and power-meter testing.",
+   "overview": "When many customers on the same path go offline, the NOC uses inventory and alarms to find the affected section and dispatches OSP. The tech connects an OTDR at a known point and reads the distance to the break, then uses the inventory and GIS to find that spot on the ground. A new splice closure is fitted at the break and every fiber is re-spliced in order. Each fiber is then tested with the OTDR and a power meter, the NOC confirms the ONTs are back, and the ticket is closed. Acceptance testing on new routes uses the same tools: an OTDR trace shows every splice, connector and loss event with its distance, and power-meter readings prove the light at the far end.",
+   "equipment": [
+    {
+     "name": "OTDR",
+     "what": "Gives the distance to breaks, splices and connectors along the fiber.",
+     "how": "Tool kit → OTDR."
+    },
+    {
+     "name": "Power meter & light source",
+     "what": "Measures end-to-end loss in dBm.",
+     "how": "Tool kit → power meter."
+    },
+    {
+     "name": "Splice closure",
+     "what": "Protects the new splices at the break.",
+     "how": "/towers → OPS America Fiber → closures."
+    },
+    {
+     "name": "Fusion splicer",
+     "what": "Aligns and fuses the fibers.",
+     "how": "Tool kit → fusion splicer."
+    }
+   ],
+   "tools": [
+    "splicer",
+    "lightmeter",
+    "ladder",
+    "cones",
+    "labeler"
+   ],
+   "ppe": [
+    "hivis",
+    "harness",
+    "glasses",
+    "gloves"
+   ],
+   "steps": [
+    {
+     "title": "Take the NOC handover",
+     "detail": "Which PON, which section, how many customers — and the last known good point.",
+     "tool": "laptop",
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    },
+    {
+     "title": "Shoot the OTDR",
+     "detail": "From the FDH or a closure, read the distance to the break.",
+     "tool": "lightmeter",
+     "anim": "test",
+     "where": "FDH / closure",
+     "secs": 8
+    },
+    {
+     "title": "Find the break",
+     "detail": "Use the distance with the route on the map to find it on the ground.",
+     "tool": null,
+     "anim": "inspect",
+     "where": "Along the route",
+     "secs": 8
+    },
+    {
+     "title": "Make safe",
+     "detail": "Cones and signs; isolate the area if the cable is in the road.",
+     "tool": "cones",
+     "anim": "carry",
+     "where": "At the break",
+     "secs": 8
+    },
+    {
+     "title": "Fit a closure and re-splice",
+     "detail": "Fit a new closure at the break and splice every fiber in order.",
+     "tool": "splicer",
+     "anim": "splice",
+     "where": "At the break",
+     "secs": 8
+    },
+    {
+     "title": "Test and hand back",
+     "detail": "OTDR and power-meter each fiber; the NOC confirms ONTs are back.",
+     "tool": "lightmeter",
+     "anim": "test",
+     "where": "Both ends",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Emergency work in traffic",
+     "risk": "Rushing at a roadside break.",
+     "control": "Set out traffic control first, every time."
+    },
+    {
+     "hazard": "Damaged cable near power",
+     "risk": "A cut may be next to damaged power cable.",
+     "control": "Check for damaged power and keep clear until the power company makes it safe."
+    },
+    {
+     "hazard": "Fiber shards",
+     "risk": "Glass slivers at a messy break.",
+     "control": "Glasses, gloves and a sharps container."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Fibers re-spliced out of order",
+     "consequence": "Customers come back on the wrong PON — or not at all."
+    },
+    {
+     "mistake": "Skipping the post-repair OTDR",
+     "consequence": "A second bad splice is missed — the outage returns."
+    },
+    {
+     "mistake": "Wrong break location from the OTDR",
+     "consequence": "Digging or climbing in the wrong place — hours lost."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "At a roadside fiber cut, the first thing you do is…",
+     "a": [
+      "Start splicing",
+      "Set out traffic control",
+      "Call the customer"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "The cut is next to a damaged power cable. You…",
+     "a": [
+      "Keep clear until the power company makes it safe",
+      "Carry on",
+      "Move the power cable"
+     ],
+     "ok": 0
+    }
+   ],
+   "exam": [
+    {
+     "q": "Which tool tells you how far away a break is?",
+     "a": [
+      "Multimeter",
+      "OTDR",
+      "Crimper"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "After re-splicing, what proves the repair?",
+     "a": [
+      "Rebooting the OLT",
+      "OTDR and power-meter tests on each fiber",
+      "Looking at it"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Why splice fibers in order?",
+     "a": [
+      "It looks neater",
+      "It is faster",
+      "So each customer stays on the right PON"
+     ],
+     "ok": 2
+    }
+   ]
+  },
+  "us_co": {
+   "name": "US central office & core network",
+   "company": "usnet",
+   "cert": "us_co",
+   "certName": "US central office & NOC",
+   "certRequired": true,
+   "jobs": [
+    "us_olt",
+    "us_odf",
+    "us_agg",
+    "us_edge",
+    "us_bng",
+    "us_co_power",
+    "us_hvac"
+   ],
+   "summary": "The active network: OLTs, ODFs, aggregation, BNGs, core and edge routers, CO power and cooling.",
+   "overview": "The central office (CO) houses the active network. Outside-plant fiber terminates on the optical distribution frame (ODF), where it is patched to OLT PON ports. Each OLT port serves many homes through splitters and handles ONT authentication, bandwidth, service profiles and VLANs. OLT uplinks feed aggregation routers and switches, which collect traffic from many OLTs with redundant links so one failure does not take an area down. Broadband network gateways (BNGs) handle subscriber sessions, IP addresses and policies. Aggregation connects to the metro and core networks — high-capacity routers on 100–800 Gbit/s links, often over DWDM optical transport — and the internet edge routers exchange routes with transit providers, internet exchanges and content networks using BGP. All of this runs on DC power from rectifiers with battery strings and a standby generator, and cooling that keeps the room in range.",
+   "equipment": [
+    {
+     "name": "OLT (optical line terminal)",
+     "what": "Lights the PON, authenticates ONTs and applies service profiles. Multiple PON ports per shelf.",
+     "how": "/towers → OPS America Fiber → Central office · optical & routing → OLT."
+    },
+    {
+     "name": "ODF (optical distribution frame)",
+     "what": "Terminates, organises and patches outside-plant fiber to equipment.",
+     "how": "Central office · optical & routing → ODF."
+    },
+    {
+     "name": "Aggregation / core router",
+     "what": "Collects OLT traffic and carries it across the metro and core with redundancy.",
+     "how": "Central office · optical & routing → Aggregation / core router."
+    },
+    {
+     "name": "Internet edge router / BNG",
+     "what": "BGP to transit and peering; subscriber sessions, IP assignment and policies.",
+     "how": "Central office · optical & routing → Edge router / BNG."
+    },
+    {
+     "name": "DC power plant",
+     "what": "Rectifiers turn AC into -48 V DC; batteries carry the load in an outage; a generator takes over for long ones.",
+     "how": "Central office · power & HVAC."
+    },
+    {
+     "name": "HVAC",
+     "what": "Indoor cooling and an outdoor condenser keep the equipment room in temperature range.",
+     "how": "Central office · power & HVAC."
+    }
+   ],
+   "tools": [
+    "laptop",
+    "lightmeter",
+    "esd",
+    "torque",
+    "labeler",
+    "multimeter",
+    "lockoff"
+   ],
+   "ppe": [
+    "esd",
+    "glasses",
+    "gloves"
+   ],
+   "steps": [
+    {
+     "title": "Plan the change",
+     "detail": "Check the design, rack space, power budget and a maintenance window with the NOC.",
+     "tool": "laptop",
+     "anim": "clipboard",
+     "where": "NOC / OPS Hub",
+     "secs": 8
+    },
+    {
+     "title": "Rack and earth",
+     "detail": "Rack the equipment, bond it to the CO earth, wear your ESD strap.",
+     "tool": "esd",
+     "anim": "reach",
+     "where": "Equipment room",
+     "secs": 8
+    },
+    {
+     "title": "Power it",
+     "detail": "Land -48 V DC from the power plant on the right breaker; lock-off while you work.",
+     "tool": "lockoff",
+     "anim": "kneel",
+     "where": "DC power plant",
+     "secs": 8
+    },
+    {
+     "title": "Patch the fiber",
+     "detail": "Patch from the ODF to the OLT PON ports or router optics; clean and inspect every connector.",
+     "tool": "lightmeter",
+     "anim": "inspect",
+     "where": "ODF",
+     "secs": 8
+    },
+    {
+     "title": "Label everything",
+     "detail": "Label ports, patches and circuits and update inventory.",
+     "tool": "labeler",
+     "anim": "type",
+     "where": "Equipment room",
+     "secs": 8
+    },
+    {
+     "title": "Turn up",
+     "detail": "The NOC loads the configuration, checks alarms, optics and traffic, and brings up redundancy.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "With the NOC",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "DC power and batteries",
+     "risk": "Battery strings can deliver huge currents — burns and arc flash.",
+     "control": "Insulated tools, lock-off, no jewellery, eye protection."
+    },
+    {
+     "hazard": "Static discharge",
+     "risk": "ESD destroys line cards and optics.",
+     "control": "Wear an ESD wrist strap when handling cards."
+    },
+    {
+     "hazard": "Laser light",
+     "risk": "High-power optics can damage eyes.",
+     "control": "Never look into ports or patch cords."
+    },
+    {
+     "hazard": "Lifting",
+     "risk": "Heavy shelves and batteries cause injuries.",
+     "control": "Two-person lifts and lifting aids."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Patching the wrong ODF port",
+     "consequence": "A whole neighbourhood lands on the wrong OLT port — nobody activates."
+    },
+    {
+     "mistake": "No redundant uplink",
+     "consequence": "One link failure takes the whole area offline."
+    },
+    {
+     "mistake": "Generator not tested",
+     "consequence": "Batteries run flat in a long outage and the CO goes dark."
+    },
+    {
+     "mistake": "Cooling failure ignored",
+     "consequence": "Equipment overheats and shuts down."
+    },
+    {
+     "mistake": "Changes outside a maintenance window",
+     "consequence": "Unplanned outage for thousands of customers."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "Before working on DC power you…",
+     "a": [
+      "Wear rings for grip",
+      "Lock-off the breaker and use insulated tools",
+      "Work live to save time"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "When handling line cards wear…",
+     "a": [
+      "Wool gloves",
+      "An ESD wrist strap",
+      "Nothing"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "Heavy battery or shelf lifts should be…",
+     "a": [
+      "Done alone quickly",
+      "Thrown",
+      "Two-person lifts with lifting aids"
+     ],
+     "ok": 2
+    }
+   ],
+   "exam": [
+    {
+     "q": "What does the OLT do?",
+     "a": [
+      "Hosts websites",
+      "Measures customer power",
+      "Lights the PON and authenticates ONTs"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "What is an ODF for?",
+     "a": [
+      "Terminating and patching fiber to equipment",
+      "Billing",
+      "Cooling the room"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Which protocol exchanges routes with other networks at the internet edge?",
+     "a": [
+      "Wi-Fi",
+      "BGP",
+      "DHCP"
+     ],
+     "ok": 1
+    },
+    {
+     "q": "What does a BNG handle?",
+     "a": [
+      "Pole climbing",
+      "Splicing",
+      "Subscriber sessions, IP assignment and policies"
+     ],
+     "ok": 2
+    },
+    {
+     "q": "Why are aggregation links redundant?",
+     "a": [
+      "So one failure doesn’t take an area down",
+      "For decoration",
+      "To use more power"
+     ],
+     "ok": 0
+    }
+   ]
+  },
+  "us_noc": {
+   "name": "US network operations (NOC)",
+   "company": "usnet",
+   "cert": "us_co",
+   "certName": "US central office & NOC",
+   "certRequired": false,
+   "jobs": [
+    "us_pon_alarm"
+   ],
+   "summary": "Monitor the network and work alarms down to the fault — the NOC workflow.",
+   "overview": "The NOC watches every layer: access (ONTs, OLTs), aggregation, metro, core, optical transport, internet edge, data centres and power. Network management systems raise alarms when thresholds are crossed — ONTs offline, optical levels low, interfaces down, high temperature. When several customers on the same PON drop at once, the cause is shared: a fiber cut, damaged feeder or distribution cable, a failed splitter, an OLT port or card, or power. The NOC compares the affected customers using inventory, narrows it to a section, checks the OLT, and dispatches OSP with the location. After the fix, optical levels and ONTs are checked and the incident is closed.",
+   "equipment": [
+    {
+     "name": "Network management system",
+     "what": "Watches device status, interfaces, optics, temperature and power and raises alarms.",
+     "how": "OPS Hub → Operations centre and Alerts."
+    },
+    {
+     "name": "Network inventory & GIS",
+     "what": "Records every fiber, splice, splitter, port and customer so faults can be traced.",
+     "how": "OPS Hub → Internet, poles & faults."
+    },
+    {
+     "name": "OLT",
+     "what": "Shows which ONTs on each PON port are up or down.",
+     "how": "In the central office."
+    }
+   ],
+   "tools": [
+    "laptop",
+    "lightmeter"
+   ],
+   "ppe": [
+    "hivis",
+    "glasses"
+   ],
+   "steps": [
+    {
+     "title": "Acknowledge the alarm",
+     "detail": "Note the PON, the OLT port and how many ONTs dropped.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "Operations centre",
+     "secs": 8
+    },
+    {
+     "title": "Compare the customers",
+     "detail": "Find the shared path — same FDH, same feeder, same splitter.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "Inventory / map",
+     "secs": 8
+    },
+    {
+     "title": "Check the OLT",
+     "detail": "Port and card status, optics, power at the CO.",
+     "tool": "lightmeter",
+     "anim": "inspect",
+     "where": "Central office",
+     "secs": 8
+    },
+    {
+     "title": "Dispatch",
+     "detail": "Send OSP to the section with the location and distance.",
+     "tool": "laptop",
+     "anim": "phone",
+     "where": "OPS Work",
+     "secs": 8
+    },
+    {
+     "title": "Confirm restoration",
+     "detail": "ONTs back online, optical levels good — close the incident.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "Operations centre",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Fatigue on long incidents",
+     "risk": "Mistakes during long outages.",
+     "control": "Hand over properly between shifts and keep notes."
+    },
+    {
+     "hazard": "Work in the CO",
+     "risk": "Live equipment and DC power.",
+     "control": "Follow CO safety: ESD, insulated tools, no work without a change."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Treating a PON outage as single houses",
+     "consequence": "Many techs dispatched to homes while the real fault stays."
+    },
+    {
+     "mistake": "Closing before ONTs are confirmed",
+     "consequence": "Customers still down with no open incident."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "At the end of a shift during an incident you…",
+     "a": [
+      "Hand over with notes",
+      "Close the incident",
+      "Just leave"
+     ],
+     "ok": 0
+    }
+   ],
+   "exam": [
+    {
+     "q": "Many ONTs on one PON drop together. Likely cause?",
+     "a": [
+      "A shared fault: cut, splitter, OLT port or power",
+      "Bad weather on phones",
+      "Every customer unplugged their ONT"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "What helps find where a fault is on the ground?",
+     "a": [
+      "Customer reviews",
+      "Guessing",
+      "Inventory and GIS records"
+     ],
+     "ok": 2
+    }
+   ]
+  }
+ },
+ "systems": [
+  {
+   "code": "mobile_network",
+   "name": "OPS Mobile network",
+   "company": "mobile",
+   "icon": "tower-cell",
+   "sections": [
+    {
+     "title": "What it does",
+     "body": "Every phone call, text and bit of mobile data goes through OPS Mobile's masts. Each tower covers a radius; phones show bars based on the strongest tower in range. With Enforce on, no signal means no calls, texts or data."
+    },
+    {
+     "title": "Masts and small cells",
+     "body": "Lattice masts and 5G masts are placed from /towers. They need power — a socket, a solar/battery set-up or the grid. A mast that loses power drops out and leaves a dead spot."
+    },
+    {
+     "title": "Plans",
+     "body": "Players need an OPS Mobile plan (a free starter is given). Texts, minutes and data come from the plan; Wi-Fi from a router with internet doesn't use the plan."
+    },
+    {
+     "title": "What goes wrong",
+     "body": "A mast on a feeder that loses power takes coverage with it. Gunshot sensors and trackers report over OPS Mobile too, so they stop reporting in dead spots."
+    },
+    {
+     "title": "Where to look",
+     "body": "OPS Hub → Tower map shows every mast and its coverage; OPS Hub → Lines shows customers."
+    }
+   ]
+  },
+  {
+   "code": "power_grid",
+   "name": "Electricity: San Andreas Power & Light",
+   "company": "sapl",
+   "icon": "bolt",
+   "sections": [
+    {
+     "title": "From station to socket",
+     "body": "Power stations feed 400 kV transmission to substations, which step it down to 11 kV feeders, then pole transformers to LV, and a service drop to each property's cut-out and meter. The consumer unit then feeds sockets, lights and chargers."
+    },
+    {
+     "title": "Substations",
+     "body": "A substation needs protection, a DC battery and earthing to energise. An RTU lets Grid control switch it remotely."
+    },
+    {
+     "title": "Grid control",
+     "body": "OPS Hub → Grid control shows load, faults and switching. Feeders can trip on faults or be switched for maintenance."
+    },
+    {
+     "title": "What depends on it",
+     "body": "Sockets, lighting, EV chargers, routers, ONTs, NVRs, masts, fuel pumps and data-centre UPS charging all need live mains. A feeder outage cascades: no power means no internet, CCTV or mobile signal unless there's battery backup."
+    },
+    {
+     "title": "Safety",
+     "body": "Always isolate, lock off and prove dead before work. Never assume a circuit is dead."
+    }
+   ]
+  },
+  {
+   "code": "fibre_copper",
+   "name": "Fibre & copper network (OPS Openline)",
+   "company": "fibre",
+   "icon": "circle-nodes",
+   "sections": [
+    {
+     "title": "The exchange",
+     "body": "Exchanges house the OLT (fibre light source), the MDF (copper), core routers and power plant (rectifiers, batteries, generator)."
+    },
+    {
+     "title": "Out to the street",
+     "body": "Feeder fibre runs to street cabinets, then to distribution points (CBTs) on poles. Copper runs exchange → PCP cabinet → pole → house."
+    },
+    {
+     "title": "Into the home",
+     "body": "A fibre drop ends in an ONT; a copper drop ends in a master socket (NTE). The ONT needs light from upstream and an active service."
+    },
+    {
+     "title": "Faults",
+     "body": "Random network faults (water in joints, cracked enclosures, cut cables) take everything downstream offline and raise jobs. Several lines down together raise an outage."
+    },
+    {
+     "title": "Underground",
+     "body": "Chambers, ducts and tunnels carry cables under roads. Lids are heavy and gas can build up — never work alone in one."
+    }
+   ]
+  },
+  {
+   "code": "isp",
+   "name": "OPS Network ISP",
+   "company": "network",
+   "icon": "wifi",
+   "sections": [
+    {
+     "title": "Lines",
+     "body": "A line is a customer, a package and an ONT. Ordering raises an install job; completing it activates the line: ONT linked, public IPs assigned, router settings pushed, first bill taken."
+    },
+    {
+     "title": "IP addresses",
+     "body": "Dynamic 203.0.113.0/24, static 198.51.100.0/24 and dedicated /29 blocks from 192.0.2.0/24. Static IPs let customers host their own servers."
+    },
+    {
+     "title": "Router settings",
+     "body": "LAN, DHCP, DNS, Wi-Fi, VLANs, firewall, port forwards and VPN — edited on OPS Hub and pushed to the router in game."
+    },
+    {
+     "title": "Monitoring",
+     "body": "Every 30 s line states are updated (up, degraded, down). Three or more lines down within 450 m opens an outage, notifies customers and raises an emergency job."
+    },
+    {
+     "title": "Billing",
+     "body": "Every 7 days; unpaid lines are suspended after 3 days' grace (the ONT is cut off) and come back when paid."
+    }
+   ]
+  },
+  {
+   "code": "us_ftth",
+   "name": "US fiber network (OPS America)",
+   "company": "usfiber",
+   "icon": "flag-usa",
+   "sections": [
+    {
+     "title": "One operator, every layer",
+     "body": "There is no single US network company. OPS America plays a large US fiber operator that owns its access network end to end: customer premises, fiber access, PON, OLTs, aggregation, metro, core, internet edge, peering and transit, plus the OSS, BSS and NOC that run it."
+    },
+    {
+     "title": "Customer premises",
+     "body": "The ONT terminates the fiber and hands Ethernet (1, 2.5 or 10 GbE) to the customer’s gateway, which does IPv4/IPv6, DHCP, NAT, firewall, routing and Wi-Fi. The ONT is tied to the subscriber in inventory and must be authorised by the OLT before service works."
+    },
+    {
+     "title": "PON & splitters",
+     "body": "A passive optical network shares one OLT port among many homes through unpowered splitters (1:8 to 1:128). XGS-PON gives about 10 Gbit/s each way per PON; each customer’s speed is set by their service profile, not the PON total."
+    },
+    {
+     "title": "Feeder, distribution & drop",
+     "body": "Feeder fiber runs from the central office to fiber distribution hubs (FDHs); distribution fiber runs to fiber distribution terminals (FDTs) on poles or in pedestals; the drop goes from the FDT to the house, aerially or buried in conduit."
+    },
+    {
+     "title": "Outside plant",
+     "body": "Aerial plant hangs fiber lashed to messenger strand on utility poles, held with anchors and guy wires. Underground plant uses conduit, handholes, vaults, manholes and pedestals. Splice closures protect joins; slack is stored for repairs."
+    },
+    {
+     "title": "Central office",
+     "body": "Fiber terminates on the ODF and is patched to OLT PON ports. OLTs uplink to aggregation routers and switches. DC power (rectifiers, batteries, generator) and HVAC keep it running; access control, CCTV and fire systems protect it."
+    },
+    {
+     "title": "Aggregation, metro & core",
+     "body": "Aggregation collects many OLTs with redundant links. Metro networks join COs, data centres and edge sites. The core carries traffic between regions on 100–800 Gbit/s links, often over DWDM optical transport with ROADMs and amplifiers."
+    },
+    {
+     "title": "BNG & internet edge",
+     "body": "BNGs handle subscriber sessions, IP addresses and policies. Edge routers connect to transit providers, internet exchanges and content networks using BGP; inside the network IS-IS or OSPF route traffic."
+    },
+    {
+     "title": "OSS, BSS & the NOC",
+     "body": "OSS keeps the inventory, GIS, IPAM, provisioning and fault management; BSS handles orders, billing and customers. The NOC watches every layer and dispatches field techs. In OPS Hub these are the ISP pages, the maps, the Operations centre and Alerts."
+    },
+    {
+     "title": "When it goes wrong",
+     "body": "One house down: check the ONT, optical power, connectors and drop. Many ONTs on one PON down together: the fault is shared — a fiber cut, damaged feeder or distribution cable, a failed splitter, an OLT port or power. The NOC traces it with inventory and sends OSP with an OTDR."
+    }
+   ]
+  },
+  {
+   "code": "cctv",
+   "name": "OPS Secure CCTV",
+   "company": "secure",
+   "icon": "video",
+   "sections": [
+    {
+     "title": "Systems",
+     "body": "A system is a recorder (NVR or DVR) and its cameras. IP cameras use PoE over CAT6; analogue cameras need a DVR; wireless cameras need Wi-Fi and a powered NVR on site."
+    },
+    {
+     "title": "Power & budgets",
+     "body": "The NVR has 8 PoE ports and a 120 W budget; PoE switches add more. A camera without power, a channel or a path stays offline."
+    },
+    {
+     "title": "Recording & events",
+     "body": "Motion, heat, ANPR plate reads and doorbell rings are recorded as events. Recording modes are motion, continuous or off."
+    },
+    {
+     "title": "Who can watch",
+     "body": "The owner, people they share with, members of an organisation job (e.g. police) and staff. Remote viewing needs the NVR online and remote viewing on."
+    },
+    {
+     "title": "Faults",
+     "body": "Lens, cable and dead faults raise OPS Secure jobs. OPS Hub → CCTV systems shows everything live."
+    }
+   ]
+  },
+  {
+   "code": "datacentre_cloud",
+   "name": "OPS Data centres & OPS Cloud",
+   "company": "data",
+   "icon": "server",
+   "sections": [
+    {
+     "title": "Data halls",
+     "body": "Racks, UPS, generators and CRAC cooling within 25 m form a hall. Racks need power (UPS or socket), a ToR switch and a CAT6 uplink to an online router."
+    },
+    {
+     "title": "Heat",
+     "body": "Running servers make heat; CRAC units remove 30 kW each. Over 32 °C servers degrade; at 40 °C they shut down until it cools."
+    },
+    {
+     "title": "Power",
+     "body": "On mains the UPS charges; in a power cut it runs on battery (longer at low load), then everything goes dark."
+    },
+    {
+     "title": "OPS Cloud",
+     "body": "Customer VMs are placed on healthy 'cloud' role hosts in their region, restarted elsewhere when a host dies, or left 'host down' / 'waiting for capacity'."
+    },
+    {
+     "title": "Platform roles",
+     "body": "Servers can run OPS Web hosting, OPS DNS or OPS mail. Once a role has servers, that service is down whenever none is reachable — websites time out, lookups fail, mail bounces."
+    }
+   ]
+  },
+  {
+   "code": "web_domains",
+   "name": "The in-game internet: domains, websites, DNS, email & SSL",
+   "company": "web",
+   "icon": "globe",
+   "sections": [
+    {
+     "title": "The Browser",
+     "body": "A real web for the city, on phones (mobile data) and laptops (Ethernet). ops.sa is OPS Search."
+    },
+    {
+     "title": "Domains",
+     "body": "Registered at opsdomains.sa (.ls .sa .biz .shop .club; .gov.sa for government). They renew from the owner's bank, expire, then are released after a grace period."
+    },
+    {
+     "title": "DNS",
+     "body": "A, AAAA, CNAME, MX and TXT records decide where a name goes. 198.18.10.80 is OPS Web hosting; a customer's static or cloud IP self-hosts."
+    },
+    {
+     "title": "Websites",
+     "body": "Built from blocks at opsweb.sa — never raw HTML, so no player code runs on anyone's phone. Live when published and the DNS points at the server."
+    },
+    {
+     "title": "HTTPS & email",
+     "body": "Certificates from OPS Trust CA (free DV with hosting). No valid certificate means 'Not secure' or a full-page warning. Mailboxes deliver into the phone's Mail app; unknown addresses bounce."
+    }
+   ]
+  },
+  {
+   "code": "track",
+   "name": "OPS Track",
+   "company": "track",
+   "icon": "location-crosshairs",
+   "sections": [
+    {
+     "title": "What it is",
+     "body": "GPS trackers fitted in vehicles: live position, theft alerts and an immobiliser on Pro units."
+    },
+    {
+     "title": "How it reports",
+     "body": "Over OPS Mobile. With no signal it stores positions and sends them when signal returns."
+    },
+    {
+     "title": "Owners",
+     "body": "/track lists your vehicles, locates them and arms theft alerts."
+    },
+    {
+     "title": "Staff",
+     "body": "/towers → OPS Track to install, test and remove; OPS Hub → Vehicle tracking shows the live map."
+    }
+   ]
+  },
+  {
+   "code": "fuel",
+   "name": "OPS Fuel",
+   "company": "fuel",
+   "icon": "gas-pump",
+   "sections": [
+    {
+     "title": "Stations",
+     "body": "Underground or bunded tanks, automatic tank gauges, dispensers, a canopy, an emergency stop, a tanker fill point and vent stacks."
+    },
+    {
+     "title": "Power",
+     "body": "Dispensers need power; in a power cut the pumps stop."
+    },
+    {
+     "title": "Deliveries",
+     "body": "Tankers refill tanks at the fill point."
+    },
+    {
+     "title": "Safety",
+     "body": "Fuel vapour ignites easily — no sparks, phones or smoking near open fuel."
+    }
+   ]
+  },
+  {
+   "code": "solar",
+   "name": "San Andreas Solar",
+   "company": "solar",
+   "icon": "solar-panel",
+   "sections": [
+    {
+     "title": "How it works",
+     "body": "Panels → DC isolator → hybrid inverter → consumer unit, with a home battery beside the inverter."
+    },
+    {
+     "title": "Day and night",
+     "body": "In daylight the panels power the house and charge the battery. After dark, or in a power cut, the battery takes over."
+    },
+    {
+     "title": "Limits",
+     "body": "Panels must be within 30 m of the inverter; the inverter feeds the consumer unit beside it."
+    },
+    {
+     "title": "Checking",
+     "body": "[E] on the inverter shows output and battery charge."
+    }
+   ]
+  },
+  {
+   "code": "jobs_business",
+   "name": "Jobs, money & the business layer",
+   "company": null,
+   "icon": "briefcase",
+   "sections": [
+    {
+     "title": "A job's life",
+     "body": "Open → accepted (a snapshot of the world is taken) → the work is done for real → checked against the world → the customer pays → the company is credited → you're paid wages → an invoice is issued."
+    },
+    {
+     "title": "Quotes & contracts",
+     "body": "Quotes become work orders when accepted. Contracts bill every period and set response times (SLA). Support contracts make repairs free."
+    },
+    {
+     "title": "SLA",
+     "body": "Each job gets a due time: from the contract, the customer's tier (critical 4 h, premium 8 h, business 24 h, standard 72 h) or 4 h for emergencies. Late finishes are breaches on the dashboards."
+    },
+    {
+     "title": "Stock, assets & warranty",
+     "body": "Completed jobs use parts from stock. Kit fitted is registered to the customer with a serial and warranty — warranty repairs are free. Low stock raises alerts; purchase orders restock."
+    },
+    {
+     "title": "Tickets & alerts",
+     "body": "Customers raise tickets from the phone or the portal. Alerts cover stock, SLA, contracts, certifications and vans."
+    }
+   ]
+  },
+  {
+   "code": "training_safety",
+   "name": "Training, certification, safety & the job assistant",
+   "company": null,
+   "icon": "graduation-cap",
+   "sections": [
+    {
+     "title": "Certifications",
+     "body": "Each job family has a course: classroom lessons, a safety module, an exam and (if enabled) an in-game practical at the OPS Academy. Installation work needs the family's certification to be accepted."
+    },
+    {
+     "title": "The job assistant",
+     "body": "On any job, 'Guide me' (or /jobhelp) shows the next step, the tools you need and where to get them, the safety controls and what goes wrong if you skip steps."
+    },
+    {
+     "title": "Risk assessment",
+     "body": "Before on-site work you confirm a dynamic risk assessment: PPE, cones, isolation, ladder or harness. Skipping it on risky work can cause accidents (falls, shocks) and is logged."
+    },
+    {
+     "title": "Standalone or items",
+     "body": "In standalone mode your van has the tools and kit comes from /towers. In items mode tools and parts are inventory items collected from an OPS depot, and jobs use them up."
+    },
+    {
+     "title": "Configuration",
+     "body": "Everything — systems on/off, companies, jobs, prices, timings — can be changed in the config files, OPS Hub → Settings / Jobs / Companies, or OPS Work → Admin."
+    }
+   ]
+  }
+ ],
+ "slideshows": {
+  "config": {
+   "name": "Configuring OPS",
+   "desc": "Every way to change how the OPS systems work — files, OPS Hub and the phone — and what each setting group does.",
+   "icon": "sliders",
+   "slides": [
+    {
+     "title": "Three ways to configure everything",
+     "icon": "sliders",
+     "body": [
+      "The config files: opslabs-towers/config.lua, opslabs-phone/config.lua, opslabs-phone/sql/ops_catalog.json and sql/ops_guides.json.",
+      "OPS Hub → Settings, Jobs, Companies: every value, with its explanation, saved in the database.",
+      "OPS Work → Admin settings on the phone: the most-used switches, every job and every company.",
+      "What wins: a value set on OPS Hub or the phone overrides the file. \"Reset\" puts it back to the file’s value."
+     ]
+    },
+    {
+     "title": "What lives where",
+     "icon": "folder-tree",
+     "body": [
+      "opslabs-towers/config.lua — mobile masts and Wi-Fi, cabling, mains electricity, the power grid, solar, fuel, OPS Track, the ISP, CCTV, data centres, gunshot sensors, faults, buildings, roadworks, lighting, vans.",
+      "opslabs-phone/config.lua — the phone itself, OPS Mobile plans, the OPS platform (automatic jobs), Features (web, cloud, business, training, assistant) and Work (play mode, depots, safety, training, animations).",
+      "sql/ops_catalog.json — companies, roles and permissions, job types, customer places, ISP pools, domain/hosting/cloud prices, stock lines, suppliers, contracts and SLA tiers.",
+      "sql/ops_guides.json — the training and job-assistant content: steps, tools, safety, mistakes, quizzes, exams and the classroom explainers.",
+      "config_server.lua — secrets (API keys, logins). Never shown on OPS Hub."
+     ]
+    },
+    {
+     "title": "OPS Hub → Settings",
+     "icon": "toggle-on",
+     "body": [
+      "Quick settings: play mode, every system on/off, automatic jobs and the safety & training rules.",
+      "The two full editors list every setting of opslabs-towers and opslabs-phone as a tree. Search by name or by what it does — each one shows the comment from the config file.",
+      "Changes are saved straight away and applied in game within about 15 seconds. A few values are read when a script starts (for example turning a whole system on or off) — those apply on the next restart.",
+      "Every change is in the Platform audit log with who made it."
+     ]
+    },
+    {
+     "title": "Jobs editor",
+     "icon": "briefcase",
+     "body": [
+      "Switch any job type on or off, change the customer price and the engineer’s wage, decide whether it appears on its own, if it can be an emergency, the certification it needs, whether warranty/contracts make it free.",
+      "Parts: which stock items the job uses up (e.g. {\"cat6\": 20, \"rj45\": 2}).",
+      "The check (advanced): how the game proves the work was done — time on site, kit fitted, cable laid, ONT online, dial tone, live supply, cameras online, speed test, router settings, websites, data centre…",
+      "Create your own job types for any company: they appear in OPS Work within 30 seconds."
+     ]
+    },
+    {
+     "title": "Companies editor",
+     "icon": "building",
+     "body": [
+      "Edit any company’s name, tagline, colour, icon, VAT and wage share.",
+      "Switch a company off: it disappears from OPS Work, gets no jobs and can’t be booked — handy if your server doesn’t want OPS Fuel or solar.",
+      "Create new companies, then give them job types in the Jobs editor and roles in Roles & permissions."
+     ]
+    },
+    {
+     "title": "Prices & catalogue",
+     "icon": "tags",
+     "body": [
+      "Settings → Prices & catalogue edits whole catalogue sections as JSON: domain endings and prices, hosting and cloud plans, certificate prices, stock lines and suppliers, SLA tiers and contract types, roles, the customer places that get automatic jobs.",
+      "OPS Hub uses them at once. The game writes them into sql/ops_catalog.json on start — restart opslabs-phone and opslabs-towers to use them."
+     ]
+    },
+    {
+     "title": "Play modes: standalone or items",
+     "icon": "boxes-stacked",
+     "body": [
+      "Standalone (default): no inventory items needed. Tools are assumed to be in the van; kit is placed from /towers.",
+      "Items: tools, PPE and parts are inventory items. Engineers collect them at an OPS depot (Work.Depots) for the jobs they’ve accepted; jobs need their tools to start and use up their parts; placing kit from /towers uses its item (Work.ModelItems).",
+      "Add the items to your inventory first: opslabs-phone/items/ has ready-made definitions for ox_inventory, ESX and QBCore."
+     ]
+    },
+    {
+     "title": "Training & certification settings",
+     "icon": "graduation-cap",
+     "body": [
+      "Features.Training switches the whole training system on/off.",
+      "Work.RequireSafetyTraining: the family’s safety module before taking its jobs. Work.RequirePractical: an in-game practical at an OPS Academy centre (Work.TrainingCentres) as part of each certification. Work.PassMark: the pass mark for quizzes and exams.",
+      "Per job: the Jobs editor decides which certification a job needs and whether it’s required.",
+      "Content (lessons, steps, quizzes) is in sql/ops_guides.json — edit it to change what’s taught."
+     ]
+    },
+    {
+     "title": "Health & safety settings",
+     "icon": "helmet-safety",
+     "body": [
+      "Work.SafetyBriefing: a dynamic risk assessment before on-site work and before completing a job.",
+      "Work.SafetyIncidents: skip controls on risky work and accidents can happen (falls, shocks) — logged as safety incidents and alerted to managers.",
+      "Work.Anims: the animation used for each step type (dict/clip or scenario)."
+     ]
+    },
+    {
+     "title": "Switching systems off",
+     "icon": "power-off",
+     "body": [
+      "Each big system has an Enabled switch: Mains, Grid, OpsIsp, Cctv, DataCentre, Track, Fuel, Gunshot, Faults (opslabs-towers) and Features.* plus Carrier.Enabled (opslabs-phone).",
+      "Turning a system off stops its engine on the next restart; its jobs stay available unless you also switch them off in the Jobs editor (or switch the company off).",
+      "Enforce (opslabs-towers) decides whether phones need real tower signal."
+     ]
+    },
+    {
+     "title": "Good habits",
+     "icon": "circle-check",
+     "body": [
+      "Change one thing at a time and watch the game for a minute.",
+      "Use \"Reset\" to go back to the file’s value; the audit log shows every change.",
+      "Keep a copy of your config files before big edits, and test risky changes on a copy of the server."
+     ]
+    }
+   ]
+  },
+  "firstjob": {
+   "name": "Your first OPS job",
+   "desc": "From signing in to getting paid — what an engineer does, step by step.",
+   "icon": "person-digging",
+   "slides": [
+    {
+     "title": "Sign in and join a company",
+     "icon": "right-to-bracket",
+     "body": [
+      "Open OPS Work on your phone, create an account and apply to a company. A manager approves you and gives you a role."
+     ]
+    },
+    {
+     "title": "Get trained",
+     "icon": "graduation-cap",
+     "body": [
+      "OPS Work → Training (or here in the Classroom): read the lesson, pass the health & safety module, pass the exam, and — if your server uses them — do the practical at the OPS Academy. Installation jobs need the certificate."
+     ]
+    },
+    {
+     "title": "Pick a job",
+     "icon": "clipboard-list",
+     "body": [
+      "Your company’s job board lists open work with the real address, the customer, the wage and the SLA deadline. Accept one — the GPS is set for you."
+     ]
+    },
+    {
+     "title": "Guide me",
+     "icon": "life-ring",
+     "body": [
+      "On the job page tap \"Guide me\" (or type /jobhelp): your next step, the tools you need and where to get them, the safety controls and what goes wrong if you skip steps."
+     ]
+    },
+    {
+     "title": "Risk assessment",
+     "icon": "clipboard-check",
+     "body": [
+      "Before work, tick the controls you really have in place — PPE, cones, isolation, ladder or harness. Skipping them on risky work can hurt you."
+     ]
+    },
+    {
+     "title": "Do the real work",
+     "icon": "screwdriver-wrench",
+     "body": [
+      "Fit the kit from /towers, run and crimp the cable, configure on OPS Hub — whatever the job needs. Only work done after you accepted counts. The Work check on the job page shows your progress live."
+     ]
+    },
+    {
+     "title": "Complete and get paid",
+     "icon": "sack-dollar",
+     "body": [
+      "When the check passes, tap Complete. The customer pays (or warranty/contract covers it), the company is credited, you’re paid your wage and an invoice is issued. Finishing late counts as an SLA breach."
+     ]
+    }
+   ]
+  }
+ }
+}

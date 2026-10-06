@@ -291,6 +291,12 @@ const UI = {
         });
     },
 
+    /** action sheet that resolves with the chosen option's value (or its index when it has none), null if cancelled */
+    async pick(title, options) {
+        const i = await UI.actionSheet(title, options);
+        return i === null ? null : (options[i].value ?? i);
+    },
+
     /**
      * Card sheet. opts: { title, left = 'Cancel', right, rightBold, medium, render(body, api), onRight(api) }
      * api: { close(), body, el, setRightEnabled(bool) }

@@ -33,6 +33,13 @@ local function removeProp()
 end
 
 function PlayPhoneAnim(kind)
+    -- the phone is lying on a wireless charger (client/dock.lua): nothing in your hand
+    if MyDock and MyDock() then return StopPhoneAnim() end
+    -- OPS Buds in: calls are hands-free (client/buds.lua)
+    if kind == 'call' and BudsHandsFree and BudsHandsFree() then
+        if not PhoneOpen then return StopPhoneAnim() end
+        kind = 'text'
+    end
     local ped = PlayerPedId()
     if IsPedInAnyVehicle(ped, false) and kind ~= 'call' then
         -- in vehicles the text anim clips through the wheel; keep the prop only
@@ -75,6 +82,9 @@ function Preload()
     if not data then return false end
     SendNUIMessage({ action = 'init', data = data })
     initialized = true
+    if BatteryLoad then BatteryLoad(data.settings and data.settings.battery) end
+    if BudsLoad then BudsLoad(data.settings) end
+    if HasPhoneCached and HasPhoneCached() == nil then CreateThread(function() RefreshHasPhone() end) end
     return true
 end
 
@@ -86,6 +96,8 @@ local function refreshHasPhone()
     hasPhoneCache = lib.callback.await(PREFIX .. 'canOpen', false) and true or false
     return hasPhoneCache
 end
+function HasPhoneCached() return hasPhoneCache end   -- client/battery.lua: no phone in your pockets, no drain
+RefreshHasPhone = refreshHasPhone
 
 local function onInventoryChange(item)
     if not Config.RequireItem or Config.Items[item] then
@@ -99,11 +111,20 @@ RegisterNetEvent('esx:addInventoryItem', onInventoryChange)
 RegisterNetEvent('esx:removeInventoryItem', onInventoryChange)
 
 function OpenPhone()
-    if PhoneOpen or not canUsePhone() then return end
+    if PhoneOpen or LaptopOpen or not canUsePhone() then return end
     if not Config.RequireItem then hasPhoneCache = true end
     if hasPhoneCache == nil or hasPhoneCache == false then refreshHasPhone() end
     if not hasPhoneCache then
         lib.notify({ description = "You don't have a phone", type = 'error' })
+        return
+    end
+    if PhoneIsDead and PhoneIsDead() then
+        lib.notify({ description = 'Your phone battery is flat. Charge it at a charger or with a power bank.', type = 'error' })
+        return
+    end
+    local dockDist = DockDistance and DockDistance()
+    if dockDist and dockDist > ((Config.Dock or {}).UseDistance or 2.2) then
+        lib.notify({ description = 'Your phone is on the charger. Go back to it to use it.', type = 'error' })
         return
     end
 
@@ -146,6 +167,9 @@ function OpenPhone()
             if now >= nextCheck then
                 nextCheck = now + 250
                 if not canUsePhone() then ClosePhone() end
+                -- using the phone where it lies on the charger: walking away puts the screen down
+                local dd = DockDistance and DockDistance()
+                if dd and dd > ((Config.Dock or {}).UseDistance or 2.2) then ClosePhone() end
             end
             Wait(0)
         end

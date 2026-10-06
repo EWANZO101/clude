@@ -223,6 +223,12 @@ img { -webkit-user-drag: none; }
 }
 .sb-battery-level { display: block; height: 100%; width: 100%; border-radius: 2.5px; background: currentColor; }
 .sb-battery-level.low { background: var(--red) !important; }
+.sb-battery.charging .sb-battery-level { background: var(--green) !important; }
+.sb-battery.charging .sb-battery-level::after { /* bolt */
+    content: ''; position: absolute; left: 50%; top: 50%; width: 7px; height: 11px; transform: translate(-50%, -50%);
+    background: currentColor; clip-path: polygon(55% 0, 0 58%, 45% 58%, 35% 100%, 100% 40%, 55% 40%);
+    filter: drop-shadow(0 0 1px rgba(0,0,0,.6));
+}
 
 /* ---------------------------------------------------------------------
    dynamic island
