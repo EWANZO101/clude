@@ -5,14 +5,25 @@ local CV = Config.Cctv or {}
 if not CV.Enabled then return end
 
 local seq, lastAt = 0, 0
-local function capture(camId, q, w, h)
+local waits = {}          -- capture seq -> promise (the relay waits for each picture before moving the camera on)
+local function capture(camId, q, w, h, wait)
     seq = seq + 1
+    local p = wait and promise.new() or nil
+    if p then waits[seq] = p end
     SendNUIMessage({ action = 'cctvCapture', cam = camId, seq = seq, w = w or 960, h = h or 540, q = q or 0.8 })
+    if p then
+        local mySeq = seq
+        SetTimeout(700, function() if waits[mySeq] then waits[mySeq] = nil p:resolve(false) end end)
+        return Citizen.Await(p)
+    end
 end
 
 RegisterNUICallback('cctvFrame', function(body, cb)
     cb(true)
-    if type(body) ~= 'table' or type(body.jpg) ~= 'string' or #body.jpg < 200 then return end
+    if type(body) ~= 'table' then return end
+    local p = waits[tonumber(body.seq) or -1]
+    if p then waits[tonumber(body.seq)] = nil p:resolve(true) end
+    if type(body.jpg) ~= 'string' or #body.jpg < 200 then return end
     TriggerLatentServerEvent('opslabs-towers:cctv:frame', 1500000, tonumber(body.cam), body.jpg)
 end)
 
@@ -38,8 +49,12 @@ end
 
 local function relay()
     local r = lib.callback.await('opslabs-towers:cctv:relay', false, true)
-    if not r or r.error then return lib.notify({ type = 'error', description = (r and r.error) or 'Failed' }) end
+    if not r or r.error then
+        SetResourceKvpInt('cctv_relay', 0)
+        return lib.notify({ type = 'error', description = (r and r.error) or 'Failed' })
+    end
     relaying = true
+    SetResourceKvpInt('cctv_relay', 1)      -- this game resumes relaying after restarts / reconnects until it's switched off
     lib.notify({ type = 'success', title = 'CCTV relay', description = 'On — your screen shows the cameras OPS Hub viewers are watching. /cctvrelay or BACKSPACE to stop.', duration = 9000 })
     local cam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
     local current, label, lastPos = nil, 'Waiting for OPS Hub viewers…', nil
@@ -82,7 +97,7 @@ local function relay()
             Wait(0)
             DisableAllControlActions(0)
             EnableControlAction(0, 245, true) EnableControlAction(0, 249, true)
-            if IsDisabledControlJustPressed(0, 177) then relaying = false end
+            if IsDisabledControlJustPressed(0, 177) then relaying = false SetResourceKvpInt('cctv_relay', 0) end
             if not current then DrawRect(0.5, 0.5, 1.0, 1.0, 8, 10, 14, 255) end
             txt(0.03, 0.03, label, 0.5)
             txt(0.03, 0.065, ('%02d:%02d  OPS SECURE · LIVE'):format(GetClockHours(), GetClockMinutes()), 0.38, 200, 210, 220)
@@ -129,16 +144,15 @@ local function relay()
             end
             lastPos = pos
             if c.hold then
-                -- a camera open full size on OPS Hub: stream it, 1280×720, ~4 pictures a second, following PTZ moves
+                -- a camera open full size on OPS Hub: stream it, 1280×720, as fast as pictures go out, following PTZ moves
                 local untilAt = GetGameTimer() + 1500
                 while relaying and GetGameTimer() < untilAt do
-                    capture(c.id, 0.85, 1280, 720)
-                    Wait(250)
+                    capture(c.id, 0.85, 1280, 720, true)
+                    Wait(120)
                 end
             else
-                Wait(350)
-                capture(c.id, 0.78, 960, 540)
-                Wait(150)
+                Wait(120)                               -- a few rendered frames of the new view
+                capture(c.id, 0.78, 960, 540, true)     -- wait for this picture before the camera moves on
             end
         end
     end
@@ -155,9 +169,17 @@ local function relay()
 end
 
 RegisterCommand('cctvrelay', function()
-    if relaying then relaying = false return end
+    if relaying then relaying = false SetResourceKvpInt('cctv_relay', 0) return end
     CreateThread(relay)
 end, false)
+
+-- this game was relaying when the server / resource restarted or it disconnected: carry on by itself
+CreateThread(function()
+    if GetResourceKvpInt('cctv_relay') ~= 1 then return end
+    while not NetworkIsPlayerActive(PlayerId()) do Wait(1000) end
+    Wait(15000)                             -- let the character load in first
+    if not relaying then relay() end
+end)
 
 -- an always-on relay account (Config.Cctv.RelayAccounts) joined: start by itself
 RegisterNetEvent('opslabs-towers:cctv:autorelay', function()
