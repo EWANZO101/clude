@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OPS POS</title>
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="pos.css">
+</head>
+<body>
+    <div id="pos" class="pos hidden">
+        <header class="bar">
+            <div class="brand"><span class="logo"><i class="fa-solid fa-cash-register"></i></span><b>OPS</b>&nbsp;POS<span class="store" id="store-name"></span></div>
+            <nav class="tabs" id="tabs"></nav>
+            <div class="right">
+                <span class="clock" id="clock"></span>
+                <button class="x" data-act="close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </header>
+        <div class="banner hidden" id="banner"></div>
+        <main id="view"></main>
+        <div class="toast hidden" id="toast"></div>
+    </div>
+    <script src="pos.js"></script>
+</body>
+</html>

@@ -60,8 +60,11 @@ function homeLayout() {
     const saved = Array.isArray(Phone.settings && Phone.settings.homeOrder) ? Phone.settings.homeOrder : [];
     const base = [...saved.filter((id) => !HOME_DOCK.includes(id)), ...HOME_ORDER, ...extra];
     const ids = [...new Set(base)].filter((id) => Apps.byId[id] && isInstalled(id));
-    const pages = [['@widgets', ...ids.slice(0, 16)]];
-    for (let i = 16; i < ids.length; i += 24) pages.push(ids.slice(i, i + 24));
+    // the Batteries widget (js/batteries.js) takes the place of four icons on page 1
+    const batt = typeof Batteries !== 'undefined' && Batteries.visible();
+    const first = batt ? 12 : 16;
+    const pages = [batt ? ['@widgets', '@batteries', ...ids.slice(0, first)] : ['@widgets', ...ids.slice(0, first)]];
+    for (let i = first; i < ids.length; i += 24) pages.push(ids.slice(i, i + 24));
     return { pages, dock: HOME_DOCK };
 }
 let HOME_LAYOUT = { pages: [['@widgets']], dock: HOME_DOCK };
@@ -527,7 +530,7 @@ function renderHome() {
     HOME_LAYOUT = homeLayout();
     const pages = $('#home-pages');
     const scroll = pages.scrollLeft;
-    pages.innerHTML = HOME_LAYOUT.pages.map((p) => `<div class="home-page">${p.map((id) => (id === '@widgets' ? widgetsHtml() : appIconHtml(id))).join('')}</div>`).join('');
+    pages.innerHTML = HOME_LAYOUT.pages.map((p) => `<div class="home-page">${p.map((id) => (id === '@widgets' ? widgetsHtml() : id === '@batteries' ? Batteries.html() : appIconHtml(id))).join('')}</div>`).join('');
     pages.scrollLeft = scroll;
     $('#home-dots').innerHTML = HOME_LAYOUT.pages.map((_, i) => `<i data-page="${i}"></i>`).join('');
     $('#dock').innerHTML = HOME_LAYOUT.dock.map(appIconHtml).join('');

@@ -59,3 +59,6 @@
 
 -- OPS Buds (Config.Buds.Item): wireless earbuds in their case — use to put them in / take them out. Image: html/img/opsbuds_case.png
 ['ops_buds'] = { label = "OPS Buds", weight = 60, stack = false, close = true, description = "Wireless earbuds in their charging case. Use to put them in / take them out." },
+
+-- OPS SafeMag (Config.SafeMag.Item): magnetic battery pack for the back of the phone. Image: html/img/ops_safemag.png
+['ops_safemag'] = { label = "OPS SafeMag", weight = 110, stack = false, close = true, description = "Magnetic battery pack. Use to snap it onto the back of your phone / take it off." },

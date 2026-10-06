@@ -42,6 +42,14 @@ end
 
 function BudsHandsFree() return S.connected end
 
+-- the phone UI asks when it (re)loads: a push sent before the page was ready is lost
+RegisterNUICallback('budsState', function(_, cb)
+    if not loaded then return cb({}) end
+    cb({ owned = S.owned, worn = S.worn, connected = S.connected, paired = S.paired, name = S.name, mode = S.mode,
+        earDetect = S.earDetect, convAware = S.convAware, l = round(S.l), r = round(S.r), c = round(S.c),
+        caseCharging = S.caseCharging, label = CB.Label or 'OPS Buds' })
+end)
+
 --- settings arrive with the phone data (client/main.lua Preload)
 function BudsLoad(settings)
     settings = settings or {}

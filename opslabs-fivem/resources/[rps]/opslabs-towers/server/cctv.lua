@@ -578,10 +578,27 @@ function CctvAllCams()
             local rf = st.rec and Cabling.fixtures[st.rec]
             v.system = st.rec and (system(st.rec).name or ('Recorder #' .. st.rec)) or nil
             v.recorder = st.rec
+            local r = st.rec and S.state.recs[st.rec]
+            v.remote = st.rec and system(st.rec).remote == 1 or false
+            v.internet = r and r.internet or false
             out[#out + 1] = v
         end
     end
     table.sort(out, function(a, b) return a.id < b.id end)
     return out
 end
+--- OPS Hub customers (server/cctvlive.lua): may the character `identifier` (job `job`) watch this recorder's cameras
+--- from outside the game? Owner, shared viewer or the organisation — and only with remote viewing on and internet.
+function CctvRemoteAllowed(recId, identifier, job)
+    if dirty then compute() end
+    local s = recId and S.systems[recId]
+    local r = recId and S.state.recs[recId]
+    if not s or not r or s.remote ~= 1 or not r.internet then return false end
+    if identifier and s.owner_identifier == identifier then return true end
+    for _, x in ipairs(s.shared or {}) do if identifier and x.id == identifier then return true end end
+    return job ~= nil and s.org_job ~= nil and s.org_job ~= '' and s.org_job == job
+end
+--- the live map: is world point p inside this camera's view (range + field of view)?
+function CctvInView(v, p) return inView(v, p) end
+function CctvCamRange(id) local f = Cabling.fixtures[tonumber(id) or -1] return f and (CAM[f.model] or {}).range or 30 end
 exports('CctvState', CctvState)

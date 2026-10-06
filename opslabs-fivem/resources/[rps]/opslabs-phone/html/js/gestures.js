@@ -382,7 +382,7 @@ function setupIconDrag() {
     let edgeTimer = null;
 
     const pageIcons = () => $$('#home-pages .app-icon[data-app]');
-    const currentOrder = () => HOME_LAYOUT.pages.flat().filter((x) => x !== '@widgets');
+    const currentOrder = () => HOME_LAYOUT.pages.flat().filter((x) => x[0] !== '@');   // widgets aren't apps
 
     home.addEventListener('pointerdown', (e) => {
         if (!home.classList.contains('jiggle')) return;

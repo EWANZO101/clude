@@ -5415,6 +5415,207 @@
      "ok": 2
     }
    ]
+  },
+  "pos_install": {
+   "name": "POS installation & support",
+   "company": "pos",
+   "cert": "pos_install",
+   "certName": "POS installation",
+   "certRequired": false,
+   "jobs": [
+    "pos_install",
+    "pos_lane",
+    "pos_reader",
+    "pos_support"
+   ],
+   "summary": "Fit OPS POS tills on store counters and keep them selling.",
+   "overview": "OPS POS Systems sells stores their point of sale: a terminal (the till's screen and software), a card reader for card and contactless phone payments, a cash drawer, a receipt printer, a barcode scanner and a customer-facing display. Everything within a few metres of the terminal joins that till. Once fitted, a boss of the business walks up to the terminal and sets it up — from then on staff clock in and ring up sales, card payments land in the business account (less the processing fee OPS POS charges) and cash goes into the drawer until a boss cashes up.",
+   "equipment": [
+    {
+     "name": "POS terminal",
+     "what": "The till itself: touchscreen and POS software (products, stock, staff hours, loyalty, reports).",
+     "how": "/towers → OPS POS → Terminal. Put it on the counter facing the cashier."
+    },
+    {
+     "name": "Card reader",
+     "what": "Takes card and contactless phone payments (OPS Pay).",
+     "how": "/towers → OPS POS → Card reader, on the counter facing the customer, beside the terminal."
+    },
+    {
+     "name": "Cash drawer",
+     "what": "Holds the float and the takings; opens on cash sales.",
+     "how": "Under or next to the terminal, front towards the cashier."
+    },
+    {
+     "name": "Receipt printer",
+     "what": "Prints a receipt (an item) for the customer.",
+     "how": "Beside the terminal."
+    },
+    {
+     "name": "Barcode scanner",
+     "what": "Scan products straight into the sale (the till beeps).",
+     "how": "In its cradle beside the terminal."
+    },
+    {
+     "name": "Customer display",
+     "what": "Shows the customer their basket and total while they're rung up.",
+     "how": "On the counter facing the customer."
+    }
+   ],
+   "tools": [
+    "laptop",
+    "crimper",
+    "labeler"
+   ],
+   "ppe": [],
+   "steps": [
+    {
+     "title": "Survey the counter",
+     "detail": "Agree with the store where the till goes: cashier side, customer side, a socket nearby.",
+     "tool": null,
+     "anim": "clipboard",
+     "where": "The store's counter",
+     "secs": 8
+    },
+    {
+     "title": "Place the terminal",
+     "detail": "Put the terminal on the counter facing the cashier.",
+     "tool": null,
+     "anim": "carry",
+     "where": "/towers → OPS POS",
+     "secs": 8
+    },
+    {
+     "title": "Fit the peripherals",
+     "detail": "Card reader and customer display facing the customer, drawer, printer and scanner beside the terminal — all within a few metres.",
+     "tool": null,
+     "anim": "carry",
+     "where": "/towers → OPS POS",
+     "secs": 10
+    },
+    {
+     "title": "Cable it",
+     "detail": "Run CAT6 from the terminal to the store's network and tidy the cables under the counter.",
+     "tool": "crimper",
+     "anim": "crimp",
+     "where": "Under the counter",
+     "secs": 8
+    },
+    {
+     "title": "Test a sale",
+     "detail": "Open the terminal: the set-up screen lists every piece of kit it found — they should all be ticked.",
+     "tool": "laptop",
+     "anim": "type",
+     "where": "At the terminal",
+     "secs": 8
+    },
+    {
+     "title": "Hand over",
+     "detail": "Show the boss how to set up the till, add products and clock staff in. Then press Check / Complete on the job.",
+     "tool": null,
+     "anim": "phone",
+     "where": "OPS Work → the job",
+     "secs": 8
+    }
+   ],
+   "safety": [
+    {
+     "hazard": "Trailing cables",
+     "risk": "Staff and customers trip over cables behind the counter.",
+     "control": "Route cables under the counter and clip them; never across the walkway."
+    },
+    {
+     "hazard": "Cash handling",
+     "risk": "An open drawer during an install invites theft.",
+     "control": "Never open a live drawer; only the store's staff handle the cash."
+    },
+    {
+     "hazard": "Card data",
+     "risk": "Card and customer details are private.",
+     "control": "Never write down or photograph card details or the store's reports."
+    }
+   ],
+   "mistakes": [
+    {
+     "mistake": "Peripheral too far from the terminal",
+     "consequence": "It doesn't join the till — e.g. no card reader means card payments are greyed out."
+    },
+    {
+     "mistake": "Card reader facing the cashier",
+     "consequence": "Customers can't reach it; turn it to face the counter's customer side."
+    },
+    {
+     "mistake": "Fitted before accepting",
+     "consequence": "It isn't counted."
+    }
+   ],
+   "safetyQuiz": [
+    {
+     "q": "A store's cash drawer is open while you work. You…",
+     "a": [
+      "Ask staff to close it and leave the cash alone",
+      "Count the money",
+      "Take a float"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Cables behind the counter should be…",
+     "a": [
+      "Clipped and kept out of the walkway",
+      "Left loose",
+      "Run across the floor"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "A customer reads you their card number. You…",
+     "a": [
+      "Stop them — never take card details",
+      "Write it down",
+      "Repeat it back loudly"
+     ],
+     "ok": 0
+    }
+   ],
+   "exam": [
+    {
+     "q": "What does the terminal need to take card payments?",
+     "a": [
+      "A card reader within a few metres",
+      "A printer",
+      "Nothing"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Who sets up the till after you've fitted it?",
+     "a": [
+      "A boss of the business",
+      "You",
+      "Any customer"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "Cash from cash sales goes…",
+     "a": [
+      "Into the drawer until a boss cashes up",
+      "Straight to OPS POS",
+      "To the cashier"
+     ],
+     "ok": 0
+    },
+    {
+     "q": "The customer display should face…",
+     "a": [
+      "The customer",
+      "The cashier",
+      "The ceiling"
+     ],
+     "ok": 0
+    }
+   ]
   }
  },
  "systems": [
@@ -5787,6 +5988,30 @@
     {
      "title": "Configuration",
      "body": "Everything — systems on/off, companies, jobs, prices, timings — can be changed in the config files, OPS Hub → Settings / Jobs / Companies, or OPS Work → Admin."
+    }
+   ]
+  },
+  {
+   "code": "pos",
+   "name": "OPS POS Systems",
+   "company": "pos",
+   "icon": "cash-register",
+   "sections": [
+    {
+     "title": "What it does",
+     "body": "OPS POS is the till in a store: staff ring up products, the customer pays by card (tapping their phone on the card reader) or cash, gets a receipt, and the store's stock, takings, staff hours and loyal customers are all tracked."
+    },
+    {
+     "title": "The kit",
+     "body": "A terminal plus a card reader, cash drawer, receipt printer, barcode scanner and customer display. Everything within a few metres of the terminal joins that till."
+    },
+    {
+     "title": "Money",
+     "body": "Card payments go to the business account less a small processing fee to OPS POS. Cash goes into the drawer until a boss cashes up. The POS software licence is billed to the business account every period."
+    },
+    {
+     "title": "Shops",
+     "body": "A till set up inside a shop runs that shop: what customers buy from the shop assistant goes to the business too, and customers without cash can pay by card."
     }
    ]
   }

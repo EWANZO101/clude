@@ -27,6 +27,8 @@ client_scripts {
     'client/battery.lua',
     'client/dock.lua',
     'client/buds.lua',
+    'client/safemag.lua',
+    'client/pay.lua',
     'client/platform.lua',
     'client/training.lua',
     'client/traffic.lua',
@@ -67,6 +69,7 @@ server_scripts {
     'server/battery.lua',
     'server/dock.lua',
     'server/buds.lua',
+    'server/safemag.lua',
 }
 
 ui_page 'html/index.html'

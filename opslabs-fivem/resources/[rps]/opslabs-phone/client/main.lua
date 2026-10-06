@@ -25,9 +25,11 @@ local function attachProp()
     prop = CreateObject(Config.Prop, 0.0, 0.0, 0.0, true, true, false)
     AttachEntityToEntity(prop, ped, GetPedBoneIndex(ped, 28422), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true, false, true, 1, true)
     SetModelAsNoLongerNeeded(Config.Prop)
+    if SafeMagOnProp then SafeMagOnProp(prop) end   -- OPS SafeMag on the back (client/safemag.lua)
 end
 
 local function removeProp()
+    if SafeMagOffProp then SafeMagOffProp() end
     if prop and DoesEntityExist(prop) then DeleteEntity(prop) end
     prop = nil
 end
@@ -84,6 +86,7 @@ function Preload()
     initialized = true
     if BatteryLoad then BatteryLoad(data.settings and data.settings.battery) end
     if BudsLoad then BudsLoad(data.settings) end
+    if SafeMagLoad then SafeMagLoad(data.settings) end
     if HasPhoneCached and HasPhoneCached() == nil then CreateThread(function() RefreshHasPhone() end) end
     return true
 end

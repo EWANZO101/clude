@@ -146,6 +146,19 @@ back on the stand. The lock screen lights up with "Charging" while the charger h
 - Settings → Bluetooth lists them under My Devices, with rename and Forget This Device. Batteries and settings are saved per character.
 - The item is added to the ESX `items` table automatically; for ox_inventory / qb add the entries from `items/`.
 
+### OPS SafeMag
+
+`ops_safemag` is a magnetic battery pack for the back of the phone (`Config.SafeMag`, `client/safemag.lua`, `server/safemag.lua`, image `html/img/ops_safemag.png`). It works like a MagSafe battery pack:
+
+- **Use it** from the inventory to snap it onto the phone; use it again to take it off. Dropping or giving the item away takes it off too.
+- **Snapping it on** peeks the phone up, and the Dynamic Island shows the pack's level next to the phone's level with a charging bolt.
+- **While it's on** it charges the phone wirelessly from its own battery (`Charge` % per minute, costing `Cost` pack % for each phone %), up to `StopAt`.
+- **Recharging:** on a charger (cable, wireless pad, USB socket or a dock) the phone charges first and the pack once the phone is nearly full. A pack that's off the phone charges beside any live charger.
+- Its level and whether it's on are saved per character in the phone settings (`safemag`).
+- **Model:** while the phone is in your hand, the pack (`opslabs_safemag` from opslabs-props) sits on its back, networked so everyone sees it. It's fitted to `Config.Prop` automatically from the model's size. If it lands on the screen side, run `/safemagside` and copy the printed `side` into `Config.SafeMag.Attach`; `flip`, `offset`, or `pos` + `rot` fine-tune it.
+
+**Batteries widget:** once a player owns OPS Buds or a SafeMag, page 1 of the home screen gets an iPhone-style Batteries widget. It shows the phone, the SafeMag, the buds and the case, each with a level ring and a bolt while charging, and takes the place of four app icons. Players can hide it in Settings → Battery; `Config.BatteriesWidget = false` turns it off for everyone.
+
 ### Laptop (OPS OS desktop)
 
 Engineers place an **OPS laptop** (`/cable` → OPS Openline → Telecom equipment → Customer premises · inside → *Laptop*) on a desk, and anyone can walk up and press **E** to use it. OPS OS opens as a desktop with a menu bar, a dock and windows. The same apps run in the windows, with the same accounts as your phone: Ops-Networks, OPS Mobile, Mail, Messages, Contacts, Notes, Calendar, Wallet, Chirp, Maps, Photos, Garage, Services, Weather and Calculator. There's also a **Network** panel.

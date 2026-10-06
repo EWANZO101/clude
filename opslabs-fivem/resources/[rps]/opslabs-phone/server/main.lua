@@ -251,6 +251,7 @@ function BuildInit(src, phone)
             cameraEnabled = CameraStorageReady and CameraStorageReady() or false,
             cameraMaxVideo = Config.Camera.MaxVideoSeconds or 60,
             music = Config.Music,
+            batteriesWidget = Config.BatteriesWidget ~= false,
         },
     }
 end
@@ -266,6 +267,7 @@ local SETTING_TYPES = {
     language = 'string', region = 'string', units = 'string', clock24 = 'boolean',
     unitTemp = 'string', unitDistance = 'string', unitSpeed = 'string', unitWeight = 'string',
     clockFormat = 'string', dateFormat = 'string', weekStart = 'string', mapStyle = 'string', apps = 'table', homeOrder = 'table',
+    batteriesWidget = 'boolean',   -- Settings → Battery: show the Batteries widget
     traffic = 'table',      -- OPS Traffic alert choices: { alerts = bool, accident = bool, closure = bool, … }
     bluetooth = 'boolean',
     buds = 'table',         -- OPS Buds: { paired, name, mode, earDetect, convAware } (server/buds.lua CleanBuds)
