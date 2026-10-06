@@ -7,7 +7,7 @@
    is taken from a frame drawn in the same task. */
 (() => {
   const RES = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'opslabs-towers';
-  let gl = null, canvas = null, tex = null;
+  let gl = null, canvas = null, tex = null, uCrop = null;
   let looping = false, lastWant = 0, frames = 0;
   const queue = [];
 
@@ -19,7 +19,8 @@
     const sh = (t, src) => { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s); return s; };
     const prog = gl.createProgram();
     // FiveM's game-view texture is bottom-up like GL: sample it straight
-    gl.attachShader(prog, sh(gl.VERTEX_SHADER, 'attribute vec2 p; varying vec2 v; void main(){ v = vec2(p.x*0.5+0.5, p.y*0.5+0.5); gl_Position = vec4(p,0.0,1.0); }'));
+    // uCrop = the centre of the game frame with the picture's shape (16:9), so wide / tall screens aren't stretched
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, 'attribute vec2 p; varying vec2 v; uniform vec4 uCrop; void main(){ v = uCrop.xy + vec2(p.x*0.5+0.5, p.y*0.5+0.5) * uCrop.zw; gl_Position = vec4(p,0.0,1.0); }'));
     gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, 'precision mediump float; varying vec2 v; uniform sampler2D t; void main(){ gl_FragColor = vec4(texture2D(t, v).rgb, 1.0); }'));
     gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
@@ -43,12 +44,15 @@
     gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
     gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
     gl.uniform1i(gl.getUniformLocation(prog, 't'), 0);
+    uCrop = gl.getUniformLocation(prog, 'uCrop');
     return true;
   }
 
   function draw(w, h) {
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     gl.viewport(0, 0, w, h);
+    const g = (window.innerWidth || 16) / (window.innerHeight || 9), a = w / h;   // the NUI page covers the game window
+    gl.uniform4fv(uCrop, a < g ? [(1 - a / g) / 2, 0, a / g, 1] : [0, (1 - g / a) / 2, 1, g / a]);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
