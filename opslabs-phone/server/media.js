@@ -33,6 +33,12 @@ exports('ReadMedia', (name) => {
     try { return fs.readFileSync(path.join(DIR, name)); } catch { return null; }
 });
 
+// for the Lua HTTP fallback: binary can't cross from JS to Lua intact, so hand it over as base64 text
+exports('ReadMediaBase64', (name) => {
+    if (!NAME.test(String(name))) return null;
+    try { return fs.readFileSync(path.join(DIR, name)).toString('base64'); } catch { return null; }
+});
+
 exports('DeleteMedia', (name) => {
     if (!NAME.test(String(name))) return false;
     try { fs.unlinkSync(path.join(DIR, name)); return true; } catch { return false; }
