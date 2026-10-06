@@ -1,0 +1,8 @@
+# secrets — copy config_server.example.lua to config_server.lua on each server
+opslabs-phone/config_server.lua
+# runtime data written by the server
+opslabs-phone/media/
+opslabs-towers/uniform.json
+# local tooling
+.claude/
+*.blend1

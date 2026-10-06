@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 110" width="240" height="110">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff9a3c"/>
+      <stop offset="1" stop-color="#e2620a"/>
+    </linearGradient>
+    <pattern id="hz" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="14" height="14" fill="#ffd23f"/>
+      <rect width="7" height="14" fill="#141210"/>
+    </pattern>
+    <clipPath id="c">
+      <rect x="4" y="4" width="232" height="102" rx="12"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#c)">
+    <rect x="4" y="4" width="232" height="102" fill="url(#g)"/>
+    <rect x="4" y="90" width="232" height="16" fill="url(#hz)"/>
+  </g>
+
+  <!-- wrench -->
+  <g transform="translate(34 50) rotate(-45)">
+    <rect x="-5" y="-4" width="10" height="42" rx="4" fill="#141210"/>
+    <path d="M -15 -14 a 15 15 0 1 0 30 0 l -7 0 l 0 9 l -16 0 l 0 -9 z" fill="#141210"/>
+  </g>
+
+  <text x="62" y="60" font-family="Impact, 'Arial Black', sans-serif" font-size="46" font-style="italic"
+        fill="#ffffff" stroke="#141210" stroke-width="3" paint-order="stroke" letter-spacing="1">You</text>
+  <text x="141" y="60" font-family="Impact, 'Arial Black', sans-serif" font-size="46" font-style="italic"
+        fill="#141210" letter-spacing="1">Tool</text>
+  <text x="130" y="82" text-anchor="middle" font-family="Impact, 'Arial Black', sans-serif" font-size="12"
+        letter-spacing="4" fill="#141210">HOME • HARDWARE • AUTO</text>
+
+  <rect x="4" y="4" width="232" height="102" rx="12" fill="none" stroke="#141210" stroke-width="5"/>
+</svg>

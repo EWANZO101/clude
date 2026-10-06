@@ -1,0 +1,5310 @@
+{
+ "companies": [
+  {
+   "code": "network",
+   "name": "OPS Network",
+   "tagline": "Internet service provider · business & home networks",
+   "color": "#0a84ff",
+   "icon": "network-wired",
+   "kind": "isp"
+  },
+  {
+   "code": "fibre",
+   "name": "OPS Fibre",
+   "tagline": "Fibre infrastructure · cabinets, poles, splicing",
+   "color": "#30d158",
+   "icon": "circle-nodes",
+   "kind": "infrastructure"
+  },
+  {
+   "code": "secure",
+   "name": "OPS Secure",
+   "tagline": "CCTV, access control & security systems",
+   "color": "#ff375f",
+   "icon": "video",
+   "kind": "security"
+  },
+  {
+   "code": "comms",
+   "name": "OPS Communications",
+   "tagline": "Telephone lines, phone systems & communications",
+   "color": "#bf5af2",
+   "icon": "phone",
+   "kind": "telecoms"
+  },
+  {
+   "code": "systems",
+   "name": "OPS Systems",
+   "tagline": "IT systems, support & installations",
+   "color": "#64d2ff",
+   "icon": "laptop-code",
+   "kind": "it"
+  },
+  {
+   "code": "domains",
+   "name": "OPS Domains",
+   "tagline": "Domain registration & DNS",
+   "color": "#ffd60a",
+   "icon": "globe",
+   "kind": "registrar"
+  },
+  {
+   "code": "web",
+   "name": "OPS Web",
+   "tagline": "Websites, hosting & email",
+   "color": "#ff9f0a",
+   "icon": "code",
+   "kind": "hosting"
+  },
+  {
+   "code": "data",
+   "name": "OPS Data",
+   "tagline": "Data centres, colocation & racks",
+   "color": "#5e5ce6",
+   "icon": "server",
+   "kind": "datacentre"
+  },
+  {
+   "code": "cloud",
+   "name": "OPS Cloud",
+   "tagline": "Cloud servers, storage & backups",
+   "color": "#40c8e0",
+   "icon": "cloud",
+   "kind": "cloud"
+  },
+  {
+   "code": "mobile",
+   "name": "OPS Mobile",
+   "tagline": "Mobile network · masts & coverage",
+   "color": "#0a84ff",
+   "icon": "tower-cell",
+   "kind": "mobile"
+  },
+  {
+   "code": "track",
+   "name": "OPS Track",
+   "tagline": "Vehicle GPS trackers & theft alerts",
+   "color": "#30d158",
+   "icon": "location-crosshairs",
+   "kind": "telematics"
+  },
+  {
+   "code": "fuel",
+   "name": "OPS Fuel",
+   "tagline": "Fuel stations & deliveries",
+   "color": "#e2202a",
+   "icon": "gas-pump",
+   "kind": "fuel"
+  },
+  {
+   "code": "sapl",
+   "name": "San Andreas Power & Light",
+   "tagline": "Electricity network & customer supplies",
+   "color": "#ffd60a",
+   "icon": "bolt",
+   "kind": "utility"
+  },
+  {
+   "code": "solar",
+   "name": "San Andreas Solar",
+   "tagline": "Solar PV installs",
+   "color": "#ff9f0a",
+   "icon": "solar-panel",
+   "kind": "energy"
+  },
+  {
+   "code": "usfiber",
+   "name": "OPS America Fiber",
+   "tagline": "OPS America · US fiber-to-the-home ISP: installs, activation & repairs",
+   "color": "#2f6bff",
+   "icon": "flag-usa",
+   "kind": "isp",
+   "group": "OPS America"
+  },
+  {
+   "code": "usosp",
+   "name": "OPS America Outside Plant",
+   "tagline": "OPS America · aerial & underground fiber construction, splicing & restoration",
+   "color": "#e5484d",
+   "icon": "person-digging",
+   "kind": "infrastructure",
+   "group": "OPS America"
+  },
+  {
+   "code": "usnet",
+   "name": "OPS America Network Ops",
+   "tagline": "OPS America · central offices, OLTs, aggregation, core, internet edge & the NOC",
+   "color": "#8e7dff",
+   "icon": "diagram-project",
+   "kind": "isp",
+   "group": "OPS America"
+  }
+ ],
+ "perms": [
+  {
+   "id": "jobs.view",
+   "group": "Jobs",
+   "label": "See the job board"
+  },
+  {
+   "id": "jobs.take",
+   "group": "Jobs",
+   "label": "Accept and work jobs (paid wages)"
+  },
+  {
+   "id": "jobs.dispatch",
+   "group": "Jobs",
+   "label": "Create, assign, re-assign and cancel jobs"
+  },
+  {
+   "id": "jobs.verify",
+   "group": "Jobs",
+   "label": "Sign off jobs manually"
+  },
+  {
+   "id": "customers.view",
+   "group": "Customers",
+   "label": "View customers"
+  },
+  {
+   "id": "customers.edit",
+   "group": "Customers",
+   "label": "Create and edit customers"
+  },
+  {
+   "id": "finance.view",
+   "group": "Finance",
+   "label": "View the company account, invoices and transactions"
+  },
+  {
+   "id": "finance.manage",
+   "group": "Finance",
+   "label": "Payouts, refunds, voiding invoices"
+  },
+  {
+   "id": "finance.payroll",
+   "group": "Finance",
+   "label": "Run payroll and bonuses"
+  },
+  {
+   "id": "employees.view",
+   "group": "People",
+   "label": "See employees"
+  },
+  {
+   "id": "employees.manage",
+   "group": "People",
+   "label": "Hire, fire, change roles, approve applications"
+  },
+  {
+   "id": "equipment.manage",
+   "group": "Operations",
+   "label": "Equipment, stock and assets"
+  },
+  {
+   "id": "company.manage",
+   "group": "Operations",
+   "label": "Company settings and announcements"
+  },
+  {
+   "id": "cctv.view",
+   "group": "Systems",
+   "label": "View CCTV systems"
+  },
+  {
+   "id": "cctv.manage",
+   "group": "Systems",
+   "label": "Configure CCTV systems"
+  },
+  {
+   "id": "network.view",
+   "group": "Systems",
+   "label": "View networks and connections"
+  },
+  {
+   "id": "network.config",
+   "group": "Systems",
+   "label": "Configure networks (VLANs, firewall, VPN, DHCP)"
+  },
+  {
+   "id": "ip.manage",
+   "group": "Systems",
+   "label": "Manage IP addresses"
+  },
+  {
+   "id": "dns.manage",
+   "group": "Systems",
+   "label": "Manage DNS"
+  },
+  {
+   "id": "domains.manage",
+   "group": "Systems",
+   "label": "Manage domains"
+  },
+  {
+   "id": "web.manage",
+   "group": "Systems",
+   "label": "Manage websites and hosting"
+  },
+  {
+   "id": "servers.manage",
+   "group": "Systems",
+   "label": "Manage servers"
+  },
+  {
+   "id": "isp.manage",
+   "group": "Systems",
+   "label": "Manage ISP services, packages and contracts"
+  },
+  {
+   "id": "admin.users",
+   "group": "Admin",
+   "label": "Manage user accounts (everywhere)"
+  },
+  {
+   "id": "admin.roles",
+   "group": "Admin",
+   "label": "Create and edit roles"
+  },
+  {
+   "id": "admin.companies",
+   "group": "Admin",
+   "label": "Create and edit companies"
+  },
+  {
+   "id": "admin.settings",
+   "group": "Admin",
+   "label": "Platform settings"
+  },
+  {
+   "id": "quotes.manage",
+   "group": "Sales",
+   "label": "Create and send quotes"
+  },
+  {
+   "id": "contracts.manage",
+   "group": "Sales",
+   "label": "Customer contracts and SLAs"
+  },
+  {
+   "id": "tickets.manage",
+   "group": "Support",
+   "label": "Answer support tickets"
+  },
+  {
+   "id": "stock.manage",
+   "group": "Operations",
+   "label": "Stock, suppliers and purchase orders"
+  },
+  {
+   "id": "fleet.manage",
+   "group": "Operations",
+   "label": "Vehicles and tools"
+  },
+  {
+   "id": "training.manage",
+   "group": "People",
+   "label": "Grant and revoke certifications"
+  },
+  {
+   "id": "market.view",
+   "group": "Market",
+   "label": "See network reports, leases and the wholesale catalogue"
+  },
+  {
+   "id": "market.manage",
+   "group": "Market",
+   "label": "Request and manage leases; set wholesale prices and approve leases (providers)"
+  },
+  {
+   "id": "store.manage",
+   "group": "Market",
+   "label": "Edit the company store: branding, packages, plans and products"
+  }
+ ],
+ "roles": [
+  {
+   "code": "owner",
+   "name": "Company Owner",
+   "rank": 100,
+   "all": true,
+   "description": "Everything in the company"
+  },
+  {
+   "code": "director",
+   "name": "Director",
+   "rank": 90,
+   "perms": [
+    "cctv.manage",
+    "cctv.view",
+    "company.manage",
+    "contracts.manage",
+    "customers.edit",
+    "customers.view",
+    "dns.manage",
+    "domains.manage",
+    "employees.manage",
+    "employees.view",
+    "equipment.manage",
+    "finance.manage",
+    "finance.payroll",
+    "finance.view",
+    "fleet.manage",
+    "ip.manage",
+    "isp.manage",
+    "jobs.dispatch",
+    "jobs.take",
+    "jobs.verify",
+    "jobs.view",
+    "network.config",
+    "network.view",
+    "quotes.manage",
+    "servers.manage",
+    "stock.manage",
+    "tickets.manage",
+    "training.manage",
+    "web.manage",
+    "market.view",
+    "market.manage",
+    "store.manage"
+   ]
+  },
+  {
+   "code": "manager",
+   "name": "Manager",
+   "rank": 80,
+   "perms": [
+    "cctv.view",
+    "company.manage",
+    "contracts.manage",
+    "customers.edit",
+    "customers.view",
+    "employees.manage",
+    "employees.view",
+    "equipment.manage",
+    "finance.view",
+    "fleet.manage",
+    "jobs.dispatch",
+    "jobs.take",
+    "jobs.verify",
+    "jobs.view",
+    "network.view",
+    "quotes.manage",
+    "stock.manage",
+    "tickets.manage",
+    "training.manage",
+    "market.view",
+    "store.manage"
+   ]
+  },
+  {
+   "code": "supervisor",
+   "name": "Supervisor",
+   "rank": 70,
+   "perms": [
+    "cctv.view",
+    "customers.view",
+    "employees.view",
+    "jobs.dispatch",
+    "jobs.take",
+    "jobs.verify",
+    "jobs.view",
+    "network.view",
+    "quotes.manage",
+    "stock.manage",
+    "tickets.manage",
+    "market.view"
+   ]
+  },
+  {
+   "code": "dispatcher",
+   "name": "Dispatcher",
+   "rank": 60,
+   "perms": [
+    "customers.view",
+    "employees.view",
+    "jobs.dispatch",
+    "jobs.view",
+    "quotes.manage",
+    "stock.manage",
+    "tickets.manage"
+   ]
+  },
+  {
+   "code": "finance",
+   "name": "Finance",
+   "rank": 60,
+   "perms": [
+    "customers.view",
+    "finance.manage",
+    "finance.payroll",
+    "finance.view",
+    "jobs.view"
+   ]
+  },
+  {
+   "code": "network_engineer",
+   "name": "Network Engineer",
+   "rank": 50,
+   "perms": [
+    "customers.view",
+    "dns.manage",
+    "ip.manage",
+    "jobs.take",
+    "jobs.view",
+    "network.config",
+    "network.view"
+   ]
+  },
+  {
+   "code": "cctv_engineer",
+   "name": "CCTV Engineer",
+   "rank": 50,
+   "perms": [
+    "cctv.manage",
+    "cctv.view",
+    "customers.view",
+    "jobs.take",
+    "jobs.view",
+    "network.view"
+   ]
+  },
+  {
+   "code": "fibre_engineer",
+   "name": "Fibre Engineer",
+   "rank": 50,
+   "perms": [
+    "customers.view",
+    "jobs.take",
+    "jobs.view",
+    "network.view"
+   ]
+  },
+  {
+   "code": "isp_technician",
+   "name": "ISP Technician",
+   "rank": 45,
+   "perms": [
+    "customers.view",
+    "ip.manage",
+    "isp.manage",
+    "jobs.take",
+    "jobs.view",
+    "network.view"
+   ]
+  },
+  {
+   "code": "it_technician",
+   "name": "IT Technician",
+   "rank": 45,
+   "perms": [
+    "customers.view",
+    "jobs.take",
+    "jobs.view",
+    "network.view",
+    "servers.manage"
+   ]
+  },
+  {
+   "code": "web_developer",
+   "name": "Web Developer",
+   "rank": 45,
+   "perms": [
+    "customers.view",
+    "dns.manage",
+    "jobs.take",
+    "jobs.view",
+    "web.manage"
+   ]
+  },
+  {
+   "code": "domain_admin",
+   "name": "Domain Administrator",
+   "rank": 45,
+   "perms": [
+    "customers.view",
+    "dns.manage",
+    "domains.manage",
+    "jobs.take",
+    "jobs.view"
+   ]
+  },
+  {
+   "code": "installer",
+   "name": "Installer",
+   "rank": 30,
+   "perms": [
+    "customers.view",
+    "jobs.take",
+    "jobs.view"
+   ]
+  },
+  {
+   "code": "customer_service",
+   "name": "Customer Service",
+   "rank": 30,
+   "perms": [
+    "customers.edit",
+    "customers.view",
+    "jobs.dispatch",
+    "jobs.view",
+    "quotes.manage",
+    "stock.manage",
+    "tickets.manage",
+    "market.view"
+   ]
+  },
+  {
+   "code": "apprentice",
+   "name": "Apprentice",
+   "rank": 10,
+   "perms": [
+    "jobs.take",
+    "jobs.view"
+   ]
+  }
+ ],
+ "places": [
+  {
+   "name": "Mission Row Police Department",
+   "kind": "police",
+   "society": "society_police",
+   "x": 425.1,
+   "y": -979.5,
+   "z": 30.7
+  },
+  {
+   "name": "Central Los Santos Medical Center",
+   "kind": "government",
+   "society": "society_ambulance",
+   "x": 341.0,
+   "y": -1397.3,
+   "z": 32.5
+  },
+  {
+   "name": "Sandy Shores Medical Center",
+   "kind": "government",
+   "society": "society_ambulance",
+   "x": 1836.03,
+   "y": 3670.99,
+   "z": 34.28
+  },
+  {
+   "name": "Fleeca Bank",
+   "kind": "business",
+   "x": 149.91,
+   "y": -1040.74,
+   "z": 29.374
+  },
+  {
+   "name": "Fleeca Bank",
+   "kind": "business",
+   "x": -1212.63,
+   "y": -330.78,
+   "z": 37.59
+  },
+  {
+   "name": "Fleeca Bank",
+   "kind": "business",
+   "x": -2962.47,
+   "y": 482.93,
+   "z": 15.5
+  },
+  {
+   "name": "Blaine County Savings Bank",
+   "kind": "business",
+   "x": -113.01,
+   "y": 6470.24,
+   "z": 31.43
+  },
+  {
+   "name": "Fleeca Bank",
+   "kind": "business",
+   "x": 314.16,
+   "y": -279.09,
+   "z": 53.97
+  },
+  {
+   "name": "Fleeca Bank",
+   "kind": "business",
+   "x": -350.99,
+   "y": -49.99,
+   "z": 48.84
+  },
+  {
+   "name": "Fleeca Bank",
+   "kind": "business",
+   "x": 1175.02,
+   "y": 2706.87,
+   "z": 37.89
+  },
+  {
+   "name": "Pacific Standard Bank",
+   "kind": "business",
+   "x": 246.63,
+   "y": 223.62,
+   "z": 106.0
+  },
+  {
+   "name": "Fleeca Bank",
+   "kind": "business",
+   "x": 149.5513,
+   "y": -1042.157,
+   "z": 29.368
+  },
+  {
+   "name": "Fleeca Bank",
+   "kind": "business",
+   "x": -1211.8585,
+   "y": -331.9854,
+   "z": 37.7809
+  },
+  {
+   "name": "Fleeca Bank",
+   "kind": "business",
+   "x": -2961.072,
+   "y": 483.1107,
+   "z": 15.697
+  },
+  {
+   "name": "Blaine County Savings Bank",
+   "kind": "business",
+   "x": -112.2223,
+   "y": 6471.1128,
+   "z": 31.6267
+  },
+  {
+   "name": "Fleeca Bank",
+   "kind": "business",
+   "x": 313.8176,
+   "y": -280.5338,
+   "z": 54.1647
+  },
+  {
+   "name": "Fleeca Bank",
+   "kind": "business",
+   "x": -351.3247,
+   "y": -51.3466,
+   "z": 49.0365
+  },
+  {
+   "name": "Fleeca Bank",
+   "kind": "business",
+   "x": 1174.9718,
+   "y": 2708.2034,
+   "z": 38.0879
+  },
+  {
+   "name": "Pacific Standard Bank",
+   "kind": "business",
+   "x": 247.0348,
+   "y": 225.1851,
+   "z": 106.2875
+  },
+  {
+   "name": "Clothing store",
+   "kind": "business",
+   "x": 72.3,
+   "y": -1399.1,
+   "z": 28.4
+  },
+  {
+   "name": "Clothing store",
+   "kind": "business",
+   "x": -703.8,
+   "y": -152.3,
+   "z": 36.4
+  },
+  {
+   "name": "Clothing store",
+   "kind": "business",
+   "x": -167.9,
+   "y": -299.0,
+   "z": 38.7
+  },
+  {
+   "name": "Clothing store",
+   "kind": "business",
+   "x": 428.7,
+   "y": -800.1,
+   "z": 28.5
+  },
+  {
+   "name": "Clothing store",
+   "kind": "business",
+   "x": -829.4,
+   "y": -1073.7,
+   "z": 10.3
+  },
+  {
+   "name": "Clothing store",
+   "kind": "business",
+   "x": -1447.8,
+   "y": -242.5,
+   "z": 48.8
+  },
+  {
+   "name": "Clothing store",
+   "kind": "business",
+   "x": 11.6,
+   "y": 6514.2,
+   "z": 30.9
+  },
+  {
+   "name": "Clothing store",
+   "kind": "business",
+   "x": 123.6,
+   "y": -219.4,
+   "z": 53.6
+  },
+  {
+   "name": "Clothing store",
+   "kind": "business",
+   "x": 1696.3,
+   "y": 4829.3,
+   "z": 41.1
+  },
+  {
+   "name": "Clothing store",
+   "kind": "business",
+   "x": 618.1,
+   "y": 2759.6,
+   "z": 41.1
+  },
+  {
+   "name": "Clothing store",
+   "kind": "business",
+   "x": 1190.6,
+   "y": 2713.4,
+   "z": 37.2
+  },
+  {
+   "name": "Clothing store",
+   "kind": "business",
+   "x": -1193.4,
+   "y": -772.3,
+   "z": 16.3
+  },
+  {
+   "name": "Clothing store",
+   "kind": "business",
+   "x": -3172.5,
+   "y": 1048.1,
+   "z": 19.9
+  },
+  {
+   "name": "Barber shop",
+   "kind": "business",
+   "x": -814.3,
+   "y": -183.8,
+   "z": 36.6
+  },
+  {
+   "name": "Barber shop",
+   "kind": "business",
+   "x": 136.8,
+   "y": -1708.4,
+   "z": 28.3
+  },
+  {
+   "name": "Barber shop",
+   "kind": "business",
+   "x": -1282.6,
+   "y": -1116.8,
+   "z": 6.0
+  },
+  {
+   "name": "Barber shop",
+   "kind": "business",
+   "x": 1931.5,
+   "y": 3729.7,
+   "z": 31.8
+  },
+  {
+   "name": "Barber shop",
+   "kind": "business",
+   "x": 1212.8,
+   "y": -472.9,
+   "z": 65.2
+  },
+  {
+   "name": "Barber shop",
+   "kind": "business",
+   "x": -32.9,
+   "y": -152.3,
+   "z": 56.1
+  },
+  {
+   "name": "Barber shop",
+   "kind": "business",
+   "x": -278.1,
+   "y": 6228.5,
+   "z": 30.7
+  },
+  {
+   "name": "Los Santos Customs",
+   "kind": "business",
+   "x": -337.38,
+   "y": -136.92,
+   "z": 38.57
+  },
+  {
+   "name": "Los Santos Customs",
+   "kind": "business",
+   "x": -1155.53,
+   "y": -2007.18,
+   "z": 12.74
+  },
+  {
+   "name": "Los Santos Customs",
+   "kind": "business",
+   "x": 731.81,
+   "y": -1088.82,
+   "z": 21.73
+  },
+  {
+   "name": "Los Santos Customs",
+   "kind": "business",
+   "x": 1175.04,
+   "y": 2640.21,
+   "z": 37.32
+  },
+  {
+   "name": "Los Santos Customs",
+   "kind": "business",
+   "x": 110.99,
+   "y": 6626.39,
+   "z": 30.89
+  },
+  {
+   "name": "Premium Deluxe Motorsport",
+   "kind": "business",
+   "x": -33.7,
+   "y": -1102.0,
+   "z": 25.4
+  },
+  {
+   "name": "1076 Procopio Dr",
+   "kind": "residential",
+   "x": -467.88,
+   "y": 6206.16,
+   "z": 28.57,
+   "address": "1076 Procopio Dr"
+  },
+  {
+   "name": "1075 Procopio Dr",
+   "kind": "residential",
+   "x": -448.02,
+   "y": 6260.23,
+   "z": 29.07,
+   "address": "1075 Procopio Dr"
+  },
+  {
+   "name": "1074 Procopio Dr",
+   "kind": "residential",
+   "x": -407.35,
+   "y": 6314.13,
+   "z": 27.96,
+   "address": "1074 Procopio Dr"
+  },
+  {
+   "name": "1073 Procopio Dr",
+   "kind": "residential",
+   "x": -368.23,
+   "y": 6341.62,
+   "z": 28.86,
+   "address": "1073 Procopio Dr"
+  },
+  {
+   "name": "1071 Procopio Dr",
+   "kind": "residential",
+   "x": -272.61,
+   "y": 6400.88,
+   "z": 30.52,
+   "address": "1071 Procopio Dr"
+  },
+  {
+   "name": "1071 Procopio Dr",
+   "kind": "residential",
+   "x": -246.14,
+   "y": 6414.46,
+   "z": 30.48,
+   "address": "1071 Procopio Dr"
+  },
+  {
+   "name": "1070 Procopio Dr",
+   "kind": "residential",
+   "x": -229.63,
+   "y": 6445.48,
+   "z": 30.22,
+   "address": "1070 Procopio Dr"
+  },
+  {
+   "name": "1067 Procopio Dr",
+   "kind": "residential",
+   "x": -130.8,
+   "y": 6551.76,
+   "z": 28.89,
+   "address": "1067 Procopio Dr"
+  },
+  {
+   "name": "1065 Procopio Dr",
+   "kind": "residential",
+   "x": -41.72,
+   "y": 6637.3,
+   "z": 30.11,
+   "address": "1065 Procopio Dr"
+  },
+  {
+   "name": "1064 Procopio Dr",
+   "kind": "residential",
+   "x": -9.62,
+   "y": 6654.13,
+   "z": 30.72,
+   "address": "1064 Procopio Dr"
+  },
+  {
+   "name": "1034 Paleto Blvd",
+   "kind": "residential",
+   "x": -356.82,
+   "y": 6207.33,
+   "z": 30.86,
+   "address": "1034 Paleto Blvd"
+  },
+  {
+   "name": "1034 Procopio Dr",
+   "kind": "residential",
+   "x": -379.92,
+   "y": 6252.75,
+   "z": 30.87,
+   "address": "1034 Procopio Dr"
+  },
+  {
+   "name": "1047 Paleto Blvd",
+   "kind": "residential",
+   "x": -302.19,
+   "y": 6326.99,
+   "z": 31.91,
+   "address": "1047 Paleto Blvd"
+  },
+  {
+   "name": "1043 Paleto Blvd",
+   "kind": "residential",
+   "x": -347.3,
+   "y": 6225.21,
+   "z": 30.9,
+   "address": "1043 Paleto Blvd"
+  },
+  {
+   "name": "1059 Paleto Blvd",
+   "kind": "residential",
+   "x": -15.3,
+   "y": 6557.45,
+   "z": 32.26,
+   "address": "1059 Paleto Blvd"
+  },
+  {
+   "name": "1061 Paleto Blvd",
+   "kind": "residential",
+   "x": 4.43,
+   "y": 6568.19,
+   "z": 32.1,
+   "address": "1061 Paleto Blvd"
+  },
+  {
+   "name": "1061 Paleto Blvd",
+   "kind": "residential",
+   "x": 31.0,
+   "y": 6596.46,
+   "z": 31.84,
+   "address": "1061 Paleto Blvd"
+  },
+  {
+   "name": "2016 Grapeseed Main St",
+   "kind": "residential",
+   "x": 1725.06,
+   "y": 4642.33,
+   "z": 42.9,
+   "address": "2016 Grapeseed Main St"
+  },
+  {
+   "name": "2015 Grapeseed Main St",
+   "kind": "residential",
+   "x": 1674.01,
+   "y": 4658.22,
+   "z": 42.39,
+   "address": "2015 Grapeseed Main St"
+  },
+  {
+   "name": "2014 Grapeseed Main St",
+   "kind": "residential",
+   "x": 1718.91,
+   "y": 4677.34,
+   "z": 42.68,
+   "address": "2014 Grapeseed Main St"
+  },
+  {
+   "name": "2013 Grapeseed Main St",
+   "kind": "residential",
+   "x": 1682.85,
+   "y": 4689.52,
+   "z": 42.09,
+   "address": "2013 Grapeseed Main St"
+  },
+  {
+   "name": "2011 Grapeseed Main St",
+   "kind": "residential",
+   "x": 1664.0,
+   "y": 4739.5,
+   "z": 41.03,
+   "address": "2011 Grapeseed Main St"
+  },
+  {
+   "name": "3012 Niland Ave",
+   "kind": "residential",
+   "x": 1880.27,
+   "y": 3920.59,
+   "z": 32.23,
+   "address": "3012 Niland Ave"
+  },
+  {
+   "name": "3013 Niland Ave",
+   "kind": "residential",
+   "x": 1846.06,
+   "y": 3914.59,
+   "z": 32.48,
+   "address": "3013 Niland Ave"
+  },
+  {
+   "name": "3013 Marina Dr",
+   "kind": "residential",
+   "x": 1803.57,
+   "y": 3913.8,
+   "z": 36.08,
+   "address": "3013 Marina Dr"
+  },
+  {
+   "name": "3025 Lesbos Ln",
+   "kind": "residential",
+   "x": 1435.31,
+   "y": 3657.13,
+   "z": 33.45,
+   "address": "3025 Lesbos Ln"
+  },
+  {
+   "name": "4018 Route 68",
+   "kind": "residential",
+   "x": 471.15,
+   "y": 2607.8,
+   "z": 43.5,
+   "address": "4018 Route 68"
+  },
+  {
+   "name": "4013 Joshua Rd",
+   "kind": "residential",
+   "x": 181.03,
+   "y": 3087.1,
+   "z": 42.28,
+   "address": "4013 Joshua Rd"
+  },
+  {
+   "name": "7340 Nikola Pl",
+   "kind": "residential",
+   "x": 1386.22,
+   "y": -593.38,
+   "z": 73.51,
+   "address": "7340 Nikola Pl"
+  },
+  {
+   "name": "7341 Nikola Pl",
+   "kind": "residential",
+   "x": 1388.94,
+   "y": -569.49,
+   "z": 73.52,
+   "address": "7341 Nikola Pl"
+  },
+  {
+   "name": "7341 Nikola Pl",
+   "kind": "residential",
+   "x": 1373.19,
+   "y": -555.82,
+   "z": 73.71,
+   "address": "7341 Nikola Pl"
+  },
+  {
+   "name": "7340 Nikola Pl",
+   "kind": "residential",
+   "x": 1367.33,
+   "y": -606.62,
+   "z": 73.73,
+   "address": "7340 Nikola Pl"
+  },
+  {
+   "name": "7339 Nikola Pl",
+   "kind": "residential",
+   "x": 1341.64,
+   "y": -597.26,
+   "z": 73.72,
+   "address": "7339 Nikola Pl"
+  },
+  {
+   "name": "7342 Nikola Pl",
+   "kind": "residential",
+   "x": 1348.31,
+   "y": -546.97,
+   "z": 72.91,
+   "address": "7342 Nikola Pl"
+  },
+  {
+   "name": "7339 Nikola Pl",
+   "kind": "residential",
+   "x": 1323.3,
+   "y": -583.06,
+   "z": 72.27,
+   "address": "7339 Nikola Pl"
+  },
+  {
+   "name": "7342 Nikola Pl",
+   "kind": "residential",
+   "x": 1328.57,
+   "y": -535.91,
+   "z": 71.46,
+   "address": "7342 Nikola Pl"
+  },
+  {
+   "name": "7339 Nikola Pl",
+   "kind": "residential",
+   "x": 1301.02,
+   "y": -574.08,
+   "z": 70.75,
+   "address": "7339 Nikola Pl"
+  },
+  {
+   "name": "7342 Nikola Pl",
+   "kind": "residential",
+   "x": 1303.1,
+   "y": -527.3,
+   "z": 70.48,
+   "address": "7342 Nikola Pl"
+  },
+  {
+   "name": "7322 West Mirror Drive",
+   "kind": "residential",
+   "x": 996.89,
+   "y": -729.5,
+   "z": 56.84,
+   "address": "7322 West Mirror Drive"
+  },
+  {
+   "name": "7320 West Mirror Drive",
+   "kind": "residential",
+   "x": 979.11,
+   "y": -716.31,
+   "z": 57.24,
+   "address": "7320 West Mirror Drive"
+  },
+  {
+   "name": "7320 West Mirror Drive",
+   "kind": "residential",
+   "x": 970.88,
+   "y": -701.3,
+   "z": 57.5,
+   "address": "7320 West Mirror Drive"
+  },
+  {
+   "name": "7319 West Mirror Drive",
+   "kind": "residential",
+   "x": 960.15,
+   "y": -669.85,
+   "z": 57.47,
+   "address": "7319 West Mirror Drive"
+  },
+  {
+   "name": "7319 West Mirror Drive",
+   "kind": "residential",
+   "x": 943.45,
+   "y": -653.51,
+   "z": 57.45,
+   "address": "7319 West Mirror Drive"
+  },
+  {
+   "name": "7318 West Mirror Drive",
+   "kind": "residential",
+   "x": 980.25,
+   "y": -627.65,
+   "z": 58.26,
+   "address": "7318 West Mirror Drive"
+  },
+  {
+   "name": "7317 West Mirror Drive",
+   "kind": "residential",
+   "x": 928.82,
+   "y": -639.71,
+   "z": 57.26,
+   "address": "7317 West Mirror Drive"
+  },
+  {
+   "name": "7317 West Mirror Drive",
+   "kind": "residential",
+   "x": 902.95,
+   "y": -615.51,
+   "z": 57.47,
+   "address": "7317 West Mirror Drive"
+  },
+  {
+   "name": "7316 West Mirror Drive",
+   "kind": "residential",
+   "x": 886.77,
+   "y": -608.21,
+   "z": 57.47,
+   "address": "7316 West Mirror Drive"
+  },
+  {
+   "name": "7316 West Mirror Drive",
+   "kind": "residential",
+   "x": 861.7,
+   "y": -583.65,
+   "z": 57.18,
+   "address": "7316 West Mirror Drive"
+  },
+  {
+   "name": "7312 West Mirror Drive",
+   "kind": "residential",
+   "x": 844.12,
+   "y": -562.66,
+   "z": 57.01,
+   "address": "7312 West Mirror Drive"
+  },
+  {
+   "name": "7314 West Mirror Drive",
+   "kind": "residential",
+   "x": 850.25,
+   "y": -532.68,
+   "z": 56.95,
+   "address": "7314 West Mirror Drive"
+  },
+  {
+   "name": "7313 West Mirror Drive",
+   "kind": "residential",
+   "x": 861.51,
+   "y": -508.98,
+   "z": 56.74,
+   "address": "7313 West Mirror Drive"
+  },
+  {
+   "name": "7313 West Mirror Drive",
+   "kind": "residential",
+   "x": 878.44,
+   "y": -497.87,
+   "z": 57.11,
+   "address": "7313 West Mirror Drive"
+  },
+  {
+   "name": "7311 West Mirror Drive",
+   "kind": "residential",
+   "x": 906.46,
+   "y": -489.76,
+   "z": 58.46,
+   "address": "7311 West Mirror Drive"
+  },
+  {
+   "name": "7311 West Mirror Drive",
+   "kind": "residential",
+   "x": 921.78,
+   "y": -477.8,
+   "z": 60.1,
+   "address": "7311 West Mirror Drive"
+  },
+  {
+   "name": "7309 West Mirror Drive",
+   "kind": "residential",
+   "x": 944.54,
+   "y": -463.17,
+   "z": 60.57,
+   "address": "7309 West Mirror Drive"
+  },
+  {
+   "name": "7309 West Mirror Drive",
+   "kind": "residential",
+   "x": 967.16,
+   "y": -451.65,
+   "z": 61.81,
+   "address": "7309 West Mirror Drive"
+  },
+  {
+   "name": "7307 West Mirror Drive",
+   "kind": "residential",
+   "x": 987.57,
+   "y": -433.03,
+   "z": 63.06,
+   "address": "7307 West Mirror Drive"
+  },
+  {
+   "name": "7307 West Mirror Drive",
+   "kind": "residential",
+   "x": 1010.38,
+   "y": -423.38,
+   "z": 64.37,
+   "address": "7307 West Mirror Drive"
+  },
+  {
+   "name": "7305 West Mirror Drive",
+   "kind": "residential",
+   "x": 1028.78,
+   "y": -408.36,
+   "z": 65.36,
+   "address": "7305 West Mirror Drive"
+  },
+  {
+   "name": "7305 Bridge St",
+   "kind": "residential",
+   "x": 1060.52,
+   "y": -378.13,
+   "z": 67.25,
+   "address": "7305 Bridge St"
+  },
+  {
+   "name": "7306 West Mirror Drive",
+   "kind": "residential",
+   "x": 1014.67,
+   "y": -469.3,
+   "z": 63.52,
+   "address": "7306 West Mirror Drive"
+  },
+  {
+   "name": "7308 West Mirror Drive",
+   "kind": "residential",
+   "x": 970.55,
+   "y": -502.36,
+   "z": 61.16,
+   "address": "7308 West Mirror Drive"
+  },
+  {
+   "name": "7310 West Mirror Drive",
+   "kind": "residential",
+   "x": 945.9,
+   "y": -518.94,
+   "z": 59.64,
+   "address": "7310 West Mirror Drive"
+  },
+  {
+   "name": "7312 West Mirror Drive",
+   "kind": "residential",
+   "x": 924.39,
+   "y": -526.05,
+   "z": 58.81,
+   "address": "7312 West Mirror Drive"
+  },
+  {
+   "name": "7312 West Mirror Drive",
+   "kind": "residential",
+   "x": 893.24,
+   "y": -540.58,
+   "z": 57.53,
+   "address": "7312 West Mirror Drive"
+  },
+  {
+   "name": "7312 Nikola Ave",
+   "kind": "residential",
+   "x": 919.7,
+   "y": -569.56,
+   "z": 57.39,
+   "address": "7312 Nikola Ave"
+  },
+  {
+   "name": "7310 Nikola Ave",
+   "kind": "residential",
+   "x": 965.25,
+   "y": -541.93,
+   "z": 58.75,
+   "address": "7310 Nikola Ave"
+  },
+  {
+   "name": "7310 Nikola Ave",
+   "kind": "residential",
+   "x": 987.84,
+   "y": -525.76,
+   "z": 59.71,
+   "address": "7310 Nikola Ave"
+  },
+  {
+   "name": "7308 Nikola Ave",
+   "kind": "residential",
+   "x": 1006.48,
+   "y": -510.98,
+   "z": 60.01,
+   "address": "7308 Nikola Ave"
+  },
+  {
+   "name": "7306 Bridge St",
+   "kind": "residential",
+   "x": 1046.29,
+   "y": -498.06,
+   "z": 63.1,
+   "address": "7306 Bridge St"
+  },
+  {
+   "name": "7306 Bridge St",
+   "kind": "residential",
+   "x": 1051.04,
+   "y": -470.58,
+   "z": 63.32,
+   "address": "7306 Bridge St"
+  },
+  {
+   "name": "7306 Bridge St",
+   "kind": "residential",
+   "x": 1056.24,
+   "y": -448.93,
+   "z": 65.28,
+   "address": "7306 Bridge St"
+  },
+  {
+   "name": "7344 Bridge St",
+   "kind": "residential",
+   "x": 1090.46,
+   "y": -484.37,
+   "z": 64.68,
+   "address": "7344 Bridge St"
+  },
+  {
+   "name": "7346 Bridge St",
+   "kind": "residential",
+   "x": 1098.58,
+   "y": -464.52,
+   "z": 66.34,
+   "address": "7346 Bridge St"
+  },
+  {
+   "name": "7346 Bridge St",
+   "kind": "residential",
+   "x": 1099.44,
+   "y": -438.69,
+   "z": 66.81,
+   "address": "7346 Bridge St"
+  },
+  {
+   "name": "7348 Bridge St",
+   "kind": "residential",
+   "x": 1101.06,
+   "y": -411.33,
+   "z": 66.58,
+   "address": "7348 Bridge St"
+  },
+  {
+   "name": "7348 West Mirror Drive",
+   "kind": "residential",
+   "x": 1114.44,
+   "y": -391.27,
+   "z": 67.97,
+   "address": "7348 West Mirror Drive"
+  },
+  {
+   "name": "7345 East Mirror Dr",
+   "kind": "residential",
+   "x": 1262.35,
+   "y": -429.86,
+   "z": 69.04,
+   "address": "7345 East Mirror Dr"
+  },
+  {
+   "name": "7945 East Mirror Dr",
+   "kind": "residential",
+   "x": 1265.74,
+   "y": -458.06,
+   "z": 69.54,
+   "address": "7945 East Mirror Dr"
+  },
+  {
+   "name": "7343 East Mirror Dr",
+   "kind": "residential",
+   "x": 1259.51,
+   "y": -480.18,
+   "z": 69.21,
+   "address": "7343 East Mirror Dr"
+  },
+  {
+   "name": "7343 East Mirror Dr",
+   "kind": "residential",
+   "x": 1251.53,
+   "y": -494.1,
+   "z": 68.93,
+   "address": "7343 East Mirror Dr"
+  },
+  {
+   "name": "7343 East Mirror Dr",
+   "kind": "residential",
+   "x": 1250.9,
+   "y": -515.5,
+   "z": 68.37,
+   "address": "7343 East Mirror Dr"
+  },
+  {
+   "name": "7338 East Mirror Dr",
+   "kind": "residential",
+   "x": 1241.53,
+   "y": -566.43,
+   "z": 68.68,
+   "address": "7338 East Mirror Dr"
+  },
+  {
+   "name": "7338 East Mirror Dr",
+   "kind": "residential",
+   "x": 1240.54,
+   "y": -601.65,
+   "z": 68.8,
+   "address": "7338 East Mirror Dr"
+  },
+  {
+   "name": "7336 East Mirror Dr",
+   "kind": "residential",
+   "x": 1250.79,
+   "y": -620.99,
+   "z": 68.59,
+   "address": "7336 East Mirror Dr"
+  },
+  {
+   "name": "7333 East Mirror Dr",
+   "kind": "residential",
+   "x": 1265.69,
+   "y": -648.63,
+   "z": 67.14,
+   "address": "7333 East Mirror Dr"
+  },
+  {
+   "name": "7333 East Mirror Dr",
+   "kind": "residential",
+   "x": 1270.98,
+   "y": -683.53,
+   "z": 65.05,
+   "address": "7333 East Mirror Dr"
+  },
+  {
+   "name": "7328 East Mirror Dr",
+   "kind": "residential",
+   "x": 1264.75,
+   "y": -702.82,
+   "z": 63.93,
+   "address": "7328 East Mirror Dr"
+  },
+  {
+   "name": "7328 East Mirror Dr",
+   "kind": "residential",
+   "x": 1229.58,
+   "y": -725.27,
+   "z": 59.98,
+   "address": "7328 East Mirror Dr"
+  },
+  {
+   "name": "7328 Mirror Park Blvd",
+   "kind": "residential",
+   "x": 1223.0,
+   "y": -696.93,
+   "z": 59.82,
+   "address": "7328 Mirror Park Blvd"
+  },
+  {
+   "name": "7333 Mirror Park Blvd",
+   "kind": "residential",
+   "x": 1221.46,
+   "y": -669.31,
+   "z": 62.71,
+   "address": "7333 Mirror Park Blvd"
+  },
+  {
+   "name": "7336 Mirror Park Blvd",
+   "kind": "residential",
+   "x": 1207.46,
+   "y": -620.26,
+   "z": 65.46,
+   "address": "7336 Mirror Park Blvd"
+  },
+  {
+   "name": "7338 Mirror Park Blvd",
+   "kind": "residential",
+   "x": 1203.75,
+   "y": -598.41,
+   "z": 67.08,
+   "address": "7338 Mirror Park Blvd"
+  },
+  {
+   "name": "7338 Mirror Park Blvd",
+   "kind": "residential",
+   "x": 1201.01,
+   "y": -575.59,
+   "z": 68.16,
+   "address": "7338 Mirror Park Blvd"
+  }
+ ],
+ "jobTypes": [
+  {
+   "code": "net_router",
+   "company": "network",
+   "title": "Router installation",
+   "desc": "Fit and set up a new router / gateway for the customer.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 350,
+   "price": 750,
+   "verify": {
+    "kind": "towers",
+    "models": [
+     "opslabs_gw_pro",
+     "opslabs_gw_mini",
+     "opslabs_edge_e5",
+     "opslabs_edge_e7",
+     "opslabs_homerouter_ax4",
+     "opslabs_mesh_m1"
+    ],
+    "count": 1,
+    "radius": 40,
+    "powered": true
+   },
+   "parts": {
+    "rtr-gw": 1,
+    "cat6": 10,
+    "rj45": 2
+   },
+   "warranty": false,
+   "cert": "network_install"
+  },
+  {
+   "code": "net_router_swap",
+   "company": "network",
+   "title": "Router replacement",
+   "desc": "Customer's router has failed — fit a replacement gateway.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 300,
+   "price": 600,
+   "verify": {
+    "kind": "towers",
+    "models": [
+     "opslabs_gw_pro",
+     "opslabs_gw_mini",
+     "opslabs_edge_e5",
+     "opslabs_edge_e7",
+     "opslabs_homerouter_ax4",
+     "opslabs_mesh_m1"
+    ],
+    "count": 1,
+    "radius": 40,
+    "powered": true
+   },
+   "parts": {
+    "rtr-gw": 1
+   },
+   "warranty": true
+  },
+  {
+   "code": "net_switch",
+   "company": "network",
+   "title": "Switch installation",
+   "desc": "Install a managed PoE switch in the comms cupboard.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 300,
+   "price": 650,
+   "verify": {
+    "kind": "towers",
+    "models": [
+     "opslabs_poe_switch8"
+    ],
+    "count": 1,
+    "radius": 40,
+    "powered": true
+   },
+   "parts": {
+    "sw-poe8": 1,
+    "cat6": 15,
+    "rj45": 4
+   },
+   "warranty": false,
+   "cert": "network_install"
+  },
+  {
+   "code": "net_wifi",
+   "company": "network",
+   "title": "Wi-Fi installation",
+   "desc": "Install two access points for full Wi-Fi coverage.",
+   "for": [
+    "residential",
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 450,
+   "price": 950,
+   "verify": {
+    "kind": "towers",
+    "models": [
+     "opslabs_ap_halo",
+     "opslabs_ap_halo_ceiling",
+     "opslabs_ap_beam",
+     "opslabs_ap_beam_ceiling",
+     "opslabs_mesh_m1"
+    ],
+    "count": 2,
+    "radius": 50,
+    "powered": true
+   },
+   "parts": {
+    "ap-wifi6": 2,
+    "cat6": 30,
+    "rj45": 4
+   },
+   "warranty": false,
+   "cert": "network_install"
+  },
+  {
+   "code": "net_poe",
+   "company": "network",
+   "title": "PoE installation",
+   "desc": "Power ceiling access points over PoE from a PoE switch.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 450,
+   "price": 900,
+   "verify": {
+    "kind": "towers",
+    "models": [
+     "opslabs_ap_halo",
+     "opslabs_ap_halo_ceiling",
+     "opslabs_ap_beam",
+     "opslabs_ap_beam_ceiling"
+    ],
+    "count": 1,
+    "radius": 50,
+    "poe": true
+   },
+   "parts": {
+    "ap-wifi6": 1,
+    "cat6": 20,
+    "rj45": 2
+   },
+   "warranty": false,
+   "cert": "network_install"
+  },
+  {
+   "code": "net_cat6",
+   "company": "network",
+   "title": "CAT6 installation",
+   "desc": "Run and terminate CAT6 to new outlets (at least 20 m).",
+   "for": [
+    "business",
+    "police",
+    "government",
+    "residential"
+   ],
+   "wage": 300,
+   "price": 600,
+   "verify": {
+    "kind": "runs",
+    "run": "cable",
+    "metres": 20,
+    "radius": 50
+   },
+   "parts": {
+    "cat6": 40,
+    "rj45": 4
+   },
+   "warranty": false,
+   "cert": "network_install"
+  },
+  {
+   "code": "net_business",
+   "company": "network",
+   "title": "Business network installation",
+   "desc": "Gateway, PoE switch and two access points, all cabled.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 1100,
+   "price": 2600,
+   "emergencyOk": false,
+   "verify": {
+    "kind": "all",
+    "steps": [
+     {
+      "kind": "towers",
+      "models": [
+       "opslabs_gw_pro",
+       "opslabs_gw_mini",
+       "opslabs_edge_e5",
+       "opslabs_edge_e7"
+      ],
+      "count": 1,
+      "radius": 50,
+      "label": "Gateway"
+     },
+     {
+      "kind": "towers",
+      "models": [
+       "opslabs_poe_switch8"
+      ],
+      "count": 1,
+      "radius": 50,
+      "label": "PoE switch"
+     },
+     {
+      "kind": "towers",
+      "models": [
+       "opslabs_ap_halo",
+       "opslabs_ap_halo_ceiling",
+       "opslabs_ap_beam",
+       "opslabs_ap_beam_ceiling"
+      ],
+      "count": 2,
+      "radius": 60,
+      "label": "Access points"
+     },
+     {
+      "kind": "runs",
+      "run": "cable",
+      "metres": 10,
+      "radius": 60,
+      "label": "CAT6"
+     }
+    ]
+   },
+   "parts": {
+    "rtr-gw": 1,
+    "sw-poe8": 1,
+    "ap-wifi6": 2,
+    "cat6": 60,
+    "rj45": 10
+   },
+   "warranty": false,
+   "cert": "network_install"
+  },
+  {
+   "code": "net_speed",
+   "company": "network",
+   "title": "Speed issue",
+   "desc": "Customer reports slow internet — attend, find the cause and prove it with a speed test of at least 70 % of their package.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 200,
+   "price": 0,
+   "verify": {
+    "kind": "speedtest",
+    "pct": 70,
+    "radius": 50
+   },
+   "auto": false,
+   "warranty": true
+  },
+  {
+   "code": "net_troubleshoot",
+   "company": "network",
+   "title": "Network troubleshooting",
+   "desc": "Intermittent drop-outs on site — find and fix the fault.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 300,
+   "price": 250,
+   "verify": {
+    "kind": "onsite",
+    "secs": 60,
+    "radius": 30,
+    "action": "Fault finding on the customer network"
+   },
+   "warranty": true
+  },
+  {
+   "code": "net_outage",
+   "company": "network",
+   "title": "Internet outage",
+   "desc": "Customer has no internet — emergency callout.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 400,
+   "price": 0,
+   "emergency": true,
+   "verify": {
+    "kind": "onsite",
+    "secs": 50,
+    "radius": 30,
+    "action": "Restoring the service"
+   },
+   "auto": false,
+   "warranty": true
+  },
+  {
+   "code": "isp_newcustomer",
+   "company": "network",
+   "title": "New customer installation (fibre)",
+   "desc": "Connect a new customer: ONT online with live service.",
+   "for": [
+    "residential",
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 900,
+   "price": 1800,
+   "verify": {
+    "kind": "ont_online",
+    "radius": 60
+   },
+   "parts": {
+    "ont": 1,
+    "cat6": 5,
+    "rj45": 2
+   },
+   "warranty": false,
+   "cert": "fibre_splice"
+  },
+  {
+   "code": "fibre_install",
+   "company": "fibre",
+   "title": "Fibre installation",
+   "desc": "Lay and splice new fibre (at least 40 m) to serve the site.",
+   "for": [
+    "residential",
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 650,
+   "price": 1400,
+   "verify": {
+    "kind": "runs",
+    "run": "fibre",
+    "metres": 40,
+    "radius": 80
+   },
+   "parts": {
+    "fib-drop": 60,
+    "splice": 4
+   },
+   "warranty": false,
+   "cert": "fibre_splice"
+  },
+  {
+   "code": "fibre_cabinet",
+   "company": "fibre",
+   "title": "Network cabinet installation",
+   "desc": "Install a new street cabinet to serve the area.",
+   "for": [
+    "business",
+    "residential"
+   ],
+   "wage": 700,
+   "price": 1600,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_cabinet_pcp",
+     "opslabs_cabinet_fttc",
+     "opslabs_cabinet_green3",
+     "opslabs_cabinet_green3_open"
+    ],
+    "count": 1,
+    "radius": 60
+   },
+   "parts": {
+    "cab-pcp": 1
+   },
+   "warranty": false,
+   "cert": "fibre_splice"
+  },
+  {
+   "code": "fibre_dp",
+   "company": "fibre",
+   "title": "Distribution point installation",
+   "desc": "Fit a CBT on a pole near the site.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 400,
+   "price": 850,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_cbt",
+     "opslabs_cbt_4",
+     "opslabs_cbt_8",
+     "opslabs_ucbt"
+    ],
+    "count": 1,
+    "radius": 80
+   },
+   "parts": {
+    "cbt": 1,
+    "splice": 8
+   },
+   "warranty": false,
+   "cert": "fibre_splice"
+  },
+  {
+   "code": "fibre_test",
+   "company": "fibre",
+   "title": "Fibre testing",
+   "desc": "OTDR and power-meter test the fibre serving the site.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 250,
+   "price": 300,
+   "verify": {
+    "kind": "onsite",
+    "secs": 45,
+    "radius": 40,
+    "action": "Testing the fibre (OTDR, light levels)"
+   },
+   "warranty": false
+  },
+  {
+   "code": "fibre_repair",
+   "company": "fibre",
+   "title": "Fibre repair",
+   "desc": "Damaged fibre — locate the break and re-splice.",
+   "for": [
+    "residential",
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 500,
+   "price": 0,
+   "emergency": true,
+   "verify": {
+    "kind": "onsite",
+    "secs": 70,
+    "radius": 40,
+    "action": "Locating the break and re-splicing"
+   },
+   "parts": {
+    "splice": 6,
+    "fib-drop": 20
+   },
+   "warranty": true,
+   "cert": "fibre_splice"
+  },
+  {
+   "code": "comms_line",
+   "company": "comms",
+   "title": "Telephone line installation",
+   "desc": "New copper line with dial tone at the master socket.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 450,
+   "price": 900,
+   "verify": {
+    "kind": "dialtone",
+    "radius": 60
+   },
+   "parts": {
+    "nte": 1,
+    "cu-drop": 40
+   },
+   "warranty": false
+  },
+  {
+   "code": "comms_fault",
+   "company": "comms",
+   "title": "Phone line fault",
+   "desc": "Customer has no dial tone — test and repair.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 250,
+   "price": 0,
+   "verify": {
+    "kind": "onsite",
+    "secs": 45,
+    "radius": 30,
+    "action": "Line testing and repair"
+   },
+   "parts": {
+    "cu-drop": 10
+   },
+   "warranty": true
+  },
+  {
+   "code": "sys_laptop",
+   "company": "systems",
+   "title": "Workstation installation",
+   "desc": "Install a laptop workstation, cabled to the network.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 300,
+   "price": 700,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_laptop"
+    ],
+    "count": 1,
+    "radius": 40
+   },
+   "parts": {
+    "laptop": 1,
+    "cat6": 10
+   },
+   "warranty": false
+  },
+  {
+   "code": "sys_support",
+   "company": "systems",
+   "title": "IT support visit",
+   "desc": "On-site IT support for the customer's staff.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 220,
+   "price": 250,
+   "verify": {
+    "kind": "onsite",
+    "secs": 50,
+    "radius": 30,
+    "action": "Fixing the customer's IT"
+   },
+   "warranty": true
+  },
+  {
+   "code": "mobile_coverage",
+   "company": "mobile",
+   "title": "Mobile coverage survey",
+   "desc": "Survey OPS Mobile signal around the site.",
+   "for": [
+    "business",
+    "residential"
+   ],
+   "wage": 180,
+   "price": 0,
+   "verify": {
+    "kind": "onsite",
+    "secs": 40,
+    "radius": 50,
+    "action": "Surveying signal strength"
+   },
+   "warranty": false
+  },
+  {
+   "code": "track_install",
+   "company": "track",
+   "title": "Vehicle tracker installation",
+   "desc": "Fit an OPS Track unit to the customer's vehicle.",
+   "for": [
+    "residential",
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 300,
+   "price": 650,
+   "verify": {
+    "kind": "tracker",
+    "radius": 60
+   },
+   "parts": {
+    "trk": 1,
+    "trk-ant": 1
+   },
+   "warranty": false,
+   "cert": "tracker_fit"
+  },
+  {
+   "code": "sapl_supply",
+   "company": "sapl",
+   "title": "New electricity supply",
+   "desc": "Connect the property: live consumer unit on site.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 700,
+   "price": 1500,
+   "verify": {
+    "kind": "mains_live",
+    "models": [
+     "opslabs_mains_cu"
+    ],
+    "radius": 50
+   },
+   "parts": {
+    "cu": 1,
+    "tw": 20
+   },
+   "warranty": false,
+   "cert": "electrical"
+  },
+  {
+   "code": "sapl_ev",
+   "company": "sapl",
+   "title": "EV charger installation",
+   "desc": "Fit a wallbox or charging post, live and working.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 450,
+   "price": 1100,
+   "verify": {
+    "kind": "mains_live",
+    "models": [
+     "opslabs_mains_ev_wall",
+     "opslabs_mains_ev_post"
+    ],
+    "radius": 50
+   },
+   "parts": {
+    "ev": 1,
+    "tw": 15
+   },
+   "warranty": false,
+   "cert": "electrical"
+  },
+  {
+   "code": "solar_install",
+   "company": "solar",
+   "title": "Solar PV installation",
+   "desc": "Panels, inverter and battery — generating.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 900,
+   "price": 2400,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_solar_inverter"
+    ],
+    "count": 1,
+    "radius": 50,
+    "and": [
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_solar_panel_roof",
+       "opslabs_solar_array_ground"
+      ],
+      "count": 1,
+      "radius": 50
+     }
+    ]
+   },
+   "parts": {
+    "pv-panel": 8,
+    "inverter": 1
+   },
+   "warranty": false,
+   "cert": "electrical"
+  },
+  {
+   "code": "fuel_service",
+   "company": "fuel",
+   "title": "Fuel station service visit",
+   "desc": "Service the pumps and check the tank gauge.",
+   "for": [
+    "business"
+   ],
+   "wage": 250,
+   "price": 300,
+   "verify": {
+    "kind": "onsite",
+    "secs": 50,
+    "radius": 40,
+    "action": "Servicing the dispensers"
+   },
+   "parts": {
+    "nozzle": 1
+   },
+   "warranty": false
+  },
+  {
+   "code": "cctv_install",
+   "company": "secure",
+   "title": "Install CCTV cameras",
+   "desc": "Fit four IP cameras, cabled and live on a recorder.",
+   "for": [
+    "residential",
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 700,
+   "price": 1600,
+   "verify": {
+    "kind": "cctv_online",
+    "count": 4,
+    "radius": 50
+   },
+   "parts": {
+    "cam-ip": 2,
+    "cat6": 40
+   },
+   "warranty": false,
+   "cert": "cctv_install"
+  },
+  {
+   "code": "cctv_nvr",
+   "company": "secure",
+   "title": "Install NVR",
+   "desc": "Fit a network video recorder, powered, with at least one camera recording.",
+   "for": [
+    "business",
+    "police",
+    "government",
+    "residential"
+   ],
+   "wage": 400,
+   "price": 900,
+   "verify": {
+    "kind": "cctv_recorder",
+    "models": [
+     "opslabs_cctv_nvr"
+    ],
+    "radius": 50
+   },
+   "parts": {
+    "nvr": 1
+   },
+   "warranty": false,
+   "cert": "cctv_install"
+  },
+  {
+   "code": "cctv_dvr",
+   "company": "secure",
+   "title": "Install DVR",
+   "desc": "Fit a DVR with an analogue camera recording.",
+   "for": [
+    "business",
+    "residential"
+   ],
+   "wage": 350,
+   "price": 750,
+   "verify": {
+    "kind": "cctv_recorder",
+    "models": [
+     "opslabs_cctv_dvr"
+    ],
+    "radius": 50
+   },
+   "parts": {
+    "dvr": 1
+   },
+   "warranty": false,
+   "cert": "cctv_install"
+  },
+  {
+   "code": "cctv_ptz",
+   "company": "secure",
+   "title": "Install PTZ camera",
+   "desc": "Fit a pan-tilt-zoom speed dome on PoE+.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 450,
+   "price": 1100,
+   "verify": {
+    "kind": "cctv_online",
+    "models": [
+     "opslabs_cctv_ptz"
+    ],
+    "count": 1,
+    "radius": 50
+   },
+   "parts": {
+    "cam-ptz": 1,
+    "cat6": 25
+   },
+   "warranty": false,
+   "cert": "cctv_install"
+  },
+  {
+   "code": "cctv_anpr",
+   "company": "secure",
+   "title": "Install ANPR camera",
+   "desc": "Fit an ANPR / LPR camera covering the road or car park.",
+   "for": [
+    "police",
+    "government",
+    "business"
+   ],
+   "wage": 500,
+   "price": 1400,
+   "verify": {
+    "kind": "cctv_online",
+    "models": [
+     "opslabs_cctv_anpr"
+    ],
+    "count": 1,
+    "radius": 60
+   },
+   "parts": {
+    "cam-anpr": 1,
+    "cat6": 25
+   },
+   "warranty": false,
+   "cert": "cctv_install"
+  },
+  {
+   "code": "cctv_thermal",
+   "company": "secure",
+   "title": "Install thermal camera",
+   "desc": "Fit a thermal bi-spectrum camera on the perimeter.",
+   "for": [
+    "government",
+    "police",
+    "business"
+   ],
+   "wage": 500,
+   "price": 1500,
+   "verify": {
+    "kind": "cctv_online",
+    "models": [
+     "opslabs_cctv_thermal"
+    ],
+    "count": 1,
+    "radius": 60
+   },
+   "parts": {
+    "cam-therm": 1,
+    "cat6": 25
+   },
+   "warranty": false,
+   "cert": "cctv_install"
+  },
+  {
+   "code": "cctv_doorbell",
+   "company": "secure",
+   "title": "Install video doorbell",
+   "desc": "Fit a video doorbell on the customer's Wi-Fi, recording.",
+   "for": [
+    "residential"
+   ],
+   "wage": 180,
+   "price": 350,
+   "verify": {
+    "kind": "cctv_online",
+    "models": [
+     "opslabs_cctv_doorbell"
+    ],
+    "count": 1,
+    "radius": 40
+   },
+   "parts": {
+    "doorbell": 1
+   },
+   "warranty": false
+  },
+  {
+   "code": "cctv_poe",
+   "company": "secure",
+   "title": "Configure PoE cameras",
+   "desc": "Get two cameras powered over PoE (NVR ports or a PoE switch).",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 350,
+   "price": 700,
+   "verify": {
+    "kind": "cctv_online",
+    "count": 2,
+    "poe": true,
+    "radius": 50
+   },
+   "warranty": false,
+   "cert": "cctv_install"
+  },
+  {
+   "code": "cctv_remote",
+   "company": "secure",
+   "title": "Configure remote viewing",
+   "desc": "Get the NVR online and turn on remote viewing for the customer's phone.",
+   "for": [
+    "residential",
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 250,
+   "price": 300,
+   "verify": {
+    "kind": "cctv_remote",
+    "radius": 60
+   },
+   "auto": false,
+   "warranty": false
+  },
+  {
+   "code": "cctv_recording",
+   "company": "secure",
+   "title": "Configure recording",
+   "desc": "Set up the recorder (name, recording mode, retention) — recording.",
+   "for": [
+    "residential",
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 200,
+   "price": 250,
+   "verify": {
+    "kind": "cctv_recording",
+    "radius": 60
+   },
+   "auto": false,
+   "warranty": false
+  },
+  {
+   "code": "cctv_cable",
+   "company": "secure",
+   "title": "Replace damaged camera cable",
+   "desc": "Run and terminate new CAT6 to the cameras (25 m).",
+   "for": [
+    "residential",
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 300,
+   "price": 450,
+   "verify": {
+    "kind": "runs",
+    "run": "cable",
+    "metres": 25,
+    "radius": 50
+   },
+   "parts": {
+    "cat6": 30
+   },
+   "warranty": true
+  },
+  {
+   "code": "cctv_maintenance",
+   "company": "secure",
+   "title": "CCTV maintenance visit",
+   "desc": "Clean lenses, check focus, recording and storage.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 250,
+   "price": 300,
+   "verify": {
+    "kind": "onsite",
+    "secs": 60,
+    "radius": 40,
+    "action": "Cleaning lenses and checking every camera"
+   },
+   "warranty": true
+  },
+  {
+   "code": "cctv_fault",
+   "company": "secure",
+   "title": "CCTV fault finding",
+   "desc": "A camera has gone down — find the fault and fix it (every camera on site working).",
+   "for": [
+    "residential",
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 350,
+   "price": 0,
+   "verify": {
+    "kind": "cctv_healthy",
+    "radius": 30
+   },
+   "auto": false,
+   "warranty": true
+  },
+  {
+   "code": "cctv_upgrade",
+   "company": "secure",
+   "title": "CCTV system upgrade",
+   "desc": "Replace old analogue cameras with two new IP cameras on PoE.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 550,
+   "price": 1300,
+   "verify": {
+    "kind": "cctv_online",
+    "count": 2,
+    "poe": true,
+    "radius": 50
+   },
+   "parts": {
+    "cam-ip": 2,
+    "cat6": 30
+   },
+   "warranty": false,
+   "cert": "cctv_install"
+  },
+  {
+   "code": "cctv_removal",
+   "company": "secure",
+   "title": "CCTV system removal",
+   "desc": "Take every camera off the building.",
+   "for": [
+    "business",
+    "residential"
+   ],
+   "wage": 250,
+   "price": 300,
+   "verify": {
+    "kind": "cctv_none",
+    "radius": 40
+   },
+   "auto": false,
+   "warranty": false
+  },
+  {
+   "code": "cctv_access",
+   "company": "secure",
+   "title": "Access control camera",
+   "desc": "Fit an access-control reader with camera at the door.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 300,
+   "price": 650,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_cctv_reader"
+    ],
+    "count": 1,
+    "radius": 40
+   },
+   "parts": {
+    "reader": 1,
+    "cat6": 15
+   },
+   "warranty": false,
+   "cert": "cctv_install"
+  },
+  {
+   "code": "net_cfg_firewall",
+   "company": "network",
+   "title": "Firewall configuration",
+   "desc": "Add the firewall rules the customer needs (OPS Hub → their line → Router settings).",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 250,
+   "price": 300,
+   "auto": false,
+   "verify": {
+    "kind": "isp_config",
+    "field": "firewall",
+    "radius": 60
+   },
+   "warranty": false
+  },
+  {
+   "code": "net_cfg_forward",
+   "company": "network",
+   "title": "Port forwarding set-up",
+   "desc": "Forward the ports for the customer’s server / CCTV.",
+   "for": [
+    "business",
+    "police",
+    "government",
+    "residential"
+   ],
+   "wage": 180,
+   "price": 150,
+   "auto": false,
+   "verify": {
+    "kind": "isp_config",
+    "field": "forwards",
+    "radius": 60
+   },
+   "warranty": false
+  },
+  {
+   "code": "net_cfg_vlan",
+   "company": "network",
+   "title": "VLAN configuration",
+   "desc": "Split staff and guest networks into VLANs.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 300,
+   "price": 350,
+   "auto": false,
+   "verify": {
+    "kind": "isp_config",
+    "field": "vlans",
+    "radius": 60
+   },
+   "warranty": false
+  },
+  {
+   "code": "net_cfg_vpn",
+   "company": "network",
+   "title": "VPN configuration",
+   "desc": "Set up a site-to-site or remote-access VPN.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 350,
+   "price": 450,
+   "auto": false,
+   "verify": {
+    "kind": "isp_config",
+    "field": "vpn",
+    "radius": 60
+   },
+   "warranty": false
+  },
+  {
+   "code": "net_cfg_dns",
+   "company": "network",
+   "title": "DNS configuration",
+   "desc": "Point the customer’s network at the right DNS servers.",
+   "for": [
+    "business",
+    "police",
+    "government",
+    "residential"
+   ],
+   "wage": 150,
+   "price": 120,
+   "auto": false,
+   "verify": {
+    "kind": "isp_config",
+    "field": "dns",
+    "radius": 60
+   },
+   "warranty": false
+  },
+  {
+   "code": "net_cfg_dhcp",
+   "company": "network",
+   "title": "DHCP / IP configuration",
+   "desc": "Reserve fixed LAN addresses for the customer’s devices.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 180,
+   "price": 150,
+   "auto": false,
+   "verify": {
+    "kind": "isp_config",
+    "field": "dhcp",
+    "radius": 60
+   },
+   "warranty": false
+  },
+  {
+   "code": "net_cfg_wifi",
+   "company": "network",
+   "title": "Secure the Wi-Fi",
+   "desc": "Set a strong Wi-Fi password (applied to the router).",
+   "for": [
+    "business",
+    "police",
+    "government",
+    "residential"
+   ],
+   "wage": 120,
+   "price": 90,
+   "auto": false,
+   "verify": {
+    "kind": "isp_config",
+    "field": "wifi",
+    "radius": 60
+   },
+   "warranty": false
+  },
+  {
+   "code": "web_build",
+   "company": "web",
+   "title": "Website build",
+   "desc": "Design, build and publish the customer's website on their domain.",
+   "for": [
+    "residential",
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 380,
+   "price": 600,
+   "auto": false,
+   "verify": {
+    "kind": "web_published",
+    "blocks": 4
+   },
+   "warranty": false
+  },
+  {
+   "code": "web_ssl",
+   "company": "web",
+   "title": "SSL installation",
+   "desc": "Issue and install a certificate so the customer's site shows the padlock.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 120,
+   "price": 80,
+   "auto": false,
+   "verify": {
+    "kind": "web_ssl"
+   },
+   "warranty": false
+  },
+  {
+   "code": "web_mail",
+   "company": "web",
+   "title": "Business email set-up",
+   "desc": "Create the customer's mailboxes and point their domain's mail (MX) at OPS Web.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 110,
+   "price": 60,
+   "auto": false,
+   "verify": {
+    "kind": "web_mail"
+   },
+   "warranty": false
+  },
+  {
+   "code": "dom_dns",
+   "company": "domains",
+   "title": "DNS change",
+   "desc": "Make the DNS change the customer asked for (see the ticket).",
+   "for": [
+    "residential",
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 80,
+   "price": 40,
+   "auto": false,
+   "verify": {
+    "kind": "web_dns"
+   },
+   "warranty": false
+  },
+  {
+   "code": "dc_fault",
+   "company": "data",
+   "title": "Server fault",
+   "desc": "A server in the data hall has failed — replace the part ([E] on the rack).",
+   "for": [],
+   "wage": 260,
+   "price": 0,
+   "auto": false,
+   "verify": {
+    "kind": "dc_server"
+   },
+   "warranty": false,
+   "cert": "dc_ops"
+  },
+  {
+   "code": "dc_cooling",
+   "company": "data",
+   "title": "Data hall overheating",
+   "desc": "The hall is too hot — add or repair cooling until it's below the warning temperature.",
+   "for": [],
+   "wage": 320,
+   "price": 0,
+   "auto": false,
+   "emergency": true,
+   "verify": {
+    "kind": "dc_cooling"
+   },
+   "warranty": false,
+   "cert": "dc_ops"
+  },
+  {
+   "code": "dc_power",
+   "company": "data",
+   "title": "Data hall on battery",
+   "desc": "The racks are running on UPS battery — restore mains (socket / generator) before it runs out.",
+   "for": [],
+   "wage": 320,
+   "price": 0,
+   "auto": false,
+   "emergency": true,
+   "verify": {
+    "kind": "dc_power"
+   },
+   "warranty": false,
+   "cert": "dc_ops"
+  },
+  {
+   "code": "dc_network",
+   "company": "data",
+   "title": "Rack offline",
+   "desc": "A rack has lost its network — check its ToR switch and the CAT6 uplink to the router.",
+   "for": [],
+   "wage": 260,
+   "price": 0,
+   "auto": false,
+   "verify": {
+    "kind": "dc_network"
+   },
+   "warranty": false,
+   "cert": "dc_ops"
+  },
+  {
+   "code": "dc_capacity",
+   "company": "data",
+   "title": "Add cloud capacity",
+   "desc": "OPS Cloud is running out of room — install and bring online more compute servers set to the cloud role.",
+   "for": [],
+   "wage": 420,
+   "price": 0,
+   "auto": false,
+   "verify": {
+    "kind": "dc_install",
+    "count": 2
+   },
+   "parts": {
+    "srv-c1": 2
+   },
+   "warranty": false,
+   "cert": "dc_ops"
+  },
+  {
+   "code": "web_cloud_setup",
+   "company": "cloud",
+   "title": "Cloud server set-up",
+   "desc": "Set up the customer's OPS Cloud server: running, ports 80/443 open, their website hosted on it.",
+   "for": [
+    "residential",
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 180,
+   "price": 150,
+   "auto": false,
+   "verify": {
+    "kind": "web_cloud_setup"
+   },
+   "warranty": false
+  },
+  {
+   "code": "web_cloud_migrate",
+   "company": "cloud",
+   "title": "Website migration",
+   "desc": "Move the customer's website from shared hosting to their OPS Cloud server — no downtime.",
+   "for": [
+    "business",
+    "police",
+    "government"
+   ],
+   "wage": 240,
+   "price": 250,
+   "auto": false,
+   "verify": {
+    "kind": "web_cloud_migrate"
+   },
+   "warranty": false
+  },
+  {
+   "code": "us_install",
+   "company": "usfiber",
+   "title": "Fiber install & activation",
+   "desc": "New customer: run the drop, fit the ONT, check optical power, register the ONT and bring the service up — ONT online with live service.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 800,
+   "price": 1500,
+   "verify": {
+    "kind": "ont_online",
+    "radius": 60
+   },
+   "warranty": true,
+   "parts": {
+    "ont": 1,
+    "fib-drop": 60,
+    "splice": 4,
+    "rtr-gw": 1
+   },
+   "cert": "us_ftth"
+  },
+  {
+   "code": "us_gateway",
+   "company": "usfiber",
+   "title": "Residential gateway install",
+   "desc": "Fit and power the customer’s Wi-Fi gateway / router on the ONT’s Ethernet port.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 200,
+   "price": 300,
+   "verify": {
+    "kind": "towers",
+    "models": [
+     "opslabs_gw_pro",
+     "opslabs_gw_mini",
+     "opslabs_edge_e5",
+     "opslabs_edge_e7",
+     "opslabs_homerouter_ax4",
+     "opslabs_mesh_m1"
+    ],
+    "count": 1,
+    "radius": 40,
+    "powered": true
+   },
+   "warranty": true,
+   "parts": {
+    "rtr-gw": 1,
+    "cat6": 5,
+    "rj45": 2
+   }
+  },
+  {
+   "code": "us_ont_swap",
+   "company": "usfiber",
+   "title": "ONT replacement",
+   "desc": "The customer’s ONT has failed — fit a new one, register its serial and get it back online.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 300,
+   "price": 0,
+   "verify": {
+    "kind": "ont_online",
+    "radius": 40
+   },
+   "warranty": false,
+   "parts": {
+    "ont": 1,
+    "splice": 2
+   },
+   "cert": "us_ftth",
+   "auto": false
+  },
+  {
+   "code": "us_aerial_drop",
+   "company": "usfiber",
+   "title": "Aerial drop installation",
+   "desc": "Run the drop fiber from the FDT on the pole to the house and terminate it at the NID / drop box.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 320,
+   "price": 600,
+   "verify": {
+    "kind": "all",
+    "steps": [
+     {
+      "kind": "runs",
+      "run": "fibre",
+      "metres": 30,
+      "radius": 80,
+      "label": "Drop fiber"
+     },
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_csp"
+      ],
+      "count": 1,
+      "radius": 60,
+      "label": "NID / drop box"
+     }
+    ]
+   },
+   "warranty": true,
+   "parts": {
+    "fib-drop": 50,
+    "splice": 2
+   },
+   "cert": "us_ftth"
+  },
+  {
+   "code": "us_buried_drop",
+   "company": "usfiber",
+   "title": "Buried drop installation",
+   "desc": "Place a handhole at the property line and run the drop fiber underground through conduit to the house.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 400,
+   "price": 800,
+   "verify": {
+    "kind": "all",
+    "steps": [
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_footway_box",
+       "opslabs_chamber_modular",
+       "opslabs_manhole"
+      ],
+      "count": 1,
+      "radius": 60,
+      "label": "Handhole"
+     },
+     {
+      "kind": "runs",
+      "run": "fibre",
+      "metres": 25,
+      "radius": 80,
+      "label": "Drop fiber"
+     }
+    ]
+   },
+   "warranty": true,
+   "parts": {
+    "fib-drop": 40,
+    "splice": 2
+   },
+   "cert": "us_ftth"
+  },
+  {
+   "code": "us_business",
+   "company": "usfiber",
+   "title": "Business fiber install",
+   "desc": "Business service: ONT on the wall, a gateway powered and patched, and CAT6 to the customer’s rack.",
+   "for": [
+    "business",
+    "government"
+   ],
+   "wage": 1000,
+   "price": 2200,
+   "verify": {
+    "kind": "all",
+    "steps": [
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_ont"
+      ],
+      "count": 1,
+      "radius": 50,
+      "label": "ONT"
+     },
+     {
+      "kind": "towers",
+      "models": [
+       "opslabs_gw_pro",
+       "opslabs_gw_mini",
+       "opslabs_edge_e5",
+       "opslabs_edge_e7",
+       "opslabs_homerouter_ax4",
+       "opslabs_mesh_m1"
+      ],
+      "count": 1,
+      "radius": 50,
+      "powered": true,
+      "label": "Gateway"
+     },
+     {
+      "kind": "runs",
+      "run": "cable",
+      "metres": 10,
+      "radius": 50,
+      "label": "CAT6"
+     }
+    ]
+   },
+   "warranty": true,
+   "parts": {
+    "ont": 1,
+    "rtr-gw": 1,
+    "cat6": 20,
+    "rj45": 4,
+    "fib-drop": 30
+   },
+   "cert": "us_ftth"
+  },
+  {
+   "code": "us_no_service",
+   "company": "usfiber",
+   "title": "No service repair (trouble ticket)",
+   "desc": "Customer has no internet: check the ONT lights, measure optical power, inspect and clean connectors, test the drop and fix the fault.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 350,
+   "price": 0,
+   "verify": {
+    "kind": "onsite",
+    "secs": 75,
+    "radius": 30,
+    "action": "ONT, optical power and drop testing"
+   },
+   "warranty": false,
+   "auto": false
+  },
+  {
+   "code": "us_speed",
+   "company": "usfiber",
+   "title": "Speed & Wi-Fi complaint",
+   "desc": "Customer reports slow internet: check the gateway, Wi-Fi placement and wiring, then prove it with a speed test of at least 80% of the plan.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 220,
+   "price": 0,
+   "verify": {
+    "kind": "speedtest",
+    "pct": 80,
+    "radius": 50
+   },
+   "warranty": false,
+   "auto": false
+  },
+  {
+   "code": "us_fdh",
+   "company": "usosp",
+   "title": "Fiber distribution hub (FDH) install",
+   "desc": "Set a new FDH cabinet to serve the neighbourhood: feeder in, splitters fitted, distribution out.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 1000,
+   "price": 2400,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_cabinet_pcp",
+     "opslabs_cabinet_fttc",
+     "opslabs_cabinet_green3",
+     "opslabs_cabinet_green3_open"
+    ],
+    "count": 1,
+    "radius": 80
+   },
+   "warranty": true,
+   "parts": {
+    "cab-pcp": 1,
+    "splice": 24
+   },
+   "cert": "us_osp"
+  },
+  {
+   "code": "us_fdt",
+   "company": "usosp",
+   "title": "Fiber distribution terminal (FDT) install",
+   "desc": "Fit an FDT on a pole near the site so homes can be dropped from it.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 420,
+   "price": 900,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_cbt",
+     "opslabs_cbt_4",
+     "opslabs_cbt_8",
+     "opslabs_alt_cbt"
+    ],
+    "count": 1,
+    "radius": 80
+   },
+   "warranty": true,
+   "parts": {
+    "cbt": 1,
+    "splice": 8
+   },
+   "cert": "us_osp"
+  },
+  {
+   "code": "us_strand",
+   "company": "usosp",
+   "title": "Aerial strand & lashing",
+   "desc": "Place messenger strand between poles and lash new fiber to it (at least 60 m of fiber along the route).",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 650,
+   "price": 1400,
+   "verify": {
+    "kind": "runs",
+    "run": "fibre",
+    "metres": 60,
+    "radius": 150
+   },
+   "warranty": true,
+   "parts": {
+    "fib-drop": 80
+   },
+   "cert": "us_osp"
+  },
+  {
+   "code": "us_feeder",
+   "company": "usosp",
+   "title": "Feeder / distribution fiber placement",
+   "desc": "Place high-count feeder or distribution fiber from the hub along the route (at least 120 m).",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 900,
+   "price": 2000,
+   "verify": {
+    "kind": "runs",
+    "run": "fibre",
+    "metres": 120,
+    "radius": 200
+   },
+   "warranty": true,
+   "parts": {
+    "fib-drop": 150,
+    "splice": 12
+   },
+   "cert": "us_osp"
+  },
+  {
+   "code": "us_handhole",
+   "company": "usosp",
+   "title": "Handhole / vault installation",
+   "desc": "Set a handhole or vault for underground plant at the site.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 550,
+   "price": 1200,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_footway_box",
+     "opslabs_chamber_modular",
+     "opslabs_manhole"
+    ],
+    "count": 1,
+    "radius": 60
+   },
+   "warranty": true,
+   "cert": "us_osp"
+  },
+  {
+   "code": "us_splice",
+   "company": "usosp",
+   "title": "Splice closure & splicing",
+   "desc": "Fit a splice closure and fusion-splice the fiber into it (closure plus at least 20 m of new fiber).",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 520,
+   "price": 1100,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_splice_enclosure",
+     "opslabs_joint_tophat",
+     "opslabs_ucbt",
+     "opslabs_track_joint"
+    ],
+    "count": 1,
+    "radius": 80,
+    "and": [
+     {
+      "kind": "runs",
+      "run": "fibre",
+      "metres": 20,
+      "radius": 80,
+      "label": "Fiber spliced in"
+     }
+    ]
+   },
+   "warranty": true,
+   "parts": {
+    "splice": 12
+   },
+   "cert": "us_osp"
+  },
+  {
+   "code": "us_fiber_cut",
+   "company": "usosp",
+   "title": "Fiber cut restoration",
+   "desc": "Emergency: a fiber cut has taken customers down. OTDR to the break, fit a new closure at the break and re-splice every fiber.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 600,
+   "price": 0,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_splice_enclosure",
+     "opslabs_joint_tophat",
+     "opslabs_ucbt",
+     "opslabs_track_joint"
+    ],
+    "count": 1,
+    "radius": 150
+   },
+   "warranty": false,
+   "parts": {
+    "splice": 24,
+    "fib-drop": 20
+   },
+   "cert": "us_osp",
+   "auto": false,
+   "emergency": true
+  },
+  {
+   "code": "us_otdr",
+   "company": "usosp",
+   "title": "OTDR & power-meter acceptance test",
+   "desc": "Test a new route end to end: OTDR trace for splices, connectors and loss, then power-meter readings at the far end.",
+   "for": [
+    "residential",
+    "business"
+   ],
+   "wage": 300,
+   "price": 400,
+   "verify": {
+    "kind": "onsite",
+    "secs": 60,
+    "radius": 40,
+    "action": "OTDR and power-meter testing the route"
+   },
+   "warranty": true
+  },
+  {
+   "code": "us_olt",
+   "company": "usnet",
+   "title": "OLT installation",
+   "desc": "Install an OLT shelf in the central office and patch its PON ports to the ODF.",
+   "for": [
+    "business",
+    "government"
+   ],
+   "wage": 1600,
+   "price": 6000,
+   "verify": {
+    "kind": "all",
+    "steps": [
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_olt"
+      ],
+      "count": 1,
+      "radius": 60,
+      "label": "OLT"
+     },
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_fdf"
+      ],
+      "count": 1,
+      "radius": 60,
+      "label": "ODF"
+     }
+    ]
+   },
+   "warranty": true,
+   "cert": "us_co",
+   "auto": false
+  },
+  {
+   "code": "us_odf",
+   "company": "usnet",
+   "title": "ODF installation & patching",
+   "desc": "Fit an optical distribution frame, terminate the outside-plant fiber and label every circuit.",
+   "for": [
+    "business",
+    "government"
+   ],
+   "wage": 700,
+   "price": 1800,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_fdf"
+    ],
+    "count": 1,
+    "radius": 60
+   },
+   "warranty": true,
+   "parts": {
+    "splice": 24
+   },
+   "cert": "us_co",
+   "auto": false
+  },
+  {
+   "code": "us_agg",
+   "company": "usnet",
+   "title": "Aggregation router turn-up",
+   "desc": "Install and power an aggregation router that collects traffic from the OLTs, with redundant uplinks.",
+   "for": [
+    "business",
+    "government"
+   ],
+   "wage": 1300,
+   "price": 4000,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_core_router"
+    ],
+    "count": 1,
+    "radius": 60
+   },
+   "warranty": true,
+   "cert": "us_co",
+   "auto": false
+  },
+  {
+   "code": "us_edge",
+   "company": "usnet",
+   "title": "Internet edge / peering router",
+   "desc": "Install the edge router that connects to transit, peering and internet exchanges (BGP).",
+   "for": [
+    "business",
+    "government"
+   ],
+   "wage": 1400,
+   "price": 4500,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_core_router"
+    ],
+    "count": 1,
+    "radius": 60
+   },
+   "warranty": true,
+   "cert": "us_co",
+   "auto": false
+  },
+  {
+   "code": "us_bng",
+   "company": "usnet",
+   "title": "BNG installation",
+   "desc": "Install the broadband network gateway that handles subscriber sessions, IP addresses and policies.",
+   "for": [
+    "business",
+    "government"
+   ],
+   "wage": 1200,
+   "price": 3800,
+   "verify": {
+    "kind": "fixtures",
+    "models": [
+     "opslabs_core_router"
+    ],
+    "count": 1,
+    "radius": 60
+   },
+   "warranty": true,
+   "cert": "us_co",
+   "auto": false
+  },
+  {
+   "code": "us_co_power",
+   "company": "usnet",
+   "title": "Central office power plant",
+   "desc": "Rectifiers, battery string and a standby generator so the CO keeps running through outages.",
+   "for": [
+    "business",
+    "government"
+   ],
+   "wage": 1500,
+   "price": 5000,
+   "verify": {
+    "kind": "all",
+    "steps": [
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_rectifier",
+       "opslabs_dc_power"
+      ],
+      "count": 1,
+      "radius": 60,
+      "label": "Rectifiers / DC plant"
+     },
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_battery_bank"
+      ],
+      "count": 1,
+      "radius": 60,
+      "label": "Battery string"
+     },
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_generator"
+      ],
+      "count": 1,
+      "radius": 60,
+      "label": "Standby generator"
+     }
+    ]
+   },
+   "warranty": true,
+   "cert": "us_co",
+   "auto": false
+  },
+  {
+   "code": "us_hvac",
+   "company": "usnet",
+   "title": "Central office HVAC",
+   "desc": "Indoor cooling unit and outdoor condenser to keep the equipment room in range.",
+   "for": [
+    "business",
+    "government"
+   ],
+   "wage": 900,
+   "price": 2500,
+   "verify": {
+    "kind": "all",
+    "steps": [
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_crac"
+      ],
+      "count": 1,
+      "radius": 60,
+      "label": "Indoor unit"
+     },
+     {
+      "kind": "fixtures",
+      "models": [
+       "opslabs_condenser"
+      ],
+      "count": 1,
+      "radius": 60,
+      "label": "Condenser"
+     }
+    ]
+   },
+   "warranty": true,
+   "cert": "us_co",
+   "auto": false
+  },
+  {
+   "code": "us_pon_alarm",
+   "company": "usnet",
+   "title": "PON alarm — multiple ONTs offline",
+   "desc": "NOC alarm: many ONTs on one PON dropped together. Trace the shared path — OLT port, feeder, FDH splitter, distribution — and restore it.",
+   "for": [
+    "business",
+    "government"
+   ],
+   "wage": 500,
+   "price": 0,
+   "verify": {
+    "kind": "onsite",
+    "secs": 90,
+    "radius": 60,
+    "action": "Tracing the PON from the OLT to the splitter"
+   },
+   "warranty": false,
+   "auto": false,
+   "emergency": true
+  }
+ ],
+ "isp": {
+  "pools": {
+   "dynamic": [
+    "203.0.113.0/24"
+   ],
+   "static": [
+    "198.51.100.0/24"
+   ],
+   "dedicated": [
+    "192.0.2.0/24"
+   ]
+  },
+  "dns": [
+   "203.0.113.53",
+   "203.0.113.54"
+  ],
+  "billingDays": 7,
+  "graceDays": 3
+ },
+ "web": {
+  "periodDays": 30,
+  "graceDays": 7,
+  "warnDays": 3,
+  "tlds": [
+   {
+    "tld": "ls",
+    "price": 30,
+    "desc": "Los Santos — the city's own"
+   },
+   {
+    "tld": "sa",
+    "price": 45,
+    "desc": "San Andreas, state-wide"
+   },
+   {
+    "tld": "biz",
+    "price": 35,
+    "desc": "For businesses"
+   },
+   {
+    "tld": "shop",
+    "price": 30,
+    "desc": "Stores and online shops"
+   },
+   {
+    "tld": "club",
+    "price": 20,
+    "desc": "Clubs, crews and communities"
+   },
+   {
+    "tld": "gov.sa",
+    "price": 0,
+    "desc": "Government and emergency services only",
+    "restricted": [
+     "government",
+     "police",
+     "ems"
+    ]
+   }
+  ],
+  "sharedIp": "198.18.10.80",
+  "mailIp": "198.18.10.25",
+  "mailHost": "mx.opsweb.sa",
+  "nameservers": [
+   "ns1.opsdomains.sa",
+   "ns2.opsdomains.sa"
+  ],
+  "trustCa": "OPS Trust CA",
+  "plans": [
+   {
+    "code": "starter",
+    "name": "Starter",
+    "price": 20,
+    "sites": 1,
+    "mailboxes": 3,
+    "ssl": "dv",
+    "desc": "One website, free SSL, 3 mailboxes"
+   },
+   {
+    "code": "business",
+    "name": "Business",
+    "price": 45,
+    "sites": 5,
+    "mailboxes": 15,
+    "ssl": "dv",
+    "desc": "Five websites, free SSL, 15 mailboxes"
+   },
+   {
+    "code": "pro",
+    "name": "Pro",
+    "price": 90,
+    "sites": 20,
+    "mailboxes": 60,
+    "ssl": "ov",
+    "desc": "Twenty websites, organisation-validated SSL, 60 mailboxes"
+   }
+  ],
+  "certs": [
+   {
+    "kind": "dv",
+    "name": "Domain validated",
+    "price": 15,
+    "desc": "Padlock in the browser"
+   },
+   {
+    "kind": "ov",
+    "name": "Organisation validated",
+    "price": 60,
+    "desc": "Shows your organisation in the certificate"
+   },
+   {
+    "kind": "ev",
+    "name": "Extended validation",
+    "price": 150,
+    "desc": "Your verified name next to the padlock"
+   },
+   {
+    "kind": "wild",
+    "name": "Wildcard (DV)",
+    "price": 70,
+    "desc": "Covers every subdomain: *.yourname.ls"
+   }
+  ],
+  "services": [
+   {
+    "code": "web_build",
+    "price": 600,
+    "desc": "An OPS Web designer builds and publishes your site"
+   },
+   {
+    "code": "web_ssl",
+    "price": 80,
+    "desc": "We install and configure SSL for you"
+   },
+   {
+    "code": "web_mail",
+    "price": 60,
+    "desc": "We set up email on your domain"
+   }
+  ],
+  "companySites": {
+   "network": "opsnetwork.sa",
+   "fibre": "opsfibre.sa",
+   "secure": "opssecure.sa",
+   "comms": "opscomms.sa",
+   "systems": "opssystems.sa",
+   "domains": "opsdomains.sa",
+   "web": "opsweb.sa",
+   "data": "opsdata.sa",
+   "cloud": "opscloud.sa",
+   "mobile": "opsmobile.sa",
+   "track": "opstrack.sa",
+   "fuel": "opsfuel.sa",
+   "sapl": "sapl.sa",
+   "solar": "sasolar.sa"
+  },
+  "internal": [
+   "ops.sa",
+   "opsacademy.sa",
+   "opscloud.sa",
+   "opscomms.sa",
+   "opsdata.sa",
+   "opsdomains.sa",
+   "opsfibre.sa",
+   "opsfuel.sa",
+   "opsmobile.sa",
+   "opsnetwork.sa",
+   "opssecure.sa",
+   "opssystems.sa",
+   "opstrack.sa",
+   "opsweb.sa",
+   "sapl.sa",
+   "sasolar.sa",
+   "search.sa",
+   "whois.sa"
+  ],
+  "reserved": [
+   "ops",
+   "opslabs",
+   "police",
+   "lspd",
+   "ems",
+   "government",
+   "admin",
+   "root",
+   "localhost"
+  ]
+ },
+ "cloud": {
+  "periodDays": 30,
+  "graceDays": 5,
+  "overcommit": 2,
+  "pool": "198.18.20",
+  "poolFrom": 10,
+  "poolTo": 250,
+  "maxSnapshots": 3,
+  "plans": [
+   {
+    "code": "nano",
+    "name": "Nano",
+    "vcpu": 1,
+    "ram": 2,
+    "disk": 25,
+    "price": 12
+   },
+   {
+    "code": "small",
+    "name": "Small",
+    "vcpu": 2,
+    "ram": 4,
+    "disk": 60,
+    "price": 24
+   },
+   {
+    "code": "medium",
+    "name": "Medium",
+    "vcpu": 4,
+    "ram": 8,
+    "disk": 120,
+    "price": 48
+   },
+   {
+    "code": "large",
+    "name": "Large",
+    "vcpu": 8,
+    "ram": 32,
+    "disk": 320,
+    "price": 110
+   },
+   {
+    "code": "xl",
+    "name": "X-Large",
+    "vcpu": 16,
+    "ram": 64,
+    "disk": 640,
+    "price": 220
+   }
+  ],
+  "images": [
+   {
+    "code": "opsweb",
+    "name": "OPS Web server (nginx)",
+    "desc": "Ready to host your OPS Web site on this server",
+    "extra": 0
+   },
+   {
+    "code": "ubuntu",
+    "name": "Ubuntu 24.04 LTS",
+    "extra": 0
+   },
+   {
+    "code": "debian",
+    "name": "Debian 12",
+    "extra": 0
+   },
+   {
+    "code": "rocky",
+    "name": "Rocky Linux 9",
+    "extra": 0
+   },
+   {
+    "code": "windows",
+    "name": "Windows Server 2025",
+    "extra": 20
+   }
+  ]
+ },
+ "business": {
+  "stock": {
+   "network": [
+    {
+     "sku": "rtr-gw",
+     "name": "OPS Gateway router",
+     "unit": "each",
+     "cost": 180,
+     "min": 3,
+     "start": 8,
+     "supplier": "meridian"
+    },
+    {
+     "sku": "sw-poe8",
+     "name": "PoE switch 8-port",
+     "unit": "each",
+     "cost": 95,
+     "min": 3,
+     "start": 8,
+     "supplier": "meridian"
+    },
+    {
+     "sku": "ap-wifi6",
+     "name": "Wi-Fi 6 access point",
+     "unit": "each",
+     "cost": 110,
+     "min": 4,
+     "start": 10,
+     "supplier": "meridian"
+    },
+    {
+     "sku": "ont",
+     "name": "Fibre ONT",
+     "unit": "each",
+     "cost": 60,
+     "min": 4,
+     "start": 10,
+     "supplier": "lscw"
+    },
+    {
+     "sku": "cat6",
+     "name": "CAT6 cable",
+     "unit": "m",
+     "cost": 0.6,
+     "min": 150,
+     "start": 500,
+     "supplier": "lscw"
+    },
+    {
+     "sku": "rj45",
+     "name": "RJ45 connectors",
+     "unit": "each",
+     "cost": 0.3,
+     "min": 50,
+     "start": 200,
+     "supplier": "lscw"
+    }
+   ],
+   "fibre": [
+    {
+     "sku": "fib-drop",
+     "name": "Fibre drop cable",
+     "unit": "m",
+     "cost": 0.8,
+     "min": 200,
+     "start": 800,
+     "supplier": "lscw"
+    },
+    {
+     "sku": "cab-pcp",
+     "name": "Street cabinet",
+     "unit": "each",
+     "cost": 900,
+     "min": 1,
+     "start": 3,
+     "supplier": "lscw"
+    },
+    {
+     "sku": "cbt",
+     "name": "Distribution point (CBT)",
+     "unit": "each",
+     "cost": 140,
+     "min": 3,
+     "start": 8,
+     "supplier": "lscw"
+    },
+    {
+     "sku": "splice",
+     "name": "Splice protectors",
+     "unit": "each",
+     "cost": 0.5,
+     "min": 40,
+     "start": 150,
+     "supplier": "lscw"
+    }
+   ],
+   "comms": [
+    {
+     "sku": "nte",
+     "name": "Master socket (NTE)",
+     "unit": "each",
+     "cost": 12,
+     "min": 5,
+     "start": 15,
+     "supplier": "lscw"
+    },
+    {
+     "sku": "cu-drop",
+     "name": "Copper drop wire",
+     "unit": "m",
+     "cost": 0.4,
+     "min": 150,
+     "start": 500,
+     "supplier": "lscw"
+    }
+   ],
+   "systems": [
+    {
+     "sku": "laptop",
+     "name": "Workstation laptop",
+     "unit": "each",
+     "cost": 650,
+     "min": 2,
+     "start": 5,
+     "supplier": "halcyon"
+    },
+    {
+     "sku": "cat6",
+     "name": "CAT6 cable",
+     "unit": "m",
+     "cost": 0.6,
+     "min": 100,
+     "start": 300,
+     "supplier": "lscw"
+    }
+   ],
+   "secure": [
+    {
+     "sku": "cam-ip",
+     "name": "IP camera (bullet/dome)",
+     "unit": "each",
+     "cost": 140,
+     "min": 6,
+     "start": 16,
+     "supplier": "vigilo"
+    },
+    {
+     "sku": "cam-ptz",
+     "name": "PTZ speed dome",
+     "unit": "each",
+     "cost": 820,
+     "min": 1,
+     "start": 3,
+     "supplier": "vigilo"
+    },
+    {
+     "sku": "cam-anpr",
+     "name": "ANPR camera",
+     "unit": "each",
+     "cost": 640,
+     "min": 1,
+     "start": 3,
+     "supplier": "vigilo"
+    },
+    {
+     "sku": "cam-therm",
+     "name": "Thermal camera",
+     "unit": "each",
+     "cost": 1100,
+     "min": 1,
+     "start": 2,
+     "supplier": "vigilo"
+    },
+    {
+     "sku": "doorbell",
+     "name": "Video doorbell",
+     "unit": "each",
+     "cost": 120,
+     "min": 2,
+     "start": 6,
+     "supplier": "vigilo"
+    },
+    {
+     "sku": "nvr",
+     "name": "NVR 16ch PoE",
+     "unit": "each",
+     "cost": 420,
+     "min": 2,
+     "start": 4,
+     "supplier": "vigilo"
+    },
+    {
+     "sku": "dvr",
+     "name": "DVR 8ch",
+     "unit": "each",
+     "cost": 180,
+     "min": 1,
+     "start": 3,
+     "supplier": "vigilo"
+    },
+    {
+     "sku": "reader",
+     "name": "Access reader",
+     "unit": "each",
+     "cost": 210,
+     "min": 1,
+     "start": 3,
+     "supplier": "bastion"
+    },
+    {
+     "sku": "cat6",
+     "name": "CAT6 cable",
+     "unit": "m",
+     "cost": 0.6,
+     "min": 150,
+     "start": 500,
+     "supplier": "lscw"
+    }
+   ],
+   "sapl": [
+    {
+     "sku": "cu",
+     "name": "Consumer unit",
+     "unit": "each",
+     "cost": 160,
+     "min": 2,
+     "start": 6,
+     "supplier": "powercore"
+    },
+    {
+     "sku": "ev",
+     "name": "EV charger",
+     "unit": "each",
+     "cost": 780,
+     "min": 1,
+     "start": 3,
+     "supplier": "powercore"
+    },
+    {
+     "sku": "tw",
+     "name": "Twin & earth cable",
+     "unit": "m",
+     "cost": 1.2,
+     "min": 100,
+     "start": 300,
+     "supplier": "powercore"
+    }
+   ],
+   "solar": [
+    {
+     "sku": "pv-panel",
+     "name": "Solar panel 430 W",
+     "unit": "each",
+     "cost": 160,
+     "min": 8,
+     "start": 24,
+     "supplier": "powercore"
+    },
+    {
+     "sku": "inverter",
+     "name": "Hybrid inverter",
+     "unit": "each",
+     "cost": 1300,
+     "min": 1,
+     "start": 3,
+     "supplier": "powercore"
+    },
+    {
+     "sku": "battery",
+     "name": "Home battery 10 kWh",
+     "unit": "each",
+     "cost": 3200,
+     "min": 1,
+     "start": 2,
+     "supplier": "powercore"
+    }
+   ],
+   "track": [
+    {
+     "sku": "trk",
+     "name": "GPS tracker unit",
+     "unit": "each",
+     "cost": 95,
+     "min": 5,
+     "start": 15,
+     "supplier": "bastion"
+    },
+    {
+     "sku": "trk-ant",
+     "name": "GPS/LTE antenna",
+     "unit": "each",
+     "cost": 22,
+     "min": 5,
+     "start": 15,
+     "supplier": "bastion"
+    }
+   ],
+   "mobile": [],
+   "fuel": [
+    {
+     "sku": "nozzle",
+     "name": "Dispenser nozzle",
+     "unit": "each",
+     "cost": 85,
+     "min": 2,
+     "start": 6,
+     "supplier": "powercore"
+    }
+   ],
+   "data": [
+    {
+     "sku": "srv-c1",
+     "name": "Halcyon C1 compute (1U)",
+     "unit": "each",
+     "cost": 4800,
+     "min": 1,
+     "start": 2,
+     "supplier": "halcyon"
+    },
+    {
+     "sku": "srv-c2",
+     "name": "Halcyon C2 compute (2U)",
+     "unit": "each",
+     "cost": 9800,
+     "min": 1,
+     "start": 2,
+     "supplier": "halcyon"
+    },
+    {
+     "sku": "psu",
+     "name": "Server PSU",
+     "unit": "each",
+     "cost": 220,
+     "min": 2,
+     "start": 6,
+     "supplier": "halcyon"
+    },
+    {
+     "sku": "disk",
+     "name": "Server drive 7.68 TB",
+     "unit": "each",
+     "cost": 640,
+     "min": 4,
+     "start": 10,
+     "supplier": "halcyon"
+    },
+    {
+     "sku": "fan",
+     "name": "Fan module",
+     "unit": "each",
+     "cost": 45,
+     "min": 3,
+     "start": 8,
+     "supplier": "halcyon"
+    },
+    {
+     "sku": "board",
+     "name": "Server motherboard",
+     "unit": "each",
+     "cost": 1900,
+     "min": 1,
+     "start": 2,
+     "supplier": "halcyon"
+    }
+   ],
+   "web": [],
+   "domains": [],
+   "cloud": [],
+   "usfiber": [
+    {
+     "sku": "ont",
+     "name": "Fiber ONT (XGS-PON)",
+     "unit": "each",
+     "cost": 60,
+     "min": 6,
+     "start": 20,
+     "supplier": "lscw"
+    },
+    {
+     "sku": "rtr-gw",
+     "name": "Wi-Fi gateway router",
+     "unit": "each",
+     "cost": 180,
+     "min": 3,
+     "start": 8,
+     "supplier": "meridian"
+    },
+    {
+     "sku": "fib-drop",
+     "name": "Drop fiber",
+     "unit": "m",
+     "cost": 0.8,
+     "min": 300,
+     "start": 2000,
+     "supplier": "lscw"
+    },
+    {
+     "sku": "splice",
+     "name": "Splice protectors",
+     "unit": "each",
+     "cost": 0.5,
+     "min": 50,
+     "start": 400,
+     "supplier": "lscw"
+    },
+    {
+     "sku": "cat6",
+     "name": "CAT6 cable",
+     "unit": "m",
+     "cost": 0.6,
+     "min": 100,
+     "start": 600,
+     "supplier": "lscw"
+    },
+    {
+     "sku": "rj45",
+     "name": "RJ45 connectors",
+     "unit": "each",
+     "cost": 0.3,
+     "min": 50,
+     "start": 200,
+     "supplier": "lscw"
+    }
+   ],
+   "usosp": [
+    {
+     "sku": "cab-pcp",
+     "name": "Fiber distribution hub (FDH) cabinet",
+     "unit": "each",
+     "cost": 900,
+     "min": 1,
+     "start": 3,
+     "supplier": "lscw"
+    },
+    {
+     "sku": "cbt",
+     "name": "Fiber distribution terminal (FDT)",
+     "unit": "each",
+     "cost": 140,
+     "min": 4,
+     "start": 12,
+     "supplier": "lscw"
+    },
+    {
+     "sku": "fib-drop",
+     "name": "Distribution / feeder fiber",
+     "unit": "m",
+     "cost": 0.8,
+     "min": 500,
+     "start": 4000,
+     "supplier": "lscw"
+    },
+    {
+     "sku": "splice",
+     "name": "Splice protectors",
+     "unit": "each",
+     "cost": 0.5,
+     "min": 100,
+     "start": 800,
+     "supplier": "lscw"
+    }
+   ],
+   "usnet": [
+    {
+     "sku": "splice",
+     "name": "Splice protectors",
+     "unit": "each",
+     "cost": 0.5,
+     "min": 50,
+     "start": 300,
+     "supplier": "lscw"
+    }
+   ]
+  },
+  "suppliers": [
+   {
+    "code": "meridian",
+    "name": "Meridian Networks",
+    "contact": "sales@meridian.sa",
+    "phone": "555-0141",
+    "leadHours": 2,
+    "terms": "30 days"
+   },
+   {
+    "code": "lscw",
+    "name": "LS Cable & Wire",
+    "contact": "orders@lscablewire.ls",
+    "phone": "555-0177",
+    "leadHours": 1,
+    "terms": "On account"
+   },
+   {
+    "code": "vigilo",
+    "name": "Vigilo Security Systems",
+    "contact": "trade@vigilo.biz",
+    "phone": "555-0193",
+    "leadHours": 3,
+    "terms": "30 days"
+   },
+   {
+    "code": "bastion",
+    "name": "Bastion Security",
+    "contact": "trade@bastion.biz",
+    "phone": "555-0119",
+    "leadHours": 3,
+    "terms": "30 days"
+   },
+   {
+    "code": "halcyon",
+    "name": "Halcyon Systems",
+    "contact": "enterprise@halcyon.sa",
+    "phone": "555-0102",
+    "leadHours": 6,
+    "terms": "60 days"
+   },
+   {
+    "code": "powercore",
+    "name": "PowerCore Electrical",
+    "contact": "sales@powercore.ls",
+    "phone": "555-0166",
+    "leadHours": 2,
+    "terms": "On account"
+   }
+  ],
+  "certs": [
+   {
+    "code": "fibre_splice",
+    "company": "fibre",
+    "name": "Fibre splicing & testing",
+    "validDays": 60,
+    "for": [
+     "fibre_install",
+     "fibre_cabinet",
+     "fibre_dp",
+     "fibre_repair",
+     "isp_newcustomer"
+    ],
+    "questions": [
+     {
+      "q": "Before splicing, what must you do to the fibre ends?",
+      "a": [
+       "Clean and cleave them",
+       "Bend them 90°",
+       "Paint them"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "Where does a customer's fibre drop usually land?",
+      "a": [
+       "The distribution point (CBT) on the pole",
+       "The street light",
+       "The gas meter"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "An ONT with no light usually means…",
+      "a": [
+       "A break or bad splice back to the cabinet",
+       "The customer's Wi-Fi password is wrong",
+       "The router needs a reboot"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "What protects a finished splice?",
+      "a": [
+       "A splice protector in a tray",
+       "Electrical tape",
+       "Nothing"
+      ],
+      "ok": 0
+     }
+    ]
+   },
+   {
+    "code": "network_install",
+    "company": "network",
+    "name": "Network installation",
+    "validDays": 60,
+    "for": [
+     "net_router",
+     "net_switch",
+     "net_wifi",
+     "net_poe",
+     "net_cat6",
+     "net_business"
+    ],
+    "questions": [
+     {
+      "q": "The maximum length of a CAT6 run is about…",
+      "a": [
+       "100 m",
+       "10 m",
+       "1 km"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "PoE lets a switch…",
+      "a": [
+       "Power devices over the network cable",
+       "Encrypt Wi-Fi",
+       "Boost the internet speed"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "Where should the router's WAN port be connected?",
+      "a": [
+       "The ONT",
+       "An access point",
+       "The customer's TV"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "A crimped RJ45 must be…",
+      "a": [
+       "Wired to the same standard on both ends",
+       "Taped over",
+       "Left loose"
+      ],
+      "ok": 0
+     }
+    ]
+   },
+   {
+    "code": "cctv_install",
+    "company": "secure",
+    "name": "CCTV installer",
+    "validDays": 60,
+    "for": [
+     "cctv_install",
+     "cctv_nvr",
+     "cctv_dvr",
+     "cctv_ptz",
+     "cctv_anpr",
+     "cctv_thermal",
+     "cctv_upgrade",
+     "cctv_access",
+     "cctv_poe"
+    ],
+    "questions": [
+     {
+      "q": "An analogue (HD-TVI) camera records on…",
+      "a": [
+       "A DVR",
+       "An NVR",
+       "A router"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "Remote viewing needs the NVR to be…",
+      "a": [
+       "Cabled to a router with internet and remote viewing on",
+       "Unplugged",
+       "Next to a window"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "Which camera reads number plates?",
+      "a": [
+       "ANPR",
+       "Fisheye",
+       "Thermal"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "Too many PoE cameras on one NVR causes…",
+      "a": [
+       "Cameras without power (PoE budget exceeded)",
+       "Better night vision",
+       "Longer recordings"
+      ],
+      "ok": 0
+     }
+    ]
+   },
+   {
+    "code": "electrical",
+    "company": "sapl",
+    "name": "Electrical installation (Part P)",
+    "validDays": 60,
+    "for": [
+     "sapl_supply",
+     "sapl_ev",
+     "solar_install"
+    ],
+    "questions": [
+     {
+      "q": "Before working on a circuit you must…",
+      "a": [
+       "Isolate it and prove it dead",
+       "Wear gloves only",
+       "Turn on the lights"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "Solar panels feed the house through…",
+      "a": [
+       "The inverter and consumer unit",
+       "The water main",
+       "The gas meter"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "An EV charger needs…",
+      "a": [
+       "Its own circuit from the consumer unit",
+       "An extension lead",
+       "A USB cable"
+      ],
+      "ok": 0
+     }
+    ]
+   },
+   {
+    "code": "dc_ops",
+    "company": "data",
+    "name": "Data centre operations",
+    "validDays": 60,
+    "for": [
+     "dc_fault",
+     "dc_cooling",
+     "dc_power",
+     "dc_network",
+     "dc_capacity"
+    ],
+    "questions": [
+     {
+      "q": "Servers shut themselves down when the hall gets too…",
+      "a": [
+       "Hot",
+       "Quiet",
+       "Bright"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "A rack needs what in it to be online?",
+      "a": [
+       "A working top-of-rack switch",
+       "A blanking panel",
+       "A UPS cabinet inside it"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "In a power cut, the racks run from…",
+      "a": [
+       "The UPS battery (and a generator if there is one)",
+       "The CRAC units",
+       "The internet"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "A failed drive in a server is…",
+      "a": [
+       "Hot-swapped from the front",
+       "Fixed by rebooting the router",
+       "Ignored"
+      ],
+      "ok": 0
+     }
+    ]
+   },
+   {
+    "code": "tracker_fit",
+    "company": "track",
+    "name": "Vehicle tracker fitting",
+    "validDays": 60,
+    "for": [
+     "track_install"
+    ],
+    "questions": [
+     {
+      "q": "A Pro tracker's backup battery keeps it…",
+      "a": [
+       "Reporting when the car's power is cut",
+       "Cool",
+       "Charged for the car"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "Trackers report position over…",
+      "a": [
+       "OPS Mobile signal",
+       "Bluetooth only",
+       "The radio"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "Where are hard-wired trackers usually fitted?",
+      "a": [
+       "Hidden under the dash",
+       "On the roof",
+       "In the boot, on show"
+      ],
+      "ok": 0
+     }
+    ]
+   },
+   {
+    "code": "us_ftth",
+    "company": "usfiber",
+    "name": "US FTTH installer",
+    "validDays": 60,
+    "for": [
+     "us_install",
+     "us_ont_swap",
+     "us_aerial_drop",
+     "us_buried_drop",
+     "us_business"
+    ],
+    "questions": [
+     {
+      "q": "Which device terminates the fiber at the customer and gives Ethernet?",
+      "a": [
+       "The OLT",
+       "The ONT",
+       "The FDH"
+      ],
+      "ok": 1
+     },
+     {
+      "q": "What must be checked before activating an ONT?",
+      "a": [
+       "The paint colour",
+       "Optical power at the ONT is in range",
+       "The Wi-Fi password"
+      ],
+      "ok": 1
+     },
+     {
+      "q": "What happens if the wrong ONT serial is registered?",
+      "a": [
+       "The OLT never authenticates it — no service",
+       "Nothing",
+       "It works faster"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "Where does an aerial drop start?",
+      "a": [
+       "At the customer’s router",
+       "At the OLT",
+       "At the FDT on the pole"
+      ],
+      "ok": 2
+     },
+     {
+      "q": "What is the last test before handing over?",
+      "a": [
+       "An internet and speed test",
+       "A paint check",
+       "A ladder check"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "LOS is red on the ONT. What does it mean?",
+      "a": [
+       "The bill is unpaid",
+       "The Wi-Fi is off",
+       "No light is reaching the ONT"
+      ],
+      "ok": 2
+     },
+     {
+      "q": "Which tool tells you the distance to a fiber break?",
+      "a": [
+       "The crimper",
+       "The OTDR",
+       "The power meter"
+      ],
+      "ok": 1
+     },
+     {
+      "q": "Many ONTs on the same PON went down together. The fault is probably…",
+      "a": [
+       "In each house",
+       "In shared infrastructure (feeder, splitter, OLT)",
+       "The customers’ phones"
+      ],
+      "ok": 1
+     },
+     {
+      "q": "A slow-speed ticket is closed when…",
+      "a": [
+       "The router is rebooted",
+       "The customer stops calling",
+       "A speed test reaches at least 80% of the plan"
+      ],
+      "ok": 2
+     }
+    ]
+   },
+   {
+    "code": "us_osp",
+    "company": "usosp",
+    "name": "US outside plant & splicing",
+    "validDays": 60,
+    "for": [
+     "us_fdh",
+     "us_fdt",
+     "us_strand",
+     "us_feeder",
+     "us_handhole",
+     "us_splice",
+     "us_fiber_cut"
+    ],
+    "questions": [
+     {
+      "q": "What does a passive optical splitter do?",
+      "a": [
+       "Divides the light between many customers, with no power",
+       "Amplifies the signal",
+       "Switches Ethernet traffic"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "Where are splitters usually located?",
+      "a": [
+       "In the core router",
+       "In the customer’s router",
+       "In the FDH (and sometimes FDTs or closures)"
+      ],
+      "ok": 2
+     },
+     {
+      "q": "What carries aerial fiber between poles?",
+      "a": [
+       "Nothing",
+       "A messenger strand it is lashed to",
+       "The power conductor"
+      ],
+      "ok": 1
+     },
+     {
+      "q": "Why record every splice in inventory and GIS?",
+      "a": [
+       "It is optional",
+       "So the NOC can trace a customer to the OLT and find faults",
+       "For decoration"
+      ],
+      "ok": 1
+     },
+     {
+      "q": "Order for fusion splicing:",
+      "a": [
+       "Splice, strip, clean",
+       "Strip, clean, cleave, splice, sleeve",
+       "Cleave, paint, splice"
+      ],
+      "ok": 1
+     },
+     {
+      "q": "Which tool tells you how far away a break is?",
+      "a": [
+       "Crimper",
+       "Multimeter",
+       "OTDR"
+      ],
+      "ok": 2
+     },
+     {
+      "q": "After re-splicing, what proves the repair?",
+      "a": [
+       "Looking at it",
+       "OTDR and power-meter tests on each fiber",
+       "Rebooting the OLT"
+      ],
+      "ok": 1
+     },
+     {
+      "q": "Why splice fibers in order?",
+      "a": [
+       "It is faster",
+       "It looks neater",
+       "So each customer stays on the right PON"
+      ],
+      "ok": 2
+     }
+    ]
+   },
+   {
+    "code": "us_co",
+    "company": "usnet",
+    "name": "US central office & NOC",
+    "validDays": 60,
+    "for": [
+     "us_olt",
+     "us_odf",
+     "us_agg",
+     "us_edge",
+     "us_bng",
+     "us_co_power",
+     "us_hvac"
+    ],
+    "questions": [
+     {
+      "q": "What does the OLT do?",
+      "a": [
+       "Measures customer power",
+       "Lights the PON and authenticates ONTs",
+       "Hosts websites"
+      ],
+      "ok": 1
+     },
+     {
+      "q": "What is an ODF for?",
+      "a": [
+       "Cooling the room",
+       "Terminating and patching fiber to equipment",
+       "Billing"
+      ],
+      "ok": 1
+     },
+     {
+      "q": "Which protocol exchanges routes with other networks at the internet edge?",
+      "a": [
+       "BGP",
+       "Wi-Fi",
+       "DHCP"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "What does a BNG handle?",
+      "a": [
+       "Pole climbing",
+       "Splicing",
+       "Subscriber sessions, IP assignment and policies"
+      ],
+      "ok": 2
+     },
+     {
+      "q": "Why are aggregation links redundant?",
+      "a": [
+       "To use more power",
+       "For decoration",
+       "So one failure doesn’t take an area down"
+      ],
+      "ok": 2
+     },
+     {
+      "q": "Many ONTs on one PON drop together. Likely cause?",
+      "a": [
+       "A shared fault: cut, splitter, OLT port or power",
+       "Bad weather on phones",
+       "Every customer unplugged their ONT"
+      ],
+      "ok": 0
+     },
+     {
+      "q": "What helps find where a fault is on the ground?",
+      "a": [
+       "Inventory and GIS records",
+       "Customer reviews",
+       "Guessing"
+      ],
+      "ok": 0
+     }
+    ]
+   }
+  ],
+  "warrantyDays": 30,
+  "quoteValidDays": 7,
+  "contractPeriodDays": 30,
+  "slaHours": {
+   "standard": 72,
+   "business": 24,
+   "premium": 8,
+   "critical": 4
+  },
+  "contractKinds": [
+   {
+    "code": "support",
+    "name": "Support & repairs",
+    "desc": "Faults and repairs are covered — no call-out charge",
+    "covers": "repairs"
+   },
+   {
+    "code": "maintenance",
+    "name": "Planned maintenance",
+    "desc": "A maintenance visit every period, plus priority response",
+    "covers": "maintenance"
+   },
+   {
+    "code": "managed",
+    "name": "Fully managed",
+    "desc": "Repairs, maintenance and changes all covered",
+    "covers": "all"
+   }
+  ],
+  "slaTiers": [
+   {
+    "code": "business",
+    "name": "Business",
+    "hours": 24
+   },
+   {
+    "code": "premium",
+    "name": "Premium",
+    "hours": 8
+   },
+   {
+    "code": "critical",
+    "name": "Critical",
+    "hours": 4
+   }
+  ],
+  "vehicles": [
+   {
+    "model": "speedo",
+    "label": "Vapid Speedo van"
+   },
+   {
+    "model": "burrito3",
+    "label": "Declasse Burrito van"
+   },
+   {
+    "model": "youga2",
+    "label": "Bravado Youga van"
+   },
+   {
+    "model": "bison",
+    "label": "Bravado Bison pickup"
+   },
+   {
+    "model": "utillitruck3",
+    "label": "Utility truck"
+   }
+  ],
+  "toolKinds": [
+   "Fibre splicer",
+   "OTDR / light meter",
+   "Cable crimper & tester",
+   "Multimeter",
+   "Ladder",
+   "Torque driver",
+   "Thermal camera",
+   "Laptop & console cable"
+  ]
+ },
+ "companyRoles": {
+  "_about": "Which company does each job in the city. Change a value to give that role to another company (by its code) — e.g. make your own ISP the \"isp\" company.",
+  "main": "network",
+  "isp": "network",
+  "fibre": "fibre",
+  "mobile": "mobile",
+  "telephony": "comms",
+  "it": "systems",
+  "domains": "domains",
+  "web": "web",
+  "cloud": "cloud",
+  "data": "data",
+  "secure": "secure",
+  "track": "track",
+  "fuel": "fuel",
+  "power": "sapl",
+  "solar": "solar"
+ },
+ "market": {
+  "_about": "Sub-companies, wholesale and leasing. Players (or you) run sub-companies under the main company (companyRoles.main); they lease fibre lines, mobile network access, masts and other kit from the provider companies and sell their own packages, plans and products in their own store. Wholesale prices start here and are then edited per provider on OPS Hub → Market.",
+  "subCompanies": true,
+  "playerCreate": true,
+  "approval": true,
+  "maxPerPlayer": 1,
+  "startingBalance": 0,
+  "billingDays": 7,
+  "graceDays": 3,
+  "kinds": {
+   "fibre_access": "Fibre access — sell broadband on the fibre network (line rental, like Openreach wholesale)",
+   "mobile_access": "Mobile network access — sell mobile plans on the masts (MVNO)",
+   "tower": "Mast lease — one cell site, its faults are reported to you",
+   "dark_fibre": "Dark fibre — a dedicated fibre route between two points",
+   "rack": "Rack space in an OPS Data centre",
+   "colocation": "Equipment space in an exchange or cabinet"
+  },
+  "wholesale": [
+   {
+    "provider": "fibre",
+    "code": "fttp_line",
+    "kind": "fibre_access",
+    "name": "FTTP line rental",
+    "description": "Per active customer line, billed every period. Installs and repairs are done by the network's engineers.",
+    "unit": "line",
+    "price": 12,
+    "setup": 250,
+    "approval": true
+   },
+   {
+    "provider": "fibre",
+    "code": "fttp_bulk",
+    "kind": "fibre_access",
+    "name": "Fibre access — flat rate",
+    "description": "Unlimited customer lines for one flat price per period.",
+    "unit": "month",
+    "price": 900,
+    "setup": 500,
+    "approval": true
+   },
+   {
+    "provider": "fibre",
+    "code": "dark_fibre",
+    "kind": "dark_fibre",
+    "name": "Dark fibre route",
+    "description": "A dedicated fibre pair between two of your sites.",
+    "unit": "month",
+    "price": 600,
+    "setup": 1000,
+    "approval": true
+   },
+   {
+    "provider": "mobile",
+    "code": "mvno",
+    "kind": "mobile_access",
+    "name": "Mobile network access (MVNO)",
+    "description": "Sell your own mobile plans on the network. Per active line, billed every period.",
+    "unit": "line",
+    "price": 60,
+    "setup": 500,
+    "approval": true
+   },
+   {
+    "provider": "mobile",
+    "code": "mast",
+    "kind": "tower",
+    "name": "Mast lease",
+    "description": "Lease one cell site. Faults and outages on it are reported to you.",
+    "unit": "month",
+    "price": 350,
+    "setup": 250,
+    "approval": true
+   },
+   {
+    "provider": "data",
+    "code": "rack",
+    "kind": "rack",
+    "name": "Rack space (42U)",
+    "description": "A full rack with power and cooling in an OPS Data centre.",
+    "unit": "month",
+    "price": 400,
+    "setup": 200,
+    "approval": true
+   },
+   {
+    "provider": "fibre",
+    "code": "colo",
+    "kind": "colocation",
+    "name": "Exchange colocation",
+    "description": "Space for your own kit in an exchange.",
+    "unit": "month",
+    "price": 250,
+    "setup": 150,
+    "approval": true
+   }
+  ]
+ }
+}

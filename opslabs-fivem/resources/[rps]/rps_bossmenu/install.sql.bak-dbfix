@@ -1,0 +1,83 @@
+CREATE TABLE IF NOT EXISTS `rps_businesses` (
+  `job` varchar(50) NOT NULL,
+  `owner` varchar(50) DEFAULT 'Unassigned',
+  `coords` longtext DEFAULT NULL,
+  `delivery_coords` longtext DEFAULT NULL,
+  `allowed_shops` longtext DEFAULT '[]',
+  `wages` longtext DEFAULT '{}',
+  `min_boss_grade` int(11) DEFAULT NULL,
+  `online_shop_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`job`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `rps_employee_permissions` (
+  `citizenid` varchar(50) NOT NULL,
+  `job` varchar(50) NOT NULL,
+  `permissions` longtext DEFAULT '{}',
+  PRIMARY KEY (`citizenid`,`job`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `rps_employee_wages` (
+  `citizenid` varchar(50) NOT NULL,
+  `job` varchar(50) NOT NULL,
+  `wage` int(11) DEFAULT 100,
+  PRIMARY KEY (`citizenid`,`job`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `rps_society_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `job` varchar(50) NOT NULL,
+  `type` varchar(50) NOT NULL,
+  `note` text DEFAULT NULL,
+  `by` varchar(50) NOT NULL,
+  `amount` int(11) NOT NULL,
+  `time` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `rps_invoices` (
+  `id` varchar(50) NOT NULL,
+  `targetName` varchar(50) DEFAULT NULL,
+  `targetSrc` int(11) DEFAULT NULL,
+  `targetCid` varchar(50) DEFAULT NULL,
+  `senderSrc` int(11) DEFAULT NULL,
+  `amount` int(11) DEFAULT 0,
+  `reason` text DEFAULT NULL,
+  `status` varchar(20) DEFAULT 'pending',
+  `time` varchar(50) DEFAULT NULL,
+  `job` varchar(50) DEFAULT NULL,
+  `org` varchar(50) DEFAULT NULL,
+  `senderName` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `rps_jungle_shops` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `domain` varchar(100) NOT NULL,
+  `template` varchar(50) DEFAULT 'bizsupply',
+  `logo` text DEFAULT NULL,
+  `items` longtext DEFAULT '[]',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `domain` (`domain`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `rps_orders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `seller_shop_id` int(11) NOT NULL,
+  `buyer_job` varchar(50) NOT NULL,
+  `items` longtext DEFAULT '[]',
+  `total_price` int(11) DEFAULT 0,
+  `status` varchar(20) DEFAULT 'pending',
+  `time` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `rps_messages` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `job` varchar(50) NOT NULL,
+  `title` varchar(100) DEFAULT NULL,
+  `content` text DEFAULT NULL,
+  `time` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

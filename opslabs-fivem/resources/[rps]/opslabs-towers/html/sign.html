@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Works sign</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 512px; height: 384px; overflow: hidden; background: #fad61e; font-family: Arial, Helvetica, sans-serif; }
+  .board { position: absolute; inset: 0; border: 16px solid #c81c20; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 10px 18px; color: #111; }
+  .l1 { font-size: 56px; font-weight: 900; letter-spacing: 1px; line-height: 1; }
+  .l2 { font-size: 38px; font-weight: 800; margin-top: 6px; line-height: 1.05; }
+  .rule { width: 80%; height: 5px; background: #111; margin: 14px 0 12px; border-radius: 3px; }
+  .l3, .l4 { font-size: 30px; font-weight: 700; line-height: 1.2; }
+  .l5 { font-size: 20px; font-weight: 700; margin-top: 10px; }
+  .l1, .l2, .l3, .l4, .l5 { white-space: nowrap; }
+  .empty { display: none; }
+</style>
+</head>
+<body>
+<div class="board">
+  <div class="l1" id="l1"></div>
+  <div class="l2" id="l2"></div>
+  <div class="rule" id="rule"></div>
+  <div class="l3" id="l3"></div>
+  <div class="l4" id="l4"></div>
+  <div class="l5" id="l5"></div>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('l' + i);
+    el.textContent = q.get('l' + i) || '';
+    if (!el.textContent) el.classList.add('empty');
+  }
+  if (!q.get('l3') && !q.get('l4')) document.getElementById('rule').classList.add('empty');
+  // shrink long lines so they always fit the board
+  for (const id of ['l1', 'l2', 'l3', 'l4', 'l5']) {
+    const el = document.getElementById(id);
+    let size = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > 460 && size > 12) { size -= 2; el.style.fontSize = size + 'px'; }
+  }
+</script>
+</body>
+</html>

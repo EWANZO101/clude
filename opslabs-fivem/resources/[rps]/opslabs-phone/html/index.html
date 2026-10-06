@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPS OS</title>
+    <!-- fonts + icons ship with the resource: no CDN, instant first paint -->
+    <link rel="preload" href="vendor/inter/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="vendor/fontawesome/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="vendor/inter/inter.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="css/phone.css">
+    <link rel="stylesheet" href="css/ui.css">
+    <link rel="stylesheet" href="css/apps.css">
+    <link rel="stylesheet" href="css/laptop.css">
+    <link rel="stylesheet" href="css/traffic-sparks.css">
+    <link rel="stylesheet" href="css/buds.css">
+</head>
+<body>
+    <div id="phone-wrap" class="phone-wrap hidden">
+        <div class="phone" id="phone">
+            <!-- physical buttons -->
+            <div class="hw hw-action" data-hw="action" title="Action button"></div>
+            <div class="hw hw-volup" data-hw="volup"></div>
+            <div class="hw hw-voldown" data-hw="voldown"></div>
+            <div class="hw hw-power" data-hw="power"></div>
+            <div class="hw hw-camera" data-hw="camera" title="Camera Control"></div>
+
+            <div class="bezel">
+                <div class="screen" id="screen" data-theme="light">
+                    <div class="wallpaper" id="wallpaper"></div>
+
+                    <!-- status bar -->
+                    <div class="statusbar" id="statusbar">
+                        <div class="sb-left" data-sb="left"><span class="sb-time" id="sb-time">9:41</span><span class="sb-location"><i class="fa-solid fa-location-arrow"></i></span></div>
+                        <div class="sb-right" data-sb="right">
+                            <span class="sb-airplane"><i class="fa-solid fa-plane"></i></span>
+                            <span class="sb-signal"><i></i><i></i><i></i><i></i></span>
+                            <span class="sb-sos">SOS</span>
+                            <span class="sb-net"></span>
+                            <span class="sb-wifi"><svg viewBox="0 0 18 13"><path class="w1" d="M9 12.2a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2z" fill="currentColor"/><path class="w2" d="M4.6 7.6a6.3 6.3 0 0 1 8.8 0l-1.3 1.3a4.5 4.5 0 0 0-6.2 0L4.6 7.6z" fill="currentColor"/><path class="w3" d="M1.8 4.8a10.3 10.3 0 0 1 14.4 0l-1.3 1.3a8.5 8.5 0 0 0-11.8 0L1.8 4.8z" fill="currentColor"/></svg></span>
+                            <span class="sb-battery"><span class="sb-battery-level" id="sb-battery"></span></span>
+                        </div>
+                    </div>
+
+                    <!-- dynamic island -->
+                    <div class="island" id="island">
+                        <div class="island-content" id="island-content"></div>
+                    </div>
+                    <div class="island2" id="island2"></div>
+
+                    <!-- lock screen -->
+                    <div class="lockscreen" id="lockscreen">
+                        <div class="ls-carrier" id="ls-carrier"></div>
+                        <div class="ls-lock"><i class="fa-solid fa-lock" id="ls-lock-icon"></i></div>
+                        <div class="ls-date" id="ls-date"></div>
+                        <div class="ls-time" id="ls-time"></div>
+                        <div class="ls-notifs" id="ls-notifs"></div>
+                        <div class="ls-bottom">
+                            <button class="ls-btn" data-ls="flashlight"><svg class="ico-flashlight" viewBox="0 0 24 24"><path d="M8 2h8a1 1 0 0 1 1 1v3.2a3 3 0 0 1-.6 1.8L15 10v11a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V10L7.6 8A3 3 0 0 1 7 6.2V3a1 1 0 0 1 1-1zm0 2.5h8M12 13v2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                            <div class="ls-hint">Swipe up to open</div>
+                            <button class="ls-btn" data-ls="camera"><i class="fa-solid fa-camera"></i></button>
+                        </div>
+                        <div class="passcode" id="passcode"></div>
+                    </div>
+
+                    <!-- home screen -->
+                    <div class="home" id="home">
+                        <div class="home-pages" id="home-pages"></div>
+                        <div class="home-dots" id="home-dots"></div>
+                        <div class="home-search"><i class="fa-solid fa-magnifying-glass"></i> Search</div>
+                        <div class="dock" id="dock"></div>
+                    </div>
+
+                    <!-- open apps -->
+                    <div class="app-layer" id="app-layer"></div>
+
+                    <!-- call overlay -->
+                    <div class="call-screen" id="call-screen"></div>
+
+                    <!-- notification + control center -->
+                    <div class="notif-center" id="notif-center"></div>
+                    <div class="control-center" id="control-center"></div>
+
+                    <!-- banners, alerts, sheets -->
+                    <div class="banners" id="banners"></div>
+                    <div class="overlay-layer" id="overlay-layer"></div>
+
+                    <div class="volume-hud" id="volume-hud"><div class="volume-fill"></div><i class="fa-solid fa-volume-high"></i></div>
+                    <div class="brightness-dim" id="brightness-dim"></div>
+                    <div class="home-indicator" id="home-indicator"><span></span></div>
+                    <div class="screen-off" id="screen-off"></div>
+                    <div class="camera-flash" id="camera-flash"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/util.js"></script>
+    <script src="js/sound.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/core.js"></script>
+    <script src="js/brand.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/perf.js"></script>
+    <script src="js/live.js"></script>
+    <script src="js/island.js"></script>
+    <script src="js/gestures.js"></script>
+    <script src="js/apps/phone.js"></script>
+    <script src="js/apps/messages.js"></script>
+    <script src="js/apps/contacts.js"></script>
+    <script src="js/apps/mail.js"></script>
+    <script src="js/apps/camera.js"></script>
+    <script src="js/apps/photos.js"></script>
+    <script src="js/apps/notes.js"></script>
+    <script src="js/apps/calculator.js"></script>
+    <script src="js/apps/clock.js"></script>
+    <script src="js/apps/weather.js"></script>
+    <script src="js/apps/maps.js"></script>
+    <script src="js/apps/wallet.js"></script>
+    <script src="js/apps/settings.js"></script>
+    <script src="js/apps/chirp.js"></script>
+    <script src="js/apps/garage.js"></script>
+    <script src="js/apps/services.js"></script>
+    <script src="js/apps/traffic.js"></script>
+    <script src="js/apps/dating.js"></script>
+    <script src="js/apps/calendar.js"></script>
+    <script src="js/apps/dev.js"></script>
+    <script src="js/apps/opsnet.js"></script>
+    <script src="js/apps/opswork.js"></script>
+    <script src="js/apps/academy.js"></script>
+    <script src="js/apps/secureview.js"></script>
+    <script src="js/apps/browser.js"></script>
+    <script src="js/apps/music.js"></script>
+    <script src="js/apps/streaming.js"></script>
+    <script src="js/buds.js"></script>
+    <script src="js/carrier.js"></script>
+    <script src="js/apps/opsmobile.js"></script>
+    <script src="js/apps/store.js"></script>
+    <script src="js/setup.js"></script>
+    <script src="js/laptop.js"></script>
+    <script src="js/mock.js"></script>
+    <script src="js/boot.js"></script>
+</body>
+</html>

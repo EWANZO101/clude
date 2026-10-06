@@ -1,0 +1,457 @@
+ -- ============================================
+--  Utility - JSON Decode
+-- ============================================
+function SafeDecode(jsonStr)
+    if type(jsonStr) == 'table' then return jsonStr end
+    if type(jsonStr) ~= 'string' or jsonStr == "" then return {} end
+    local success, result = pcall(json.decode, jsonStr)
+    if success and type(result) == 'table' then return result end
+    return {}
+end
+
+-- ============================================
+--  Player Helpers
+-- ============================================
+function GetPlayer(src)
+    return Bridge.GetPlayer(src)
+end
+
+function GetPlayerByCitizenId(cid)
+    return Bridge.GetPlayerByCitizenId(cid)
+end
+
+function GetJobs()
+    return Bridge.GetJobs()
+end
+
+-- ============================================
+--  Inventory Helpers
+-- ============================================
+function AddItem(src, item, amount, slot, info)
+    return exports.rps_lib:AddItem(src, item, amount, info or BuildItemMetadata(item))
+end
+
+function RemoveItem(src, item, amount, slot, info)
+    return exports.rps_lib:RemoveItem(src, item, amount)
+end
+
+--- True for any item name following the weapon_* naming convention.
+function IsWeaponItem(itemName)
+    return type(itemName) == 'string' and itemName:sub(1, 7) == 'weapon_'
+end
+
+--- Weapons need special metadata to register on most inventories, unlike
+--- ordinary items — plain AddItem with no metadata silently fails for them.
+--- Returns nil for non-weapon items (so callers can pass this straight
+--- through as the metadata argument without an extra branch).
+---
+--- Field names here match tgiann-inventory's documented requirement
+--- (serie/ammo/usedTotalAmmo/durabilityPercent):
+--- https://tgiann.gitbook.io/tgiann/scripts/tgiann-inventory/exports/server
+--- If this server switches inventories later, update these field names to
+--- match — metadata shape is not portable across inventories (see rps_lib's
+--- own README on AddItem/RemoveItem's metadata argument).
+function BuildItemMetadata(itemName)
+    if not IsWeaponItem(itemName) then return nil end
+    return {
+        serie = ('RPS%08X'):format(math.random(0, 0xFFFFFFFF)),
+        ammo = 0,
+        usedTotalAmmo = 0,
+        durabilityPercent = 100
+    }
+end
+
+-- ============================================
+--  Permission Check
+-- ============================================
+function HasPerm(permsObj, permKey)
+    if type(permsObj) ~= 'table' then return false end
+    if permsObj.master == true then return true end
+    return permsObj[permKey] == true
+end
+
+--- Gates the /bossadmin panel (server/admin.lua). True for framework
+--- admin/god ranks (via rps_lib) OR the Config.AdminAce ACE permission, so
+--- server owners can grant panel access without a framework admin rank —
+--- see Config.AdminAce in config.lua for the server.cfg add_ace line.
+function IsBossmenuAdmin(src)
+    if Bridge.HasPermission(src, 'admin') or Bridge.HasPermission(src, 'god') then return true end
+    if Config.AdminAce and IsPlayerAceAllowed(src, Config.AdminAce) then return true end
+    return false
+end
+
+-- ============================================
+--  String Sanitization
+-- ============================================
+function Sanitize(str, maxLen)
+    if type(str) ~= 'string' then return '' end
+    local cleaned = str:gsub('[%c]', ''):sub(1, maxLen or 255)
+    return cleaned
+end
+
+-- ============================================
+--  Server-Side Rate Limiting
+-- ============================================
+local _cooldowns = {}
+function CheckCooldown(src, action, ms)
+    local k = tostring(src) .. '_' .. action
+    local now = GetGameTimer()
+    if _cooldowns[k] and (now - _cooldowns[k]) < ms then return false end
+    _cooldowns[k] = now
+    return true
+end
+
+AddEventHandler('playerDropped', function()
+    local src = source
+    for k, _ in pairs(_cooldowns) do
+        if k:find('^' .. tostring(src) .. '_') then
+            _cooldowns[k] = nil
+        end
+    end
+end)
+
+-- ============================================
+--  Society / Finance Functions
+--  Backed by ESX's own society bank (esx_addonaccount's "society_<job>"
+--  shared accounts — the same accounts esx_society/other ESX resources
+--  read and write), not a private balance column in rps_businesses.
+-- ============================================
+function GetSocietyBalance(jobName)
+    local p = promise.new()
+    TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. jobName, function(account)
+        p:resolve(account and account.money or 0)
+    end)
+    return Citizen.Await(p)
+end
+
+function AddSocietyMoney(jobName, amount, reason)
+    local p = promise.new()
+    TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. jobName, function(account)
+        if not account then return p:resolve(false) end
+        account.addMoney(amount)
+        p:resolve(true)
+    end)
+    return Citizen.Await(p)
+end
+
+function RemoveSocietyMoney(jobName, amount, reason)
+    local p = promise.new()
+    TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. jobName, function(account)
+        if not account or account.money < amount then return p:resolve(false) end
+        account.removeMoney(amount)
+        p:resolve(true)
+    end)
+    return Citizen.Await(p)
+end
+
+function AddPersonalBank(src, amount, reason)
+    local Player = GetPlayer(src)
+    if Player then
+        Player.Functions.AddMoney('bank', amount, reason)
+        return true
+    end
+    return false
+end
+
+-- ============================================
+--  Nearby Players
+-- ============================================
+function getNearbyPlayers(coords)
+    local players = {}
+    for _, srcStr in ipairs(GetPlayers()) do
+        local targetSrc = tonumber(srcStr)
+        local targetPed = GetPlayerPed(targetSrc)
+        if targetPed ~= 0 then
+            local targetCoords = GetEntityCoords(targetPed)
+            if #(coords - targetCoords) < Config.InteractionDistance then
+                local Target = GetPlayer(targetSrc)
+                if Target then
+                    table.insert(players, {
+                        id = targetSrc,
+                        cid = Target.PlayerData.citizenid,
+                        name = Target.PlayerData.charinfo.firstname .. ' ' .. Target.PlayerData.charinfo.lastname
+                    })
+                end
+            end
+        end
+    end
+    return players
+end
+
+-- ============================================
+--  Society Logging
+-- ============================================
+function SaveSocietyLog(job, type, note, by, amount)
+    local safeNote = tostring(note or ''):sub(1, 255)
+    local safeBy   = tostring(by   or ''):sub(1, 64)
+    MySQL.Async.execute(
+        'INSERT INTO rps_society_logs (job, type, note, `by`, amount) VALUES (?, ?, ?, ?, ?)',
+        {job, type, safeNote, safeBy, amount}
+    )
+end
+
+-- ============================================
+--  Employee Roster Builder
+--  Shared by RefreshBossMenu (server/bossmenu.lua) and the tablet's
+--  Employees app (server/billing.lua) so both surfaces see identical data.
+-- ============================================
+function BuildEmployeeRoster(jobName, cb)
+    Bridge.GetEmployeesByJob(jobName, function(dbPlayers)
+        local employees = {}
+        local allPerms = MySQL.Sync.fetchAll('SELECT citizenid, permissions FROM rps_employee_permissions WHERE job = ?', {jobName})
+        local allWages = MySQL.Sync.fetchAll('SELECT citizenid, wage FROM rps_employee_wages WHERE job = ?', {jobName})
+
+        local permMap = {}
+        local wageMap = {}
+        for _, p in ipairs(allPerms) do permMap[p.citizenid] = SafeDecode(p.permissions) end
+        for _, w in ipairs(allWages) do wageMap[w.citizenid] = w.wage end
+
+        local bRes = MySQL.Sync.fetchAll('SELECT min_boss_grade FROM rps_businesses WHERE job = ?', {jobName})
+        local biz = (bRes and bRes[1]) and bRes[1] or {}
+
+        for _, v in ipairs(dbPlayers or {}) do
+            local job = v.job or { name = jobName, label = jobName, grade = { level = 0, name = '' }, isboss = false }
+            local cid = v.identifier
+
+            local onlinePlayer = GetPlayerByCitizenId(cid)
+            if onlinePlayer and onlinePlayer.PlayerData.job.name == jobName then
+                job = onlinePlayer.PlayerData.job
+            end
+
+            if job.name == jobName then
+                local empPerms = permMap[cid] or { manage = false, hire = false, fire = false, bonus = false, deposit = false, withdraw = false, ledger = false, webshop = false, master = false }
+
+                local isEmpBoss = job.isboss == true
+                if biz.min_boss_grade and job.grade and tonumber(job.grade.level) >= tonumber(biz.min_boss_grade) then
+                    isEmpBoss = true
+                end
+
+                if isEmpBoss then
+                    empPerms.all_perms = true
+                end
+
+                employees[#employees+1] = {
+                    id = cid,
+                    name = v.name,
+                    rank = job.grade.name,
+                    wage = wageMap[cid] or tonumber(job.payment) or 100,
+                    perms = empPerms
+                }
+            end
+        end
+
+        local jobs = GetJobs()
+        local jobGrades = jobs[jobName] and jobs[jobName].grades or {}
+        local grades = {}
+        for k, v in pairs(jobGrades) do
+            grades[#grades+1] = { level = tonumber(k), name = v.name, id = tonumber(k), label = v.name }
+        end
+        table.sort(grades, function(a, b) return a.level < b.level end)
+
+        cb(employees, grades)
+    end)
+end
+
+-- ============================================
+--  Access Validation
+-- ============================================
+function ValidateAccess(src, jobName, myCid, isBoss, requiredPerm, cb)
+    local pData = GetPlayer(src)
+    local myGradeLevel = pData and tonumber(pData.PlayerData.job.grade.level) or 0
+
+    MySQL.Async.fetchAll('SELECT owner, min_boss_grade FROM rps_businesses WHERE job = ?', {jobName}, function(bizResult)
+        local biz = bizResult[1] or {}
+        local isOwner = false
+        if biz.owner and myCid then
+            isOwner = string.lower(biz.owner) == string.lower(myCid)
+        end
+        
+        local isBossGrade = false
+        if pData and pData.PlayerData.job.name == jobName then
+            if biz.min_boss_grade and tonumber(biz.min_boss_grade) and tonumber(biz.min_boss_grade) > 0 then
+                if myGradeLevel >= tonumber(biz.min_boss_grade) then
+                    isBossGrade = true
+                end
+            end
+        end
+        
+        if isOwner then return cb(true, true, {master=true, all_perms=true}) end 
+
+        MySQL.Async.fetchScalar('SELECT permissions FROM rps_employee_permissions WHERE citizenid = ? AND job = ?', {myCid, jobName}, function(permJson)
+            local perms = SafeDecode(permJson)
+            local actualBoss = isBoss or isBossGrade
+            
+            if actualBoss then
+                perms.all_perms = true
+            end
+            
+            if requiredPerm == nil then return cb(false, actualBoss, perms) end
+            
+            local hasAllPerms = HasPerm(perms, 'all_perms')
+            
+            if actualBoss or hasAllPerms or HasPerm(perms, requiredPerm) then return cb(false, true, perms) end
+            
+            Bridge.Notify(src, 'You lack the required permissions.', 'error')
+            cb(false, false, perms)
+        end)
+    end)
+end
+
+-- ============================================
+--  Startup & DB Initialisation
+-- ============================================
+CreateThread(function()
+    Wait(2000) 
+    
+    MySQL.Async.execute([[
+        ALTER TABLE rps_businesses 
+        ADD COLUMN IF NOT EXISTS balance DECIMAL(15, 2) DEFAULT 0.00
+    ]])
+    
+    local jobs = GetJobs() or {}
+    for jobName, _ in pairs(jobs) do
+        if jobName ~= 'unemployed' then
+            MySQL.Async.execute(
+                "INSERT IGNORE INTO rps_businesses (job, owner, coords, wages, min_boss_grade) VALUES (?, 'Unassigned', NULL, '{}', NULL)",
+                {jobName}
+            )
+        end
+    end
+
+    -- One-time migration: society money used to live in rps_businesses.balance;
+    -- it now lives in ESX's own society_<job> addon_account. Sweep any
+    -- leftover balance into the real account and zero the old column so this
+    -- doesn't double-add on a later restart.
+    MySQL.Async.fetchAll('SELECT job, balance FROM rps_businesses WHERE balance > 0', {}, function(rows)
+        for _, row in ipairs(rows or {}) do
+            local amount = tonumber(row.balance)
+            if amount and amount > 0 then
+                if AddSocietyMoney(row.job, amount, 'Migrated from rps_businesses.balance') then
+                    MySQL.Async.execute('UPDATE rps_businesses SET balance = 0 WHERE job = ?', {row.job})
+                    print(('^2[rps_bossmenu] Migrated $%s from rps_businesses.balance into society_%s^7'):format(amount, row.job))
+                else
+                    print(('^1[rps_bossmenu] Failed to migrate balance for job %s into its society account — left rps_businesses.balance untouched, will retry next restart^7'):format(row.job))
+                end
+            end
+        end
+    end)
+end)
+
+-- ============================================
+--  Exports
+-- ============================================
+exports('CreateBossmenu', function(jobName, ownerCid, minBossGrade, allowedShops)
+    if not jobName then return false, "Missing jobName" end
+    ownerCid = ownerCid or 'Unassigned'
+    allowedShops = allowedShops and json.encode(allowedShops) or '[]'
+    
+    local p = promise.new()
+    MySQL.Async.execute(
+        "INSERT INTO rps_businesses (job, owner, min_boss_grade, allowed_shops) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE owner = ?, min_boss_grade = ?, allowed_shops = ?",
+        {jobName, ownerCid, minBossGrade, allowedShops, ownerCid, minBossGrade, allowedShops},
+        function(rows)
+            p:resolve(rows > 0)
+        end
+    )
+    return Citizen.Await(p)
+end)
+
+exports('SetBossmenuDeliveryCoords', function(jobName, coords)
+    if not jobName or type(coords) ~= 'vector4' then return false, "Invalid params" end
+    local coordsStr = json.encode({x=coords.x, y=coords.y, z=coords.z, w=coords.w})
+    local p = promise.new()
+    MySQL.Async.execute(
+        "UPDATE rps_businesses SET delivery_coords = ? WHERE job = ?",
+        {coordsStr, jobName},
+        function(rows)
+            p:resolve(rows > 0)
+        end
+    )
+    return Citizen.Await(p)
+end)
+
+exports('CreateJungleShop', function(shopId, name, logo, categories, items)
+    local p = promise.new()
+    MySQL.Async.execute(
+        "INSERT INTO rps_jungle_shops (id, name, logo, categories, items) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), logo = VALUES(logo), categories = VALUES(categories), items = VALUES(items)",
+        {shopId, name, logo, type(categories) == 'table' and json.encode(categories) or '[]', type(items) == 'table' and json.encode(items) or '[]'},
+        function(rows)
+            p:resolve(rows > 0)
+        end
+    )
+    return Citizen.Await(p)
+end)
+
+exports('GrantBusinessJungleAccess', function(jobName, shopId)
+    local p = promise.new()
+    MySQL.Async.fetchAll('SELECT allowed_shops FROM rps_businesses WHERE job = ?', {jobName}, function(res)
+        if res and res[1] then
+            local allowed = SafeDecode(res[1].allowed_shops)
+            local found = false
+            for _, v in ipairs(allowed) do
+                if v == shopId then found = true break end
+            end
+            if not found then
+                table.insert(allowed, shopId)
+                MySQL.Async.execute('UPDATE rps_businesses SET allowed_shops = ? WHERE job = ?', {json.encode(allowed), jobName}, function(rows)
+                    p:resolve(rows > 0)
+                end)
+            else
+                p:resolve(true)
+            end
+        else
+            p:resolve(false)
+        end
+    end)
+    return Citizen.Await(p)
+end)
+
+exports('SetEmployeePermissions', function(jobName, citizenId, permsTable)
+    local p = promise.new()
+    local permsJson = type(permsTable) == 'table' and json.encode(permsTable) or '{}'
+    MySQL.Async.execute(
+        "INSERT INTO rps_employee_permissions (citizenid, job, permissions) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE permissions = VALUES(permissions)",
+        {citizenId, jobName, permsJson},
+        function(rows)
+            p:resolve(rows > 0)
+        end
+    )
+    return Citizen.Await(p)
+end)
+
+exports('HasBossAccess', function(citizenId, jobName)
+    local p = promise.new()
+    MySQL.Async.fetchAll('SELECT owner FROM rps_businesses WHERE job = ?', {jobName}, function(bizRes)
+        local isOwner = false
+        if bizRes[1] and bizRes[1].owner and string.lower(bizRes[1].owner) == string.lower(citizenId) then
+            isOwner = true
+        end
+        if isOwner then 
+            p:resolve(true) 
+            return 
+        end
+        
+        MySQL.Async.fetchScalar('SELECT permissions FROM rps_employee_permissions WHERE citizenid = ? AND job = ?', {citizenId, jobName}, function(permJson)
+            local perms = SafeDecode(permJson)
+            if perms.all_perms or perms.master then
+                p:resolve(true)
+            else
+                p:resolve(false)
+            end
+        end)
+    end)
+    return Citizen.Await(p)
+end)
+
+exports('LogSocietyTransaction', function(jobName, typeStr, amount, reason, by)
+    SaveSocietyLog(jobName, typeStr, reason, by or 'System', amount)
+    return true
+end)
+
+exports('GetSocietyLogs', function(jobName)
+    local p = promise.new()
+    MySQL.Async.fetchAll('SELECT * FROM rps_society_logs WHERE job = ? ORDER BY time DESC LIMIT 50', {jobName}, function(res)
+        p:resolve(res or {})
+    end)
+    return Citizen.Await(p)
+end)
