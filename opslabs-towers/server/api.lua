@@ -147,6 +147,14 @@ SetHttpHandler(function(req, res)
             if not p then return reply(res, 400, { error = err }) end
             return reply(res, 200, { data = p })
         end
+        if path == '/api/cctv/nightvision' and req.method == 'POST' then
+            if not CctvNightVision then return reply(res, 404, { error = 'CCTV is off' }) end
+            local who = viewer or data.viewer
+            if who and (data.all ~= nil or not (CctvViewerMay and CctvViewerMay(data.cam, who))) then return reply(res, 403, { error = 'Not your camera' }) end
+            local r, err = CctvNightVision(data)
+            if not r then return reply(res, 400, { error = err }) end
+            return reply(res, 200, { data = r })
+        end
         local mapId = path:match('^/api/cctv/map/(%d+)$')
         if mapId and req.method == 'GET' then
             local m = CctvMap and CctvMap(mapId, viewer)

@@ -731,6 +731,7 @@ Config.Cctv = {
     -- always-on relays: these accounts (any identifier: license:…, fivem:…, discord:…) start relaying on their own when
     -- they join — leave one logged in on a spare PC and OPS Hub stays live with nobody else in the city
     RelayAccounts = {},
+    NightVision = true,           -- IR cameras switch to night vision after dark (master switch; OPS Hub can flip it and set cameras one by one)
     BackgroundEvery = 60,         -- a relay with nothing else to do refreshes every online camera at least this often (s)
     RelayFilter = 0.25,           -- strength of the CCTV look on relay pictures (0 = clean picture, 1 = heavy scanlines)
     Enabled = true,

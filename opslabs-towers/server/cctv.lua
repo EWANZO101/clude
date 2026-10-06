@@ -33,6 +33,13 @@ MySQL.ready(function()
         id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, recorder_id INT NOT NULL, camera_id INT NULL, kind VARCHAR(12) NOT NULL,
         detail VARCHAR(160) NULL, x FLOAT NULL, y FLOAT NULL, at INT NOT NULL, KEY rec_at (recorder_id, at), KEY kind_at (kind, at))]])
     for _, r in ipairs(MySQL.query.await('SELECT * FROM opslabs_towers_cctv_systems') or {}) do r.shared = decode(r.shared, {}) S.systems[r.recorder_id] = r end
+    -- night vision: per camera `nv` (NULL = follow the master switch, 1 = on at night, 0 = off) + the master switch
+    local hasNv = MySQL.scalar.await([[SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'opslabs_towers_cctv_cams' AND COLUMN_NAME = 'nv']])
+    if (tonumber(hasNv) or 0) == 0 then MySQL.query.await('ALTER TABLE opslabs_towers_cctv_cams ADD COLUMN nv TINYINT(1) NULL') end
+    MySQL.query.await('CREATE TABLE IF NOT EXISTS opslabs_towers_cctv_settings (k VARCHAR(32) NOT NULL PRIMARY KEY, v VARCHAR(255) NOT NULL)')
+    local nv = MySQL.scalar.await('SELECT v FROM opslabs_towers_cctv_settings WHERE k = ?', { 'nightvision' })
+    if nv ~= nil then S.nightVision = nv == '1' end
     for _, c in ipairs(MySQL.query.await('SELECT * FROM opslabs_towers_cctv_cams') or {}) do S.cams[c.fixture_id] = c end
     dirty = true
 end)
@@ -58,8 +65,16 @@ local function cam(id)
     return c
 end
 local function saveCam(c)
-    MySQL.query('INSERT INTO opslabs_towers_cctv_cams (fixture_id, name, fault, fault_at) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), fault = VALUES(fault), fault_at = VALUES(fault_at)',
-        { c.fixture_id, c.name, c.fault, c.fault_at })
+    MySQL.query('INSERT INTO opslabs_towers_cctv_cams (fixture_id, name, fault, fault_at, nv) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), fault = VALUES(fault), fault_at = VALUES(fault_at), nv = VALUES(nv)',
+        { c.fixture_id, c.name, c.fault, c.fault_at, c.nv })
+end
+
+--- does this camera use its night vision (IR) after dark? the camera's own setting, else the master switch
+local function nightVisionOn(id)
+    local c = S.cams[id]
+    if c and c.nv ~= nil then return c.nv == 1 or c.nv == true end
+    if S.nightVision == nil then return CV.NightVision ~= false end
+    return S.nightVision
 end
 
 ---------------------------------------------------------------------------
@@ -233,7 +248,8 @@ local function camView(id)
     local lx, ly = l[1] * math.cos(h) - l[2] * math.sin(h), l[1] * math.sin(h) + l[2] * math.cos(h)
     return { id = id, name = c.name or ((def.label or 'Camera'):gsub(' %(.*%)', '') .. ' #' .. id), model = f.model, kind = def.kind,
         x = f.x + lx, y = f.y + ly, z = f.z + l[3], heading = f.heading or 0, fov = def.fov or 90, ptz = def.ptz or false, thermal = def.thermal or false,
-        anpr = def.anpr or false, ir = def.ir or false, online = st.online or false, status = st.status, statusText = STATUS[st.status] or st.status, via = st.via, rec = st.rec }
+        anpr = def.anpr or false, ir = (def.ir and nightVisionOn(id)) or false, irCapable = def.ir or false,
+        nv = c.nv == nil and 'auto' or ((c.nv == 1 or c.nv == true) and 'on' or 'off'), online = st.online or false, status = st.status, statusText = STATUS[st.status] or st.status, via = st.via, rec = st.rec }
 end
 
 local function systemView(id, src)
@@ -604,4 +620,40 @@ end
 --- the live map: is world point p inside this camera's view (range + field of view)?
 function CctvInView(v, p) return inView(v, p) end
 function CctvCamRange(id) local f = Cabling.fixtures[tonumber(id) or -1] return f and (CAM[f.model] or {}).range or 30 end
+--- night vision: d = { all = true|false } (the master switch) or { cam = id, mode = 'auto'|'on'|'off' }
+function CctvNightVision(d)
+    d = type(d) == 'table' and d or {}
+    if d.all ~= nil then
+        S.nightVision = d.all == true
+        MySQL.query('INSERT INTO opslabs_towers_cctv_settings (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)', { 'nightvision', S.nightVision and '1' or '0' })
+        if d.reset then
+            for _, c in pairs(S.cams) do if c.nv ~= nil then c.nv = nil saveCam(c) end end
+        end
+        return { all = S.nightVision }
+    end
+    local id = tonumber(d.cam)
+    local f = id and Cabling.fixtures[id]
+    if not f or not CAM[f.model] then return nil, 'No such camera' end
+    if not CAM[f.model].ir then return nil, 'This camera has no night vision' end
+    local c = cam(id)
+    c.nv = d.mode == 'on' and 1 or d.mode == 'off' and 0 or nil
+    saveCam(c)
+    return { cam = id, mode = d.mode == 'on' and 'on' or d.mode == 'off' and 'off' or 'auto', active = nightVisionOn(id) }
+end
+function CctvNightVisionAll()
+    if S.nightVision == nil then return CV.NightVision ~= false end
+    return S.nightVision
+end
+
+--- in game: N while watching a camera flips its night vision (owners / anyone who may configure the system)
+lib.callback.register('opslabs-towers:cctv:nv', function(src, camId)
+    if dirty then compute() end
+    camId = tonumber(camId)
+    local st = camId and S.state.cams[camId]
+    local s = st and st.rec and S.systems[st.rec]
+    if not s or not canConfigure(src, s) then return { error = 'Only the owner can change this camera' } end
+    local r, err = CctvNightVision({ cam = camId, mode = nightVisionOn(camId) and 'off' or 'on' })
+    if not r then return { error = err } end
+    return r
+end)
 exports('CctvState', CctvState)

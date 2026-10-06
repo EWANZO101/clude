@@ -72,6 +72,17 @@ function CctvWatch(rid, remote, startCam)
                 if IsDisabledControlPressed(0, 172) then tilt = math.min(10.0, tilt + 0.6) end
                 if IsDisabledControlPressed(0, 173) then tilt = math.max(-80.0, tilt - 0.6) end
             end
+            -- H: night vision on / off for this camera (its owner, or anyone who may configure the system)
+            if c.irCapable and IsDisabledControlJustPressed(0, 74) then
+                CreateThread(function()
+                    local r = lib.callback.await('opslabs-towers:cctv:nv', false, c.id)
+                    if not r or r.error then return err(r) end
+                    c.ir, c.nv = r.active, r.mode
+                    local hr = GetClockHours()
+                    SetNightvision(c.ir and (hr >= 20 or hr < 6) or false)
+                    lib.notify({ type = 'inform', description = ('Night vision %s for this camera'):format(r.active and 'on' or 'off') })
+                end)
+            end
             if IsDisabledControlJustPressed(0, 15) then fov = math.max(c.ptz and 6.0 or 30.0, fov - 5.0) SetCamFov(cam, fov) end
             if IsDisabledControlJustPressed(0, 14) then fov = math.min(100.0, fov + 5.0) SetCamFov(cam, fov) end
             SetCamRot(cam, tilt, 0.0, (c.heading or 0.0) + 180.0 + pan, 2)
@@ -87,7 +98,7 @@ function CctvWatch(rid, remote, startCam)
             txt(0.03, 0.065, ('CAM %02d / %02d%s%s'):format(idx, #cams, c.ptz and '  PTZ' or '', c.thermal and '  THERMAL' or ''), 0.38, 200, 210, 220)
             if c.online and sys.recording and (GetGameTimer() // 600) % 2 == 0 then txt(0.97, 0.03, '● REC', 0.5, 255, 60, 60, 255, true) end
             txt(0.97, 0.065, ('%02d:%02d  %s'):format(GetClockHours(), GetClockMinutes(), remote and 'REMOTE' or 'LIVE'), 0.4, 220, 220, 220, 230, true)
-            txt(0.03, 0.93, ('← → camera   %s   scroll zoom   BACKSPACE exit'):format(c.ptz and 'mouse pan / tilt' or ''), 0.36, 220, 220, 220, 200)
+            txt(0.03, 0.93, ('← → camera   %s   scroll zoom   %sBACKSPACE exit'):format(c.ptz and 'mouse pan / tilt' or '', c.irCapable and ('H night vision ' .. (c.ir and 'on' or 'off') .. '   ') or ''), 0.36, 220, 220, 220, 200)
         end
         RenderScriptCams(false, false, 0, true, true)
         DestroyCam(cam, false)

@@ -163,7 +163,7 @@ function CctvLive(want, focus, viewer)
     local relays, watchers = 0, 0
     for _ in pairs(Relays) do relays = relays + 1 end
     for _ in pairs(Watching) do watchers = watchers + 1 end
-    return { cams = cams, relays = relays, watchers = watchers, now = now }
+    return { cams = cams, relays = relays, watchers = watchers, now = now, nightVision = CctvNightVisionAll and CctvNightVisionAll() }
 end
 
 --- OPS Hub live map: what this camera can see right now, worked out on the server (no game needed to render it).
