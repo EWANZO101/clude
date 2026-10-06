@@ -1,0 +1,32 @@
+/* OPS SafeMag (Dynamic Island) + Batteries widget — js/batteries.js */
+
+.island .sm-isl, .island .sm-isl-phone { gap: 6px; white-space: nowrap; color: #32d74b; font-weight: 600; }
+.island .sm-isl .sm-ico { width: 20px; height: 20px; color: #fff; margin-right: 2px; }
+.island .sm-isl-phone i { font-size: 12px; }
+
+.w-batteries {
+    background: #fff;
+    color: #000;
+    padding: 12px 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    align-items: center;
+    justify-items: center;
+}
+.w-batteries.dark { background: #1c1c1e; color: #fff; }
+.w-batteries .bw-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.w-batteries .bw-dev { position: relative; width: 56px; height: 56px; }
+.w-batteries .bw-ring { position: absolute; inset: 0; }
+.w-batteries .bw-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.w-batteries .bw-icon .sm-ico, .w-batteries .bw-icon .buds-ico { width: 22px; height: 22px; }
+.w-batteries .bw-bolt {
+    position: absolute; top: -1px; right: -1px;
+    width: 18px; height: 18px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #32d74b;
+}
+.w-batteries .bw-bolt { background: #fff; }
+.w-batteries.dark .bw-bolt { background: #1c1c1e; }
+.w-batteries .bw-pct { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.w-batteries .bw-cell.empty { opacity: .6; }

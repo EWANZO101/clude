@@ -56,3 +56,4 @@
 ['ops_trk_ant'] = { name = 'ops_trk_ant', label = "GPS/LTE antenna", weight = 100, type = 'item', image = 'ops_trk_ant.png', unique = false, useable = false, shouldClose = true, description = "OPS part · GPS/LTE antenna" },
 ['ops_tw'] = { name = 'ops_tw', label = "Twin & earth cable (per metre)", weight = 50, type = 'item', image = 'ops_tw.png', unique = false, useable = false, shouldClose = true, description = "OPS part · Twin & earth cable" },
 ['ops_buds'] = { name = 'ops_buds', label = "OPS Buds", weight = 60, type = 'item', image = 'ops_buds.png', unique = true, useable = true, shouldClose = true, description = "Wireless earbuds in their charging case. Use to put them in / take them out." },
+['ops_safemag'] = { name = 'ops_safemag', label = "OPS SafeMag", weight = 110, type = 'item', image = 'ops_safemag.png', unique = true, useable = true, shouldClose = true, description = "Magnetic battery pack. Use to snap it onto the back of your phone / take it off." },

@@ -4,7 +4,7 @@
 
 local CB = Config.Battery or {}
 BatteryLevel = 100.0
-BatteryCharging = nil       -- 'wired' | 'wireless' | 'powerbank' | nil
+BatteryCharging = nil       -- 'wired' | 'wireless' | 'powerbank' | 'safemag' | 'full' | nil
 local loaded = false
 local bank = 0.0            -- % still to come from a power bank
 local warned = {}
@@ -69,6 +69,10 @@ CreateThread(function()
             elseif charger then
                 BatteryCharging = charger
                 rate = (charger == 'wireless' and (CB.Wireless or 2.2) or (CB.Wired or 3.5)) * step / 60
+            elseif SafeMagSupply() then
+                -- OPS SafeMag on the back (client/safemag.lua): it pays for what goes in
+                BatteryCharging = 'safemag'
+                rate = SafeMagDraw(math.min(100.0 - BatteryLevel, ((Config.SafeMag or {}).Charge or 1.6) * step / 60))
             else
                 BatteryCharging = nil
                 local drain = InCall and (CB.InCall or 1.0) or PhoneOpen and (CB.ScreenOn or 0.7) or (CB.Standby or 0.2)
@@ -108,13 +112,13 @@ CreateThread(function()
     while true do
         Wait(1500)
         if loaded and hasPhone() and bank <= 0 then
-            local c = chargerNear()
+            local c = chargerNear() or (SafeMagSupply() and 'safemag') or nil
             local state = c and (BatteryLevel >= 100 and 'full' or c) or nil
             if state ~= last then
                 last = state
                 BatteryCharging = state
                 push()
-                if c and state ~= 'full' then lib.notify({ type = 'inform', description = c == 'wireless' and 'Charging wirelessly' or 'Charging' }) end
+                if c and c ~= 'safemag' and state ~= 'full' then lib.notify({ type = 'inform', description = c == 'wireless' and 'Charging wirelessly' or 'Charging' }) end
             end
         end
     end

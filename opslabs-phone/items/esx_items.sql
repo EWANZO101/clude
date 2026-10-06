@@ -57,3 +57,4 @@ INSERT IGNORE INTO items (name, label, weight, rare, can_remove) VALUES ('ops_tr
 INSERT IGNORE INTO items (name, label, weight, rare, can_remove) VALUES ('ops_trk_ant', 'GPS/LTE antenna', 0.1, 0, 1);
 INSERT IGNORE INTO items (name, label, weight, rare, can_remove) VALUES ('ops_tw', 'Twin & earth cable (per metre)', 0.05, 0, 1);
 INSERT IGNORE INTO items (name, label, weight, rare, can_remove) VALUES ('ops_buds', 'OPS Buds', 0.06, 0, 1);
+INSERT IGNORE INTO items (name, label, weight, rare, can_remove) VALUES ('ops_safemag', 'OPS SafeMag', 0.11, 0, 1);

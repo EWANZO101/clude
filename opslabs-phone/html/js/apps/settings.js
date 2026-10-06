@@ -441,16 +441,28 @@ const SettingsPages = {
             render(c) {
                 const b = Phone.battery || { level: 100 };
                 const lvl = b.level;
-                const state = b.charging === 'full' ? 'Charged' : b.charging === 'wireless' ? 'Charging wirelessly' : b.charging === 'powerbank' ? 'Charging from a power bank' : b.charging ? 'Charging' : 'On battery';
+                const state = b.charging === 'full' ? 'Charged' : b.charging === 'wireless' ? 'Charging wirelessly' : b.charging === 'powerbank' ? 'Charging from a power bank' : b.charging === 'safemag' ? 'Charging from OPS SafeMag' : b.charging ? 'Charging' : 'On battery';
+                const sm = typeof SafeMag !== 'undefined' && SafeMag.s.owned ? SafeMag.s : null;
                 c.innerHTML = `
                     <div class="group" style="margin-top:12px"><div class="row"><div class="grow">Battery Percentage</div><span class="value">${lvl}%</span></div>
                     <div class="row"><div class="grow">Status</div><span class="value">${esc(I18N.t(state))}</span></div>
                     <div class="row"><div class="grow">Battery Health</div><span class="value">100%</span></div></div>
                     <div class="group-footer">${esc(I18N.t('Charge at a phone charging cable, a wireless pad or a USB socket, or with a power bank. At 0% the phone switches off until it is charged.'))}</div>
+                    ${sm ? `<div class="group-header" data-no-i18n>${esc(sm.label)}</div>
+                    <div class="group"><div class="row"><div class="grow">Battery Percentage</div><span class="value">${sm.level}%</span></div>
+                    <div class="row"><div class="grow">Status</div><span class="value">${esc(I18N.t(sm.charging ? 'Charging' : sm.on ? 'On your phone' : 'Not attached'))}</span></div></div>
+                    <div class="group-footer">${esc(I18N.t('Use it from your inventory to snap it onto the back of your phone or take it off. It charges beside a live charger, or with your phone once the phone is full.'))}</div>` : ''}
+                    ${Phone.config.batteriesWidget !== false ? `<div class="group"><div class="row"><div class="grow">Batteries Widget</div>${UI.switchHtml(Phone.settings.batteriesWidget !== false, 'data-toggle="batteriesWidget"')}</div></div>
+                    <div class="group-footer">${esc(I18N.t('Shows your phone, OPS SafeMag and OPS Buds batteries on the Home Screen.'))}</div>` : ''}
                     <div class="group" style="padding:16px">
                         <div class="muted" style="font-size:13px;margin-bottom:8px">BATTERY LEVEL · LAST 24 HOURS</div>
                         <div class="bat-chart">${Array.from({ length: 24 }, (_, i) => `<i style="height:${30 + ((i * 37) % 60)}%"></i>`).join('')}</div>
                     </div>`;
+                c.addEventListener('change', (e) => {
+                    if (e.target.dataset.toggle !== 'batteriesWidget') return;
+                    Phone.saveSetting('batteriesWidget', e.target.checked);
+                    if (typeof Batteries !== 'undefined') Batteries.refresh();
+                });
             },
         });
     },

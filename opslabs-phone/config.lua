@@ -146,6 +146,31 @@ Config.Buds = {
     -- where the buds sit, relative to the head (metres): side = out from the centre, up, forward
     Ear = { male = { side = 0.074, up = 0.022, forward = -0.004 }, female = { side = 0.068, up = 0.02, forward = -0.004 } },
 }
+-- OPS SafeMag: a magnetic battery pack (an item) that snaps onto the back of the phone. Use it to snap it on / take it
+-- off. Like the real thing: while it's on, it charges the phone wirelessly from its own battery; on a charger (cable,
+-- wireless pad, USB socket or a dock) the phone charges first and the pack after it, and a pack on its own charges
+-- beside any live charger (opslabs-towers). The Dynamic Island shows both levels when it snaps on, and the Batteries
+-- widget on the home screen shows the phone, the SafeMag and the OPS Buds together.
+Config.SafeMag = {
+    Enabled = true,
+    Item = 'ops_safemag',
+    Label = 'OPS SafeMag',
+    -- % per real minute
+    Charge = 1.6,             -- phone % the pack adds (slower than a cable, like real MagSafe ≈ 1 hour to full)
+    Cost = 0.7,               -- pack % used for every 1 % put into the phone (a full pack ≈ 1.4 phone charges)
+    Recharge = 2.5,           -- the pack on / beside a live charger (≈ 40 min to full)
+    StopAt = 100,             -- the pack stops charging the phone here (real packs stop around 90 to save the battery)
+    Warnings = { 20, 10 },
+    -- the pack on the back of the phone in your hand (opslabs-props opslabs_safemag). It's fitted to Config.Prop by
+    -- itself; side = which face of the phone is the back (1 / -1, try /safemagside in game), flip = turn it upside
+    -- down, offset = nudge it. Or set pos + rot (vector3s) to place it by hand.
+    Attach = { side = -1, flip = false, offset = vector3(0.0, 0.0, 0.0) },   -- -1 = the back of prop_npc_phone_02
+}
+
+-- Batteries widget (home screen, page 1): phone + OPS SafeMag + OPS Buds levels, like the iPhone widget. It shows
+-- once you own an accessory; players can hide it in Settings → Battery.
+Config.BatteriesWidget = true
+
 Config.DisableControlsWhileOpen = true
 
 -- Calls
