@@ -14,11 +14,10 @@
   function init() {
     canvas = document.createElement('canvas');
     canvas.width = 640; canvas.height = 360;
-    gl = canvas.getContext('webgl', { antialias: false, alpha: false, depth: false, preserveDrawingBuffer: false });
+    gl = canvas.getContext('webgl', { antialias: false, depth: false, stencil: false, alpha: false, desynchronized: true, failIfMajorPerformanceCaveat: false, preserveDrawingBuffer: false });
     if (!gl) return false;
     const sh = (t, src) => { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s); return s; };
     const prog = gl.createProgram();
-    // FiveM's game-view texture is bottom-up like GL: sample it straight
     // uCrop = the centre of the game frame with the picture's shape (16:9), so wide / tall screens aren't stretched
     gl.attachShader(prog, sh(gl.VERTEX_SHADER, 'attribute vec2 p; varying vec2 v; uniform vec4 uCrop; void main(){ v = uCrop.xy + vec2(p.x*0.5+0.5, p.y*0.5+0.5) * uCrop.zw; gl_Position = vec4(p,0.0,1.0); }'));
     gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, 'precision mediump float; varying vec2 v; uniform sampler2D t; void main(){ gl_FragColor = vec4(texture2D(t, v).rgb, 1.0); }'));
@@ -31,18 +30,19 @@
     const loc = gl.getAttribLocation(prog, 'p');
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    // the game view — set up exactly like screenshot-basic (citizenfx/screenshot-basic), FiveM's own screenshot resource:
+    // a 1×1 BLUE placeholder (a blue picture = FiveM never swapped the game in; black = it did but the game drew nothing),
+    // then the WRAP_T sequence FiveM's NUI watches for, ending on CLAMP_TO_EDGE
     tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array(3));
-    // the game view: the same texture flags screenshot-basic and the phone camera use — nothing touches it after this
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]));
+    gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
     gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.uniform1i(gl.getUniformLocation(prog, 't'), 0);
     uCrop = gl.getUniformLocation(prog, 'uCrop');
     return true;
@@ -60,9 +60,9 @@
   function lit() {
     const px = new Uint8Array(4 * 16);
     try { gl.readPixels(0, Math.floor(canvas.height / 2), 16, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); } catch (e) { return true; }
-    let s = 0;
-    for (let i = 0; i < px.length; i += 4) s += px[i] + px[i + 1] + px[i + 2];
-    return s > 0;
+    let s = 0, blue = 0;
+    for (let i = 0; i < px.length; i += 4) { s += px[i] + px[i + 1]; if (px[i] < 8 && px[i + 1] < 8 && px[i + 2] > 240) blue++; }
+    return s > 0 && blue < 12;          // all black or the blue placeholder: not the game yet
   }
 
   function send(m, jpg) {
