@@ -47,7 +47,7 @@ local EXACT = {
 local PREFIXES = { { '^chirp', 'phone.social' }, { '^dating', 'phone.social' }, { '^web', 'phone.browser' }, { '^opsnet', 'phone.opswork' },
     { '^ops', 'phone.opswork' }, { '^traffic', 'phone.traffic' }, { '^cctv', 'phone.secureview' }, { '^dev', 'phone.admin' } }
 -- always allowed: what the phone needs to start, set itself up and show the license screen
-local ALWAYS = { init = true, setupInfo = true, setupCheck = true, completeSetup = true, saveSettings = true, licenseState = true, licenseActivate = true }
+local ALWAYS = { init = true, setupInfo = true, setupCheck = true, completeSetup = true, saveSettings = true, licenseState = true, licenseActivate = true, licenseRefresh = true }
 
 function LicenseModuleFor(name)
     if EXACT[name] then return EXACT[name] end
@@ -89,6 +89,16 @@ function LicenseForUi(src)
 end
 
 Register('licenseState', function(src) pull() return LicenseForUi(src) end)
+
+--- "Check again": the server checks in with OPSHUB now, then answers with the fresh state
+Register('licenseRefresh', function(src)
+    if GetResourceState('opslabs-license') == 'started' then
+        local ok, s = pcall(function() return exports['opslabs-license']:Refresh() end)
+        if ok then refresh(s) end
+    end
+    pull()
+    return LicenseForUi(src)
+end)
 
 Register('licenseActivate', function(src, _, d)
     if GetResourceState('opslabs-license') ~= 'started' then return { error = 'The OPSHUB license resource (opslabs-license) isn\'t running on this server' } end
