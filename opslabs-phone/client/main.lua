@@ -205,7 +205,39 @@ RegisterKeyMapping(Config.Command, 'Open phone', 'keyboard', Config.Keybind)
 RegisterNetEvent(PREFIX .. 'open', OpenPhone)
 
 -- OPSHUB license changed (opslabs-license): the phone shows / hides apps and its license screen to match
-RegisterNetEvent('opslabs-license:state', function(s) SendNUIMessage({ action = 'license', data = s }) end)
+local licenseStatus, licenseNoticeAt = nil, 0
+local LICENSE_URL = 'opsphone-store.opslabsystems.cloud/license'
+
+--- not licensed: tell the player on screen — they may not have a phone to see the license screen on
+local function licenseNotice(first)
+    if licenseStatus == 'active' or licenseStatus == nil or licenseStatus == 'starting' then return end
+    licenseNoticeAt = GetGameTimer()
+    local what = ({ suspended = 'This server\'s OPSHUB license is suspended.', revoked = 'This server\'s OPSHUB license has been revoked.',
+        expired = 'This server\'s OPSHUB license has run out.' })[licenseStatus] or 'OPS isn\'t activated on this server yet.'
+    local body = ('%s\n\nGet a license at **%s**, then enter the key on the **OPS Phone** (open it — anyone can while the server is unlicensed) or put it in **opslabs-license/config.lua** (Config.LicenseKey) or server.cfg (`set opshub_license "OPSHUB-…"`).'):format(what, LICENSE_URL)
+    if first then
+        CreateThread(function()
+            lib.alertDialog({ header = 'OPSHUB license needed', content = body, centered = true, size = 'md', labels = { confirm = 'OK' } })
+        end)
+    else
+        lib.notify({ type = 'warning', title = 'OPSHUB license needed', description = ('%s Get a license at %s and enter it on the phone or in the config file.'):format(what, LICENSE_URL), duration = 12000 })
+    end
+end
+
+RegisterNetEvent('opslabs-license:state', function(s)
+    SendNUIMessage({ action = 'license', data = s })
+    local before = licenseStatus
+    licenseStatus = s and s.status
+    if before ~= licenseStatus and licenseStatus ~= 'active' then licenseNotice(before == nil or before == 'active') end
+end)
+
+-- a reminder every 10 minutes while the server isn't licensed
+CreateThread(function()
+    while true do
+        Wait(60000)
+        if licenseStatus and licenseStatus ~= 'active' and licenseStatus ~= 'starting' and GetGameTimer() - licenseNoticeAt > 600000 then licenseNotice(false) end
+    end
+end)
 
 -- re-init on character switch
 RegisterNetEvent('esx:playerLoaded', function()
