@@ -13,3 +13,6 @@ server_scripts {
     'server/verify.js',
     'server/main.lua',
 }
+
+-- the guard every OPS / rps resource loads ('@opslabs-license/guard.lua' in its fxmanifest)
+files { 'guard.lua' }

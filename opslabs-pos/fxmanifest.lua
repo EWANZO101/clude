@@ -11,6 +11,7 @@ dependencies { 'ox_lib', 'oxmysql', 'opslabs-towers' }
 
 shared_scripts {
     '@ox_lib/init.lua',
+    '@opslabs-license/guard.lua',     -- OPSHUB: every player action is checked (opslabs-license)
     'config.lua',
 }
 
@@ -33,3 +34,5 @@ files {
     'html/vendor/fontawesome/css/*.css',
     'html/vendor/fontawesome/webfonts/*',
 }
+
+dependency 'opslabs-license'   -- OPSHUB licensing: nothing runs without it

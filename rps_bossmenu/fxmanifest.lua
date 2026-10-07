@@ -8,6 +8,7 @@ fx_version 'cerulean'
 game 'gta5'
 
 lua54 'yes'
+shared_script '@opslabs-license/guard.lua'   -- OPSHUB: every player action is checked (opslabs-license)
 
 name 'rps_bossmenu'
 
@@ -79,3 +80,5 @@ escrow_ignore {
 --[[
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 --]]
+
+dependency 'opslabs-license'   -- OPSHUB licensing: nothing runs without it

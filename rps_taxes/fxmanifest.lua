@@ -10,6 +10,7 @@ lua54 'yes'
 
 shared_scripts {
     '@ox_lib/init.lua',
+    '@opslabs-license/guard.lua',     -- OPSHUB: every player action is checked (opslabs-license)
     'config.lua'
 }
 
@@ -31,3 +32,5 @@ dependencies {
     'ox_lib',
     'oxmysql'
 }
+
+dependency 'opslabs-license'   -- OPSHUB licensing: nothing runs without it

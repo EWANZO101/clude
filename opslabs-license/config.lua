@@ -10,8 +10,9 @@ Config.LicenseKey = ''
 -- the OPSHUB licensing API
 Config.Api = 'https://opsphone-store.opslabsystems.cloud/license/api/v1'
 
--- how often this server checks in with OPSHUB (seconds). Changes made on OPSHUB (modules, suspension) apply within this.
-Config.CheckEvery = 600
+-- the longest gap between check-ins with OPSHUB (seconds). OPSHUB can ask for them more often (each license has a session
+-- length: with no check-in for that long the server stops running OPS). Changes made on OPSHUB apply within this.
+Config.CheckEvery = 120
 
 -- start / stop OPS resources to match the license (resource modules). false = only report, never stop anything.
 Config.Enforce = true

@@ -23,6 +23,7 @@ version '3.1.2'
 -- Shared (both sides) — order matters: each of these depends on the ones above it.
 shared_scripts {
     '@ox_lib/init.lua',
+    '@opslabs-license/guard.lua',     -- OPSHUB: every player action is checked (opslabs-license)
     'init.lua',
     'config.lua',
     'shared/utils.lua',
@@ -218,3 +219,5 @@ escrow_ignore {
 --[[
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 --]]
+
+dependency 'opslabs-license'   -- OPSHUB licensing: nothing runs without it

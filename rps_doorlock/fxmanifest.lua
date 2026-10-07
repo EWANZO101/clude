@@ -7,6 +7,7 @@ version '1.1'
 
 shared_scripts {
     '@ox_lib/init.lua',
+    '@opslabs-license/guard.lua',     -- OPSHUB: every player action is checked (opslabs-license)
     'config.lua'
 }
 
@@ -41,3 +42,5 @@ escrow_ignore {
     'web/app.js',
     'config.lua'
 }
+
+dependency 'opslabs-license'   -- OPSHUB licensing: nothing runs without it
