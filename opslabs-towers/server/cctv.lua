@@ -37,6 +37,9 @@ MySQL.ready(function()
     local hasNv = MySQL.scalar.await([[SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()
         AND TABLE_NAME = 'opslabs_towers_cctv_cams' AND COLUMN_NAME = 'nv']])
     if (tonumber(hasNv) or 0) == 0 then MySQL.query.await('ALTER TABLE opslabs_towers_cctv_cams ADD COLUMN nv TINYINT(1) NULL') end
+    local hasWhere = MySQL.scalar.await([[SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'opslabs_towers_cctv_cams' AND COLUMN_NAME = 'location']])
+    if (tonumber(hasWhere) or 0) == 0 then MySQL.query.await('ALTER TABLE opslabs_towers_cctv_cams ADD COLUMN location VARCHAR(96) NULL') end
     MySQL.query.await('CREATE TABLE IF NOT EXISTS opslabs_towers_cctv_settings (k VARCHAR(32) NOT NULL PRIMARY KEY, v VARCHAR(255) NOT NULL)')
     local nv = MySQL.scalar.await('SELECT v FROM opslabs_towers_cctv_settings WHERE k = ?', { 'nightvision' })
     if nv ~= nil then S.nightVision = nv == '1' end
@@ -65,8 +68,8 @@ local function cam(id)
     return c
 end
 local function saveCam(c)
-    MySQL.query('INSERT INTO opslabs_towers_cctv_cams (fixture_id, name, fault, fault_at, nv) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), fault = VALUES(fault), fault_at = VALUES(fault_at), nv = VALUES(nv)',
-        { c.fixture_id, c.name, c.fault, c.fault_at, c.nv })
+    MySQL.query('INSERT INTO opslabs_towers_cctv_cams (fixture_id, name, fault, fault_at, nv, location) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), fault = VALUES(fault), fault_at = VALUES(fault_at), nv = VALUES(nv), location = VALUES(location)',
+        { c.fixture_id, c.name, c.fault, c.fault_at, c.nv, c.location })
 end
 
 --- does this camera use its night vision (IR) after dark? the camera's own setting, else the master switch
@@ -249,7 +252,7 @@ local function camView(id)
     return { id = id, name = c.name or ((def.label or 'Camera'):gsub(' %(.*%)', '') .. ' #' .. id), model = f.model, kind = def.kind,
         x = f.x + lx, y = f.y + ly, z = f.z + l[3], heading = f.heading or 0, fov = def.fov or 90, ptz = def.ptz or false, thermal = def.thermal or false,
         anpr = def.anpr or false, ir = (def.ir and nightVisionOn(id)) or false, irCapable = def.ir or false,
-        nv = c.nv == nil and 'auto' or ((c.nv == 1 or c.nv == true) and 'on' or 'off'), online = st.online or false, status = st.status, statusText = STATUS[st.status] or st.status, via = st.via, rec = st.rec }
+        nv = c.nv == nil and 'auto' or ((c.nv == 1 or c.nv == true) and 'on' or 'off'), location = c.location, online = st.online or false, status = st.status, statusText = STATUS[st.status] or st.status, via = st.via, rec = st.rec }
 end
 
 local function systemView(id, src)
@@ -639,6 +642,18 @@ function CctvNightVision(d)
     c.nv = d.mode == 'on' and 1 or d.mode == 'off' and 0 or nil
     saveCam(c)
     return { cam = id, mode = d.mode == 'on' and 'on' or d.mode == 'off' and 'off' or 'auto', active = nightVisionOn(id) }
+end
+--- where a camera is (street · area), as a game that showed it worked out (client natives only)
+function CctvSetLocation(id, text)
+    id = tonumber(id)
+    local f = id and Cabling.fixtures[id]
+    if not f or not CAM[f.model] or type(text) ~= 'string' then return end
+    text = text:gsub('[^%w%s%-%.,\'·&/]', ''):sub(1, 96)
+    if text == '' then return end
+    local c = cam(id)
+    if c.location == text then return end
+    c.location = text
+    saveCam(c)
 end
 function CctvNightVisionAll()
     if S.nightVision == nil then return CV.NightVision ~= false end
