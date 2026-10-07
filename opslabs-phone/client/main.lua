@@ -202,6 +202,9 @@ RegisterKeyMapping(Config.Command, 'Open phone', 'keyboard', Config.Keybind)
 
 RegisterNetEvent(PREFIX .. 'open', OpenPhone)
 
+-- OPSHUB license changed (opslabs-license): the phone shows / hides apps and its license screen to match
+RegisterNetEvent('opslabs-license:state', function(s) SendNUIMessage({ action = 'license', data = s }) end)
+
 -- re-init on character switch
 RegisterNetEvent('esx:playerLoaded', function()
     initialized = false

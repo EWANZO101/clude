@@ -158,6 +158,9 @@ function Register(name, handler)
         local phone = GetPhone(src)
         if not phone then return nil end
         data = type(data) == 'table' and data or {}
+        -- OPSHUB license: the phone core and each app's module (server/license.lua)
+        local lic = LicenseGate and LicenseGate(src, name)
+        if lic then return lic end
         -- at a laptop with no working Ethernet nothing online goes through
         if Laptop and Laptop.Offline(src, name) then return { __carrier = 'data', reason = 'no_ethernet' } end
         -- mobile plan: texts / calls / online apps need service and allowance
@@ -252,6 +255,7 @@ function BuildInit(src, phone)
             cameraMaxVideo = Config.Camera.MaxVideoSeconds or 60,
             music = Config.Music,
             batteriesWidget = Config.BatteriesWidget ~= false,
+            license = LicenseForUi and LicenseForUi(src) or nil,      -- OPSHUB license (server/license.lua)
         },
     }
 end

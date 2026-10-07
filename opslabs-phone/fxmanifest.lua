@@ -42,6 +42,7 @@ server_scripts {
     'server/framework.lua',
     'server/database.lua',
     'server/main.lua',
+    'server/license.lua',               -- OPSHUB licensing: module gate for every phone call (asks opslabs-license)
     'server/calls.lua',
     'server/apps.lua',
     'server/live.lua',

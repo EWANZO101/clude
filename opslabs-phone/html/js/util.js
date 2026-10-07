@@ -23,6 +23,12 @@ async function nui(endpoint, data = {}) {
             nui.lastFailure = 'carrier';
             return null;
         }
+        // not part of this server's OPSHUB license (html/js/license.js)
+        if (value && typeof value === 'object' && value.__license) {
+            if (typeof License !== 'undefined') License.blocked(value.__license);
+            nui.lastFailure = 'license';
+            return null;
+        }
         if (value && typeof value === 'object' && value.__failed) {
             console.warn('[opslabs-phone] request failed:', endpoint, data && data.name, value.__failed);
             nui.lastFailure = value.__failed;
