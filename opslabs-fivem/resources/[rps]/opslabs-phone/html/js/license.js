@@ -93,7 +93,8 @@ const License = {
         } else {
             // never activated, suspended, revoked, expired, OPSHUB unreachable … the key can always be (re-)entered
             const heads = { unlicensed: ['Activate OPS Phone', 'OPS Phone needs a valid <b>OPSHUB license</b> to run on this server. Enter the key from your OPSHUB client portal — you only do this once.'],
-                suspended: ['License suspended', ''], revoked: ['License revoked', ''], expired: ['License expired', ''] };
+                suspended: ['License suspended', ''], revoked: ['License revoked', ''], expired: ['License expired', ''],
+                paused: ['Weekly owner check missed', ''] };
             const [title, intro] = heads[status] || ['License not valid', ''];
             body = `
                 <h1>${esc(title)}</h1>

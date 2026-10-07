@@ -112,7 +112,9 @@ CreateThread(function()
             ON DUPLICATE KEY UPDATE name = VALUES(name), rank_no = VALUES(rank_no), perms = IF(builtin = 1, VALUES(perms), perms), description = VALUES(description)]],
             { r.code, r.name, r.rank or 10, json.encode(perms), r.description })
     end
-    MySQL.scalar.await("SELECT GET_LOCK('ops_seed', 15)")              -- OPS Hub seeds the same rows
+    -- OPS Hub seeds the same rows: wait (up to ~10s) while it holds its seed lock. No GET_LOCK here — oxmysql's pool would
+    -- release it on a different connection, leaving the lock held for good and stalling the Hub's first page.
+    for _ = 1, 20 do if not MySQL.scalar.await("SELECT IS_USED_LOCK('ops_seed')") then break end Wait(500) end
     for _, p in ipairs(CAT.places or {}) do
         if not MySQL.scalar.await('SELECT id FROM ops_customers WHERE name = ? AND identifier IS NULL AND ABS(x - ?) < 3 AND ABS(y - ?) < 3', { p.name, p.x, p.y }) then
             local id = MySQL.insert.await([[INSERT INTO ops_customers (account_no, kind, name, society, address, x, y, z, sla, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]],
@@ -120,7 +122,6 @@ CreateThread(function()
             MySQL.update.await('UPDATE ops_customers SET account_no = ? WHERE id = ?', { ('C%06d'):format(id), id })
         end
     end
-    MySQL.scalar.await("SELECT RELEASE_LOCK('ops_seed')")
     loadCompanies()
     pcall(MySQL.query.await, 'CREATE TABLE IF NOT EXISTS ops_job_overrides (code VARCHAR(40) NOT NULL PRIMARY KEY, data LONGTEXT NOT NULL, updated_by VARCHAR(60) NULL, updated_at INT NOT NULL DEFAULT 0)')
     loadJobOverrides()
