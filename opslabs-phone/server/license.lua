@@ -68,6 +68,9 @@ end
 -- admin group
 local ADMIN_GROUPS = { 'owner', 'superadmin', 'admin', 'god', 'dev', 'developer' }
 local function canManage(src)
+    -- not licensed yet: anyone may enter the key (it only works with a real OPSHUB key); once licensed, only admins
+    -- can change it, so a player can't swap the server onto another license
+    if L.status ~= 'active' then return true end
     if FW.IsAdmin and FW.IsAdmin(src, ADMIN_GROUPS) then return true end
     if GetResourceState('opslabs-license') == 'started' then
         local ok, r = pcall(function() return exports['opslabs-license']:CanManage(src) end)
