@@ -64,13 +64,21 @@ function LicenseGate(src, name)
     return nil
 end
 
---- for the UI (init payload and the license screen)
-function LicenseForUi(src)
-    local can = false
+-- who may enter the key on the phone: FiveM permission (opshub.license / command, checked by opslabs-license) or an ESX
+-- admin group
+local ADMIN_GROUPS = { 'owner', 'superadmin', 'admin', 'god', 'dev', 'developer' }
+local function canManage(src)
+    if FW.IsAdmin and FW.IsAdmin(src, ADMIN_GROUPS) then return true end
     if GetResourceState('opslabs-license') == 'started' then
         local ok, r = pcall(function() return exports['opslabs-license']:CanManage(src) end)
-        can = ok and r == true
+        return ok and r == true
     end
+    return false
+end
+
+--- for the UI (init payload and the license screen)
+function LicenseForUi(src)
+    local can = canManage(src)
     local mods = {}
     for _, m in ipairs(L.modules or {}) do mods[#mods + 1] = m end
     return { status = L.status, message = L.message, modules = mods, allowAll = L.allowAll == true, customer = L.customer,
@@ -81,7 +89,10 @@ Register('licenseState', function(src) pull() return LicenseForUi(src) end)
 
 Register('licenseActivate', function(src, _, d)
     if GetResourceState('opslabs-license') ~= 'started' then return { error = 'The OPSHUB license resource (opslabs-license) isn\'t running on this server' } end
-    local ok, r = pcall(function() return exports['opslabs-license']:Activate(src, d and d.key) end)
+    if not canManage(src) then return { error = 'Only a server admin can activate the license' } end
+    print(('[opslabs-phone] OPSHUB license activation from the phone by %s (%s)'):format(GetPlayerName(src) or '?', FW.Identifier(src) or '?'))
+    -- the phone checked the admin itself (ESX groups included), so it hands the key over with the console's authority
+    local ok, r = pcall(function() return exports['opslabs-license']:Activate(0, d and d.key) end)
     if not ok then return { error = 'Activation failed' } end
     if r ~= true then return { error = r } end
     pull()
