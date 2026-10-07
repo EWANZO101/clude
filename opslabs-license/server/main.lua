@@ -279,6 +279,19 @@ end)
 -- who's playing (fivem: = their Cfx.re account), once a minute: OPSHUB uses it to prove a server's owner joined it
 -- (adding a server to a license) and that buddy-key friends play on each other's servers. A licensed server signs it
 -- with its instance secret; a server being verified sends the token from `sets opshub_verify` in its server.cfg.
+-- a server admin: the license / command ace, or an ESX admin group. OPSHUB needs the owner to join as one (to add a
+-- server, then once a week for the first few weeks).
+local ADMIN_GROUPS = { admin = true, superadmin = true, owner = true, god = true }
+local function serverAdmin(id)
+    if IsPlayerAceAllowed(id, Config.AdminAce or 'opshub.license') or IsPlayerAceAllowed(id, 'command') then return true end
+    if GetResourceState('es_extended') ~= 'started' then return false end
+    local ok, group = pcall(function()
+        local x = exports['es_extended']:getSharedObject().GetPlayerFromId(tonumber(id))
+        return x and x.getGroup and x.getGroup()
+    end)
+    return ok and ADMIN_GROUPS[group or ''] == true
+end
+
 CreateThread(function()
     Wait(30000)
     while true do
@@ -286,7 +299,7 @@ CreateThread(function()
         for _, id in ipairs(GetPlayers()) do
             for _, ident in ipairs(GetPlayerIdentifiers(id)) do
                 local cfx = ident:match('^fivem:(%d+)$')
-                if cfx then players[#players + 1] = { cfx = tonumber(cfx), name = (GetPlayerName(id) or ''):sub(1, 60), minutes = 1 } break end
+                if cfx then players[#players + 1] = { cfx = tonumber(cfx), name = (GetPlayerName(id) or ''):sub(1, 60), minutes = 1, admin = serverAdmin(id) } break end
             end
         end
         if #players > 0 then
