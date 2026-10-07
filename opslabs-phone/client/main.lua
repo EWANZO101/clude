@@ -197,6 +197,8 @@ function TogglePhone()
     if PhoneOpen then ClosePhone() else OpenPhone() end
 end
 
+-- opening the phone always works, so the OPSHUB license screen can be reached while unlicensed (opslabs-license guard)
+if OPSHUB_OPEN then OPSHUB_OPEN[Config.Command] = true end
 RegisterCommand(Config.Command, TogglePhone, false)
 RegisterKeyMapping(Config.Command, 'Open phone', 'keyboard', Config.Keybind)
 
