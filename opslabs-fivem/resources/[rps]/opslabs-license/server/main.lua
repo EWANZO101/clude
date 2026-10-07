@@ -276,6 +276,33 @@ CreateThread(function()
     end
 end)
 
+-- who's playing (fivem: = their Cfx.re account), once a minute: OPSHUB uses it to prove a server's owner joined it
+-- (adding a server to a license) and that buddy-key friends play on each other's servers. A licensed server signs it
+-- with its instance secret; a server being verified sends the token from `sets opshub_verify` in its server.cfg.
+CreateThread(function()
+    Wait(30000)
+    while true do
+        local players = {}
+        for _, id in ipairs(GetPlayers()) do
+            for _, ident in ipairs(GetPlayerIdentifiers(id)) do
+                local cfx = ident:match('^fivem:(%d+)$')
+                if cfx then players[#players + 1] = { cfx = tonumber(cfx), name = (GetPlayerName(id) or ''):sub(1, 60), minutes = 1 } break end
+            end
+        end
+        if #players > 0 then
+            local iid, secret = kv('instance_id'), kv('instance_secret')
+            local token = GetConvar('opshub_verify', '')
+            if iid and secret then
+                call('/presence', { instance_id = tonumber(iid), secret = secret, players = players })
+            end
+            if token ~= '' then
+                call('/presence', { token = token, players = players })
+            end
+        end
+        Wait(60000)
+    end
+end)
+
 -- the session running out (no successful check-in for its whole length) switches everything off straight away
 CreateThread(function()
     while true do
