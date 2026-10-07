@@ -322,6 +322,27 @@ exports('Activate', function(src, key)
     return ok and res or 'Activation failed'
 end)
 
+--- a different key for this server (the Dev app): activate it, then release the old activation. true or an error.
+exports('ChangeKey', function(key)
+    if busy then return 'Already talking to OPSHUB — try again in a moment' end
+    busy = true
+    local oldId, oldSecret = kv('instance_id'), kv('instance_secret')
+    refusedKeys[tostring(key or ''):upper():gsub('%s', '')] = nil
+    setKv('instance_id', nil) setKv('instance_secret', nil)
+    local ok, res = pcall(activate, key, 'Dev app')
+    busy = false
+    if ok and res == true then
+        if oldId and oldSecret and tostring(oldId) ~= tostring(kv('instance_id')) then
+            call('/deactivate', { instance_id = tonumber(oldId), secret = oldSecret })
+        end
+        return true
+    end
+    -- the new key didn't take: keep the old activation
+    setKv('instance_id', oldId) setKv('instance_secret', oldSecret)
+    return ok and res or 'Activation failed'
+end)
+exports('Release', function() release() return true end)
+
 exports('Refresh', function() if not busy then busy = true pcall(checkIn) busy = false end return publicState() end)
 
 -- console: opshub status | opshub activate OPSHUB-XXXX-… | opshub refresh | opshub release
