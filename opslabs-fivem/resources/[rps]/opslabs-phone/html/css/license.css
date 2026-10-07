@@ -1,0 +1,33 @@
+/* OPSHUB license screen — js/license.js */
+.lic-gate {
+    position: absolute; inset: 0; z-index: 2000; display: none; align-items: center; justify-content: center; padding: 28px;
+    background: radial-gradient(120% 80% at 50% 0%, #3b2ad1 0%, #18113f 55%, #07060f 100%); color: #fff;
+}
+.lic-gate.show { display: flex; animation: lic-in .45s ease; }
+@keyframes lic-in { from { opacity: 0; transform: scale(1.03); } to { opacity: 1; transform: none; } }
+.lic-card { width: 100%; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+.lic-logo { width: 74px; height: 74px; border-radius: 22px; display: grid; place-items: center; font-size: 30px;
+    background: linear-gradient(135deg, #7c5cff, #3b82f6); box-shadow: 0 14px 40px rgba(91,61,245,.55); }
+.lic-brand { font-weight: 800; letter-spacing: .28em; font-size: 13px; opacity: .8; margin-bottom: 14px; }
+.lic-card h1 { font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -.01em; }
+.lic-card p { font-size: 14.5px; line-height: 1.45; opacity: .78; margin: 0 4px; }
+.lic-card p b { color: #c9bcff; opacity: 1; }
+.lic-small { font-size: 12.5px !important; opacity: .55 !important; }
+.lic-field { width: 100%; margin-top: 18px; display: flex; align-items: center; height: 54px; border-radius: 14px; border: 1px solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.08); padding: 0 12px; font: 600 15.5px ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: .05em; }
+.lic-field:focus-within { border-color: #a48bff; background: rgba(255,255,255,.12); box-shadow: 0 0 0 4px rgba(164,139,255,.18); }
+.lic-field span { color: #c9bcff; }
+.lic-field input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; color: #fff; font: inherit; letter-spacing: inherit; outline: none; padding: 0; }
+.lic-field input::placeholder { color: rgba(255,255,255,.35); }
+.lic-err { min-height: 18px; font-size: 13px; color: #ff8b84; }
+.lic-btn { width: 100%; height: 52px; border-radius: 14px; background: #fff; color: #1d1452; font-size: 17px; font-weight: 700; margin-top: 2px; transition: opacity .2s; }
+.lic-btn:disabled { opacity: .35; }
+.lic-btn.ghost { background: rgba(255,255,255,.12); color: #fff; margin-top: 18px; }
+.lic-steps { list-style: none; padding: 0; margin: 18px 0 0; width: 100%; display: flex; flex-direction: column; gap: 9px; text-align: left; }
+.lic-steps li { font-size: 13.5px; opacity: .45; display: flex; align-items: center; gap: 10px; }
+.lic-steps li::before { content: ''; width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); flex: none; box-sizing: border-box; }
+.lic-steps li.run { opacity: 1; } .lic-steps li.run::before { border-color: #a48bff; border-top-color: transparent; animation: lic-spin .8s linear infinite; }
+.lic-steps li.done { opacity: 1; } .lic-steps li.done::before { border: 0; background: #30d158 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='white' stroke-width='3.5' d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/12px no-repeat; }
+.lic-spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(255,255,255,.2); border-top-color: #fff; animation: lic-spin .8s linear infinite; margin-top: 18px; }
+@keyframes lic-spin { to { transform: rotate(360deg); } }
+.lic-foot { margin-top: 26px; font-size: 11.5px; letter-spacing: .06em; opacity: .4; text-transform: uppercase; }

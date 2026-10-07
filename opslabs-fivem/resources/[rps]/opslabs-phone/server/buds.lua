@@ -26,6 +26,7 @@ end
 MySQL.ready(function() pcall(ensureItem) end)
 
 FW.UsableItem(CB.Item or 'ops_buds', function(src)
+    if LicenseHas and not LicenseHas('phone.accessories') then return end      -- OPSHUB license (server/license.lua)
     if FW.ItemCount(src, CB.Item or 'ops_buds') < 1 then return end
     TriggerClientEvent('opslabs-phone:budsUse', src)
 end)

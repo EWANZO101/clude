@@ -46,6 +46,7 @@ const HOME_ORDER = ['wallet', 'chirp', 'browser', 'maps', 'weather', 'clock', 'p
 const HOME_DOCK = ['phone', 'messages', 'mail', 'camera'];
 
 function isInstalled(id) {
+    if (typeof License !== 'undefined' && !License.allowsApp(id)) return false;   // not in this server's OPSHUB license
     if (SYSTEM_APPS.has(id)) return true;
     const a = Phone.settings && Phone.settings.apps;
     if (a && typeof a[id] === 'boolean') return a[id];
