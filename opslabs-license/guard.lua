@@ -98,7 +98,11 @@ end
 -- wrap the ways actions come in
 ---------------------------------------------------------------------------
 local netEvents = {}
-local function isOwn(name) return type(name) == 'string' and name:find('^opslabs%-license:') ~= nil end
+-- not checked as events: the license's own events, and ox_lib's hidden callback events (__ox_cb_<name>) — the callback
+-- itself is checked once by the lib.callback wrapper below, under its real name (so OPSHUB_OPEN works for it)
+local function isOwn(name)
+    return type(name) == 'string' and (name:find('^opslabs%-license:') ~= nil or name:find('^__ox_cb_') ~= nil)
+end
 
 if SERVER then
     local _RegisterNetEvent, _AddEventHandler, _RegisterServerEvent = RegisterNetEvent, AddEventHandler, RegisterServerEvent
