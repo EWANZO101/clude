@@ -73,7 +73,7 @@ const License = {
             h.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'lic-key' && !$('#lic-go').disabled) this.activate(); });
             h.addEventListener('click', (e) => {
                 if (e.target.closest('#lic-go')) this.activate();
-                if (e.target.closest('#lic-retry')) nui('licenseState').then((s) => s && this.update(s));
+                if (e.target.closest('#lic-retry')) nui('rpc', { name: 'licenseState', data: {} }).then((s) => s && this.update(s));   // through the phone's server relay, never cached
             });
         }
         return h;
@@ -94,13 +94,15 @@ const License = {
                 <div class="lic-field"><span>OPSHUB-</span><input id="lic-key" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="40" value=""></div>
                 <div class="lic-err" id="lic-err"></div>
                 <button class="lic-btn" id="lic-go" disabled>Activate</button>
-                <ol class="lic-steps" id="lic-steps"><li>Validate license</li><li>Register this server</li><li>Receive configuration</li></ol>`
-                : `<h1>OPS Phone isn't activated</h1><p>${esc(status === 'missing' ? (s.message || 'The OPSHUB license resource isn\'t running.') : 'This server hasn\'t been activated with an OPSHUB license yet. A server admin activates it once from their phone.')}</p>
+                <ol class="lic-steps" id="lic-steps"><li>Validate license</li><li>Register this server</li><li>Receive configuration</li></ol>
+                <p class="lic-small" style="margin-top:14px">No license yet? Get one at <b data-no-i18n>opsphone-store.opslabsystems.cloud/license</b> — then enter it here, or put it in <b data-no-i18n>opslabs-license/config.lua</b> (Config.LicenseKey).</p>`
+                : `<h1>OPS Phone isn't activated</h1><p>${esc(status === 'missing' ? (s.message || 'The OPSHUB license resource isn\'t running.') : 'This server hasn\'t been activated with an OPSHUB license yet.')}</p>
+                <p class="lic-small">Get a license at <b data-no-i18n>opsphone-store.opslabsystems.cloud/license</b>, then enter it on the phone or in <b data-no-i18n>opslabs-license/config.lua</b>.</p>
                 <button class="lic-btn ghost" id="lic-retry">Check again</button>`;
         } else {
             const title = { suspended: 'License suspended', revoked: 'License revoked', expired: 'License expired' }[status] || 'License not valid';
             body = `<h1>${esc(title)}</h1><p>${esc(s.message || 'OPS Phone is switched off on this server.')}</p>
-                <p class="lic-small">The server owner can see why in the OPSHUB client portal.</p><button class="lic-btn ghost" id="lic-retry">Check again</button>`;
+                <p class="lic-small">The server owner can see why — and renew — at <b data-no-i18n>opsphone-store.opslabsystems.cloud/license</b>.</p><button class="lic-btn ghost" id="lic-retry">Check again</button>`;
         }
         h.innerHTML = `<div class="lic-card">${head}${body}<div class="lic-foot">Licensed &amp; secured by OPSHUB</div></div>`;
         h.classList.add('show');
@@ -120,7 +122,7 @@ const License = {
         const mark = (i, cls) => steps[i] && steps[i].classList.add(cls);
         mark(0, 'run');
         const t1 = setTimeout(() => { mark(0, 'done'); mark(1, 'run'); }, 700);
-        const r = await nui('licenseActivate', { key });
+        const r = await nui('rpc', { name: 'licenseActivate', data: { key } });   // → server/license.lua → opslabs-license → OPSHUB
         clearTimeout(t1);
         this._busy = false;
         if (!r || r.error) {

@@ -52,7 +52,7 @@ Register('devLogin', function(src, phone, data)
         print(('^1[opslabs-phone]^7 Developer app locked for %s (%s) after failed logins'):format(phone.name, phone.identifier))
         return { error = ('Too many attempts. Try again in %d seconds.'):format(cfg.LockoutSeconds) }
     end
-    return { error = 'Incorrect email or password.', remaining = cfg.MaxAttempts - a.count }
+    return { error = 'Incorrect username or password.', remaining = cfg.MaxAttempts - a.count }
 end)
 
 Register('devLogout', function(src)
@@ -311,6 +311,44 @@ DevRegister('devSetMailDomain', function(src, phone, data)
 end)
 
 ---------------------------------------------------------------------------
+-- OPSHUB license (opslabs-license): see it, change the key, check in now, release this server
+local function lic() return GetResourceState('opslabs-license') == 'started' and exports['opslabs-license'] or nil end
+
+DevRegister('devLicenseState', function()
+    local L = lic()
+    if not L then return { installed = false } end
+    local ok, s = pcall(function() return L:State() end)
+    return { installed = true, state = ok and s or nil }
+end)
+
+DevRegister('devLicenseKey', function(src, _, d)
+    local L = lic()
+    if not L then return { error = 'opslabs-license isn\'t running' } end
+    local key = tostring(d and d.key or '')
+    print(('^3[opslabs-phone]^7 %s changed the OPSHUB license key from the Developer app'):format(GetPlayerName(src) or src))
+    local ok, r = pcall(function() return L:ChangeKey(key) end)
+    if not ok then ok, r = pcall(function() return L:Activate(0, key) end) end      -- older opslabs-license: no ChangeKey yet
+    if not ok then return { error = 'Activation failed' } end
+    if r ~= true then return { error = r } end
+    return { ok = true }
+end)
+
+DevRegister('devLicenseRefresh', function()
+    local L = lic()
+    if not L then return { error = 'opslabs-license isn\'t running' } end
+    local ok, s = pcall(function() return L:Refresh() end)
+    return ok and { ok = true, state = s } or { error = 'Check-in failed' }
+end)
+
+DevRegister('devLicenseRelease', function(src)
+    local L = lic()
+    if not L then return { error = 'opslabs-license isn\'t running' } end
+    print(('^1[opslabs-phone]^7 %s released this server from its OPSHUB license (Developer app)'):format(GetPlayerName(src) or src))
+    local ok = pcall(function() return L:Release() end)
+    if not ok then return { error = 'This needs the newer opslabs-license — restart the server first, or release it in the OPSHUB client portal' } end
+    return { ok = true }
+end)
+
 -- OPS Hub connection (multi-server, opslabs-connect): status, pairing code, forget the paired token
 
 local function hubConnect()

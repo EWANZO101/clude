@@ -28,8 +28,8 @@ ServerConfig.OAuth = {
 
 -- Login for the Developer app (on every phone, but locked behind this login).
 ServerConfig.DevLogin = {
-    Email = 'opsphone@ops.com',
-    Password = 'change-me',
+    Email = 'admin',          -- Developer app sign-in (a username or an email)
+    Password = 'admin',       -- change it for a public server
 
     -- brute-force protection: after this many wrong attempts the player has to wait
     MaxAttempts = 5,

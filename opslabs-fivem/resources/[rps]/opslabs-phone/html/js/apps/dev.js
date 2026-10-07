@@ -405,6 +405,74 @@ const DevPages = {
         OpsNetEditors.render(nav, { call: devRpc, load: 'devOpsRender', save: 'devOpsSaveRender', backLabel: 'Developer' });
     },
 
+    // OPSHUB license: what this server is licensed for, change the key, check in now, release it
+    license(nav) {
+        nav.push({
+            title: 'OPSHUB License',
+            grouped: true,
+            backLabel: 'Developer',
+            render(c) {
+                const fmt = (t) => (t ? new Date(t * 1000).toLocaleString(Phone.locale, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
+                const draw = async () => {
+                    const r = await devRpc('devLicenseState');
+                    if (!r) return;
+                    if (!r.installed) {
+                        c.innerHTML = `<div class="group-footer" style="margin:20px 16px">The <b data-no-i18n>opslabs-license</b> resource isn't running — nothing OPS works without it. Start it in server.cfg (it's part of <span data-no-i18n>ensure [rps]</span>).</div>`;
+                        return;
+                    }
+                    const s = r.state || {};
+                    const st = { active: ['Active', '#34c759'], suspended: ['Suspended', '#ff9500'], revoked: ['Revoked', '#ff3b30'], expired: ['Expired', '#ff9500'],
+                        unlicensed: ['Not activated', '#8e8e93'], starting: ['Checking…', '#8e8e93'] }[s.status] || ['Not valid', '#ff3b30'];
+                    c.innerHTML = `
+                        <div class="group" style="margin-top:12px">
+                            <div class="row has-icon"><span class="ri" style="background:${st[1]}"><i class="fa-solid fa-key"></i></span><div class="grow">${st[0]}<div class="sub" style="white-space:normal">${esc(s.message || '')}</div></div></div>
+                            ${s.keyTail ? `<div class="row"><span class="lbl">Key</span><span class="value" data-no-i18n>OPSHUB-••••-••••-••••-${esc(s.keyTail)}</span></div>` : ''}
+                            ${s.customer ? `<div class="row"><span class="lbl">Licensed to</span><span class="value" data-no-i18n>${esc(s.customer)}</span></div>` : ''}
+                            <div class="row"><span class="lbl">Modules</span><span class="value">${s.allowAll ? 'Allow All' : (s.modules || []).length}</span></div>
+                            ${s.instance ? `<div class="row"><span class="lbl">Instance</span><span class="value" data-no-i18n>#${esc(String(s.instance))}</span></div>` : ''}
+                            <div class="row"><span class="lbl">Expires</span><span class="value">${s.expiresAt ? fmt(s.expiresAt) : 'Never'}</span></div>
+                            <div class="row"><span class="lbl">Session until</span><span class="value">${fmt(s.validUntil)}</span></div>
+                            <div class="row"><span class="lbl">Last check-in</span><span class="value">${fmt(s.checkedAt)}</span></div>
+                        </div>
+                        <div class="group" style="margin-top:12px">
+                            <div class="row tap has-icon" data-act="key"><span class="ri" style="background:#5b3df5"><i class="fa-solid fa-key"></i></span><div class="grow">${s.status === 'active' ? 'Change license key' : 'Enter license key'}</div></div>
+                            <div class="row tap has-icon" data-act="refresh"><span class="ri" style="background:#007aff"><i class="fa-solid fa-rotate"></i></span><div class="grow">Check in with OPSHUB now</div></div>
+                            ${s.status === 'active' ? `<div class="row tap has-icon" data-act="release"><span class="ri" style="background:#ff3b30"><i class="fa-solid fa-link-slash"></i></span><div class="grow">Release this server</div></div>` : ''}
+                        </div>
+                        <div class="group-footer">Keys, modules and installations are managed on OPSHUB: <span data-no-i18n>opsphone-store.opslabsystems.cloud/license</span>. Changes made there reach this server at its next check-in.</div>`;
+                };
+                c.innerHTML = '<div class="spinner"></div>';
+                draw();
+                c.addEventListener('click', async (e) => {
+                    const a = e.target.closest('[data-act]');
+                    if (!a) return;
+                    if (a.dataset.act === 'key') {
+                        let key = await UI.prompt('OPSHUB license key', 'Paste the key from your OPSHUB client portal.', { placeholder: 'OPSHUB-XXXX-XXXX-XXXX-XXXX' });
+                        if (!key) return;
+                        key = key.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+                        if (!/^OPSHUB(-[A-Z0-9]{4}){4}$/.test(key)) return UI.alert({ title: 'Not an OPSHUB key', message: 'It looks like OPSHUB-XXXX-XXXX-XXXX-XXXX.' });
+                        c.innerHTML = '<div class="spinner"></div>';
+                        const r = await devRpc('devLicenseKey', { key });
+                        if (r && r.error) UI.alert({ title: "Couldn't activate", message: r.error });
+                        else if (r) toast('License activated');
+                        return draw();
+                    }
+                    if (a.dataset.act === 'refresh') {
+                        const r = await devRpc('devLicenseRefresh');
+                        if (r && r.error) UI.alert({ title: 'Check-in failed', message: r.error });
+                        return draw();
+                    }
+                    if (a.dataset.act === 'release') {
+                        if (!(await UI.confirm('Release this server?', 'OPS stops running here until a key is entered again (the phone shows the license screen).', 'Release', true))) return;
+                        const r = await devRpc('devLicenseRelease');
+                        if (r && r.error) UI.alert({ title: "Couldn't release", message: r.error });
+                        return draw();
+                    }
+                });
+            },
+        });
+    },
+
     // multi-server OPS: connect this server to the OPS Hub (/new-hub) with a pairing code — no file editing
     opshub(nav) {
         nav.push({
@@ -533,7 +601,7 @@ const DevApp = {
                         <h1>Developer</h1>
                         <p>Sign in to manage map locations, wallpapers, phone numbers and more.</p>
                         <div class="group dl-fields">
-                            <div class="row"><input class="field" data-f="email" type="email" placeholder="Email" autocomplete="off" spellcheck="false"></div>
+                            <div class="row"><input class="field" data-f="email" type="text" placeholder="Username or email" autocomplete="off" spellcheck="false" autocapitalize="off"></div>
                             <div class="row"><input class="field" data-f="password" type="password" placeholder="Password" autocomplete="off"></div>
                         </div>
                         <div class="dl-error"></div>
@@ -604,6 +672,7 @@ const DevApp = {
                         <div class="row tap has-icon" data-p="netfaults"><span class="ri" style="background:#ff3b30"><i class="fa-solid fa-triangle-exclamation"></i></span><div class="grow">Network Faults</div><i class="fa-solid fa-chevron-right chev"></i></div>
                         <div class="row tap has-icon" data-p="engpay"><span class="ri" style="background:#34c759"><i class="fa-solid fa-sack-dollar"></i></span><div class="grow">Engineer Pay</div><i class="fa-solid fa-chevron-right chev"></i></div>
                         <div class="row tap has-icon" data-p="render"><span class="ri" style="background:#5856d6"><i class="fa-solid fa-eye"></i></span><div class="grow">Render Distance</div><i class="fa-solid fa-chevron-right chev"></i></div>
+                        <div class="row tap has-icon" data-p="license"><span class="ri" style="background:#7c5cff"><i class="fa-solid fa-key"></i></span><div class="grow">OPSHUB License</div><i class="fa-solid fa-chevron-right chev"></i></div>
                         <div class="row tap has-icon" data-p="opshub"><span class="ri" style="background:#5b3df5"><i class="fa-solid fa-tower-broadcast"></i></span><div class="grow">OPS Hub Connection</div><i class="fa-solid fa-chevron-right chev"></i></div>
                     </div>
                     <div class="group-header">Debug</div>
