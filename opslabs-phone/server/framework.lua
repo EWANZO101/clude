@@ -128,6 +128,11 @@ function FW.ItemCount(src, item)
             if ok then return tonumber(n) or 0 end
         end
     end
+    -- rps_lib not running: ox_inventory directly (ESX's own inventory calls don't see ox_inventory's items)
+    if GetResourceState('ox_inventory') == 'started' then
+        local ok, n = pcall(function() return exports.ox_inventory:GetItemCount(src, item) end)
+        if ok and n then return tonumber(n) or 0 end
+    end
     local x = esx() and esx().GetPlayerFromId(src)
     local inv = x and x.getInventoryItem and x.getInventoryItem(item)
     return inv and (inv.count or inv.amount or 0) or 0

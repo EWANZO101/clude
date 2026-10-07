@@ -18,7 +18,9 @@ Config.CheckEvery = 120
 Config.Enforce = true
 
 -- never stopped by licensing (the phone shows its own license screen when it isn't licensed)
-Config.Protected = { ['opslabs-license'] = true, ['opslabs-phone'] = true }
+-- rps_lib too: it's the framework bridge the phone (and so the license screen) and every other script start from.
+-- Its actions are still checked by the guard like everything else.
+Config.Protected = { ['opslabs-license'] = true, ['opslabs-phone'] = true, ['rps_lib'] = true }
 
 -- who may enter / change the key in game: this ACE (add_ace group.admin opshub.license allow), or anyone with 'command'
 Config.AdminAce = 'opshub.license'
