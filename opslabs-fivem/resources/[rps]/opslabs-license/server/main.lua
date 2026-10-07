@@ -174,6 +174,7 @@ end
 -- activate / check in / release
 ---------------------------------------------------------------------------
 local busy = false
+local refusedKeys = {}            -- keys OPSHUB turned down this run: not tried again until they change
 
 --- activate `key` for this instance. Returns true or an error message.
 local function activate(key, who)
@@ -183,6 +184,11 @@ local function activate(key, who)
         version = VERSION, resources = ourResources() })
     if r.status ~= 200 or not r.data.ok then
         local msg = r.data.error or (r.status == 0 and 'OPSHUB can\'t be reached right now' or ('OPSHUB said no (%d)'):format(r.status))
+        if r.status == 403 or r.status == 400 then
+            -- OPSHUB refused this key (unknown, revoked, re-keyed…): forget it so the phone's license screen asks for a new one
+            refusedKeys[key] = true
+            if kv('license_key') == key then setKv('license_key', nil) end
+        end
         log(('activation failed%s: %s'):format(who and (' (' .. who .. ')') or '', msg), 1)
         return msg
     end
@@ -205,7 +211,7 @@ local function checkIn()
     local iid, secret = kv('instance_id'), kv('instance_secret')
     if not iid or not secret then
         local key = licenseKey()
-        if key then return activate(key, 'config') end
+        if key and not refusedKeys[key] and activate(key, 'config') == true then return true end
         return unlicensed('No OPSHUB license yet — an admin enters the key on the OPS Phone (or in opslabs-license/config.lua)')
     end
     local usage = Usage
@@ -224,10 +230,10 @@ local function checkIn()
     end
     if r.status == 401 then
         -- the instance was released (portal / admin) or the secret is gone: try the key again
-        setKv('instance_id', nil) setKv('instance_secret', nil)
+        setKv('instance_id', nil) setKv('instance_secret', nil) setKv('cert', nil) setKv('sig', nil)
         local key = licenseKey()
-        if key then return activate(key, 'reactivate') end
-        return unlicensed('This server was released from its OPSHUB license — enter the key again')
+        if key and not refusedKeys[key] and activate(key, 'reactivate') == true then return true end
+        return unlicensed('This server was released from its OPSHUB license — an admin enters the key on the OPS Phone')
     end
     if r.data.cert then
         local c, why = verify(r.data.cert, r.data.sig)
@@ -310,6 +316,7 @@ exports('Activate', function(src, key)
     if not isAdmin(src) then return 'Only a server admin can activate the license' end
     if busy then return 'Already talking to OPSHUB — try again in a moment' end
     busy = true
+    refusedKeys[tostring(key or ''):upper():gsub('%s', '')] = nil
     local ok, res = pcall(activate, key, src ~= 0 and GetPlayerName(src) or 'console')
     busy = false
     return ok and res or 'Activation failed'

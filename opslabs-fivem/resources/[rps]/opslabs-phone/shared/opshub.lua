@@ -4,7 +4,7 @@
 OPSHUB_OPEN = OPSHUB_OPEN or {}
 for _, name in ipairs({
     -- server callbacks (the phone's NUI calls arrive as opslabs-phone:<name>)
-    'opslabs-phone:init', 'opslabs-phone:setupInfo', 'opslabs-phone:setupCheck', 'opslabs-phone:completeSetup',
+    'opslabs-phone:init', 'opslabs-phone:canOpen', 'opslabs-phone:setupInfo', 'opslabs-phone:setupCheck', 'opslabs-phone:completeSetup',
     'opslabs-phone:saveSettings', 'opslabs-phone:licenseState', 'opslabs-phone:licenseActivate',
     -- client NUI plumbing (rpc relays to the callbacks above, which are checked on the server)
     'rpc', 'close', 'inputFocus', 'getWorld', 'getLocation', 'notifyGame',
