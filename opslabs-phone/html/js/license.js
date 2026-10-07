@@ -73,7 +73,7 @@ const License = {
             h.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'lic-key' && !$('#lic-go').disabled) this.activate(); });
             h.addEventListener('click', (e) => {
                 if (e.target.closest('#lic-go')) this.activate();
-                if (e.target.closest('#lic-retry')) nui('licenseState').then((s) => s && this.update(s));
+                if (e.target.closest('#lic-retry')) nui('rpc', { name: 'licenseState', data: {} }).then((s) => s && this.update(s));   // through the phone's server relay, never cached
             });
         }
         return h;
@@ -120,7 +120,7 @@ const License = {
         const mark = (i, cls) => steps[i] && steps[i].classList.add(cls);
         mark(0, 'run');
         const t1 = setTimeout(() => { mark(0, 'done'); mark(1, 'run'); }, 700);
-        const r = await nui('licenseActivate', { key });
+        const r = await nui('rpc', { name: 'licenseActivate', data: { key } });   // → server/license.lua → opslabs-license → OPSHUB
         clearTimeout(t1);
         this._busy = false;
         if (!r || r.error) {
