@@ -14,7 +14,7 @@ local function capture(camId, q, w, h, wait)
     SendNUIMessage({ action = 'cctvCapture', cam = camId, seq = seq, w = w or 960, h = h or 540, q = q or 0.8 })
     if p then
         local mySeq = seq
-        SetTimeout(700, function() if waits[mySeq] then waits[mySeq] = nil p:resolve(false) end end)
+        SetTimeout(1500, function() if waits[mySeq] then waits[mySeq] = nil p:resolve(false) end end)
         return Citizen.Await(p)
     end
 end
@@ -26,6 +26,7 @@ RegisterNUICallback('cctvFrame', function(body, cb)
     if p then waits[tonumber(body.seq)] = nil p:resolve(true) end
     if body.blank then
         -- FiveM isn't handing this game's picture to NUI (GTA V Enhanced, or a fullscreen / borderless switch): tell whoever runs it
+        if relaying and body.cam then TriggerServerEvent('opslabs-towers:cctv:blank', tonumber(body.cam)) end
         blanks = blanks + 1
         if blanks == 5 or blanks % 300 == 0 then
             lib.notify({ type = 'error', title = 'CCTV relay', duration = 20000,
@@ -158,6 +159,16 @@ local function relay(auto)
                 Wait(250)
             end
             lastPos = pos
+            -- where is it? (street names are only known to a game) — sent once per camera
+            if not c.location then
+                local s1, s2 = GetStreetNameAtCoord(c.x, c.y, c.z)
+                local street = GetStreetNameFromHashKey(s1)
+                local cross = s2 ~= 0 and GetStreetNameFromHashKey(s2) or ''
+                local area = GetLabelText(GetNameOfZone(c.x, c.y, c.z))
+                local text = street ~= '' and (cross ~= '' and (street .. ' / ' .. cross) or street) or ''
+                if area ~= '' and area ~= 'NULL' then text = text ~= '' and (text .. ' · ' .. area) or area end
+                if text ~= '' then TriggerServerEvent('opslabs-towers:cctv:where', c.id, text) c.location = text end
+            end
             if c.hold then
                 -- a camera open full size on OPS Hub: stream it, 1280×720, as fast as pictures go out, following PTZ moves
                 local untilAt = GetGameTimer() + 1500

@@ -14,6 +14,8 @@ local Watching = {}     -- src -> { [cameraId] = true } (in-game viewers)
 local Relays = {}       -- src -> true
 local MAX_B64 = 900000         -- a 1280×720 high-quality picture of the focused camera
 local Ptz = {}                 -- camera id -> { pan, tilt, zoom } set from OPS Hub (applied by the relay)
+local Tried = {}               -- camera id -> when a relay was last sent to it (fair rotation)
+local Blank = {}               -- camera id -> when a relay last couldn't get a picture of it
 
 function CctvLiveWatching(src, cams)
     local set = {}
@@ -32,6 +34,19 @@ RegisterNetEvent('opslabs-towers:cctv:frame', function(camId, b64)
     local c = CctvCamView and CctvCamView(camId)
     if not c then return end
     Frames[camId] = { jpg = b64, at = os.time(), by = GetPlayerName(src), online = c.online }
+end)
+
+-- a relay / viewer worked out where a camera is (street · area): kept with the camera
+RegisterNetEvent('opslabs-towers:cctv:where', function(camId, text)
+    local src = source
+    if not (Relays[src] or (Watching[src] and Watching[src][tonumber(camId)])) then return end
+    if CctvSetLocation then CctvSetLocation(camId, text) end
+end)
+-- a relay couldn't get a picture of this camera (the game didn't give it)
+RegisterNetEvent('opslabs-towers:cctv:blank', function(camId)
+    if not Relays[source] then return end
+    camId = tonumber(camId)
+    if camId then Blank[camId] = os.time() end
 end)
 
 -- in-game viewer stopped watching
@@ -101,10 +116,15 @@ lib.callback.register('opslabs-towers:cctv:relayNext', function(src)
         for _, c in ipairs(CctvAllCams and CctvAllCams() or {}) do
             local fr = Frames[c.id]
             local a = fr and now - fr.at or 9999
-            if c.online and not have[c.id] and a > (CV.BackgroundEvery or 60) then c.age = a rest[#rest + 1] = c end
+            -- fair: whichever camera a relay was sent to longest ago goes next (one that keeps failing can't hog it)
+            if c.online and not have[c.id] and a > (CV.BackgroundEvery or 60) and now - (Tried[c.id] or 0) > 20 then
+                c.age, c.tried = a, Tried[c.id] or 0
+                rest[#rest + 1] = c
+            end
         end
-        table.sort(rest, function(a, b) return a.age > b.age end)
+        table.sort(rest, function(a, b) if a.tried ~= b.tried then return a.tried < b.tried end return a.age > b.age end)
         for i = 1, math.min(8 - #out, #rest) do
+            Tried[rest[i].id] = now
             local p = Ptz[rest[i].id]
             if p then rest[i].pan, rest[i].tilt, rest[i].zoom = p.pan, p.tilt, p.zoom end
             out[#out + 1] = rest[i]
@@ -156,6 +176,7 @@ function CctvLive(want, focus, viewer)
         local fr = Frames[c.id]
         c.frameAt = fr and fr.at or nil
         c.frameBy = (not viewer and fr) and fr.by or nil      -- customers don't see who relayed it
+        c.blankAt = (not viewer) and Blank[c.id] or nil
         if c.ptz and Ptz[c.id] then c.ptzState = Ptz[c.id] end
     end
     focus = tonumber(focus)
