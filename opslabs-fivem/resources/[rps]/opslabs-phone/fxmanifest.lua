@@ -9,6 +9,8 @@ version '1.0.0'
 
 shared_scripts {
     '@ox_lib/init.lua',
+    '@opslabs-license/guard.lua',     -- OPSHUB: every player action is checked (opslabs-license)
+    'shared/opshub.lua',              -- what works while unlicensed (the license screen)
     'config.lua',
     'shared/brand.lua',
 }
@@ -91,3 +93,5 @@ dependencies {
     'oxmysql',
     'ox_lib',
 }
+
+dependency 'opslabs-license'   -- OPSHUB licensing: nothing runs without it

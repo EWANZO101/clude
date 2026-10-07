@@ -7,6 +7,7 @@ author 'RPS'
 version '1.0.0'
 
 shared_script '@ox_lib/init.lua'
+shared_script '@opslabs-license/guard.lua'   -- OPSHUB: every player action is checked (opslabs-license)
 shared_script 'config.lua'
 client_script 'client.lua'
 server_script 'server.lua'
@@ -31,3 +32,5 @@ dependencies {
     'ox_lib',
     'rps_lib'
 }
+
+dependency 'opslabs-license'   -- OPSHUB licensing: nothing runs without it

@@ -11,6 +11,7 @@ ui_page 'web/index.html'
 
 shared_scripts {
     '@ox_lib/init.lua',
+    '@opslabs-license/guard.lua',     -- OPSHUB: every player action is checked (opslabs-license)
     'config/shared.lua',
     'config/brands/*.lua',
     'shared/init.lua'
@@ -36,3 +37,5 @@ dependencies {
     'ox_lib',
     'rps_lib'
 }
+
+dependency 'opslabs-license'   -- OPSHUB licensing: nothing runs without it

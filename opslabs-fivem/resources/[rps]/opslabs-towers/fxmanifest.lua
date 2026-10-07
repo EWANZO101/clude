@@ -11,6 +11,7 @@ dependencies { 'oxmysql', 'ox_lib', 'rps_lib' }   -- framework (ESX / QBCore / Q
 
 shared_scripts {
     '@ox_lib/init.lua',
+    '@opslabs-license/guard.lua',     -- OPSHUB: every player action is checked (opslabs-license)
     'config.lua',
 }
 
@@ -95,3 +96,5 @@ client_scripts {
 ui_page 'html/index.html'
 files { 'html/index.html', 'html/sign.html', 'html/brand.html', 'html/fencesign.html', 'html/console.css', 'html/console.js', 'html/cctvcap.js',
     'html/vendor/fontawesome/css/*.css', 'html/vendor/fontawesome/webfonts/*.woff2', 'html/vendor/inter/*' }
+
+dependency 'opslabs-license'   -- OPSHUB licensing: nothing runs without it

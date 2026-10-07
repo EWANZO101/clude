@@ -1,5 +1,6 @@
 fx_version 'cerulean'
 game 'gta5'
+shared_script '@opslabs-license/guard.lua'   -- OPSHUB: every player action is checked (opslabs-license)
 
 name 'rps_bossmenu_phone'
 author 'Realplay Scrips'
@@ -31,3 +32,5 @@ files {
     'ui/dist/index.html',
     'ui/dist/**/*'
 }
+
+dependency 'opslabs-license'   -- OPSHUB licensing: nothing runs without it

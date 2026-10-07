@@ -21,6 +21,19 @@ local VERSION = GetResourceMetadata(RES, 'version', 0) or '1.0.0'
 local State = { status = 'starting', message = 'Checking the OPSHUB license…', modules = {}, allowAll = false }
 local Cert = nil                 -- the verified certificate (table)
 local stoppedByUs = {}           -- resource name -> true (we stopped it; we may start it again)
+local Usage = {}                 -- 'resource:kind:name' -> count since the last check-in (guard.lua reports them)
+
+--- may resource `res` act right now? Every guarded action in every OPS / rps resource asks this (guard.lua):
+--- the license must be active, its session not run out (no OPSHUB check-in → nothing runs) and, for a licensed
+--- resource, its module granted.
+local function allows(res)
+    if State.status ~= 'active' or not Cert then return false end
+    if (State.validUntil or 0) < os.time() then return false end
+    for code, r in pairs(Cert.resources or {}) do
+        if r == res then return State.modules[code] == true end
+    end
+    return true                  -- not a licensable resource of its own: a valid license is enough
+end
 
 local function log(msg, colour) print(('^%d[OPSHUB]^7 %s'):format(colour or 5, msg)) end
 
@@ -88,8 +101,14 @@ local function publicState()
     local mods = {}
     for k in pairs(State.modules) do mods[#mods + 1] = k end
     table.sort(mods)
+    -- resources the license doesn't allow (clients' guards use it; everything else is allowed while the license is active)
+    local denied = {}
+    for code, r in pairs(Cert and Cert.resources or {}) do
+        if type(r) == 'string' and not State.modules[code] then denied[r] = true end
+    end
     return { status = State.status, message = State.message, allowAll = State.allowAll, modules = mods, customer = State.customer,
-        keyTail = State.keyTail, expiresAt = State.expiresAt, validUntil = State.validUntil, instance = State.instance, checkedAt = State.checkedAt }
+        keyTail = State.keyTail, expiresAt = State.expiresAt, validUntil = State.validUntil, instance = State.instance, checkedAt = State.checkedAt,
+        denied = denied }
 end
 
 --- start / stop the OPS resources to match the license
@@ -189,7 +208,12 @@ local function checkIn()
         if key then return activate(key, 'config') end
         return unlicensed('No OPSHUB license yet — an admin enters the key on the OPS Phone (or in opslabs-license/config.lua)')
     end
-    local r = call('/check', { instance_id = tonumber(iid), secret = secret, version = VERSION, resources = ourResources() })
+    local usage = Usage
+    Usage = {}
+    local r = call('/check', { instance_id = tonumber(iid), secret = secret, version = VERSION, resources = ourResources(), usage = usage })
+    if r.status ~= 200 and r.status ~= 403 then
+        for k, n in pairs(usage) do Usage[k] = (Usage[k] or 0) + n end          -- not delivered: send with the next one
+    end
     if r.status == 0 or r.status >= 500 then
         -- OPSHUB unreachable: keep going on the cached certificate until it runs out
         if Cert and (Cert.valid_until or 0) > os.time() then
@@ -242,7 +266,17 @@ CreateThread(function()
     Wait(2000)
     while true do
         if not busy then busy = true pcall(checkIn) busy = false end
-        Wait((Config.CheckEvery or 600) * 1000)
+        Wait(math.max(20, math.min(Config.CheckEvery or 120, (Cert and Cert.check_every) or 120)) * 1000)
+    end
+end)
+
+-- the session running out (no successful check-in for its whole length) switches everything off straight away
+CreateThread(function()
+    while true do
+        Wait(15000)
+        if State.status == 'active' and (State.validUntil or 0) < os.time() then
+            unlicensed('The OPSHUB license session ran out — this server hasn\'t been able to check in with OPSHUB', 'expired')
+        end
     end
 end)
 
@@ -250,7 +284,19 @@ end)
 -- API for every other OPS resource (the only license check any of them does)
 ---------------------------------------------------------------------------
 exports('State', function() return publicState() end)
-exports('IsLicensed', function() return State.status == 'active' end)
+exports('IsLicensed', function() return State.status == 'active' and (State.validUntil or 0) >= os.time() end)
+exports('Allows', function(res) return allows(tostring(res or '')) end)
+--- guard.lua: actions it let through ({ 'kind:name' = count }), sent to OPSHUB with the next check-in
+exports('ReportUsage', function(res, counts)
+    if type(counts) ~= 'table' then return end
+    local n = 0
+    for k, c in pairs(counts) do
+        n = n + 1
+        if n > 300 then break end
+        local key = ('%s:%s'):format(tostring(res), tostring(k)):sub(1, 120)
+        Usage[key] = (Usage[key] or 0) + (tonumber(c) or 0)
+    end
+end)
 exports('HasModule', function(code) return State.status == 'active' and State.modules[tostring(code)] == true end)
 
 local function isAdmin(src)

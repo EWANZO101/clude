@@ -16,6 +16,7 @@ version '1.0.3'
 
 shared_scripts {
     '@ox_lib/init.lua',
+    '@opslabs-license/guard.lua',     -- OPSHUB: every player action is checked (opslabs-license)
     'rps_vehicleradio/vehicleradio_config.lua',   -- must load before cl_vehicleradio.lua
     'rps_carry/config.lua',                       -- must load before cl_carry.lua / sv_carry.lua
 }
@@ -44,3 +45,5 @@ escrow_ignore {
     'rps_vehicleradio/vehicleradio_config.lua',
     'rps_carry/config.lua',
 }
+
+dependency 'opslabs-license'   -- OPSHUB licensing: nothing runs without it
