@@ -328,6 +328,11 @@
    "id": "store.manage",
    "group": "Market",
    "label": "Edit the company store: branding, packages, plans and products"
+  },
+  {
+   "id": "alerts.send",
+   "group": "Emergency Alerts",
+   "label": "Send and cancel emergency alerts (only for companies with the Emergency Alerts premium)"
   }
  ],
  "roles": [
@@ -374,7 +379,8 @@
     "web.manage",
     "market.view",
     "market.manage",
-    "store.manage"
+    "store.manage",
+    "alerts.send"
    ]
   },
   {
@@ -402,7 +408,8 @@
     "tickets.manage",
     "training.manage",
     "market.view",
-    "store.manage"
+    "store.manage",
+    "alerts.send"
    ]
   },
   {

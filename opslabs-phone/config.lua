@@ -171,6 +171,19 @@ Config.SafeMag = {
 -- once you own an accessory; players can hide it in Settings → Battery.
 Config.BatteriesWidget = true
 
+-- OPS Emergency Alerts (server/emergency.lua, Emergency Alerts app): like Wireless Emergency Alerts. A company can send
+-- them only once a Hub admin switches on its premium "Emergency Alerts" (OPS Hub → Settings → Companies), and only
+-- members whose role has the alerts.send permission. Sent from the phone or from OPS Hub → Emergency alerts, to the
+-- whole city, to everyone within a radius of a place (players who walk in later get it too) or to the company's staff.
+Config.Emergency = {
+    Enabled = true,
+    Cooldown = 60,                       -- seconds between two alerts from the same company
+    MaxLive = 3,                         -- live alerts per company at once
+    Radii = { 250, 500, 1000, 2000, 4000 },  -- area choices, metres
+    Hours = { 1, 3, 6, 12, 24 },         -- how long an alert stays live (players who come online / walk in get it)
+    AreaBlip = true,                     -- show the alert area on the map while it is live
+}
+
 Config.DisableControlsWhileOpen = true
 
 -- Calls

@@ -275,6 +275,7 @@ local SETTING_TYPES = {
     traffic = 'table',      -- OPS Traffic alert choices: { alerts = bool, accident = bool, closure = bool, … }
     bluetooth = 'boolean',
     buds = 'table',         -- OPS Buds: { paired, name, mode, earDetect, convAware } (server/buds.lua CleanBuds)
+    alertsInfo = 'boolean', alertsWarning = 'boolean', alertsSevere = 'boolean',   -- Emergency Alerts: which kinds sound (extreme always does)
 }
 
 --- installed-apps map from the Store: only { appId = true/false }
