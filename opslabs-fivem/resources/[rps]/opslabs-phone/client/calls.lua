@@ -13,7 +13,8 @@ RegisterNetEvent(PREFIX .. 'push', function(action, data)
         if not PhoneOpen then SendNUIMessage({ action = 'peek' }) end
     elseif action == 'callAccepted' then
         InCall = true
-        setVoiceChannel(data.channel)
+        -- channel 0: a call with OPS Hub (server/voip.lua) — no pma-voice call channel, the bridge listens in your own
+        if data.channel and data.channel ~= 0 then setVoiceChannel(data.channel) end
         PlayPhoneAnim('call')
     elseif action == 'callEnded' then
         InCall = false

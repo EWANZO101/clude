@@ -47,7 +47,8 @@ end
 local function generateNumber()
     while true do
         local number = Config.NumberFormat:gsub('X', function() return tostring(math.random(0, 9)) end)
-        local exists = MySQL.scalar.await('SELECT 1 FROM opslabs_phone_users WHERE phone_number = ?', { number })
+        local reserved = Config.Voip and Config.Voip.Reserved and number:match(Config.Voip.Reserved)   -- OPS Hub lines
+        local exists = reserved or MySQL.scalar.await('SELECT 1 FROM opslabs_phone_users WHERE phone_number = ?', { number })
         if not exists then return number end
     end
 end
@@ -275,6 +276,7 @@ local SETTING_TYPES = {
     traffic = 'table',      -- OPS Traffic alert choices: { alerts = bool, accident = bool, closure = bool, … }
     bluetooth = 'boolean',
     buds = 'table',         -- OPS Buds: { paired, name, mode, earDetect, convAware } (server/buds.lua CleanBuds)
+    alertsInfo = 'boolean', alertsWarning = 'boolean', alertsSevere = 'boolean',   -- Emergency Alerts: which kinds sound (extreme always does)
 }
 
 --- installed-apps map from the Store: only { appId = true/false }

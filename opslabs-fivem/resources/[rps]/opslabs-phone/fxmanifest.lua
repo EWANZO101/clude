@@ -34,6 +34,7 @@ client_scripts {
     'client/platform.lua',
     'client/training.lua',
     'client/traffic.lua',
+    'client/emergency.lua',
 }
 
 server_scripts {
@@ -73,6 +74,9 @@ server_scripts {
     'server/dock.lua',
     'server/buds.lua',
     'server/safemag.lua',
+    'server/emergency.lua',           -- OPS Emergency Alerts (premium per company, OPS Hub → Companies)
+    'server/voip.js',
+    'server/voip.lua',                -- OPS Voice: calls to and from OPS Hub lines (the OPS Voice bridge)
 }
 
 ui_page 'html/index.html'

@@ -328,6 +328,16 @@
    "id": "store.manage",
    "group": "Market",
    "label": "Edit the company store: branding, packages, plans and products"
+  },
+  {
+   "id": "alerts.send",
+   "group": "Emergency Alerts",
+   "label": "Send and cancel emergency alerts (only for companies with the Emergency Alerts premium)"
+  },
+  {
+   "id": "phone.call",
+   "group": "OPS Voice",
+   "label": "Answer and make calls on the company's OPS Hub phone line"
   }
  ],
  "roles": [
@@ -374,7 +384,9 @@
     "web.manage",
     "market.view",
     "market.manage",
-    "store.manage"
+    "store.manage",
+    "alerts.send",
+    "phone.call"
    ]
   },
   {
@@ -402,7 +414,9 @@
     "tickets.manage",
     "training.manage",
     "market.view",
-    "store.manage"
+    "store.manage",
+    "alerts.send",
+    "phone.call"
    ]
   },
   {
@@ -421,7 +435,8 @@
     "quotes.manage",
     "stock.manage",
     "tickets.manage",
-    "market.view"
+    "market.view",
+    "phone.call"
    ]
   },
   {
@@ -435,7 +450,8 @@
     "jobs.view",
     "quotes.manage",
     "stock.manage",
-    "tickets.manage"
+    "tickets.manage",
+    "phone.call"
    ]
   },
   {
@@ -559,7 +575,8 @@
     "quotes.manage",
     "stock.manage",
     "tickets.manage",
-    "market.view"
+    "market.view",
+    "phone.call"
    ]
   },
   {

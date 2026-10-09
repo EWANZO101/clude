@@ -244,6 +244,18 @@ See `../OPS-SETUP.md` for the overview. In short:
 - **Items mode:** `Work.Mode = 'items'`, with depots, `ModelItems` and the definitions in `items/`.
 - **Live settings:** `ops_settings` overrides any `Config` value (OPS Hub → Settings, OPS Work → Admin settings) within 15 s. Clients get them via `GlobalState['opscfg:<resource>']`. Defaults and comments are published to `ops_config_dump`. Job types are edited in `ops_job_overrides` (live within 30 s). Catalogue sections (`catalog:<section>`) are written into `sql/ops_catalog.json` on start, so they apply after a restart; the original is kept as `sql/ops_catalog.default.json`.
 
+### Emergency Alerts (`server/emergency.lua`, `client/emergency.lua`, `html/js/apps/alerts.js` · OPS Hub → Emergency alerts)
+Wireless-Emergency-Alert style alerts that take over the screen with the alert tone (extreme and severe alerts sound
+even in Silent mode / Do Not Disturb). Four levels: Extreme, Severe, Warning, Information; sent to the whole city, to
+everyone within a radius of a place (the area shows on the map, and people who walk in while it is live get it too), or
+to a company's staff. Live alerts reach players who come online later as well.
+
+It is a **premium per company**: a Hub admin ticks *Emergency Alerts (premium)* on the company in OPS Hub → Settings →
+Companies. Members whose role has `alerts.send` (owner, director and manager by default) can then send and cancel alerts
+from the phone's **Alerts** app or from OPS Hub → Emergency alerts. Players choose which levels sound in the app (extreme
+is always on). Tuning: `Config.Emergency` (cooldown, live alerts per company, radii, durations, map blip). The table is
+`ops_emergency_alerts` (`sql/ops_emergency.sql`); OPS Hub needs `migrations/2026-10-08-emergency.sql` once for its grant.
+
 ### Preview the UI in a browser
 
 Open `html/index.html` directly in Chrome. It runs on built-in mock data, so you can work on the design without the game. In the browser console, `Mock.incomingCall()` and `Mock.message()` simulate events.

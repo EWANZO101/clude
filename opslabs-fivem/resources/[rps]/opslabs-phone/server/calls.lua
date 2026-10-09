@@ -1,12 +1,30 @@
 -- Voice calls. Audio is routed through pma-voice call channels; the server
 -- owns call state so neither side can join a channel it wasn't invited to.
+-- Calls to and from OPS Hub lines (server/voip.lua) have no player on the Hub end: call.hub = { bridgeId, line, label }
+-- and the audio goes through the OPS Voice bridge instead of a pma-voice channel.
 
-local calls = {}      -- [callId] = { id, caller, callee, callerNumber, calleeNumber, state, startedAt, logId }
+local calls = {}      -- [callId] = { id, caller, callee, callerNumber, calleeNumber, state, startedAt, logId, hub? }
 local inCall = {}     -- [source] = callId
 local nextCallId = 1000
 
 local function contactView(owner, number)
     return { number = number, name = ContactName(owner, number) }
+end
+
+--- the players on a call (an OPS Hub end has no player, so caller or callee can be nil)
+local function players(call)
+    local list = {}
+    if call.caller then list[#list + 1] = call.caller end
+    if call.callee then list[#list + 1] = call.callee end
+    return list
+end
+
+--- can `target` take a call to `number` from `fromNumber` right now?
+local function canRing(target, number, fromNumber)
+    return target and not inCall[target] and HasPhoneItem(target) and not (PhoneDead and PhoneDead(target))
+        and not (Phones[target].settings.airplane) and not IsBlocked(number, fromNumber)
+        and (not Carrier or Carrier.HasService(Phones[target].identifier))
+        and not (Carrier and Carrier.Network(target) and (Carrier.Network(target).cell or 0) <= 0)
 end
 
 local function finish(call, status)
@@ -19,20 +37,19 @@ local function finish(call, status)
     end
 
     Emit('call.ended', { from = call.callerNumber, to = call.calleeNumber, status = status, duration = duration })
+    if call.hub and not call.hub.quiet and Voip then Voip.Ended(call.hub.bridgeId, status) end
     -- minutes count against the caller's plan
     if Carrier and duration > 0 and call.callerIdentifier then Carrier.Record(call.callerIdentifier, 'call', duration) end
 
-    for _, src in ipairs({ call.caller, call.callee }) do
-        if src then
-            inCall[src] = nil
-            Push(src, 'callEnded', { id = call.id, status = status, duration = duration })
-        end
+    for _, src in ipairs(players(call)) do
+        inCall[src] = nil
+        Push(src, 'callEnded', { id = call.id, status = status, duration = duration })
     end
 
     if status == 'missed' and call.callee then
         Notify(call.callee, {
             app = 'phone', title = 'Missed Call', icon = 'fa-phone-slash',
-            body = ContactName(call.calleeNumber, call.callerNumber) or call.callerNumber,
+            body = ContactName(call.calleeNumber, call.callerNumber) or (call.hub and call.hub.label) or call.callerNumber,
             data = { number = call.callerNumber },
         })
     end
@@ -68,14 +85,22 @@ Register('startCall', function(src, phone, data)
         state = 'ringing', logId = logId, callerIdentifier = phone.identifier,
     }
 
-    local target = GetSourceByNumber(number)
-    local reachable = target and not inCall[target] and HasPhoneItem(target) and not (PhoneDead and PhoneDead(target))
-        and not (Phones[target].settings.airplane) and not IsBlocked(number, phone.number)
-        and (not Carrier or Carrier.HasService(Phones[target].identifier))
-        and not (Carrier and Carrier.Network(target) and (Carrier.Network(target).cell or 0) <= 0)
-
     calls[call.id] = call
     inCall[src] = call.id
+
+    -- an OPS Hub line: the bridge rings the softphones that have it open (nobody there: it rings out like any phone)
+    local line = Voip and Voip.Line(number)
+    if line then
+        call.hub = { line = number, label = line.label }
+        Voip.Incoming(call, phone)
+        SetTimeout(Config.Calls.RingTimeout * 1000, function()
+            if calls[call.id] == call and call.state == 'ringing' then finish(call, 'missed') end
+        end)
+        return { id = call.id, contact = { number = number, name = ContactName(phone.number, number) or line.label } }
+    end
+
+    local target = GetSourceByNumber(number)
+    local reachable = canRing(target, number, phone.number)
 
     if reachable then
         call.callee = target
@@ -98,8 +123,8 @@ Register('answerCall', function(src, _, data)
     if not call or call.callee ~= src or call.state ~= 'ringing' then return false end
     call.state = 'active'
     call.startedAt = os.time()
-    -- out of minutes: the network ends the call
-    local left = Carrier and Carrier.CallSecondsLeft(call.callerIdentifier)
+    -- out of minutes: the network ends the call (an OPS Hub caller has no plan)
+    local left = Carrier and call.callerIdentifier and Carrier.CallSecondsLeft(call.callerIdentifier)
     if left then
         SetTimeout(math.max(1, left) * 1000, function()
             if calls[call.id] == call and call.state == 'active' then
@@ -107,6 +132,12 @@ Register('answerCall', function(src, _, data)
                 finish(call, 'answered')
             end
         end)
+    end
+    if call.hub then
+        -- a call from OPS Hub: the bridge listens in this player's own voice channel, the Hub caller plays on the phone
+        Voip.Answered(call.hub.bridgeId, src)
+        Push(src, 'callAccepted', { id = call.id, channel = 0, voip = Voip.Playback(call.hub.bridgeId) })
+        return true
     end
     for _, s in ipairs({ call.caller, call.callee }) do
         Push(s, 'callAccepted', { id = call.id, channel = call.id })
@@ -155,8 +186,88 @@ AddEventHandler('opslabs-towers:changed', function(src, cov)
     local id = inCall[src]
     local call = id and calls[id]
     if not call then return end
-    for _, s in ipairs({ call.caller, call.callee }) do
-        if s then Notify(s, { app = 'phone', title = 'Call Failed', icon = 'fa-phone-slash', body = s == src and 'You lost signal.' or 'The other person lost signal.' }) end
+    for _, s in ipairs(players(call)) do
+        Notify(s, { app = 'phone', title = 'Call Failed', icon = 'fa-phone-slash', body = s == src and 'You lost signal.' or 'The other person lost signal.' })
     end
     finish(call, call.state == 'active' and 'answered' or 'missed')
 end)
+
+---------------------------------------------------------------------------
+-- OPS Hub end of a call (server/voip.lua: the bridge's REST routes)
+---------------------------------------------------------------------------
+HubCalls = {}
+
+--- OPS Hub dials a player. Returns the call, or nil + error ('no_number').
+function HubCalls.Dial(bridgeId, fromLine, label, to)
+    local number = NormalizeNumber(to)
+    if number == '' then return nil, 'no_number' end
+    if not MySQL.scalar.await('SELECT 1 FROM opslabs_phone_users WHERE phone_number = ?', { number }) then return nil, 'no_number' end
+
+    local logId = MySQL.insert.await('INSERT INTO opslabs_phone_calls (caller, callee, status) VALUES (?, ?, ?)', { fromLine, number, 'missed' })
+    nextCallId = nextCallId + 1
+    local call = {
+        id = nextCallId, callerNumber = fromLine, calleeNumber = number, state = 'ringing', logId = logId,
+        hub = { bridgeId = bridgeId, line = fromLine, label = label },
+    }
+    calls[call.id] = call
+
+    local target = GetSourceByNumber(number)
+    if canRing(target, number, fromLine) then
+        call.callee = target
+        inCall[target] = call.id
+        Push(target, 'incomingCall', { id = call.id, number = fromLine, name = ContactName(number, fromLine) or label })
+    end
+    SetTimeout(Config.Calls.RingTimeout * 1000, function()
+        if calls[call.id] == call and call.state == 'ringing' then finish(call, 'missed') end
+    end)
+    return call
+end
+
+--- a Hub user answered a player's call to a Hub line: returns the caller's server id
+function HubCalls.Answer(id, bridgeId)
+    local call = calls[tonumber(id)]
+    if not call or not call.hub or call.hub.bridgeId ~= bridgeId or call.state ~= 'ringing' or not call.caller then return nil end
+    call.state = 'active'
+    call.startedAt = os.time()
+    local left = Carrier and Carrier.CallSecondsLeft(call.callerIdentifier)
+    if left then
+        SetTimeout(math.max(1, left) * 1000, function()
+            if calls[call.id] == call and call.state == 'active' then
+                Notify(call.caller, { app = 'phone', title = 'Call ended', icon = 'fa-phone-slash', body = "You've run out of call minutes." })
+                finish(call, 'answered')
+            end
+        end)
+    end
+    Push(call.caller, 'callAccepted', { id = call.id, channel = 0, voip = Voip.Playback(bridgeId) })
+    return call.caller
+end
+
+--- the Hub end hung up / declined / gave up (the bridge already knows)
+function HubCalls.End(id, bridgeId, reason)
+    local call = calls[tonumber(id)]
+    if not call or not call.hub or call.hub.bridgeId ~= bridgeId then return false end
+    call.hub.quiet = true
+    local status = call.state == 'active' and 'answered' or (reason == 'declined' and 'declined' or 'missed')
+    finish(call, status)
+    return true
+end
+
+--- the bridge (re)started and knows no calls: end every call with an OPS Hub end, so nobody is left "on a call"
+function HubCalls.Reset()
+    local n = 0
+    for _, call in pairs(calls) do
+        if call.hub then
+            call.hub.quiet = true
+            finish(call, call.state == 'active' and 'answered' or 'missed')
+            n = n + 1
+        end
+    end
+    return n
+end
+
+--- the bridge couldn't ring anyone, or answered: remember its id for the call
+function HubCalls.SetBridge(id, bridgeId)
+    local call = calls[tonumber(id)]
+    if call and call.hub then call.hub.bridgeId = bridgeId end
+    return call
+end
