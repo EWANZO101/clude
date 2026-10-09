@@ -47,7 +47,8 @@ end
 local function generateNumber()
     while true do
         local number = Config.NumberFormat:gsub('X', function() return tostring(math.random(0, 9)) end)
-        local exists = MySQL.scalar.await('SELECT 1 FROM opslabs_phone_users WHERE phone_number = ?', { number })
+        local reserved = Config.Voip and Config.Voip.Reserved and number:match(Config.Voip.Reserved)   -- OPS Hub lines
+        local exists = reserved or MySQL.scalar.await('SELECT 1 FROM opslabs_phone_users WHERE phone_number = ?', { number })
         if not exists then return number end
     end
 end

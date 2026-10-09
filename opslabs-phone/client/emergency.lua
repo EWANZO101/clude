@@ -64,7 +64,38 @@ RegisterNUICallback('emergencyWaypoint', function(body, cb)
     cb(true)
 end)
 
+-- an alert while the phone is pocketed: a cursor to tap Acknowledge, while you keep walking/driving (no shooting meanwhile)
+local alertFocus = false
+RegisterNUICallback('emergencyFocus', function(body, cb)
+    local on = body and body.on == true
+    cb(true)
+    if PhoneOpen then alertFocus = false return end   -- the open phone owns the focus
+    if on == alertFocus then return end
+    alertFocus = on
+    SetNuiFocus(on, on)
+    SetNuiFocusKeepInput(on)
+    if not on then return end
+    CreateThread(function()
+        while alertFocus and not PhoneOpen do
+            DisableControlAction(0, 1, true)     -- look (the mouse is on the cursor)
+            DisableControlAction(0, 2, true)
+            DisableControlAction(0, 24, true)    -- attack
+            DisableControlAction(0, 25, true)    -- aim
+            DisableControlAction(0, 140, true)
+            DisableControlAction(0, 141, true)
+            DisableControlAction(0, 142, true)
+            DisableControlAction(0, 257, true)
+            DisableControlAction(0, 263, true)
+            DisableControlAction(0, 37, true)    -- weapon wheel
+            DisablePlayerFiring(PlayerId(), true)
+            Wait(0)
+        end
+        if PhoneOpen then alertFocus = false end
+    end)
+end)
+
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for id in pairs(blips) do dropBlip(id) end
+    if alertFocus and not PhoneOpen then SetNuiFocus(false, false); SetNuiFocusKeepInput(false) end
 end)

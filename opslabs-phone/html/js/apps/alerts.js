@@ -90,7 +90,7 @@ const EmergencyAlerts = {
                 <div><div class="ea-kind">${esc(a.severity === 'extreme' ? 'Emergency Alert' : s.name)}</div><div class="ea-from">${esc(a.company || 'OPS')} · ${esc(eaWhen(a.at))}</div></div></div>
             <div class="ea-body"><div class="ea-title">${esc(a.title)}</div><div class="ea-text">${esc(a.body)}</div>
                 <div class="ea-meta">${esc(eaWhere(a))}</div></div>
-            <div class="ea-actions">${a.audience === 'area' && a.x != null ? '<button data-ea="map">Show on map</button>' : ''}<button data-ea="ok">OK</button></div></div>`;
+            <div class="ea-actions">${a.audience === 'area' && a.x != null ? '<button data-ea="map">Show on map</button>' : ''}<button data-ea="ok"><i class="fa-solid fa-check"></i> Acknowledge</button></div></div>`;
     },
 
     render() {
@@ -116,13 +116,27 @@ const EmergencyAlerts = {
         if (typeof vibrate === 'function') vibrate();
         this.shown.set(a.id, a);
         this.render();
-        if (Phone.state !== 'open') Phone.peek(a.severity === 'info' ? 6000 : 12000);
+        if (Phone.state !== 'open') {
+            if (a.severity === 'info') Phone.peek(6000);
+            else { Phone.peek(0); this.focus(true); }           // pocketed: keep it up with a cursor until acknowledged
+        }
     },
+
+    // the mouse while the phone is pocketed — the game keeps playing (client/emergency.lua: emergencyFocus)
+    focused: false,
+    focus(on) {
+        if (on === this.focused) return;
+        this.focused = on;
+        nui('emergencyFocus', { on });
+    },
+    // anything still waiting to be acknowledged that needs the cursor
+    pending() { return [...this.shown.values()].some((a) => a.severity !== 'info'); },
 
     dismiss(id) {
         this.shown.delete(id);
         if (!this.shown.size) EATone.stop();
         this.render();
+        if (!this.pending() && Phone.state !== 'open') { this.focus(false); Phone.unpeek(); }
     },
 
     end(d) {
@@ -136,7 +150,14 @@ const EmergencyAlerts = {
 Phone.on('emergencyAlert', (a) => EmergencyAlerts.receive(a));
 Phone.on('emergencyEnd', (d) => EmergencyAlerts.end(d));
 Phone.on('emergencyChanged', () => { if (EAApp.root && EAApp.reload) EAApp.reload(); });
-Phone.on('reset', () => { EmergencyAlerts.shown.clear(); EATone.stop(); EmergencyAlerts.render(); });
+Phone.on('reset', () => { EmergencyAlerts.shown.clear(); EATone.stop(); EmergencyAlerts.render(); EmergencyAlerts.focus(false); });
+// opening the phone takes the mouse anyway; putting it away with an alert still up gives the cursor back for it
+Phone.on('open', () => { EmergencyAlerts.focused = false; });
+// Esc gives the mouse back without acknowledging: the alert stays on the phone for when it is opened
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && EmergencyAlerts.focused && Phone.state !== 'open') { EmergencyAlerts.focus(false); Phone.unpeek(); }
+});
+Phone.on('close', () => { if (EmergencyAlerts.pending()) { Phone.peek(0); EmergencyAlerts.focus(true); } });
 
 /* ------------------------------------------------------------------ the app */
 const EAApp = {

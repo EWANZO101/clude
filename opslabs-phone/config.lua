@@ -192,6 +192,16 @@ Config.Calls = {
     UsePmaVoice = true,   -- route call audio through pma-voice
 }
 
+-- OPS Voice: OPS Hub has phone numbers (one per company, one per Hub user). Phones call them like any number and the
+-- Hub's browser softphone rings; the Hub calls phones too. Needs the OPS Voice bridge and, in server.cfg,
+-- opsvoip_url / opsvoip_key (the bridge's VOIP_KEY).
+Config.Voip = {
+    Enabled = true,
+    Reserved = '^555%-0[1-9]%d%d$',     -- 555-0100 … 555-0999 are kept for OPS Hub lines: phones never get one
+    PublicUrl = 'wss://opsphone-store.opslabsystems.cloud/voip/ws',   -- where phones hear the Hub caller
+    Volume = 1.0,                       -- the Hub caller's loudness on the phone (times the phone's volume)
+}
+
 -- Developer app (map locations, blips, wallpapers, numbers, broadcast) is on
 -- every phone but needs a login. The email/password live in config_server.lua
 -- (server-only, so players can't read them from their game cache).

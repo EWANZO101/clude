@@ -4,6 +4,64 @@
    Calls (global) — call screen, island live activity, ringtone
    ===================================================================== */
 
+/* OPS Voice: the OPS Hub caller's voice (server/voip.lua, the OPS Voice bridge). Your own voice goes the usual pma-voice
+   way and the bridge picks it up; the Hub end plays only here, like an earpiece. Opus frames, decoded with WebCodecs. */
+const HubAudio = {
+    ws: null, ctx: null, dec: null, at: 0, ts: 0,
+
+    start(v) {
+        this.stop();
+        if (!v || !v.url || !v.token) return;
+        if (typeof AudioDecoder === 'undefined') { console.warn('[opslabs-phone] OPS Voice: no WebCodecs in this game build'); return; }
+        this.ctx = new AudioContext({ sampleRate: 48000 });
+        this.gain = this.ctx.createGain();
+        this.gain.gain.value = v.volume != null ? v.volume : 1;
+        this.gain.connect(this.ctx.destination);
+        this.at = 0;
+        this.ts = 0;
+        this.dec = new AudioDecoder({ output: (d) => this.play(d), error: (e) => console.warn('[opslabs-phone] OPS Voice decode:', e.message) });
+        this.dec.configure({ codec: 'opus', sampleRate: 48000, numberOfChannels: 1 });
+        const ws = new WebSocket(`${v.url}?token=${encodeURIComponent(v.token)}`);
+        ws.binaryType = 'arraybuffer';
+        ws.onmessage = (e) => {
+            if (typeof e.data === 'string' || !this.dec || this.dec.state !== 'configured') return;
+            this.ts += 20000;
+            this.dec.decode(new EncodedAudioChunk({ type: 'key', timestamp: this.ts, data: e.data }));
+        };
+        ws.onclose = () => { if (this.ws === ws) this.ws = null; };
+        this.ws = ws;
+    },
+
+    /** schedules a decoded frame back to back, with ~60 ms of slack against network jitter */
+    play(d) {
+        if (!this.ctx) { d.close(); return; }
+        const n = d.numberOfFrames;
+        const buf = this.ctx.createBuffer(1, n, d.sampleRate);
+        const out = buf.getChannelData(0);
+        if (d.format && d.format.startsWith('s16')) {
+            const tmp = new Int16Array(n);
+            d.copyTo(tmp, { planeIndex: 0 });
+            for (let i = 0; i < n; i++) out[i] = tmp[i] / 32768;
+        } else {
+            d.copyTo(out, { planeIndex: 0 });
+        }
+        d.close();
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(this.gain);
+        const now = this.ctx.currentTime;
+        if (this.at < now + 0.02 || this.at > now + 0.5) this.at = now + 0.06;
+        src.start(this.at);
+        this.at += buf.duration;
+    },
+
+    stop() {
+        if (this.ws) { try { this.ws.close(); } catch (_) { /* closed */ } this.ws = null; }
+        if (this.dec) { try { this.dec.close(); } catch (_) { /* closed */ } this.dec = null; }
+        if (this.ctx) { this.ctx.close(); this.ctx = null; }
+    },
+};
+
 const Call = {
     cur: null,      // { id, number, name, dir: 'in'|'out', status: 'ringing'|'active'|'ended', startedAt }
     timer: null,
@@ -95,6 +153,7 @@ const Call = {
     },
 
     finish() {
+        HubAudio.stop();
         clearInterval(this.timer);
         this.stopAlerts();
         Sound.stopRing();
@@ -262,7 +321,7 @@ const Call = {
             }
         });
         Phone.on('incomingCall', (d) => this.incoming(d));
-        Phone.on('callAccepted', () => this.accepted());
+        Phone.on('callAccepted', (d) => { this.accepted(); if (d && d.voip) HubAudio.start(d.voip); });
         Phone.on('callEnded', (d) => this.ended(d));
         Phone.on('open', () => {
             if (this.cur && this.cur.status === 'ringing' && this.cur.dir === 'in') this.show();

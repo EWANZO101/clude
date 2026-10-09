@@ -75,6 +75,8 @@ server_scripts {
     'server/buds.lua',
     'server/safemag.lua',
     'server/emergency.lua',           -- OPS Emergency Alerts (premium per company, OPS Hub → Companies)
+    'server/voip.js',
+    'server/voip.lua',                -- OPS Voice: calls to and from OPS Hub lines (the OPS Voice bridge)
 }
 
 ui_page 'html/index.html'
