@@ -69,18 +69,7 @@ local function generateEmail(p)
     return email
 end
 
-function HasPhoneItem(src)
-    if not Config.RequireItem then return true, 'black' end
-    if not FW.Await() then return false end                         -- the bridge isn't ready: never fail open
-    if not FW.HasInventory() then return true, 'black' end          -- no inventory at all: nothing to require
-    for item, color in pairs(Config.Items) do
-        if FW.ItemCount(src, item) > 0 then return true, color end
-    end
-    -- the phone is lying on a wireless charger (server/dock.lua): still yours, still rings
-    local docked = DockedPhoneOf and DockedPhoneOf(src)
-    if docked then return true, Config.Items[docked.item] or 'black' end
-    return false
-end
+-- HasPhoneItem / OwnPhoneItem: server/phoneitem.lua
 
 --- keeps the character's name and job on the phone's own row (admin lists, OPS Hub, the REST API)
 function SaveCharacter(identifier, p)

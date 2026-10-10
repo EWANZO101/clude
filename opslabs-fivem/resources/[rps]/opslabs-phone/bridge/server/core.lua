@@ -436,9 +436,23 @@ function FW.AddItem(src, item, count, metadata)
     return call(inv, 'AddItem', false, src, item, count or 1, metadata) ~= false
 end
 
-function FW.RemoveItem(src, item, count)
+--- metadata (optional): only a stack with that metadata, where the inventory supports it
+function FW.RemoveItem(src, item, count, metadata)
     if not invOk() then return false end
-    return call(inv, 'RemoveItem', false, src, item, count or 1) ~= false
+    return call(inv, 'RemoveItem', false, src, item, count or 1, metadata) ~= false
+end
+
+--- per-item metadata (ox_inventory today): can the inventory read and write it?
+function FW.HasItemSlots() return invOk() and inv.GetSlots ~= nil and inv.SetSlotMetadata ~= nil end
+--- { { slot, metadata } } for each stack of `item` the player holds
+function FW.GetItemSlots(src, item)
+    if not FW.HasItemSlots() then return {} end
+    return call(inv, 'GetSlots', {}, src, item)
+end
+--- replaces one slot's metadata (merge with the old metadata yourself)
+function FW.SetItemMetadata(src, slot, metadata)
+    if not FW.HasItemSlots() then return false end
+    return call(inv, 'SetSlotMetadata', false, src, slot, metadata) == true
 end
 
 --- run handler(src) when a player uses this item (queued until the adapters are chosen)

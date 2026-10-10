@@ -55,6 +55,7 @@ server_scripts {
     'bridge/server/core.lua',           -- detection, checks, FW.* for the rest of the phone
     'server/database.lua',
     'server/main.lua',
+    'server/phoneitem.lua',             -- phone items: yours / someone else's, the number on the item
     'server/license.lua',               -- OPSHUB licensing: module gate for every phone call (asks opslabs-license)
     'server/calls.lua',
     'server/apps.lua',
