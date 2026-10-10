@@ -33,4 +33,5 @@ Bridge.RegisterIntegration('billing', 'my_billing', {
 --            LogTransaction(identifier, amount, label)   (optional: the bank's own statement; amount < 0 = out)
 --   garage:  GetVehicles(identifier) -> { { plate, model (hash), name, stored, parking, pound, fuel, engine, body } }
 --   housing: GetHomes(identifier) -> { { id, label, x, y, z, kind = 'owned' | 'rented' | 'key' } }
---   voice:   client side — put it in bridge/custom/client/ (see bridge/README.md)
+--   voice:   a new file in bridge/voice/ (loaded on server and client, so the server can detect it) — copy
+--            bridge/voice/pma-voice.lua

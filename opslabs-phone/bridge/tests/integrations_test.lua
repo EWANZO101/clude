@@ -29,8 +29,14 @@ test('integrations: billing with nothing running is "none" — the Wallet shows 
 end)
 
 test('integrations: a configured resource that is not running is reported, and detection takes over', function()
+    local H = boot(function(H) F.esx(H) H.resources.esx_addonaccount = 'started' Config.Integrations = { banking = 'qb-banking' } end)
+    ok(H.logged("banking: \"qb%-banking\" is set in config, but qb%-banking isn't running"), 'reported')
+    eq(FW.Integration('banking'), 'esx_addonaccount', 'detected instead')
+end)
+
+test('integrations: a name with no adapter at all is reported as such', function()
     local H = boot(function(H) F.esx(H) H.resources.esx_billing = 'started' Config.Integrations = { billing = 'okokBilling' } end)
-    ok(H.logged('okokBilling') , 'mentioned')
+    ok(H.logged('billing: "okokBilling" %(from config%) has no adapter'), 'reported with the name as typed')
     eq(FW.Integration('billing'), 'esx_billing', 'detected instead')
 end)
 

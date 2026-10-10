@@ -1,6 +1,7 @@
 -- Housing on QBCore / Qbox. Experimental: from each resource's SQL (qb-houses, ps-housing, qbx_properties), tested
 -- against fakes. ps-housing and qbx_properties both call their table `properties` but with different columns — each
 -- adapter only runs when its own resource does. Apartments and MLO homes without a door position are left out.
+-- JSON_VALID: one row with broken JSON in its key list must not hide everyone's homes.
 
 local function decode(v)
     if type(v) == 'table' then return v end
@@ -15,7 +16,7 @@ Bridge.RegisterIntegration('housing', 'qb-houses', setmetatable({
     label = 'qb-houses', resource = 'qb-houses', status = 'experimental', builtin = true,
     GetHomes = function(identifier)
         local rows = MySQL.query.await([[SELECT h.house, h.citizenid, h.keyholders, l.label, l.coords FROM player_houses h
-            JOIN houselocations l ON l.name = h.house WHERE h.citizenid = ? OR JSON_CONTAINS(h.keyholders, JSON_QUOTE(?))]], { identifier, identifier }) or {}
+            JOIN houselocations l ON l.name = h.house WHERE h.citizenid = ? OR (JSON_VALID(h.keyholders) AND JSON_CONTAINS(h.keyholders, JSON_QUOTE(?)))]], { identifier, identifier }) or {}
         local out = {}
         for _, r in ipairs(rows) do
             local c = (decode(r.coords) or {}).enter
@@ -30,7 +31,7 @@ Bridge.RegisterIntegration('housing', 'ps-housing', setmetatable({
     label = 'ps-housing', resource = 'ps-housing', status = 'experimental', builtin = true,
     GetHomes = function(identifier)
         local rows = MySQL.query.await([[SELECT property_id, owner_citizenid, street, apartment, door_data FROM properties
-            WHERE owner_citizenid = ? OR JSON_CONTAINS(has_access, JSON_QUOTE(?))]], { identifier, identifier }) or {}
+            WHERE owner_citizenid = ? OR (JSON_VALID(has_access) AND JSON_CONTAINS(has_access, JSON_QUOTE(?)))]], { identifier, identifier }) or {}
         local out = {}
         for _, r in ipairs(rows) do
             local d = decode(r.door_data)
@@ -48,7 +49,7 @@ Bridge.RegisterIntegration('housing', 'qbx_properties', setmetatable({
     label = 'qbx_properties', resource = 'qbx_properties', status = 'experimental', builtin = true,
     GetHomes = function(identifier)
         local rows = MySQL.query.await([[SELECT id, property_name, coords, owner, rent_interval FROM properties
-            WHERE owner = ? OR JSON_CONTAINS(keyholders, JSON_QUOTE(?))]], { identifier, identifier }) or {}
+            WHERE owner = ? OR (JSON_VALID(keyholders) AND JSON_CONTAINS(keyholders, JSON_QUOTE(?)))]], { identifier, identifier }) or {}
         local out = {}
         for _, r in ipairs(rows) do
             local c = decode(r.coords)

@@ -165,6 +165,7 @@ end
 local function startIntegrations()
     local parts = {}
     for _, kind in ipairs({ 'banking', 'billing', 'garage', 'housing', 'voice' }) do
+        waitForStarting(Bridge.Integrations[kind])   -- a bank / garage resource still starting is waited for
         local a, name = pickIntegration(kind)
         if a and a ~= fw and a.init then
             local ok, r, e = pcall(a.init)
@@ -237,6 +238,10 @@ local function start()
                     if invName == 'none' and picked.ItemCount then inv, invName = picked, 'framework' end
                     info.label, info.status = picked.label, picked.status
                     log('2', 'Framework %s works now: phones load again.', picked.label)
+                    -- integrations that fall back to the framework (garage, ox_core accounts …) are picked again
+                    startIntegrations()
+                    info.integrations = integName
+                    GlobalState['opslabs-phone:bridge'] = { framework = fw.name, inventory = invName, voice = integName.voice }
                     break
                 end
             end
@@ -464,21 +469,37 @@ function FW.RestoreBill(bill) if ready then call(integ.billing, 'RestoreBill', n
 --- pays one of the character's bills from their bank. Returns the bill, or nil and a message for the player.
 --- Billing integrations that pay in one step (ox_core invoices) have PayBill(src, identifier, id) -> bill | nil, err;
 --- the rest: take the bill off the list first (so it can't be paid twice), take the money, give it to who's owed.
+local billLocks = {}   -- one payment per bill at a time (two fast taps, or the phone and another menu)
+
 function FW.PayBill(src, identifier, id)
     if not awaitReady() or not integ.billing then return nil, 'Bills are not available' end
-    if integ.billing.PayBill then
-        local bill, err = call(integ.billing, 'PayBill', nil, src, identifier, id)
-        if not bill then return nil, err or 'Could not pay the bill' end
-        return bill
-    end
-    local bill = call(integ.billing, 'TakeBill', nil, identifier, id)
-    if not bill then return nil, 'Bill not found or already paid' end
-    if not FW.RemoveMoney(src, bill.amount, Config.Bank.Account, 'Bill payment') then
-        call(integ.billing, 'RestoreBill', nil, bill)   -- put the bill back
-        return nil, 'Insufficient funds'
-    end
-    call(integ.billing, 'SettleBill', nil, bill, src)
-    return bill
+    local key = tostring(integName.billing) .. ':' .. tostring(id)
+    if billLocks[key] then return nil, 'This bill is already being paid' end
+    billLocks[key] = true
+    local ok, bill, err = pcall(function()
+        if integ.billing.PayBill then
+            local b, e = call(integ.billing, 'PayBill', nil, src, identifier, id)
+            if not b then return nil, e or 'Could not pay the bill' end
+            return b
+        end
+        local b = call(integ.billing, 'TakeBill', nil, identifier, id)
+        if not b then return nil, 'Bill not found or already paid' end
+        if not FW.RemoveMoney(src, b.amount, Config.Bank.Account, 'Bill payment') then
+            call(integ.billing, 'RestoreBill', nil, b)   -- put the bill back
+            return nil, 'Insufficient funds'
+        end
+        -- whoever is owed couldn't be paid: give the money back and put the bill back, never lose it
+        if call(integ.billing, 'SettleBill', false, b, src) ~= true then
+            FW.AddMoney(src, b.amount, Config.Bank.Account, 'Bill payment refund')
+            call(integ.billing, 'RestoreBill', nil, b)
+            log('3', 'Bill %s (%s) could not be paid to %s: refunded and kept unpaid.', tostring(b.id), tostring(b.label), tostring(b.target or b.sender))
+            return nil, "This bill can't be paid right now"
+        end
+        return b
+    end)
+    billLocks[key] = nil
+    if not ok then return nil, 'Could not pay the bill' end
+    return bill, err
 end
 function FW.SettleBill(bill, payer) if ready then call(integ.billing, 'SettleBill', nil, bill, payer) end end
 

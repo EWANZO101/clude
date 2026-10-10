@@ -11,7 +11,11 @@ local function balance(society)
     return nil
 end
 
-function A.AddSocietyMoney(society, amount) return ok():AddMoney(society, amount) ~= false end
+-- the account must exist (AddMoney's return isn't documented): otherwise the money would be paid into nothing
+function A.AddSocietyMoney(society, amount)
+    if balance(society) == nil then return false end
+    return ok():AddMoney(society, amount) ~= false
+end
 
 function A.RemoveSocietyMoney(society, amount)
     local have = balance(society)

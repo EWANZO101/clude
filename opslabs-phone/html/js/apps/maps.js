@@ -610,11 +610,16 @@ Apps.register({
         /* ---------- live data ---------- */
         const loadHomes = () => rpc('getHomes').then((list) => {
             if (!Array.isArray(list)) return;
+            // places are addressed by index: keep the selection on the same place (by name + position) and always
+            // redraw the list, so no row points at the wrong place once homes are put in front
             const sel = selected && selected.type === 'place' ? places[selected.id] : null;
             homes = list.filter((h) => h && h.x != null);
             places = allPlaces();
-            if (sel) { const i = places.indexOf(sel); selected = i >= 0 ? { type: 'place', id: i } : null; }
-            if (document.activeElement !== search) renderSheet();
+            if (sel) {
+                const i = places.findIndex((p) => p.name === sel.name && p.coords.x === sel.coords.x && p.coords.y === sel.coords.y);
+                selected = i >= 0 ? { type: 'place', id: i } : null;
+            }
+            renderSheet();
             redraw();
         });
         loadHomes();

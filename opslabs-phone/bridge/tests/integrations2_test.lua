@@ -184,3 +184,89 @@ test('okokBanking: a society withdrawal needs a readable balance first', functio
     eq(H.call(function() return FW.RemoveSocietyMoney('unknown', 1) end), false, 'unreadable: refused')
     eq(H.call(function() return FW.RemoveSocietyMoney('police', 60) end), true, 'enough') eq(removed, 60, 'taken')
 end)
+
+-- esx_billing + esx_addonaccount fakes for the payment paths
+local function billingServer(bills, accounts, bank)
+    local events = {}
+    local H = boot(function(H)
+        local fx = F.esx(H)
+        fx.add(1, { identifier = 'payer', first = 'P', last = 'Q', bank = bank })
+        H.resources.esx_billing, H.resources.esx_addonaccount = 'started', 'started'
+        AddEventHandler('esx_addonaccount:getSharedAccount', function(name, cb)
+            local a = accounts[name]
+            cb(a and { money = a.money, addMoney = function(n) a.money = a.money + n end } or nil)
+        end)
+        AddEventHandler('esx_billing:paidBill', function(src, id) events[#events + 1] = id end)
+        H.sqlHandler = function(kind, q, params)
+            if q:find('SELECT %* FROM billing') then for _, b in ipairs(bills) do if b.id == params[1] then return b end end return nil end
+            if q:find('DELETE FROM billing') then for i, b in ipairs(bills) do if b.id == params[1] then table.remove(bills, i) return 1 end end return 0 end
+            if q:find('INSERT INTO billing') then bills[#bills + 1] = { id = params[1], identifier = params[2], sender = params[3], target_type = params[4], target = params[5], label = params[6], amount = params[7] } return params[1] end
+            if q:find('SELECT accounts FROM users') then return nil end      -- 'server' / unknown sender: no offline account
+        end
+    end)
+    return H, events
+end
+
+test('PayBill: a society bill is removed, the payer charged, the society paid (esx_addonaccount directly), paidBill fired', function()
+    local bills = { { id = 1, identifier = 'payer', sender = 'cop', target_type = 'society', target = 'society_police', label = 'Speeding', amount = 250 } }
+    local accounts = { society_police = { money = 0 } }
+    local H, events = billingServer(bills, accounts, 1000)
+    Config.Integrations = nil
+    local bill = H.call(function() return FW.PayBill(1, 'payer', 1) end)
+    eq(bill.id, 1, 'paid') eq(#bills, 0, 'bill gone')
+    eq(H.call(function() return FW.GetMoney(1, 'bank') end), 750, 'payer charged')
+    eq(accounts.society_police.money, 250, 'society paid') eq(events[1], 1, 'esx_billing:paidBill')
+end)
+
+test('PayBill: when nobody can be paid (no society account / a "server" bill) the payer is refunded and the bill kept', function()
+    local bills = { { id = 2, identifier = 'payer', sender = 'x', target_type = 'society', target = 'society_ghost', label = 'Fine', amount = 100 },
+                    { id = 3, identifier = 'payer', sender = 'server', target_type = 'player', target = 'x', label = 'Tax', amount = 50 } }
+    local H, events = billingServer(bills, {}, 1000)
+    local bill, err = H.call(function() return FW.PayBill(1, 'payer', 2) end)
+    eq(bill, nil, 'not paid') eq(err, "This bill can't be paid right now", 'explained')
+    eq(H.call(function() return FW.GetMoney(1, 'bank') end), 1000, 'refunded')
+    eq(#bills, 2, 'bill kept')
+    bill = H.call(function() return FW.PayBill(1, 'payer', 3) end)
+    eq(bill, nil, '"server" bill not paid') eq(H.call(function() return FW.GetMoney(1, 'bank') end), 1000, 'refunded again')
+    eq(#events, 0, 'no paidBill for failed payments')
+    ok(H.logged('refunded and kept unpaid'), 'logged for the admin')
+end)
+
+test('PayBill: two taps at once pay the bill only once (one-step integrations like ox_core)', function()
+    local pays = 0
+    local H = boot(function(H)
+        local fx = F.ox(H)
+        fx.add(1, { charId = 42, first = 'K', last = 'L', bank = 500 })
+        H.exportsOf.ox_core.PayAccountInvoice = function() pays = pays + 1 Wait(200) return { success = true } end
+        H.sqlHandler = function(kind, q, params) if kind == 'single' then return { id = 9, label = 'Fine', amount = 10 } end end
+    end)
+    local results = {}
+    CreateThread(function() results[1] = { FW.PayBill(1, '42', 9) } end)
+    CreateThread(function() results[2] = { FW.PayBill(1, '42', 9) } end)
+    H.run()
+    eq(pays, 1, 'paid once')
+    eq(results[2][2] or results[1][2], 'This bill is already being paid', 'second tap told')
+end)
+
+test('integrations are picked again when a broken framework starts working (Garage no longer empty)', function()
+    local fx
+    local H = boot(function(H)
+        fx = F.esx(H, { noExport = true })
+        H.sqlHandler = function(kind, q) if q:find('FROM owned_vehicles') then return { { plate = 'AAA', vehicle = '{}' } } end end
+    end)
+    eq(FW.Integration('garage'), 'none', 'nothing while broken')
+    H.exportsOf.es_extended = { getSharedObject = function() return fx.ESX end }
+    H.run(20000)
+    eq(FW.Integration('garage'), 'framework', 'owned_vehicles again')
+    eq(#H.call(function() return FW.GetVehicles('c') end), 1, 'vehicles listed')
+end)
+
+test('okokBanking: no deposit into an account that does not exist', function()
+    local added
+    local H = boot(function(H)
+        F.esx(H)
+        H.resources.okokBanking = 'started'
+        H.exportsOf.okokBanking = { GetAccount = function() return nil end, AddMoney = function() added = true return nil end }
+    end)
+    eq(H.call(function() return FW.AddSocietyMoney('ghost', 10) end), false, 'refused') eq(added, nil, 'nothing sent')
+end)
