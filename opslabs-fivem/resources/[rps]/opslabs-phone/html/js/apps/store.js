@@ -42,6 +42,13 @@ const STORE_INFO = {
     ops_usosp:    { category: 'Productivity', subtitle: 'OPS America Outside Plant jobs',    about: 'OPS Work opened on OPS America Outside Plant — FDH, FDT, strand, handholes, splicing and fiber-cut restoration.' },
     ops_usnet:    { category: 'Productivity', subtitle: 'OPS America Network Ops jobs',      about: 'OPS Work opened on OPS America Network Ops — central office, OLTs, routers, power and the NOC.' },
     ops_fibre:  { category: 'Productivity',   subtitle: 'OPS Fibre jobs',                     about: 'OPS Work opened on OPS Fibre — fibre, cabinets and testing.' },
+    ops_comms:  { category: 'Productivity',   subtitle: 'OPS Comms jobs',                     about: 'OPS Work opened on OPS Comms — phone lines, PBX and business telephony.' },
+    ops_systems: { category: 'Productivity',  subtitle: 'OPS Systems jobs',                   about: 'OPS Work opened on OPS Systems — IT support, PCs and business systems.' },
+    ops_domains: { category: 'Productivity',  subtitle: 'OPS Domains jobs',                   about: 'OPS Work opened on OPS Domains — domain registrations, DNS and certificates.' },
+    ops_web:    { category: 'Productivity',   subtitle: 'OPS Web jobs',                       about: 'OPS Work opened on OPS Web — websites and hosting for Los Santos businesses.' },
+    ops_data:   { category: 'Productivity',   subtitle: 'OPS Data jobs',                      about: 'OPS Work opened on OPS Data — data centre racks, servers and storage.' },
+    ops_cloud:  { category: 'Productivity',   subtitle: 'OPS Cloud jobs',                     about: 'OPS Work opened on OPS Cloud — cloud services and hosted infrastructure.' },
+    ops_pos:    { category: 'Productivity',   subtitle: 'OPS POS jobs',                       about: 'OPS Work opened on OPS POS — card terminals and point-of-sale systems.' },
     opsnet:     { category: 'Productivity',   subtitle: 'Jobs, faults and the network',       about: 'The network engineer\'s app: take fault and planned-work jobs and get paid, read fault diagnosis and fix steps, look up customers, cabinets, links, towers and poles, and run a Wi-Fi range test on site. Requires an Ops-Networks account.' },
 };
 
@@ -101,12 +108,15 @@ function storeRefreshButtons(root) {
     $$('[data-remove-app]', root).forEach((b) => b.classList.toggle('hidden', !Phone.isInstalled(b.dataset.removeApp)));
 }
 
-function StoreDetail(nav, id) {
+function StoreDetail(nav, id, redirect = false) {
     const def = Apps.byId[id];
     if (!def) return;
     const info = storeInfo(id);
+    // a previous "you need to install this" page shouldn't pile up under a new one
+    if (redirect && nav.top && nav.top.opts.redirect) nav.pop(false);
     nav.push({
         title: '',
+        redirect,
         backLabel: I18N.t('Back'),
         render(c) {
             c.innerHTML = `
@@ -250,10 +260,17 @@ Apps.register({
             if (sum) sum.innerHTML = `<b>${Apps.list.filter((a) => Phone.isInstalled(a.id)).length}</b> ${esc(I18N.t('of'))} <b>${Apps.list.length}</b> ${esc(I18N.t('apps installed'))}`;
         });
         // opened by tapping a removed app (e.g. from a notification or shortcut)
-        if (params.app) setTimeout(() => { const h = tabs.host(tabs.current); if (h && h._nav) StoreDetail(h._nav, params.app); }, 50);
+        if (params.app) setTimeout(() => { const h = tabs.host(tabs.current); if (h && h._nav) StoreDetail(h._nav, params.app, true); }, 50);
+        // that redirect page was a detour: opening the Store itself again starts at the store front
+        // (onParams runs right after this and pushes a fresh page when it's another redirect)
+        app.on('appResumed', (id) => {
+            if (id !== 'store') return;
+            const h = tabs.host(tabs.current);
+            if (h && h._nav && h._nav.top && h._nav.top.opts.redirect) h._nav.popToRoot();
+        });
     },
     onParams(params, app) {
         const h = app.tabs && app.tabs.host(app.tabs.current);
-        if (params.app && h && h._nav) StoreDetail(h._nav, params.app);
+        if (params.app && h && h._nav) StoreDetail(h._nav, params.app, true);
     },
 });

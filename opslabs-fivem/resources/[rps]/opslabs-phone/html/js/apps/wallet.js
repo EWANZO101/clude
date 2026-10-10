@@ -28,9 +28,10 @@ function SendMoney(onDone, preset = {}) {
             const amount = +$('[data-f=amount]', b).value;
             const number = $('[data-f=number]', b).value.trim();
             const name = Contacts.nameFor(number) || number;
-            if (!(await UI.confirm(`Send ${fmtMoney(amount)}?`, `To ${name}`, 'Send'))) return;
+            api.setRightEnabled(false);
+            if (!(await UI.confirm(`Send ${fmtMoney(amount)}?`, `To ${name}`, 'Send'))) return api.setRightEnabled(true);
             const res = await rpc('transfer', { amount, number, note: $('[data-f=note]', b).value });
-            if (!res || res.error) return UI.alert({ title: 'Payment Failed', message: (res && res.error) || 'Try again later.' });
+            if (!res || res.error) { api.setRightEnabled(true); return UI.alert({ title: 'Payment Failed', message: (res && res.error) || 'Try again later.' }); }
             Sound.play('pay');
             api.close();
             UI.toast(`Sent ${fmtMoney(amount)}`, 'fa-solid fa-circle-check');
@@ -93,9 +94,11 @@ Apps.register({
                 ctx.page.addEventListener('click', async (e) => {
                     const pay = e.target.closest('[data-pay]');
                     if (pay) {
-                        if (!(await UI.confirm('Pay Bill', `Pay ${fmtMoney(+pay.dataset.amount)} from your bank account?`, 'Pay'))) return;
+                        if (pay.disabled) return;
+                        pay.disabled = true;
+                        if (!(await UI.confirm('Pay Bill', `Pay ${fmtMoney(+pay.dataset.amount)} from your bank account?`, 'Pay'))) { pay.disabled = false; return; }
                         const res = await rpc('payBill', { id: +pay.dataset.pay });
-                        if (!res || res.error) return UI.alert({ title: 'Payment Failed', message: (res && res.error) || '' });
+                        if (!res || res.error) { pay.disabled = false; return UI.alert({ title: 'Payment Failed', message: (res && res.error) || '' }); }
                         Sound.play('pay');
                         UI.toast('Bill paid');
                         return load();

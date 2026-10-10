@@ -443,7 +443,7 @@
     flex: none;
     position: relative;
 }
-.sheet .sheet-bar .sheet-title { position: absolute; left: 80px; right: 80px; text-align: center; font-weight: 600; font-size: 17px; pointer-events: none; }
+.sheet .sheet-bar .sheet-title { position: absolute; left: 80px; right: 80px; text-align: center; font-weight: 600; font-size: 17px; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sheet .sheet-body { flex: 1; padding-top: 8px; padding-bottom: 40px; }
 .sheet .grabber { position: absolute; top: 5px; left: 50%; width: 36px; height: 5px; margin-left: -18px; border-radius: 3px; background: var(--label3); }
 .app-window.sheet-behind { transform: scale(.92) translateY(14px) !important; border-radius: 14px !important; }

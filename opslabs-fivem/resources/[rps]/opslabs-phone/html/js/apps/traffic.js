@@ -159,6 +159,8 @@ Apps.register({
                     <div class="tr-chips">${TRAFFIC_FILTERS.map((f) => `<button data-f="${f.id}" class="${f.id === filter ? 'on' : ''}">${esc(f.label)}<span></span></button>`).join('')}</div>
                     <div class="tr-list"><div class="spinner"></div></div>
                     <button class="tr-fab" data-act="report"><i class="fa-solid fa-plus"></i> Report</button>`;
+                // the button floats over the page, not inside the scrolling list
+                ctx.page.appendChild($('.tr-fab', content));
                 const list = $('.tr-list', content);
                 const render = () => {
                     const items = feed.incidents.filter((i) => filter === 'all' || i.kind === filter || (filter === 'hazard' && i.kind === 'police')).sort((a, b) => (a.dist ?? 1e9) - (b.dist ?? 1e9));
@@ -194,7 +196,6 @@ Apps.register({
                     if (it) { const i = feed.incidents.find((x) => String(x.id) === it.dataset.inc); if (i) TrafficDetail(i, feed, load); return; }
                     const a = e.target.closest('[data-act]');
                     if (!a) return;
-                    if (a.dataset.act === 'report') return TrafficReport(feed, load);
                     if (a.dataset.act === 'pursuit') {
                         if (!pursuit) {
                             const detail = await UI.prompt('Start 10-80', 'Vehicle and direction (shown to drivers)', { placeholder: 'Black sedan heading north on Route 68', ok: 'Start' });
@@ -215,7 +216,10 @@ Apps.register({
                         return load();
                     }
                 });
-                ctx.page.addEventListener('click', (e) => { if (e.target.closest('[data-act=settings]')) TrafficSettings(); });
+                ctx.page.addEventListener('click', (e) => {
+                    if (e.target.closest('[data-act=settings]')) TrafficSettings();
+                    if (e.target.closest('[data-act=report]')) TrafficReport(feed, load);
+                });
                 app.on('trafficChanged', debounce(load, 800));
                 app.on('trafficMove', (m) => {
                     const i = m && feed.incidents.find((x) => x.id === m.id);

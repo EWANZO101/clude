@@ -36,6 +36,8 @@ function NoteEditor(nav, note, onChange) {
     const ctx = nav.top.ctx;
     let saving = null;
     async function save(leaving) {
+        // one save at a time, so a new note gets its id before the next save (no duplicates)
+        while (saving) await saving;
         const text = ctx.textarea.value;
         const [first, ...rest] = text.split('\n');
         if (!text.trim()) {
@@ -47,6 +49,7 @@ function NoteEditor(nav, note, onChange) {
         note.body = rest.join('\n');
         saving = rpc('saveNote', { id: note.id, title: note.title, body: note.body });
         const id = await saving;
+        saving = null;
         if (id) note.id = id;
         onChange();
     }

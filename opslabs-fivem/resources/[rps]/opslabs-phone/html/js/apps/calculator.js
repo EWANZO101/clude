@@ -41,7 +41,7 @@ Apps.register({
             if (s === 'Error') return s;
             const n = Number(s);
             if (!isFinite(n)) return 'Error';
-            if (/e/.test(String(n)) || Math.abs(n) >= 1e9) return n.toExponential(4).replace('+', '');
+            if (/e/.test(String(n)) || Math.abs(n) >= 1e9) return Number(n.toPrecision(9)).toExponential().replace('+', '');
             const [i, d] = s.split('.');
             const int = Number(i).toLocaleString('en-US');
             return (s.startsWith('-') && int[0] !== '-' ? '-' : '') + int + (d !== undefined ? '.' + d : '');

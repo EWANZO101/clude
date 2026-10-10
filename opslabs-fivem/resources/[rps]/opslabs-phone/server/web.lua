@@ -759,6 +759,7 @@ local function domAction(src, phone, d, a)
         local name, sub, tld, label = parseHost(lower(d.name))
         if not name or sub ~= '@' then return { error = 'Pick a name like yourname.ls' } end
         local chk = checkName(label, (MySQL.single.await('SELECT kind FROM ops_customers WHERE identifier = ? LIMIT 1', { phone.identifier }) or {}).kind or 'residential')
+        if chk.error then return { error = chk.error } end
         for _, x in ipairs(chk.list or {}) do
             if x.name == name and not x.available then return { error = x.restricted and 'That ending is only for government and emergency services' or (name .. ' is taken') } end
         end
@@ -1023,6 +1024,7 @@ local function webAction(src, phone, d, a)
         if open then return { error = 'You already have that job open: ' .. open } end
         local t
         for _, x in ipairs(Ops.catalog.jobTypes or {}) do if x.code == d.code then t = x end end
+        if not t or not t.verify then return { error = 'Unknown service' } end
         local v = { kind = t.verify.kind, blocks = t.verify.blocks, domain_id = dom.id, domain = dom.name }
         local company = t.company
         local id, ref = Ops.job(company, d.code, { customer_id = cust.id, address = 'Online · ' .. dom.name }, {

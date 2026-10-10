@@ -79,9 +79,10 @@ function SparksEditor(onSaved) {
             },
             async onRight(api) {
                 const v = (f) => { const x = $(`[data-f=${f}]`, api.body); return x ? (x.type === 'checkbox' ? x.checked : x.value.trim()) : undefined; };
+                api.setRightEnabled(false);
                 const res = await rpc('datingSave', { name: v('name'), age: +v('age'), gender: v('gender'), seeking: v('seeking'), bio: v('bio'), job: v('job'), area: v('area'),
                     photos: st.photos, interests: [...st.interests], active: v('active') === undefined ? true : v('active') });
-                if (!res || res.error) return UI.alert({ title: (res && res.error) || 'Could not save' });
+                if (!res || res.error) { api.setRightEnabled(true); return UI.alert({ title: (res && res.error) || 'Could not save' }); }
                 api.close();
                 UI.toast('Profile saved', 'fa-solid fa-heart');
                 onSaved && onSaved();
@@ -179,8 +180,9 @@ Apps.register({
                     host.innerHTML = `<div class="sp-top"><i class="fa-solid fa-fire-flame-curved"></i>sparks</div><div class="sp-deck"></div>
                         <div class="sp-actions"><button class="sp-round nope" data-act="nope"><i class="fa-solid fa-xmark"></i></button><button class="sp-round like" data-act="like"><i class="fa-solid fa-heart"></i></button></div>`;
                     const deck = $('.sp-deck', host);
-                    let cards = [];
+                    let cards = [], swiping = false;
                     const drawDeck = () => {
+                        swiping = false;
                         if (!cards.length) {
                             deck.innerHTML = UI.empty('fa-solid fa-fire-flame-curved', 'No one new nearby', 'Check back later — new people join every day.');
                             $('.sp-actions', host).style.visibility = 'hidden';
@@ -219,6 +221,9 @@ Apps.register({
                         $$('.sp-dots i', c).forEach((d, k) => d.classList.toggle('on', k === i));
                     };
                     const swipe = async (like) => {
+                        // a fast double tap must not swipe the next card unseen
+                        if (swiping) return;
+                        swiping = true;
                         const p = cards.shift();
                         const top = deck.lastElementChild;
                         if (top) { top.style.transform = `translate(${like ? 500 : -500}px,40px) rotate(${like ? 30 : -30}deg)`; top.style.opacity = '0'; }

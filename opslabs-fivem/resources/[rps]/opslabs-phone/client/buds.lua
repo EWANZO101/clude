@@ -9,7 +9,14 @@ local CB = Config.Buds or {}
 
 function BudsHandsFree() return false end
 function BudsLoad() end
-if CB.Enabled == false then return end
+if CB.Enabled == false then
+    -- switched off: answer the phone straight away instead of leaving it waiting for its 15 s timeout
+    RegisterNUICallback('budsState', function(_, cb) cb({}) end)
+    for _, name in ipairs({ 'budsPair', 'budsCardClosed', 'budsSet', 'budsAudio' }) do
+        RegisterNUICallback(name, function(_, cb) cb(false) end)
+    end
+    return
+end
 
 local PREFIX = 'opslabs-phone:'
 local ITEM = CB.Item or 'ops_buds'

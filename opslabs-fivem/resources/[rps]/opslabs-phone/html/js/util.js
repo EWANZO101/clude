@@ -145,7 +145,7 @@ function initials(name) {
 /** OPS OS style contact avatar */
 function avatar(name, url, cls = '') {
     if (url && /^https?:\/\//i.test(url)) {
-        return `<div class="avatar ${cls}" style="background-image:url('${esc(url)}')"></div>`;
+        return `<div class="avatar ${cls}" style="background-image:url('${esc(cssUrl(url))}')"></div>`;
     }
     const ini = initials(name);
     return `<div class="avatar ${cls}">${ini ? esc(ini) : '<i class="fa-solid fa-user" style="font-size:.85em;opacity:.95;transform:translateY(12%)"></i>'}</div>`;

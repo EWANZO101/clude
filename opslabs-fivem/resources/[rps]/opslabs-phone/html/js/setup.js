@@ -350,7 +350,7 @@ const Setup = {
                 case 'back': return this.back();
                 case 'name': {
                     const v = $('[data-f=name]', page).value.trim();
-                    if (v.length < 2) { $('.st-error', page).textContent = I18N.t('Name'); return; }
+                    if (v.length < 2) { $('.st-error', page).textContent = I18N.t('Enter your name (at least 2 characters)'); return; }
                     s.name = v;
                     return this.next();
                 }

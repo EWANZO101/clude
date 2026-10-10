@@ -48,10 +48,14 @@ const Pay = {
     approve() {
         const host = $('#pay-sheet');
         const btn = $('.pay-btn', host);
+        const d = this.cur;
+        if (!btn || btn.disabled) return;
         btn.disabled = true;
         btn.classList.add('scanning');
         $('.pay-face', btn).innerHTML = '<i class="fa-solid fa-expand"></i>';
         setTimeout(() => {
+            // cancelled, timed out or replaced by another till while scanning
+            if (this.cur !== d) return;
             btn.classList.remove('scanning');
             btn.classList.add('done');
             btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${esc(I18N.t('Done'))}`;

@@ -95,7 +95,9 @@ const EmergencyAlerts = {
 
     render() {
         const l = this.layer();
-        const list = [...this.shown.values()].sort((x, y) => y.at - x.at);
+        // the most serious on top (extreme before severe ...), newest first within a level
+        const rank = (a) => Object.keys(EA_SEV).indexOf(a.severity) >>> 0;
+        const list = [...this.shown.values()].sort((x, y) => rank(x) - rank(y) || y.at - x.at);
         l.innerHTML = list.map((a) => this.cardHtml(a)).join('');
         l.style.display = list.length ? '' : 'none';
     },
@@ -247,8 +249,12 @@ const EAApp = {
                     if (!act) return;
                     if (act.dataset.eaAct === 'map') { nui('emergencyWaypoint', { x: a.x, y: a.y }); UI.toast('Waypoint set', 'fa-solid fa-location-dot'); }
                     if (act.dataset.eaAct === 'cancel') {
-                        if (!(await UI.confirm('Cancel this alert?', a.title, 'Cancel alert', true))) return;
-                        const r = await rpc('emergencyCancel', { id: a.id });
+                        if (act.dataset.busy) return;
+                        act.dataset.busy = '1';
+                        const ok = await UI.confirm('Cancel this alert?', a.title, 'Cancel alert', true);
+                        const r = ok && await rpc('emergencyCancel', { id: a.id });
+                        delete act.dataset.busy;
+                        if (!ok) return;
                         if (!r || r.error) return UI.alert({ title: 'Couldn’t cancel', message: (r && r.error) || 'Try again in a moment.' });
                         UI.toast('Alert cancelled', 'fa-solid fa-ban');
                         if (after) after();
@@ -320,13 +326,18 @@ const EAApp = {
                     const a = e.target.closest('[data-aud]');
                     if (a) { f.audience = a.dataset.aud; sync(); }
                 });
+                let sending = false;
                 $('[data-act=send]', ctx.page).onclick = async () => {
+                    if (sending) return;
                     const val = (k) => { const x = $(`[data-f=${k}]`, c); return x ? x.value.trim() : ''; };
                     const data = { ...f, company: +(val('company') || f.company), radius: +val('radius') || f.radius, hours: +val('hours') || f.hours, area: val('area'), title: val('title'), body: val('body') };
                     if (!data.title || !data.body) return UI.alert({ title: 'Missing details', message: 'Give the alert a headline and a message.' });
                     const who = data.audience === 'area' ? `everyone within ${radius(data.radius)} of you` : data.audience === 'staff' ? 'your staff' : 'every phone in the city';
-                    if (!(await UI.confirm(`Send ${eaSev(data.severity).name}?`, `${data.title} — to ${who}.`, 'Send', data.severity === 'extreme'))) return;
-                    const r = await rpc('emergencySend', data);
+                    sending = true;     // one alert per tap, even if Send is pressed again while it goes out
+                    const ok = await UI.confirm(`Send ${eaSev(data.severity).name}?`, `${data.title} — to ${who}.`, 'Send', data.severity === 'extreme');
+                    const r = ok && await rpc('emergencySend', data);
+                    sending = false;
+                    if (!ok) return;
                     if (!r || r.error) return UI.alert({ title: 'Couldn’t send', message: (r && r.error) || 'Try again in a moment.' });
                     UI.toast('Alert sent', 'fa-solid fa-tower-broadcast');
                     if (after) after();

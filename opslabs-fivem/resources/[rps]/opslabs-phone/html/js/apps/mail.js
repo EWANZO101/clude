@@ -24,13 +24,14 @@ function MailCompose(to = '', subject = '', onSent) {
         },
         async onRight(api) {
             const b = api.body;
+            api.setRightEnabled(false);
             const ok = await rpc('sendMail', {
                 to: $('[data-f=to]', b).value.trim(),
                 from: $('[data-f=from]', b) ? $('[data-f=from]', b).value : undefined,
                 subject: $('[data-f=subject]', b).value.trim() || '(No Subject)',
                 body: $('[data-f=body]', b).value,
             });
-            if (!ok) return UI.alert({ title: 'Cannot Send Mail', message: 'Check the recipient address.' });
+            if (!ok) { api.setRightEnabled(true); return UI.alert({ title: 'Cannot Send Mail', message: 'Check the recipient address.' }); }
             Sound.play('sent');
             api.close();
             onSent && onSent();
@@ -81,18 +82,30 @@ function MailBox(nav, box) {
     nav.push({
         title: box === 'sent' ? 'Sent' : 'Inbox',
         large: true,
+        className: 'mailbox-page',
         backLabel: 'Mailboxes',
+        // the inbox can be edited: select mails to mark as read or delete (sent mail is kept)
+        right: box === 'inbox' ? '<button class="nav-btn" data-act="edit">Edit</button>' : '',
         render(content, ctx) {
             content.innerHTML = `<div class="search"><i class="fa-solid fa-magnifying-glass"></i><input placeholder="Search"></div><div class="m-list"><div class="spinner"></div></div>
                 <div class="toolbar"><span></span><span class="m-updated" style="font-size:11px">Updated Just Now</span><button class="nav-btn" data-act="new"><i class="fa-regular fa-pen-to-square"></i></button></div>`;
             ctx.page.appendChild($('.toolbar', content));
             const list = $('.m-list', content);
-            let mails = [], q = '';
+            const toolbar = $('.toolbar', ctx.page), toolbarHtml = toolbar.innerHTML;
+            let mails = [], q = '', editing = false;
+            const selected = new Set();
+            const drawToolbar = () => {
+                if (!editing) { toolbar.innerHTML = toolbarHtml; $('[data-act=new]', toolbar).onclick = () => MailCompose('', '', load); return; }
+                const n = selected.size;
+                toolbar.innerHTML = `<button class="nav-btn" data-act="markread" ${n ? '' : 'disabled'}>Mark Read</button>
+                    <span style="font-size:13px;font-weight:600">${n ? `${n} Selected` : 'Select Messages'}</span>
+                    <button class="nav-btn" data-act="trash" style="color:var(--red)" ${n ? '' : 'disabled'}>Delete</button>`;
+            };
             const draw = () => {
                 const items = mails.filter((m) => (m.subject + m.body + (m.sender_name || '') + m.sender).toLowerCase().includes(q.toLowerCase()));
                 list.innerHTML = items.length ? `<div class="plain">${items.map((m) => `
-                    <div class="row tap mail-row" data-id="${m.id}" style="--sep-left:32px">
-                        <span class="unread-dot ${!m.is_read ? 'on' : ''}"></span>
+                    <div class="row tap ${editing ? 'mail-sel' : 'mail-row'}" data-id="${m.id}" style="--sep-left:32px">
+                        ${editing ? `<span class="mail-check ${selected.has(m.id) ? 'on' : ''}"><i class="fa-solid fa-check"></i></span>` : `<span class="unread-dot ${!m.is_read ? 'on' : ''}"></span>`}
                         <div class="grow">
                             <div class="cv-top"><span class="title" style="font-weight:600">${esc(box === 'sent' ? m.receiver : (m.sender_name || m.sender))}</span><span class="cv-time">${esc(relTime(m.created_at))} <i class="fa-solid fa-chevron-right"></i></span></div>
                             <div style="font-size:15px">${esc(m.subject)}</div>
@@ -103,15 +116,47 @@ function MailBox(nav, box) {
             const load = async () => {
                 mails = (await rpc('getMail', { box })) || [];
                 if (box === 'inbox') Phone.setBadge('mail', mails.filter((m) => !m.is_read).length);
+                [...selected].forEach((id) => { if (!mails.some((m) => m.id === id)) selected.delete(id); });
                 draw();
+                drawToolbar();
             };
             $('input', content).addEventListener('input', (e) => { q = e.target.value; draw(); });
             if (box === 'inbox') swipeRows(list, '.mail-row', { onDelete: async (row) => { await rpc('deleteMail', { id: +row.dataset.id }); load(); } });
             list.addEventListener('click', (e) => {
                 const r = e.target.closest('[data-id]');
-                if (r) MailRead(nav, mails.find((m) => m.id === +r.dataset.id), box, load);
+                if (!r) return;
+                const id = +r.dataset.id;
+                if (editing) {
+                    if (!selected.delete(id)) selected.add(id);
+                    $('.mail-check', r).classList.toggle('on', selected.has(id));
+                    return drawToolbar();
+                }
+                const m = mails.find((x) => x.id === id);
+                if (m) MailRead(nav, m, box, load);
             });
-            $('[data-act=new]', ctx.page).onclick = () => MailCompose('', '', load);
+            const setEditing = (on) => {
+                editing = on;
+                selected.clear();
+                const b = $('[data-act=edit]', ctx.page);
+                if (b) b.textContent = I18N.t(on ? 'Done' : 'Edit');
+                draw();
+                drawToolbar();
+            };
+            let busy = false;
+            ctx.page.addEventListener('click', async (e) => {
+                const a = e.target.closest('[data-act]');
+                if (!a || a.disabled) return;
+                if (a.dataset.act === 'edit') return setEditing(!editing);
+                if (busy || !selected.size || !['markread', 'trash'].includes(a.dataset.act)) return;
+                const ids = [...selected];
+                if (a.dataset.act === 'trash' && !await UI.confirm(`Delete ${ids.length} message${ids.length === 1 ? '' : 's'}?`, '', 'Delete', true)) return;
+                busy = true;
+                await Promise.all(ids.map((id) => rpc(a.dataset.act === 'trash' ? 'deleteMail' : 'readMail', { id })));
+                busy = false;
+                setEditing(false);
+                load();
+            });
+            drawToolbar();
             ctx.opts.onResume = load;
             ctx.reload = load;
             load();
@@ -132,7 +177,6 @@ Apps.register({
             title: 'Mailboxes',
             large: true,
             grouped: true,
-            right: '<button class="nav-btn" data-act="edit">Edit</button>',
             render(content) {
                 content.innerHTML = `
                     <div class="group">

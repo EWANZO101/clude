@@ -45,6 +45,16 @@ const BR_ITEMS = {
     links: { max: 10, add: { label: '', href: '' }, f: [['label', 'Label'], ['href', 'Link']] },
 };
 
+/** click handlers that charge money: ignore further clicks until the current one (confirm + request) is done */
+function brOneAtATime(fn) {
+    let busy = false;
+    return async (e) => {
+        if (busy) return;
+        busy = true;
+        try { await fn(e); } finally { busy = false; }
+    };
+}
+
 const brStore = {
     get(k, d) { try { const v = JSON.parse(localStorage.getItem('opsbr.' + k)); return v ?? d; } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem('opsbr.' + k, JSON.stringify(v)); } catch (e) { /* storage off */ } },
@@ -504,7 +514,7 @@ ${r.created ? `Created: ${brDate(r.created)}\n` : ''}${r.expires ? `Expires: ${b
                 if (!r || !r.ok) brFail(r);
                 draw();
             });
-            body.addEventListener('click', async (e) => {
+            body.addEventListener('click', brOneAtATime(async (e) => {
                 const d = body._d;
                 const rec = e.target.closest('[data-rid]');
                 const a = e.target.closest('[data-a]');
@@ -519,7 +529,7 @@ ${r.created ? `Created: ${brDate(r.created)}\n` : ''}${r.expires ? `Expires: ${b
                 }
                 if (a.dataset.a === 'code') { const r = await rpc('webDomains', { action: 'transfer_code', id: d.id }); if (!r || !r.ok) return brFail(r); draw(); }
                 if (a.dataset.a === 'ssl') brSslSheet(d, draw);
-            });
+            }));
             return;
         }
         out('<div class="bi-none">Page not found. <a data-nav="/">OPS Domains home</a></div>');
@@ -539,7 +549,7 @@ ${r.created ? `Created: ${brDate(r.created)}\n` : ''}${r.expires ? `Expires: ${b
                 <h3 class="bi-h3">Rather we did it?</h3>
                 <div class="bi-cards">${(data.services || []).map((s) => `<div class="bi-card"><b>${esc({ web_build: 'Website build', web_ssl: 'SSL set-up', web_mail: 'Email set-up' }[s.code] || s.code)}</b><span>${esc(s.desc)}</span><em>${brMoney(s.price)}</em></div>`).join('')}</div>
                 <p class="bi-note">Already have a server? Point your domain at your own OPS Network static IP and build the site here with the self-hosted option — forward ports 80/443 on your router.</p>`);
-            body.addEventListener('click', async (e) => {
+            body.addEventListener('click', brOneAtATime(async (e) => {
                 const b = e.target.closest('[data-buy]');
                 if (!b) return;
                 if (!await UI.confirm(`OPS Web ${b.dataset.name}`, `${brMoney(b.dataset.price)} now, then every billing period.`, 'Buy')) return;
@@ -547,7 +557,7 @@ ${r.created ? `Created: ${brDate(r.created)}\n` : ''}${r.expires ? `Expires: ${b
                 if (!r || !r.ok) return brFail(r);
                 UI.toast('Welcome to OPS Web', 'fa-solid fa-code');
                 Browser.nav('/panel');
-            });
+            }));
             return;
         }
 
@@ -570,7 +580,7 @@ ${r.created ? `Created: ${brDate(r.created)}\n` : ''}${r.expires ? `Expires: ${b
                 <h3 class="bi-h3">Have us do it</h3>
                 <div class="bi-actions">${r.services.map((s) => `<button class="bi-btn ghost" data-order="${esc(s.code)}">${esc({ web_build: 'Build my site', web_ssl: 'Set up SSL', web_mail: 'Set up email' }[s.code] || s.code)} · ${brMoney(s.price)}</button>`).join('')}</div>
                 ${(r.work || []).map((w) => `<h3 class="bi-h3"><i class="fa-solid fa-briefcase"></i> ${esc(w.ref)} · ${esc(w.customer || '')}</h3><div class="bi-list">${w.sites.map(siteRow).join('') || '<div class="bi-none">The customer has no sites yet — they need to create one.</div>'}</div>`).join('')}`;
-            body.addEventListener('click', async (e) => {
+            body.addEventListener('click', brOneAtATime(async (e) => {
                 const h = e.target.closest('[data-h]');
                 if (h) {
                     const id = +h.dataset.id;
@@ -589,7 +599,7 @@ ${r.created ? `Created: ${brDate(r.created)}\n` : ''}${r.expires ? `Expires: ${b
                 if (del) { if (!await UI.confirm('Remove mailbox?', 'Mail to it will bounce.', 'Remove', true)) return; const x = await rpc('webHost', { action: 'mailbox_del', id: +del.dataset.delbox }); if (!x || !x.ok) return brFail(x); return Browser.load(Browser.stack[Browser.idx]); }
                 const o = e.target.closest('[data-order]');
                 if (o) return brOrderSheet(r, o.dataset.order);
-            });
+            }));
             return;
         }
 
