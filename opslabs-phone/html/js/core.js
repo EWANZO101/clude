@@ -895,6 +895,7 @@ Phone.notify = (n) => {
 
     if (Phone.state === 'hidden' || (Phone.state === 'peek' && !Phone._peekHold)) Phone.peek();
     if (Phone.locked && Phone.state === 'open') return; // lock screen list shows it
+    if (bannersBlocked()) return; // call screen / Notification or Control Centre open: it waits in the list
 
     const b = el(notifHtml(n));
     b.classList.add('banner-in');
@@ -905,6 +906,17 @@ Phone.notify = (n) => {
     drag(b, { onEnd: (_dx, dy, _vy, _vx, _e, moved) => { if (moved && dy < -20) { clearTimeout(t); remove(); } } });
     $$('#banners .notif').slice(3).forEach((x) => x.remove());
 };
+
+/** full-screen layers that banners would cover (the caller's name, the list itself) */
+function bannersBlocked() {
+    return $('#call-screen').classList.contains('show') || $('#notif-center').classList.contains('open') || $('#control-center').classList.contains('open');
+}
+
+/** slide away any banners on screen (a call screen or a Centre is opening over them) */
+function clearBanners() {
+    $$('#banners .notif').forEach((b) => { b.classList.add('banner-out'); setTimeout(() => b.remove(), 400); });
+}
+Phone.clearBanners = clearBanners;
 
 function openNotification(n) {
     if (!n) return;
@@ -981,7 +993,7 @@ function renderControlCenter() {
 function toggleControlCenter(force) {
     const cc = $('#control-center');
     const open = force ?? !cc.classList.contains('open');
-    if (open) { $('#notif-center').classList.remove('open'); renderControlCenter(); }
+    if (open) { $('#notif-center').classList.remove('open'); renderControlCenter(); clearBanners(); }
     cc.classList.toggle('open', open);
     updateChrome();
 }
@@ -991,6 +1003,7 @@ function toggleNotifCenter(force) {
     const open = force ?? !nc.classList.contains('open');
     if (open) {
         $('#control-center').classList.remove('open');
+        clearBanners();
         nc.innerHTML = `<div class="nc-time"></div><div class="nc-date">${new Date().toLocaleDateString(Phone.locale, { weekday: 'long', month: 'long', day: 'numeric' })}</div><div class="nc-list scroll"></div>`;
         renderNotifLists();
         tick(true);

@@ -182,6 +182,7 @@ const Call = {
         this.dtmf = '';
         this.render();
         this.screen().classList.add('show');
+        Phone.clearBanners();
         Island.clear('call');
         Phone.updateChrome();
     },
