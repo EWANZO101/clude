@@ -13,6 +13,7 @@ shared_scripts {
     'shared/opshub.lua',              -- what works while unlicensed (the license screen)
     'config.lua',
     'bridge/shared.lua',              -- framework bridge registry (bridge/README.md)
+    'bridge/voice/*.lua',             -- call audio: pma-voice, saltychat, … (detected on the server, used on the client)
     'shared/brand.lua',
 }
 
@@ -49,6 +50,7 @@ server_scripts {
     'config_server.lua',
     'bridge/server/frameworks/*.lua',   -- framework adapters: ESX, QBCore, Qbox, ox_core, ND, vRP, standalone
     'bridge/server/inventories/*.lua',
+    'bridge/server/integrations/*.lua', -- banking, billing, garage, housing: third-party resources
     'bridge/custom/server/*.lua',       -- your own adapters (bridge/README.md)
     'bridge/server/core.lua',           -- detection, checks, FW.* for the rest of the phone
     'server/database.lua',

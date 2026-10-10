@@ -95,33 +95,6 @@ function A.RemoveOfflineMoney(identifier, amount, acc)
     return true
 end
 
--- society accounts: esx_addonaccount ("police" and "society_police" both work)
-local function getShared(name)
-    local p = promise.new()
-    TriggerEvent('esx_addonaccount:getSharedAccount', name, function(acc) p:resolve(acc or false) end)
-    SetTimeout(3000, function() p:resolve(false) end)
-    return Citizen.Await(p) or nil
-end
-
-local function sharedAccount(society)
-    if not Bridge.Started('esx_addonaccount') then return nil end
-    return getShared(society) or (not society:find('^society_') and getShared('society_' .. society)) or nil
-end
-
-function A.AddSocietyMoney(society, amount)
-    local acc = sharedAccount(society)
-    if not acc then return false end
-    acc.addMoney(amount)
-    return true
-end
-
-function A.RemoveSocietyMoney(society, amount)
-    local acc = sharedAccount(society)
-    if not acc or (acc.money or 0) < amount then return false end
-    acc.removeMoney(amount)
-    return true
-end
-
 function A.ItemCount(src, item)
     local p = x(src)
     local i = p and p.getInventoryItem and p.getInventoryItem(item)
@@ -154,32 +127,7 @@ function A.Notify(src, message, kind)
     return true
 end
 
--- bills: esx_billing's `billing` table
-function A.GetBills(identifier)
-    return MySQL.query.await('SELECT id, label, amount, target FROM billing WHERE identifier = ? ORDER BY id DESC', { identifier }) or {}
-end
-
-function A.TakeBill(identifier, id)
-    local bill = MySQL.single.await('SELECT * FROM billing WHERE id = ? AND identifier = ?', { tonumber(id), identifier })
-    if not bill then return nil end
-    if MySQL.update.await('DELETE FROM billing WHERE id = ?', { bill.id }) == 0 then return nil end   -- paid elsewhere
-    return bill
-end
-
-function A.RestoreBill(bill)
-    MySQL.insert.await('INSERT INTO billing (id, identifier, sender, target_type, target, label, amount) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        { bill.id, bill.identifier, bill.sender, bill.target_type, bill.target, bill.label, bill.amount })
-end
-
--- the money goes to the society, or to the player who sent it
-function A.SettleBill(bill)
-    if bill.target_type == 'society' then return FW.AddSocietyMoney(bill.target, bill.amount) end
-    local src = FW.SourceOf(bill.sender)
-    if src then return FW.AddMoney(src, bill.amount, Config.Bank.Account, 'Bill paid') end
-    return FW.AddOfflineMoney(bill.sender, bill.amount, Config.Bank.Account)
-end
-
--- garage: owned_vehicles
+-- garage: owned_vehicles (esx_garage's parking / pound / custom_name / mileage columns when it is installed)
 function A.GetVehicles(identifier)
     local rows = MySQL.query.await('SELECT * FROM owned_vehicles WHERE `owner` = ?', { identifier }) or {}
     local list = {}

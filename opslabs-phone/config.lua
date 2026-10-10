@@ -10,6 +10,17 @@ Config = {}
 Config.Framework = 'auto'
 Config.Inventory = 'auto'
 
+-- Third-party resources the phone works with. 'auto' picks the first one running (the console lists what it chose);
+-- 'framework' uses the framework's own handling, 'none' turns the feature off, or give a resource name.
+-- Convar override: setr opslabs_phone:billing "okokBilling". Your own adapters: bridge/README.md.
+Config.Integrations = {
+    banking = 'auto',   -- society / job accounts and bank history: Renewed-Banking, okokBanking, qb-banking, esx_addonaccount
+    billing = 'auto',   -- Wallet bills: esx_billing, ox_core invoices
+    garage = 'auto',    -- Garage app: jg-advancedgarages, renzu_garage; else the framework's table (esx_garage, qb-garages …)
+    housing = 'auto',   -- Maps → My Homes: ps-housing, qbx_properties, qb-houses, esx_property
+    voice = 'auto',     -- call audio: pma-voice, saltychat, yaca-voice, mumble-voip, tokovoip_script
+}
+
 -- Branding — the MAIN company of this server and every platform name players see on phones, laptops, routers,
 -- stores, websites and OPS Hub. Leave a name empty to derive it from Name (OS → "<Name> OS", Hub → "<Name> Hub" …).
 -- Change any of it live on OPS Hub → Settings (no restart). Companies themselves are renamed on OPS Hub → Companies.
@@ -199,7 +210,7 @@ Config.DisableControlsWhileOpen = true
 -- Calls
 Config.Calls = {
     RingTimeout = 30,     -- seconds before an unanswered call becomes "missed"
-    UsePmaVoice = true,   -- route call audio through pma-voice
+    UsePmaVoice = true,   -- false = no call audio integration (same as Config.Integrations.voice = 'none')
 }
 
 -- OPS Voice: OPS Hub has phone numbers (one per company, one per Hub user). Phones call them like any number and the

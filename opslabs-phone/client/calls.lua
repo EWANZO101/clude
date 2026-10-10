@@ -1,10 +1,7 @@
 local PREFIX = 'opslabs-phone:'
 
-local function setVoiceChannel(channel)
-    if Config.Calls.UsePmaVoice and GetResourceState('pma-voice') == 'started' then
-        exports['pma-voice']:setCallChannel(channel)
-    end
-end
+-- call audio goes through the voice resource the bridge picked (Config.Integrations.voice: pma-voice, saltychat, …)
+local currentCall
 
 RegisterNetEvent(PREFIX .. 'push', function(action, data)
     if action == 'incomingCall' then
@@ -14,11 +11,12 @@ RegisterNetEvent(PREFIX .. 'push', function(action, data)
     elseif action == 'callAccepted' then
         InCall = true
         -- channel 0: a call with OPS Hub (server/voip.lua) — no pma-voice call channel, the bridge listens in your own
-        if data.channel and data.channel ~= 0 then setVoiceChannel(data.channel) end
+        if data.channel and data.channel ~= 0 then currentCall = data FW.VoiceJoin(data) end
         PlayPhoneAnim('call')
     elseif action == 'callEnded' then
         InCall = false
-        setVoiceChannel(0)
+        FW.VoiceLeave(currentCall)
+        currentCall = nil
         if PhoneOpen then PlayPhoneAnim('text') else StopPhoneAnim() end
     end
 end)
@@ -31,5 +29,5 @@ RegisterNUICallback('callState', function(body, cb)
 end)
 
 AddEventHandler('onResourceStop', function(res)
-    if res == GetCurrentResourceName() then setVoiceChannel(0) end
+    if res == GetCurrentResourceName() and currentCall then FW.VoiceLeave(currentCall) end
 end)

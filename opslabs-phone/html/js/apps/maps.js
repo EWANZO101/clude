@@ -302,7 +302,14 @@ Apps.register({
         canvas.width = 393 * K;
         canvas.height = 852 * K;
 
-        let places = Phone.config.places || [];
+        // your homes (housing integration: Config.Integrations.housing) come first, then the city's places
+        let homes = [];
+        const allPlaces = () => [
+            ...homes.map((h) => ({ name: h.label, icon: 'fa-house', color: '#ff9500', home: true, coords: { x: h.x, y: h.y, z: h.z },
+                category: h.kind === 'key' ? 'Key holder' : h.kind === 'rented' ? 'Rented' : 'My Home' })),
+            ...(Phone.config.places || []),
+        ];
+        let places = allPlaces();
         let me = Live.myPos || null;
         let style = Phone.settings.mapStyle || (Phone.settings.darkMode ? 'dark' : 'standard');
         let sheetH = SHEET.half;
@@ -319,7 +326,7 @@ Apps.register({
         const centerOffsetPx = () => visibleCenterY() - 852 / 2;
 
         const peopleList = () => Object.values(Live.incoming).filter((s) => s.x != null);
-        const placeColor = (p) => CATEGORY_COLOR[p.category] || '#ff3b30';
+        const placeColor = (p) => p.color || CATEGORY_COLOR[p.category] || '#ff3b30';
         const isSel = (type, id) => !!selected && selected.type === type && selected.id === id;
         const buildMarkers = () => {
             const showLabels = view.scale > 0.07;
@@ -415,6 +422,13 @@ Apps.register({
             const ps = places.map((p, i) => ({ p, i, d: placeDist(p) }))
                 .filter(({ p }) => !q || (p.name + ' ' + (p.category || '')).toLowerCase().includes(q))
                 .sort((a, b) => (a.d ?? 0) - (b.d ?? 0));
+            const placeRow = ({ p, i, d }) => `
+                    <div class="row tap has-icon" data-place="${i}">
+                        <span class="ri" style="background:${placeColor(p)};border-radius:50%"><i class="fa-solid ${esc(p.icon || 'fa-location-dot')}"></i></span>
+                        <div class="grow"><div class="title">${esc(p.name)}</div><div class="sub">${esc(p.category || 'Place')}${d != null ? ' · ' + esc(fmtDist(d)) : ''}</div></div>
+                        <i class="fa-solid fa-chevron-right chev"></i></div>`;
+            const myHomes = q ? [] : ps.filter(({ p }) => p.home);
+            const rest = q ? ps : ps.filter(({ p }) => !p.home);
             const people = peopleList().filter((s) => !q || (s.name || s.number || '').toLowerCase().includes(q));
             const out = Object.values(Live.outgoing);
             content.innerHTML = `
@@ -431,12 +445,9 @@ Apps.register({
                     <div class="row has-icon"><span class="ri" style="background:#34c759;border-radius:50%"><i class="fa-solid fa-location-arrow"></i></span>
                         <div class="grow"><div class="title">${esc(Contacts.nameFor(s.number) || s.number)}</div><div class="sub">${esc(Live.remaining(s))}</div></div>
                         <button class="btn small gray" data-live-act="stop" data-id="${s.id}" style="color:var(--red)">Stop</button></div>`).join('')}</div>` : ''}
+                ${myHomes.length ? `<div class="group-header big ms-h">My Homes</div><div class="group">${myHomes.map(placeRow).join('')}</div>` : ''}
                 <div class="group-header big ms-h">${q ? 'Results' : 'Places'}</div>
-                <div class="group">${ps.map(({ p, i, d }) => `
-                    <div class="row tap has-icon" data-place="${i}">
-                        <span class="ri" style="background:${placeColor(p)};border-radius:50%"><i class="fa-solid ${esc(p.icon || 'fa-location-dot')}"></i></span>
-                        <div class="grow"><div class="title">${esc(p.name)}</div><div class="sub">${esc(p.category || 'Place')}${d != null ? ' · ' + esc(fmtDist(d)) : ''}</div></div>
-                        <i class="fa-solid fa-chevron-right chev"></i></div>`).join('') || '<div class="row muted">No results</div>'}</div>`;
+                <div class="group">${rest.map(placeRow).join('') || '<div class="row muted">No results</div>'}</div>`;
         };
 
         const cardView = () => {
@@ -597,8 +608,18 @@ Apps.register({
         $('.ms-clear', root).addEventListener('click', () => { search.value = ''; $('.ms-clear', root).classList.add('hidden'); listView(); search.focus(); });
 
         /* ---------- live data ---------- */
+        const loadHomes = () => rpc('getHomes').then((list) => {
+            if (!Array.isArray(list)) return;
+            const sel = selected && selected.type === 'place' ? places[selected.id] : null;
+            homes = list.filter((h) => h && h.x != null);
+            places = allPlaces();
+            if (sel) { const i = places.indexOf(sel); selected = i >= 0 ? { type: 'place', id: i } : null; }
+            if (document.activeElement !== search) renderSheet();
+            redraw();
+        });
+        loadHomes();
         app.on('placesUpdated', () => {
-            places = Phone.config.places || [];
+            places = allPlaces();
             if (selected && selected.type === 'place' && !places[selected.id]) selected = null;
             if (document.activeElement !== search) renderSheet();
             redraw();

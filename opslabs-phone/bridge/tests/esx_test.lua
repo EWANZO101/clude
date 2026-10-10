@@ -64,6 +64,7 @@ end)
 test('ESX: bills from esx_billing; a taken bill can be restored', function()
     local bills = { { id = 7, identifier = 'char1:abc', sender = 'char1:cop', target_type = 'society', target = 'society_police', label = 'Speeding', amount = 250 } }
     local H = esxBoot(function(H)
+        H.resources.esx_billing = 'started'
         H.sqlHandler = function(kind, q, params)
             if q:find('SELECT id, label, amount, target FROM billing') then return bills end
             if q:find('SELECT %* FROM billing') then for _, b in ipairs(bills) do if b.id == params[1] then return b end end end

@@ -10,6 +10,9 @@ local H = require('fivem')
 local SERVER = { 'bridge/shared.lua' }
 local function serverFiles(extra)
     local list = { 'bridge/shared.lua' }
+    local v = io.popen('ls "' .. root .. '/bridge/voice"')
+    for f in v:lines() do if f:match('%.lua$') then list[#list + 1] = 'bridge/voice/' .. f end end
+    v:close()
     for _, f in ipairs({ 'esx', 'qbx', 'qb', 'ox', 'nd', 'vrp', 'standalone' }) do
         local path = 'bridge/server/frameworks/' .. f .. '.lua'
         if io.open(root .. '/' .. path) then list[#list + 1] = path end
@@ -18,6 +21,9 @@ local function serverFiles(extra)
         local path = 'bridge/server/inventories/' .. f .. '.lua'
         if io.open(root .. '/' .. path) then list[#list + 1] = path end
     end
+    local p = io.popen('ls "' .. root .. '/bridge/server/integrations"')
+    for f in p:lines() do if f:match('%.lua$') then list[#list + 1] = 'bridge/server/integrations/' .. f end end
+    p:close()
     for _, f in ipairs(extra or {}) do list[#list + 1] = f end
     list[#list + 1] = 'bridge/server/core.lua'
     return list
@@ -49,7 +55,7 @@ _G.H_ROOT = root
 
 -- the test files, one per framework
 local dir = root .. '/bridge/tests/'
-for _, f in ipairs({ 'core_test.lua', 'esx_test.lua', 'qb_test.lua', 'ox_test.lua', 'nd_test.lua', 'vrp_test.lua', 'inventory_test.lua', 'client_test.lua' }) do
+for _, f in ipairs({ 'core_test.lua', 'esx_test.lua', 'qb_test.lua', 'ox_test.lua', 'nd_test.lua', 'vrp_test.lua', 'inventory_test.lua', 'integrations_test.lua', 'integrations2_test.lua', 'client_test.lua' }) do
     local chunk = loadfile(dir .. f)
     if chunk then chunk() end
 end

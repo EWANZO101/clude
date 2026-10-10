@@ -29,6 +29,20 @@ function FW.OnInventoryChanged(fn) invChanged[#invChanged + 1] = fn end
 --- false when the inventory can't tell us about changes: callers re-check items themselves (e.g. on every open)
 function FW.HasInventoryEvents() return invEvents end
 
+-- call audio through the voice resource the server picked (Config.Integrations.voice)
+local voice
+--- call = { id, channel, peer }: the call was answered — connect the audio
+function FW.VoiceJoin(call)
+    if voice and voice.Join then
+        local ok, err = pcall(voice.Join, call)
+        if not ok then print(('^1[opslabs-phone] %s: joining the call failed: %s^7'):format(voice.label, tostring(err))) end
+    end
+end
+--- the call ended (or the phone stopped): disconnect the audio
+function FW.VoiceLeave(call)
+    if voice and voice.Leave then pcall(voice.Leave, call or {}) end
+end
+
 local function hook(adapter, withInventory)
     if not adapter then return end
     local ev = adapter.events or {}
@@ -72,4 +86,5 @@ CreateThread(function()
         print(('^3[opslabs-phone] no client adapter for inventory "%s": the phone item is checked each time the phone opens^7'):format(invName))
     end
     hook(invA, true)
+    voice = chosen.voice and Bridge.Integrations.voice[chosen.voice] or nil
 end)
