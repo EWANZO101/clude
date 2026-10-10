@@ -42,11 +42,41 @@ test('an unknown override is reported and detection runs instead', function()
     eq(FW.Info().framework, 'esx', 'detected anyway')
 end)
 
-test('a framework that fails its check falls back to standalone instead of breaking', function()
-    local H = boot(function(H) F.esx(H, { noExport = true }) end)
+test('a framework that is running but broken loads no phones (never standalone), and recovers when it works', function()
+    local fx
+    local H = boot(function(H)
+        fx = F.esx(H, { noExport = true })
+        fx.add(1, { identifier = 'char1:abc', first = 'A', last = 'B' })
+        H.players[1].ids = { license = 'license:abc' }
+    end)
     ok(H.logged('failed its check'), 'error logged')
-    ok(H.logged('Running STANDALONE'), 'fallback logged')
-    eq(FW.Info().framework, 'standalone', 'fallback')
+    ok(H.logged('No phones will load'), 'explained')
+    eq(FW.Info().framework, 'esx', 'still ESX')
+    eq(FW.Info().status, 'failed', 'status')
+    eq(H.call(function() return FW.Player(1) end), nil, 'no player: no phone keyed by license')
+    -- es_extended comes back (e.g. it was restarting)
+    H.exportsOf.es_extended = { getSharedObject = function() return fx.ESX end }
+    H.run(20000)
+    ok(H.logged('works now'), 'recovered')
+    eq(H.call(function() return FW.Player(1) end).identifier, 'char1:abc', 'ESX identifier')
+end)
+
+test('money is rounded like ESX does, not floored', function()
+    local fx
+    local H = boot(function(H) fx = F.esx(H) fx.add(1, { identifier = 'c', first = 'A', last = 'B', bank = 1000 }) end)
+    eq(H.call(function() return FW.RemoveMoney(1, 150.5, 'bank') end), true, 'pays')
+    eq(H.call(function() return FW.GetMoney(1, 'bank') end), 849, '151 taken')
+    eq(H.call(function() return FW.RemoveMoney(1, 0.4, 'bank') end), true, 'rounds to nothing: done')
+    eq(H.call(function() return FW.RemoveMoney(1, -5, 'bank') end), false, 'negative refused')
+end)
+
+test('a job change during the session reaches FW.OnJobChanged', function()
+    local H = boot(function(H) F.esx(H) end)
+    local changed
+    FW.OnJobChanged(function(src) changed = src end)
+    H.emit('esx:setJob', nil, 4, { name = 'police' }, { name = 'unemployed' })
+    H.run()
+    eq(changed, 4, 'job change')
 end)
 
 test('an adapter error is caught, logged once, and the call returns a safe value', function()

@@ -281,6 +281,7 @@ local columns = {
     { 'opslabs_phone_users', 'char_first', '`char_first` VARCHAR(60) DEFAULT NULL' },
     { 'opslabs_phone_users', 'char_last', '`char_last` VARCHAR(60) DEFAULT NULL' },
     { 'opslabs_phone_users', 'char_job', '`char_job` VARCHAR(60) DEFAULT NULL' },
+    { 'opslabs_phone_users', 'char_grade', '`char_grade` INT DEFAULT NULL' },
 }
 
 DatabaseReady = false

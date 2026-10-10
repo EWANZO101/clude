@@ -197,12 +197,13 @@ end
 -- once: names of phone owners who haven't logged in since the phone kept its own copy. Returns rows updated.
 function A.BackfillNames()
     return MySQL.update.await([[UPDATE opslabs_phone_users p JOIN users u ON u.identifier = p.identifier
-        SET p.char_first = u.firstname, p.char_last = u.lastname, p.char_job = u.job WHERE p.char_first IS NULL]])
+        SET p.char_first = u.firstname, p.char_last = u.lastname, p.char_job = u.job, p.char_grade = u.job_grade WHERE p.char_first IS NULL]])
 end
 
 A.events = {
     loaded = { ['esx:playerLoaded'] = function(src) return src end },
     unloaded = { ['esx:playerLogout'] = function(src) return src end },
+    job = { ['esx:setJob'] = function(src) return src end },          -- (source, job, lastJob)
 }
 
 Bridge.RegisterFramework('esx', A)

@@ -11,8 +11,15 @@ local fw, inv            -- the chosen adapters (inv may be the framework itself
 local invName = 'none'
 local ready = false
 local info = {}
-local loadedHandlers, unloadedHandlers, usableQueue = {}, {}, {}
+local loadedHandlers, unloadedHandlers, jobHandlers, usableQueue = {}, {}, {}, {}
 GlobalState['opslabs-phone:bridge'] = nil   -- clients wait for this run's choice, not the last one
+
+-- money is whole dollars: round like ESX does (150.50 → 151); nil for nothing / negative
+local function amountOf(x)
+    x = tonumber(x) or 0
+    if x <= 0 then return nil end
+    return math.floor(x + 0.5)
+end
 
 local function log(colour, msg, ...) print(('^%s[opslabs-phone] ' .. msg .. '^7'):format(colour, ...)) end
 
@@ -127,7 +134,14 @@ local function hookEvents()
             -- frameworks that fire both their own and a compatibility event: handle it once
             if not src or (recent[src] and GetGameTimer() - recent[src] < 3000) then return end
             recent[src] = GetGameTimer()
-            for _, fn in ipairs(loadedHandlers) do pcall(fn, src) end
+            -- each in its own thread, as separate event handlers would be: one that waits doesn't hold up the rest
+            for _, fn in ipairs(loadedHandlers) do CreateThread(function() fn(src) end) end
+        end)
+    end
+    for event in pairs(ev.job or {}) do
+        AddEventHandler(event, function(...)
+            local src = source(ev.job, event, ...)
+            if src then for _, fn in ipairs(jobHandlers) do CreateThread(function() fn(src) end) end end
         end)
     end
     for event in pairs(ev.unloaded or {}) do
@@ -135,7 +149,7 @@ local function hookEvents()
             local src = source(ev.unloaded, event, ...)
             if not src then return end
             recent[src] = nil
-            for _, fn in ipairs(unloadedHandlers) do pcall(fn, src) end
+            for _, fn in ipairs(unloadedHandlers) do CreateThread(function() fn(src) end) end
         end)
     end
 end
@@ -148,11 +162,26 @@ local function start()
         local okCall, r, e = pcall(fw.init)
         ok, err = okCall and r ~= false, okCall and e or r
     end
-    if not ok then
-        log('1', 'Framework %s was found but failed its check: %s', fw.label, tostring(err or 'unknown error'))
-        log('1', 'Running STANDALONE so the phone keeps working. Fix the error above and restart opslabs-phone.')
-        fw, source = Bridge.Frameworks.standalone, 'fallback'
-        if fw.init then pcall(fw.init) end
+    if not ok and fw.name ~= 'standalone' then
+        -- a framework IS running but doesn't work (yet): never fall back to standalone — that would give every
+        -- player a new phone keyed by their license and skip the item check. Load no phones and keep retrying.
+        local picked = fw
+        log('1', 'Framework %s was found but failed its check: %s', picked.label, tostring(err or 'unknown error'))
+        log('1', 'No phones will load until it works. Retrying every 15 seconds.')
+        fw = { name = picked.name, label = picked.label .. ' (not working)', status = 'failed', resource = picked.resource, events = picked.events }
+        CreateThread(function()
+            while true do
+                Wait(15000)
+                local okCall, r = pcall(picked.init)
+                if okCall and r ~= false then
+                    fw = picked
+                    if invName == 'none' and picked.ItemCount then inv, invName = picked, 'framework' end
+                    info.label, info.status = picked.label, picked.status
+                    log('2', 'Framework %s works now: phones load again.', picked.label)
+                    break
+                end
+            end
+        end)
     end
 
     local from
@@ -268,16 +297,18 @@ function FW.GetMoney(src, account)
 end
 
 function FW.AddMoney(src, amount, account, reason)
-    amount = math.floor(tonumber(amount) or 0)
-    if amount <= 0 or not awaitReady() then return false end
+    amount = amountOf(amount)
+    if not amount or not awaitReady() then return false end
+    if amount == 0 then return true end
     return call(fw, 'AddMoney', false, src, amount, account or 'bank', reason) ~= false
 end
 
 --- takes money only if they have enough; returns true when taken
 function FW.RemoveMoney(src, amount, account, reason)
-    amount = math.floor(tonumber(amount) or 0)
+    amount = amountOf(amount)
     account = account or 'bank'
-    if amount <= 0 or not awaitReady() then return false end
+    if not amount or not awaitReady() then return false end
+    if amount == 0 then return true end
     if FW.GetMoney(src, account) < amount then return false end
     return call(fw, 'RemoveMoney', false, src, amount, account, reason) == true
 end
@@ -289,22 +320,25 @@ function FW.GetOfflineMoney(identifier, account)
 end
 
 function FW.AddOfflineMoney(identifier, amount, account)
-    amount = math.floor(tonumber(amount) or 0)
-    if amount <= 0 or not awaitReady() then return false end
+    amount = amountOf(amount)
+    if not amount or not awaitReady() then return false end
+    if amount == 0 then return true end
     return call(fw, 'AddOfflineMoney', false, tostring(identifier), amount, account or 'bank') == true
 end
 
 function FW.RemoveOfflineMoney(identifier, amount, account)
-    amount = math.floor(tonumber(amount) or 0)
-    if amount <= 0 or not awaitReady() then return false end
+    amount = amountOf(amount)
+    if not amount or not awaitReady() then return false end
+    if amount == 0 then return true end
     return call(fw, 'RemoveOfflineMoney', false, tostring(identifier), amount, account or 'bank') == true
 end
 
 --- money into a society / business account (bills to a job, carrier income)
 local societyWarned = false
 function FW.AddSocietyMoney(society, amount)
-    amount = math.floor(tonumber(amount) or 0)
-    if not society or society == '' or amount <= 0 or not awaitReady() then return false end
+    amount = amountOf(amount)
+    if not society or society == '' or not amount or not awaitReady() then return false end
+    if amount == 0 then return true end
     local done = call(fw, 'AddSocietyMoney', false, society, amount)
     if not done and not societyWarned then
         societyWarned = true
@@ -315,8 +349,9 @@ end
 
 --- takes money from a society / business account, only if it has enough (a business paying an OPS invoice)
 function FW.RemoveSocietyMoney(society, amount)
-    amount = math.floor(tonumber(amount) or 0)
-    if not society or society == '' or amount <= 0 or not awaitReady() then return false end
+    amount = amountOf(amount)
+    if not society or society == '' or not amount or not awaitReady() then return false end
+    if amount == 0 then return true end
     return call(fw, 'RemoveSocietyMoney', false, society, amount) == true
 end
 
@@ -375,6 +410,8 @@ end
 --- fn(src) when a character finishes loading / logs out (character switch). playerDropped is separate.
 function FW.OnPlayerLoaded(fn) loadedHandlers[#loadedHandlers + 1] = fn end
 function FW.OnPlayerUnloaded(fn) unloadedHandlers[#unloadedHandlers + 1] = fn end
+--- fn(src) when a player's job changes during the session
+function FW.OnJobChanged(fn) jobHandlers[#jobHandlers + 1] = fn end
 
 ---------------------------------------------------------------------------
 -- exports: adapters and info for other resources

@@ -5,7 +5,11 @@ FW = {}
 
 local loaded, unloaded, invChanged = {}, {}, {}
 local invEvents = false
-local function run(list, ...) for _, fn in ipairs(list) do pcall(fn, ...) end end
+-- each handler in its own thread, as separate event handlers would be (the phone's preload waits on the server)
+local function run(list, ...)
+    local args = table.pack(...)
+    for _, fn in ipairs(list) do CreateThread(function() fn(table.unpack(args, 1, args.n)) end) end
+end
 
 -- "something changed, item unknown" can arrive many times a second (QBCore player data): pass it on once per second
 local unknownPending = false

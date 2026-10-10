@@ -103,7 +103,7 @@ end
 
 local function requireUser(number)
     -- exact match first, then the same digits in the server's number format ("5551234" -> "555-1234")
-    local user = MySQL.single.await('SELECT identifier, phone_number, email, settings, created_at, char_first, char_last, char_job FROM opslabs_phone_users WHERE phone_number IN (?, ?) LIMIT 1',
+    local user = MySQL.single.await('SELECT identifier, phone_number, email, settings, created_at, char_first, char_last, char_job, char_grade FROM opslabs_phone_users WHERE phone_number IN (?, ?) LIMIT 1',
         { number, NormalizeNumber(number) })
     if not user then apiError(404, 'Phone number not found') end
     return user
@@ -167,7 +167,8 @@ end)
 
 route('GET', '/users/([^/]+)', function(p)
     local user = requireUser(p[1])
-    local char = { firstname = user.char_first, lastname = user.char_last, job = user.char_job }
+    -- null when the phone has never seen the character (as before, when there was no framework row)
+    local char = (user.char_first or user.char_job) and { firstname = user.char_first, lastname = user.char_last, job = user.char_job, job_grade = user.char_grade } or nil
     return {
         number = user.phone_number,
         email = user.email,

@@ -75,6 +75,7 @@ end
 local events = {
     loaded = { ['QBCore:Server:PlayerLoaded'] = function(p) return p and p.PlayerData and p.PlayerData.source end },
     unloaded = { ['QBCore:Server:OnPlayerUnload'] = function(src) return src end },
+    job = { ['QBCore:Server:OnJobUpdate'] = function(src) return src end },   -- (source, job)
 }
 
 ---------------------------------------------------------------------------

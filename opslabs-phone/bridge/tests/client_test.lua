@@ -17,12 +17,12 @@ local function client(choice, extra)
     return seen
 end
 
-test('client ESX + ox_inventory: load / logout events, ox item counts (not ESX item events)', function()
+test('client ESX + ox_inventory: load / logout events; items through ox_inventory:itemCount', function()
     local seen = client({ framework = 'esx', inventory = 'ox_inventory' })
     H.emit('esx:playerLoaded', nil, {}, false)
     H.emit('esx:onPlayerLogout', nil)
     H.emit('ox_inventory:itemCount', nil, 'phone', 0)
-    H.emit('esx:addInventoryItem', nil, 'phone', 1)      -- not the inventory in use: ignored
+    H.emit('esx:addInventoryItem', nil, 'phone', 1)      -- ox_inventory also sends these on ESX: counted once, through itemCount
     H.run()
     eq(seen.loaded, 1, 'loaded') eq(seen.unloaded, 1, 'unloaded')
     eq(#seen.inv, 1, 'one inventory change') eq(seen.inv[1], 'phone', 'item name')

@@ -25,7 +25,7 @@ test('vRP: a Creative-style vRP is recognised and sent to a custom adapter, not 
         H.files.vrp = { ['modules/base.lua'] = 'function vRP.Passport(source) end' }
     end)
     ok(H.logged('Creative%-style vRP'), 'explained')
-    eq(FW.Info().framework, 'standalone', 'safe fallback')
+    eq(FW.Info().status, 'failed', 'no phones rather than guessing')
 end)
 
 test('vRP: vRP:playerSpawn on first spawn only, vRP:playerLeave', function()
