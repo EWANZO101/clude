@@ -466,24 +466,29 @@ function ltSpeedTest(w) {
     if (!Laptop.online() || w.speedTimer) return;
     const isp = (Laptop.net && Laptop.net.isp) || {};
     const down = isp.down || 300, up = isp.up || 50;
-    const card = $('.lt-speedcard', w.root);
-    const D = $('[data-sp=down]', card), U = $('[data-sp=up]', card), bar = $('.lt-speed-bar i', card);
-    D.textContent = '0'; U.textContent = '—';
-    let t = 0;
+    let t = 0, dv = 0, uv = '—';
+    // the Network window redraws on every 3 s poll: look the card up again on each tick
+    const paint = () => {
+        const card = $('.lt-speedcard', w.root);
+        if (!card) return null;
+        const D = $('[data-sp=down]', card), U = $('[data-sp=up]', card), bar = $('.lt-speed-bar i', card);
+        if (D) D.textContent = dv;
+        if (U) U.textContent = uv;
+        if (bar) bar.style.width = Math.min(100, t / 60 * 100) + '%';
+        return card;
+    };
+    paint();
     const jitter = () => 0.9 + Math.random() * 0.08;
     w.speedTimer = setInterval(() => {
         t += 1;
         if (!Laptop.online()) { clearInterval(w.speedTimer); w.speedTimer = null; return; }
-        if (t <= 30) {
-            D.textContent = Math.round(down * Math.min(1, t / 12) * jitter());
-            bar.style.width = (t / 60 * 100) + '%';
-        } else if (t <= 60) {
-            U.textContent = Math.round(up * Math.min(1, (t - 30) / 12) * jitter());
-            bar.style.width = (t / 60 * 100) + '%';
-        } else {
+        if (t <= 30) dv = Math.round(down * Math.min(1, t / 12) * jitter());
+        else if (t <= 60) uv = Math.round(up * Math.min(1, (t - 30) / 12) * jitter());
+        const card = paint();
+        if (t > 60) {
             clearInterval(w.speedTimer);
             w.speedTimer = null;
-            w.speed = { html: $('.lt-speed', card).outerHTML + $('.lt-speed-bar', card).outerHTML };
+            if (card) w.speed = { html: $('.lt-speed', card).outerHTML + $('.lt-speed-bar', card).outerHTML };
         }
     }, 100);
 }

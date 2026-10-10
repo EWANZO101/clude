@@ -74,6 +74,7 @@ function DevPlaceEditor(place, onSaved) {
     const p = place ? { ...place } : { name: '', icon: 'fa-location-dot', category: 'General', blip: false, blipSprite: 1, blipColor: 0 };
     const isNew = !p.id;
     let pos = p.coords ? { ...p.coords } : null;
+    let saving = false;
     UI.sheet({
         title: isNew ? 'New Location' : 'Edit Location',
         right: 'Save',
@@ -123,6 +124,8 @@ function DevPlaceEditor(place, onSaved) {
         async onRight(api) {
             const b = api.body;
             if (!pos) return UI.alert({ title: 'No position yet', message: 'Tap "Use My Current Position".' });
+            if (saving) return;     // a double tap on Save would add the location twice
+            saving = true;
             const res = await devRpc('devSavePlace', {
                 id: p.id,
                 name: $('[data-f=name]', b).value.trim(),
@@ -133,6 +136,7 @@ function DevPlaceEditor(place, onSaved) {
                 blipSprite: +$('[data-f=blipSprite]', b).value,
                 blipColor: p.blipColor,
             });
+            saving = false;
             if (!res || res.error) return UI.alert({ title: "Couldn't save", message: (res && res.error) || '' });
             api.close();
             UI.toast(isNew ? 'Location added' : 'Location saved', 'fa-solid fa-location-dot');
@@ -454,7 +458,7 @@ const DevPages = {
                         c.innerHTML = '<div class="spinner"></div>';
                         const r = await devRpc('devLicenseKey', { key });
                         if (r && r.error) UI.alert({ title: "Couldn't activate", message: r.error });
-                        else if (r) toast('License activated');
+                        else if (r) UI.toast('License activated', 'fa-solid fa-key');
                         return draw();
                     }
                     if (a.dataset.act === 'refresh') {
@@ -551,11 +555,15 @@ const DevPages = {
                         <div class="row"><textarea class="field" data-f="body" placeholder="Message to every phone" maxlength="300"></textarea></div>
                     </div>
                     <div class="group-footer">Sent as a notification to every player with the phone loaded.</div>`;
+                let sending = false;
                 $('[data-act=send]', ctx.page).onclick = async () => {
                     const body = $('[data-f=body]', c).value.trim();
-                    if (!body) return;
-                    if (!(await UI.confirm('Send to everyone?', body, 'Send'))) return;
-                    const res = await devRpc('devBroadcast', { title: $('[data-f=title]', c).value.trim(), body });
+                    if (!body || sending) return;
+                    sending = true;     // a second tap on Send while it goes out must not broadcast twice
+                    const ok = await UI.confirm('Send to everyone?', body, 'Send');
+                    const res = ok && await devRpc('devBroadcast', { title: $('[data-f=title]', c).value.trim(), body });
+                    sending = false;
+                    if (!ok) return;
                     if (!res || res.error) return UI.alert({ title: "Couldn't send", message: (res && res.error) || '' });
                     UI.toast(`Delivered to ${res.delivered} phones`, 'fa-solid fa-bullhorn');
                     ctx.pop();

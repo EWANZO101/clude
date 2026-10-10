@@ -47,7 +47,7 @@ const License = {
         const names = { 'phone.messages': 'Messages', 'phone.calls': 'Calls', 'phone.contacts': 'Contacts', 'phone.mail': 'Mail', 'phone.camera': 'Camera & Photos',
             'phone.wallet': 'Wallet', 'phone.maps': 'Maps', 'phone.social': 'Social apps', 'phone.browser': 'The browser', 'phone.opswork': 'OPS Work',
             'phone.traffic': 'OPS Traffic', 'phone.secureview': 'Secure View', 'phone.laptop': 'The laptop', 'phone.admin': 'Admin tools', phone: 'OPS Phone' };
-        if (typeof toast === 'function') toast(`${names[module] || module} isn't included in this server's OPSHUB license`, 2600);
+        if (typeof UI !== 'undefined' && UI.toast) UI.toast(`${names[module] || module} isn't included in this server's OPSHUB license`, 'fa-solid fa-lock');
         if (module === 'phone') this.show();
     },
 

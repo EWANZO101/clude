@@ -48,8 +48,9 @@ function ChirpCompose(replyTo, onDone) {
         },
         async onRight(api) {
             const content = $('textarea', api.body).value.trim();
+            api.setRightEnabled(false);
             const id = await rpc('chirpPost', { content, image, replyTo: replyTo && replyTo.id });
-            if (!id) return UI.alert({ title: "Couldn't post" });
+            if (!id) { api.setRightEnabled(true); return UI.alert({ title: "Couldn't post" }); }
             Sound.play('sent');
             api.close();
             onDone && onDone();

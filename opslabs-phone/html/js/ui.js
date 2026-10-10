@@ -317,10 +317,13 @@ const UI = {
             </div>`);
         UI.layer().appendChild(s);
         requestAnimationFrame(() => s.classList.add('show'));
+        let closed = false;
         const api = {
             el: s,
             body: $('.sheet-body', s),
             close() {
+                if (closed) return; // backdrop tap, swipe-down and goHome() can all land on the same sheet
+                closed = true;
                 if (win) win.classList.remove('sheet-behind');
                 UI._dismiss([s, back]);
                 opts.onClose && opts.onClose();
@@ -329,7 +332,15 @@ const UI = {
         };
         $('[data-act=left]', s).onclick = () => (opts.onLeft ? opts.onLeft(api) : api.close());
         const r = $('[data-act=right]', s);
-        if (r) r.onclick = () => opts.onRight && opts.onRight(api);
+        if (r) r.onclick = () => {
+            if (!opts.onRight || r.disabled) return;
+            const res = opts.onRight(api);
+            // async handlers: one request at a time, so a double tap can't submit twice
+            if (res && typeof res.then === 'function') {
+                r.disabled = true;
+                Promise.resolve(res).finally(() => { if (!closed) r.disabled = false; });
+            }
+        };
         back.onclick = () => api.close();
         drag($('.sheet-bar', s), {
             onStart: (e) => !e.target.closest('button'),

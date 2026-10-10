@@ -112,6 +112,7 @@ button[disabled] { opacity: .4; pointer-events: none; }
 /* ---------- Mail ---------- */
 .mail-body { width: 100%; min-height: 400px; border: none; outline: none; resize: none; background: transparent; color: var(--label); font-size: 17px; padding: 16px; line-height: 1.4; border-top: .5px solid var(--sep); }
 .mail-view { padding: 4px 16px 100px; }
+.mailbox-page .page-body { padding-bottom: 100px; }
 .mv-head { display: flex; gap: 10px; align-items: center; padding-bottom: 12px; border-bottom: .5px solid var(--sep); }
 .mv-from { display: flex; justify-content: space-between; font-size: 17px; }
 .mv-from span { font-size: 14px; }
@@ -417,6 +418,7 @@ button[disabled] { opacity: .4; pointer-events: none; }
 .cp-actions button { display: flex; gap: 6px; align-items: center; color: var(--label2); min-width: 40px; }
 .cp-actions button.liked { color: #f91880; }
 .chirp-replies { border-top: 6px solid var(--fill3); }
+.chirp-feed, .chirp-replies { padding-bottom: 72px; } /* clear of the compose button */
 .chirp-fab { position: absolute; right: 18px; bottom: 44px; width: 56px; height: 56px; border-radius: 50%; background: #1d9bf0; color: #fff; font-size: 22px; box-shadow: 0 4px 14px rgba(29,155,240,.45); z-index: 40; }
 .chirp-compose { display: flex; gap: 12px; padding: 4px 16px; }
 .chirp-compose textarea { width: 100%; min-height: 140px; border: none; outline: none; resize: none; background: none; color: var(--label); font-size: 19px; line-height: 1.35; font-family: inherit; }

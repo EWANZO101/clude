@@ -38,7 +38,7 @@ Register('devLogin', function(src, phone, data)
     local email = tostring(data.email or ''):lower():gsub('^%s+', ''):gsub('%s+$', '')
     local password = tostring(data.password or '')
 
-    if email == tostring(cfg.Email):lower() and password == tostring(cfg.Password) then
+    if cfg.Password and cfg.Password ~= '' and email == tostring(cfg.Email):lower() and password == tostring(cfg.Password) then
         sessions[src] = true
         attempts[src] = nil
         print(('^3[opslabs-phone]^7 %s (%s) logged into the Developer app'):format(phone.name, phone.identifier))

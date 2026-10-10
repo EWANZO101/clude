@@ -47,10 +47,12 @@ const SecureView = {
         nav.push({
             title: 'Cameras', grouped: true, backLabel: 'Systems',
             render(c, ctx) {
-                let tab = 'cams';
+                let tab = 'cams', seq = 0;
                 const draw = async () => {
+                    const my = ++seq;   // a quicker tab tap wins over a slower earlier load
                     c.innerHTML = '<div class="spinner" style="margin:60px auto"></div>';
                     const s = svFix(await nui('cctvSystem', { id }));
+                    if (my !== seq) return;
                     if (!s || s.error) {
                         c.innerHTML = UI.empty('fa-solid fa-lock', 'Can’t watch remotely', (s && s.error) || 'Try again in a moment.')
                             + '<div class="group-footer" style="text-align:center">Remote viewing needs the NVR cabled to a router that’s online, and remote viewing switched on at the NVR ([E] → Set up).</div>';
@@ -69,6 +71,7 @@ const SecureView = {
                     } else {
                         body.innerHTML = '<div class="spinner" style="margin:40px auto"></div>';
                         const ev = svFix(await nui('cctvEvents', { id, kind: tab === 'anpr' ? 'anpr' : null })) || [];
+                        if (my !== seq) return;
                         body.innerHTML = `<div class="group">${ev.map((e) => { const k = SV_EVENT[e.kind] || ['circle', '#8e8e93', e.kind];
                             return `<div class="row has-icon">${svIcon(k[0], k[1])}<div class="grow"><div>${esc(e.kind === 'anpr' ? (e.detail || '') : (k[2] + (e.detail ? ' · ' + e.detail : '')))}</div><div class="sub muted">${esc(e.camera || '')} · ${svAgo(e.at)}</div></div></div>`; }).join('')
                             || `<div class="row"><div class="grow muted">${tab === 'anpr' ? 'No plates read yet' : 'Nothing recorded yet'}</div></div>`}</div>`;

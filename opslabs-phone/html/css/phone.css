@@ -797,6 +797,7 @@ img { -webkit-user-drag: none; }
 .cs-accept .c { background: #34c759; }
 .call-screen .cs-incoming { margin-top: auto; width: 100%; display: flex; justify-content: space-between; padding: 0 56px; }
 .call-screen .cs-incoming .cs-btn { font-size: 15px; }
+.call-screen .cs-incoming .cs-end { margin-top: 0; }   /* Decline lines up with Accept */
 .call-screen .cs-quick { display: flex; gap: 110px; margin-top: auto; margin-bottom: 40px; }
 .call-screen .cs-quick .cs-btn .c { width: 46px; height: 46px; font-size: 18px; }
 .cs-keypad { margin-top: auto; display: none; grid-template-columns: repeat(3, 78px); gap: 16px 28px; }
@@ -917,6 +918,7 @@ img { -webkit-user-drag: none; }
 .spotlight.show .spl-bar { transform: none; }
 .spl-bar .search { flex: 1; margin: 0 0 0 12px; background: rgba(255,255,255,.18); color: rgba(255,255,255,.7); }
 .spl-bar .search input { color: #fff; }
+.spl-bar .search input::placeholder { color: rgba(255,255,255,.6); }   /* Search is always dark, even in light mode */
 .spl-bar .nav-btn { color: #fff; }
 .spl-results { flex: 1; padding-bottom: 40px; }
 .spl-h { padding: 14px 18px 8px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: rgba(255,255,255,.65); }

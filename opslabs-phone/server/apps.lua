@@ -67,7 +67,7 @@ function SendMail(toEmailOrSource, senderName, subject, body, senderEmail)
     end
     to = Clean(to, 100):lower()
     local id = MySQL.insert.await('INSERT INTO opslabs_phone_mail (sender, sender_name, receiver, subject, body) VALUES (?, ?, ?, ?, ?)',
-        { senderEmail or 'noreply@' .. Config.MailDomain, Clean(senderName, 100), to, Clean(subject, 160), tostring(body or ''):sub(1, 10000) })
+        { senderEmail or 'noreply@' .. GetMailDomain(), Clean(senderName, 100), to, Clean(subject, 160), tostring(body or ''):sub(1, 10000) })
 
     Emit('mail.sent', { id = id, from = senderEmail, from_name = senderName, to = to, subject = subject })
 

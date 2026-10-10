@@ -386,7 +386,8 @@ function passcodeKey(k) {
         } else {
             const dots = $('.pc-dots', pc);
             dots.classList.add('shake');
-            setTimeout(() => { dots.classList.remove('shake'); $$('i', dots).forEach((d) => d.classList.remove('on')); }, 450);
+            // keys typed during the shake already count towards the next try
+            setTimeout(() => { dots.classList.remove('shake'); $$('i', dots).forEach((d, i) => d.classList.toggle('on', i < pcEntry.length)); }, 450);
             pcEntry = '';
             $('[data-pc=cancel]', pc).textContent = 'Cancel';
         }
@@ -399,17 +400,17 @@ function setupLockscreen() {
 
     drag(ls, {
         onStart: (e) => !e.target.closest('.ls-btn, .notif, .passcode'),
-        onMove: (_dx, dy) => {
-            if (dy > 0) return;
+        onMove: (dx, dy) => {
+            if (dy > 0 || Math.abs(dx) > Math.abs(dy)) return; // sideways is the camera swipe (js/gestures.js)
             ls.classList.add('dragging');
             ls.style.transform = `translateY(${dy * 0.6}px)`;
             ls.style.opacity = String(1 + dy / 900);
         },
-        onEnd: (_dx, dy, vy, _vx, _e, moved) => {
+        onEnd: (dx, dy, vy, _vx, _e, moved) => {
             ls.classList.remove('dragging');
             ls.style.transform = '';
             ls.style.opacity = '';
-            if (moved && (dy < -110 || vy < -0.6)) tryUnlock();
+            if (moved && Math.abs(dy) >= Math.abs(dx) && (dy < -110 || vy < -0.6)) tryUnlock();
         },
     });
 
@@ -655,6 +656,7 @@ Phone.openApp = (id, params = {}, fromNode) => {
     const closing = Phone.closing.get(id);
     if (closing) {
         clearTimeout(closing.timer);
+        clearTimeout(closing.fade);
         Phone.closing.delete(id);
         resumeWindow(closing.app, fromNode);
         if (def.onParams && Object.keys(params).length) def.onParams(params, closing.app.ctx);
@@ -731,6 +733,9 @@ function destroyApp(app) {
 /** fully quit an app (switcher swipe-up, uninstall, character switch) */
 Phone.quitApp = (id) => {
     if (Phone.current && Phone.current.def.id === id) closeApp(true, true);
+    // still animating closed: it would be suspended right after this
+    const c = Phone.closing.get(id);
+    if (c) { clearTimeout(c.timer); clearTimeout(c.fade); Phone.closing.delete(id); destroyApp(c.app); }
     const s = Phone.suspended.get(id);
     if (s) { Phone.suspended.delete(id); destroyApp(s); }
     Phone.recents = Phone.recents.filter((x) => x !== id);
@@ -797,17 +802,18 @@ function closeApp(instant = false, destroy = false) {
     const to = rectInScreen(iconNodeFor(cur.def.id));
     win.classList.add('animating');
     win.style.pointerEvents = 'none';
+    let fade = null;
     if (to) {
         const z = zoomTransform(to);
         win.classList.remove('ready');
         win.style.transform = z.transform;
-        setTimeout(() => { win.style.opacity = '0'; }, 280);
+        fade = setTimeout(() => { win.style.opacity = '0'; }, 280);
     } else {
         win.style.transform = 'translate(98px, 213px) scale(.5)';
         win.style.opacity = '0';
     }
     const t = setTimeout(() => { Phone.closing.delete(cur.def.id); if (Phone.current !== cur) finish(); }, 480);
-    if (keep) Phone.closing.set(cur.def.id, { app: cur, timer: t });
+    if (keep) Phone.closing.set(cur.def.id, { app: cur, timer: t, fade });
     updateChrome();
 }
 Phone.closing = new Map();
@@ -818,6 +824,9 @@ Phone.closeApp = closeApp;
 function goHome() {
     if (Phone.needsSetup) return;
     if (closeOverlays()) return;
+    // swipe up in the app switcher / Search goes back to the home screen
+    if (Phone.Switcher && Phone.Switcher.el) return Phone.Switcher.close();
+    if (Phone.Spotlight && Phone.Spotlight.el) return Phone.Spotlight.close();
     if (typeof Call !== 'undefined' && Call.minimize()) return;
     if ($('.sheet.show, .alert.show, .action-sheet.show')) {
         $$('.backdrop').forEach((b) => b.click());
@@ -840,7 +849,7 @@ const APP_ICON_FALLBACK = { bg: 'linear-gradient(180deg,#8e8e93,#636366)', glyph
 function notifIcon(n) {
     const def = Apps.byId[n.app];
     if (def) return iconScaled(def, 38, 'n-icon');
-    return `<div class="n-icon" style="background:${APP_ICON_FALLBACK.bg}"><i class="${n.icon ? 'fa-solid ' + n.icon : APP_ICON_FALLBACK.glyph}"></i></div>`;
+    return `<div class="n-icon" style="background:${APP_ICON_FALLBACK.bg}"><i class="${n.icon ? 'fa-solid ' + esc(n.icon) : APP_ICON_FALLBACK.glyph}"></i></div>`;
 }
 
 function notifHtml(n) {
@@ -984,7 +993,7 @@ function toggleNotifCenter(force) {
         $('#control-center').classList.remove('open');
         nc.innerHTML = `<div class="nc-time"></div><div class="nc-date">${new Date().toLocaleDateString(Phone.locale, { weekday: 'long', month: 'long', day: 'numeric' })}</div><div class="nc-list scroll"></div>`;
         renderNotifLists();
-        tick();
+        tick(true);
     }
     nc.classList.toggle('open', open);
     updateChrome();
@@ -1166,6 +1175,8 @@ const handlers = {
         RpcCache.clear();
         Phone.needsSetup = false;
         closeApp(true, true);
+        Phone.closing.forEach((c) => { clearTimeout(c.timer); clearTimeout(c.fade); destroyApp(c.app); });
+        Phone.closing.clear();
         Phone.suspended.forEach((a) => destroyApp(a));
         Phone.suspended.clear();
         Phone.recents = [];
@@ -1217,6 +1228,9 @@ window.addEventListener('message', (e) => {
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+        // first Escape leaves the text field (keeps what was typed), the next one puts the phone away
+        const f = document.activeElement;
+        if (f && f.matches('input, textarea, [contenteditable]')) { f.blur(); return; }
         if (Phone.state === 'open') Phone.close();
     }
 });

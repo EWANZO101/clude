@@ -275,10 +275,13 @@ const OwPages = {
                         $('i', o).className = 'fa-solid fa-circle-check';
                         return;
                     }
-                    if (!e.target.closest('[data-submit]')) return;
+                    const sub = e.target.closest('[data-submit]');
+                    if (!sub || sub.disabled) return;
                     if (Object.keys(answers).length < r.questions.length) return UI.toast('Answer every question', 'fa-solid fa-circle-exclamation');
                     const list = r.questions.map((_, i) => answers[i + 1]);
+                    sub.disabled = true;    // one attempt per tap
                     const res = await owRpc(kind === 'safety' ? 'opsSafetyAnswer' : 'opsExam', kind === 'safety' ? { family: ref, answers: list } : { code: ref, answers: list });
+                    sub.disabled = false;
                     if (!res) return;
                     if (res.error) return UI.alert({ title: 'Training', message: res.error });
                     await UI.alert({ title: res.ok ? (res.certified ? 'Passed — certified!' : 'Passed') : 'Not this time',
@@ -458,6 +461,8 @@ const OwPages = {
                 load();
                 c.addEventListener('click', async (e) => {
                     const o = e.target.closest('[data-out]'), i = e.target.closest('[data-in]');
+                    if ((o || i) && (o || i).disabled) return;
+                    if (o || i) (o || i).disabled = true;   // one van per tap
                     if (o) { const r = await nui('opsVanOut', { id: +o.dataset.out }); if (r && r.ok) UI.toast('Your van is outside', 'fa-solid fa-van-shuttle'); else UI.alert({ title: 'Can’t take it out', message: (r && r.error) || 'Try again' }); return load(); }
                     if (i) { const r = await nui('opsVanIn'); if (r && r.ok) UI.toast(`Returned · ${r.km} km`); else UI.alert({ title: 'Return the van', message: (r && r.error) || 'Stand next to it' }); return load(); }
                 });
@@ -492,7 +497,9 @@ const OwPages = {
                 c.addEventListener('click', async (e) => {
                     const a = e.target.closest('[data-acc]'), d = e.target.closest('[data-dec]');
                     if (!a && !d) return;
+                    if ((a || d).disabled) return;
                     if (a && !await UI.confirm('Accept this quote?', 'The work is booked straight away; you pay when each job is done (contracts bill every period).', 'Accept')) return;
+                    $$('[data-acc],[data-dec]', (a || d).parentElement).forEach((b) => { b.disabled = true; });   // no double booking
                     const r = await owRpc('opsQuoteDecide', { id: +(a || d).dataset[a ? 'acc' : 'dec'], accept: !!a });
                     if (r && r.ok) UI.toast(a ? 'Accepted — work booked' : 'Declined'); else if (r) UI.alert({ title: 'Quote', message: r.error });
                     load();
@@ -665,16 +672,24 @@ const OwPages = {
                     <div class="row"><input class="field" data-f="u" placeholder="Username" autocomplete="off" spellcheck="false" maxlength="24"></div>
                     <div class="row"><input class="field" data-f="p" type="password" placeholder="Password"></div></div>
                     <div class="dl-error" style="color:#ff453a;padding:0 20px"></div>
-                    <div style="padding:0 16px"><button class="btn block" data-act="in">Sign In</button>
+                    <div style="padding:0 16px 36px"><button class="btn block" data-act="in">Sign In</button>
                     <button class="btn block secondary" data-act="up" style="margin-top:10px">Create an account</button></div>
                     <div class="group-footer">One account for every OPS company, here and on OPS Hub. New accounts apply to join a company, then a manager approves you.</div>`;
+                const btns = $$('[data-act=in],[data-act=up]', c);
                 const go = async (signup) => {
-                    const r = await rpc(signup ? 'opsnetSignup' : 'opsnetLogin', { username: $('[data-f=u]', c).value.trim(), password: $('[data-f=p]', c).value });
+                    if (btns[0].disabled) return;
+                    const user = $('[data-f=u]', c).value.trim(), pass = $('[data-f=p]', c).value;
+                    if (!user || !pass) { $('.dl-error', c).textContent = 'Enter your username and password'; return; }
+                    btns.forEach((b) => { b.disabled = true; });     // one request at a time (no double sign-up)
+                    const r = await rpc(signup ? 'opsnetSignup' : 'opsnetLogin', { username: user, password: pass });
                     if (r && r.ok) { const m = await owRpc('opsMe'); OpsWork.me = m && m.me; return OpsWork.home(); }
+                    btns.forEach((b) => { b.disabled = false; });
                     $('.dl-error', c).textContent = (r && r.error) || 'Something went wrong';
                 };
                 $('[data-act=in]', c).onclick = () => go(false);
                 $('[data-act=up]', c).onclick = () => go(true);
+                c.addEventListener('input', () => { $('.dl-error', c).textContent = ''; });
+                c.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('input')) go(false); });
             },
         });
     },
@@ -839,15 +854,25 @@ const OwPages = {
                 c.innerHTML = owSpin; load();
                 timer = setInterval(() => { if (document.body.contains(c)) load(); else clearInterval(timer); }, 5000);
                 ctx.opts.onLeave = () => clearInterval(timer);
+                let busy = false;
                 c.addEventListener('click', async (e) => {
                     const a = e.target.closest('[data-act]');
                     if (!a) return;
                     const act = a.dataset.act;
+                    // accept / start / complete / hand back: one request at a time (a double tap must not complete twice)
+                    if (['take', 'work', 'done', 'release'].includes(act)) {
+                        if (busy) return;
+                        busy = true;
+                        try { await jobAct(act); } finally { busy = false; }
+                        return;
+                    }
                     if (act === 'web') { Phone.openApp('browser', { url: a.dataset.co === 'domains' ? 'https://opsdomains.sa/my' : 'https://opsweb.sa/panel' }); return; }
                     if (act === 'gps') { const r = await owRpc('opsJob', { id }); if (r && r.job && r.job.x != null) { nui('setWaypoint', { x: r.job.x, y: r.job.y }); UI.toast('Waypoint set', 'fa-solid fa-location-dot'); } return; }
-                    if (act === 'take') { const r = await owRpc('opsAccept', { id }); if (r && r.ok) { if (r.x != null) nui('setWaypoint', { x: r.x, y: r.y }); UI.toast('Job accepted · waypoint set'); } else if (r && r.training) { if (await UI.alert({ title: 'Certification needed', message: r.error, buttons: [{ label: 'Later', value: false }, { label: 'Training', value: true, style: 'bold' }] })) return OwPages.training(nav); } else if (r) UI.alert({ title: 'Can’t take it', message: r.error }); return load(); }
                     if (act === 'training') return OwPages.training(nav);
                     if (act === 'guide') return OwPages.guide(nav, id);
+                });
+                const jobAct = async (act) => {
+                    if (act === 'take') { const r = await owRpc('opsAccept', { id }); if (r && r.ok) { if (r.x != null) nui('setWaypoint', { x: r.x, y: r.y }); UI.toast('Job accepted · waypoint set'); } else if (r && r.training) { if (await UI.alert({ title: 'Certification needed', message: r.error, buttons: [{ label: 'Later', value: false }, { label: 'Training', value: true, style: 'bold' }] })) return OwPages.training(nav); } else if (r) UI.alert({ title: 'Can’t take it', message: r.error }); return load(); }
                     if (act === 'work') { const r = await owRpc('opsWork', { id }); if (r && r.ok) UI.toast(`Working… ${Math.max(0, r.secs - r.elapsed)} s`, 'fa-solid fa-screwdriver-wrench'); else if (r && (r.needRA || r.needTools)) { if (await UI.alert({ title: 'Not yet', message: r.error, buttons: [{ label: 'Later', value: false }, { label: 'Guide me', value: true, style: 'bold' }] })) return OwPages.guide(nav, id); } else if (r) UI.alert({ title: 'Not yet', message: r.error }); return load(); }
                     if (act === 'done') {
                         const r = await owRpc('opsComplete', { id });
@@ -857,7 +882,7 @@ const OwPages = {
                         return load();
                     }
                     if (act === 'release') { if (await UI.confirm('Hand the job back?', 'It goes back on the job board.', 'Hand back', true)) { await owRpc('opsRelease', { id }); load(); } }
-                });
+                };
             },
         });
     },
@@ -921,9 +946,13 @@ const OwPages = {
                     <div class="row"><input class="field" data-f="loc" placeholder="Location name (job goes where you stand)"></div>
                     <div class="row"><div class="grow">Emergency callout</div>${UI.switchHtml(false, 'data-f="em"')}</div></div>
                     <div style="padding:0 16px"><button class="btn block" data-act="go">Create job</button></div>`;
-                $('[data-act=go]', c).onclick = async () => {
+                $('[data-act=go]', c).onclick = async (ev) => {
+                    const btn = ev.currentTarget;
+                    if (btn.disabled) return;
+                    btn.disabled = true;    // one job per tap
                     const em = $('[data-f=em] input', c) || $('[data-f=em]', c);
                     const r = await owRpc('opsDispatch', { company: co.code, type: $('[data-f=type]', c).value, location: $('[data-f=loc]', c).value, emergency: !!(em && em.checked) });
+                    btn.disabled = false;
                     if (r && r.ok) { UI.toast('Job ' + r.ref + ' created'); nav.pop(); reload && reload(); } else if (r) UI.alert({ title: 'Couldn’t create', message: r.error });
                 };
             },

@@ -18,6 +18,7 @@ function ServiceRequest(service) {
             setTimeout(() => ta.focus(), 350);
         },
         async onRight(api) {
+            api.setRightEnabled(false);
             const ok = await rpc('serviceRequest', { service: service.id, message: $('textarea', api.body).value });
             api.close();
             if (ok) { Sound.play('sent'); UI.toast(`${service.label} notified`, 'fa-solid fa-tower-broadcast'); }

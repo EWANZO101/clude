@@ -34,8 +34,8 @@ Apps.register({
         html: () => `<svg viewBox="0 0 64 64" width="44" height="44" fill="none" stroke="#fff" stroke-width="4.4" stroke-linecap="round"><path d="M32 26v22"/><path d="M22 14a15 15 0 0 0 0 19M42 14a15 15 0 0 1 0 19"/><circle cx="32" cy="23" r="3.6" fill="#fff" stroke="none"/></svg>`,
     },
 
-    open(root) {
-        let tab = 'overview', shop = null, activity = null;
+    open(root, params, app) {
+        let tab = 'overview', shop = null, activity = null, buying = false;
         root.innerHTML = `
             <div class="om">
                 <div class="om-top">
@@ -150,7 +150,11 @@ Apps.register({
 
         const buy = async (code) => {
             const item = shop && shop.plans.find((p) => p.code === code);
-            if (!item) return;
+            if (!item || buying) return;
+            buying = true;      // one purchase at a time: a second tap while paying must not charge twice
+            try { await buyItem(item, code); } finally { buying = false; }
+        };
+        const buyItem = async (item, code) => {
             const l = line();
             if (item.kind === 'addon' && !(l && l.service)) return UI.alert({ title: I18N.t('No active plan'), message: I18N.t('Choose a plan first, then add extras.') });
             const credit = shop.credit || 0;
@@ -236,10 +240,14 @@ Apps.register({
         root.addEventListener('change', async (e) => {
             if (e.target.dataset.toggle !== 'autorenew') return;
             const r = await rpc('carrierAutoRenew', { on: e.target.checked });
-            if (r && r.carrier) CarrierState.set(r.carrier);
+            if (!r || r.error) { e.target.checked = !e.target.checked; return UI.alert({ title: I18N.t("Couldn't change auto-renew"), message: (r && r.error) || I18N.t("Couldn't reach the server") }); }
+            if (r.carrier) CarrierState.set(r.carrier);
             UI.toast(I18N.t(e.target.checked ? 'Auto-renew on' : 'Auto-renew off'), 'fa-solid fa-rotate');
         });
-        const off = Phone.on('carrierChanged', () => { if (!root.isConnected) return off(); if (tab === 'overview') overview(); $('.om-brand b', root).textContent = CarrierState.name(); });
+        // app.on: still subscribed after the app is suspended and resumed (it's dropped when the app closes)
+        const onCarrier = () => { if (tab === 'overview') overview(); $('.om-brand b', root).textContent = CarrierState.name(); };
+        if (app && app.on) app.on('carrierChanged', onCarrier);
+        else { const off = Phone.on('carrierChanged', () => { if (!root.isConnected) return off(); onCarrier(); }); }
 
         overview();
         rpc('carrierStatus').then((v) => { if (v) CarrierState.set(v); });

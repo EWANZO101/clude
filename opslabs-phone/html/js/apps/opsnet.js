@@ -421,25 +421,35 @@ const OnPages = {
                     const act = a.dataset.act;
                     let res;
                     if (act === 'gps') return onWaypoint(j.x, j.y);
+                    // one action at a time: a double tap must not accept / complete twice
+                    if (busy) return;
+                    busy = true;
+                    try { res = await jobAction(act); } finally { busy = false; }
+                    if (res === false) return;
+                    if (res && res.error) return UI.alert({ title: "Couldn't do that", message: res.error });
+                    load();
+                });
+                let busy = false;
+                const jobAction = async (act) => {
+                    let res;
                     if (act === 'accept') { res = await onRpc('opsnetAcceptJob', { id }); if (res && !res.error) { UI.toast('Job accepted'); onWaypoint(j.x, j.y); } }
                     if (act === 'release') res = await onRpc('opsnetReleaseJob', { id });
                     if (act === 'complete') { res = await onRpc('opsnetCompleteJob', { id }); if (res && !res.error) UI.toast(`Completed · ${fmtMoney(res.paid)} paid`, 'fa-solid fa-sack-dollar'); }
                     if (act === 'cancel') {
-                        if (!(await UI.confirm('Cancel Job', 'This planned work will be removed from the list.', 'Cancel Job', true))) return;
+                        if (!(await UI.confirm('Cancel Job', 'This planned work will be removed from the list.', 'Cancel Job', true))) return false;
                         res = await onRpc('opsnetCancelJob', { id });
                     }
                     if (act === 'assign') {
                         const list = await onRpc('opsnetEngineers');
-                        if (!list || list.error) return;
-                        if (!list.length) return UI.alert({ title: 'No Engineers', message: 'Nobody has the jobs.take permission yet.' });
+                        if (!list || list.error) return false;
+                        if (!list.length) { UI.alert({ title: 'No Engineers', message: 'Nobody has the jobs.take permission yet.' }); return false; }
                         const i = await UI.actionSheet('Assign To', list.map((u) => ({ label: `${u.name} (${u.username})` })));
-                        if (i == null) return;
+                        if (i == null) return false;
                         res = await onRpc('opsnetAssignJob', { id, userId: list[i].id });
                         if (res && !res.error) UI.toast('Assigned to ' + list[i].name);
                     }
-                    if (res && res.error) return UI.alert({ title: "Couldn't do that", message: res.error });
-                    load();
-                });
+                    return res;
+                };
             },
         });
     },

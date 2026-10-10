@@ -81,7 +81,7 @@ end
 ---------------------------------------------------------------------------
 Register('datingProfile', function(_, phone)
     local p = mine(phone)
-    return { profile = p and card(p) or nil, seeking = p and p.seeking or nil, active = p and p.active == 1 or nil, minAge = MIN_AGE, maxPhotos = CD.MaxPhotos or 4, suggestedName = phone.name }
+    return { profile = p and card(p) or nil, seeking = p and p.seeking or nil, active = p and IsTrue(p.active), minAge = MIN_AGE, maxPhotos = CD.MaxPhotos or 4, suggestedName = phone.name }
 end)
 
 Register('datingSave', function(_, phone, d)
@@ -127,7 +127,7 @@ Register('datingDeck', function(_, phone)
     for _, p in ipairs(rows) do
         if suits(p.gender, me.seeking) and suits(me.gender, p.seeking) and #out < 20 then out[#out + 1] = card(p) end
     end
-    return { cards = out, active = me.active == 1 }
+    return { cards = out, active = IsTrue(me.active) }
 end)
 
 Register('datingSwipe', function(_, phone, d)
@@ -170,7 +170,7 @@ end)
 Register('datingChat', function(_, phone, d)
     local me = mine(phone)
     local m = me and matchFor(me, d.match)
-    if not m or m.ended == 1 then return { error = 'This match has ended' } end
+    if not m or IsTrue(m.ended) then return { error = 'This match has ended' } end
     MySQL.update.await(('UPDATE opslabs_phone_dating_matches SET %s = ? WHERE id = ?'):format(m.a == me.id and 'a_read' or 'b_read'), { now(), m.id })
     local msgs = MySQL.query.await('SELECT id, sender, body, at FROM opslabs_phone_dating_messages WHERE match_id = ? ORDER BY id DESC LIMIT 100', { m.id }) or {}
     local out = {}
@@ -182,7 +182,7 @@ local sendAt = {}
 Register('datingSend', function(src, phone, d)
     local me = mine(phone)
     local m = me and matchFor(me, d.match)
-    if not m or m.ended == 1 then return { error = 'This match has ended' } end
+    if not m or IsTrue(m.ended) then return { error = 'This match has ended' } end
     local body = Clean(d.body or '', 1000)
     if body == '' then return { error = 'Empty message' } end
     if sendAt[src] and GetGameTimer() - sendAt[src] < 600 then return { error = 'Slow down' } end

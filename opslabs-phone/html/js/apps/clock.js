@@ -14,11 +14,15 @@ const CITIES = [
     ['Singapore', 'Asia/Singapore'], ['Amsterdam', 'Europe/Amsterdam'], ['Mexico City', 'America/Mexico_City'],
 ];
 
+/** wall-clock time in a time zone (parsed from en-US: other locales' date order doesn't parse) */
+function tzNow(tz, now = new Date()) {
+    return new Date(now.toLocaleString('en-US', { timeZone: tz, hourCycle: 'h23' }));
+}
+
 function tzOffsetHours(tz) {
     const now = new Date();
-    const local = new Date(now.toLocaleString(Phone.locale));
-    const there = new Date(now.toLocaleString(Phone.locale, { timeZone: tz }));
-    return Math.round((there - local) / 3600000);
+    const local = new Date(now.toLocaleString('en-US', { hourCycle: 'h23' }));
+    return Math.round((tzNow(tz, now) - local) / 3600000);
 }
 
 function analogClock(size, date = new Date(), dark = false) {
@@ -54,7 +58,7 @@ function WorldClockTab(host) {
                 content.innerHTML = `<div class="plain">${list().map((tz) => {
                     const city = (CITIES.find((c) => c[1] === tz) || [tz.split('/').pop().replace('_', ' ')])[0];
                     const off = tzOffsetHours(tz);
-                    const d = new Date(new Date().toLocaleString(Phone.locale, { timeZone: tz }));
+                    const d = tzNow(tz);
                     const today = new Date();
                     const day = d.getDate() === today.getDate() ? 'Today' : d > today ? 'Tomorrow' : 'Yesterday';
                     return `<div class="row wc-row">
@@ -110,7 +114,7 @@ function AlarmsTab(host) {
                     <div class="group-header big" style="margin-top:18px">Other</div>
                     <div class="plain">${list.map((a) => {
                         const d = new Date(); d.setHours(a.h, a.m);
-                        const [t, ap] = d.toLocaleTimeString(Phone.locale, { hour: 'numeric', minute: '2-digit' }).split(' ');
+                        const [t, ap = ''] = d.toLocaleTimeString(Phone.locale, { hour: 'numeric', minute: '2-digit' }).split(/\s+/);
                         return `<div class="row alarm-row ${a.enabled ? '' : 'off'}" data-id="${a.id}">
                             <div class="grow tap" data-edit="${a.id}"><div class="al-time">${t}<small>${ap}</small></div><div style="font-size:15px">${esc(a.label || 'Alarm')}</div></div>
                             ${UI.switchHtml(a.enabled, `data-toggle="${a.id}"`)}
@@ -243,7 +247,7 @@ function TimerTab(host) {
         if (!lt) return;
         lt.textContent = fmtDuration(Math.ceil(left / 1000));
         $('.tm-prog', host).style.strokeDashoffset = String(289 * (1 - left / t.total));
-        if (t.running && left <= 0) draw();
+        // at 0 the global tick stops the timer and rings; the interval below then redraws the picker
     };
     host.addEventListener('click', (e) => {
         const a = e.target.closest('[data-act]');

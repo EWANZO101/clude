@@ -40,6 +40,7 @@ const WeatherModel = {
         return {
             type, ...t, hi: tempFromF(hi), lo: tempFromF(lo), loF: lo,
             temp: tempFromF(lo + (hi - lo) * curve),
+            tempF: lo + (hi - lo) * curve, // unit-free, for the UV index
             icon: night && (type === 'clear' || type === 'sunny') ? 'fa-moon' : night && type === 'clearing' ? 'fa-cloud-moon' : t.icon,
             cls: night ? 'night' : ['rain', 'thunder', 'overcast', 'fog'].includes(type) ? 'rain' : '',
             night,
@@ -117,7 +118,7 @@ Apps.register({
                     }).join('')}
                 </div>
                 <div class="wx-grid">
-                    <div class="wx-card"><div class="wx-card-title"><i class="fa-solid fa-sun"></i> UV INDEX</div><div class="wx-big">${cur.night ? 0 : Math.round(cur.temp / 12)}</div><div>${cur.night ? 'Low' : cur.temp > 80 ? 'High' : 'Moderate'}</div></div>
+                    <div class="wx-card"><div class="wx-card-title"><i class="fa-solid fa-sun"></i> UV INDEX</div><div class="wx-big">${cur.night ? 0 : Math.round(cur.tempF / 12)}</div><div>${cur.night ? 'Low' : cur.tempF > 80 ? 'High' : 'Moderate'}</div></div>
                     <div class="wx-card"><div class="wx-card-title"><i class="fa-solid fa-droplet"></i> HUMIDITY</div><div class="wx-big">${['rain', 'thunder', 'fog'].includes(cur.type) ? 88 : 46}%</div><div>The dew point is ${tempFromF(WeatherModel.current(world).loF - 6)}° right now.</div></div>
                     <div class="wx-card"><div class="wx-card-title"><i class="fa-solid fa-wind"></i> WIND</div><div class="wx-big">${speedNum(seeded(WeatherModel.seedFor() + 3)() * 14 + 3)}</div><div>${speedSym()} · W</div></div>
                     <div class="wx-card"><div class="wx-card-title"><i class="fa-solid fa-eye"></i> VISIBILITY</div><div class="wx-big">${esc(fmtDist(cur.type === 'fog' ? 1609.34 : 16093.4))}</div><div>${cur.type === 'fog' ? 'Fog is reducing visibility.' : 'Perfectly clear view.'}</div></div>

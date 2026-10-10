@@ -79,13 +79,18 @@ const Call = {
         if (Phone.settings.airplane) {
             return UI.alert({ title: 'Turn Off Airplane Mode to Make a Call' });
         }
-        this.cur = { id: null, number, name, dir: 'out', status: 'ringing' };
+        const cur = this.cur = { id: null, number, name, dir: 'out', status: 'ringing' };
         Phone.inCall = true;
         this.show();
         Sound.ringback();
         nui('callState', { active: true });
 
         const res = await rpc('startCall', { number });
+        // hung up while the call was still being placed: drop it on the server too
+        if (this.cur !== cur) {
+            if (res && res.id) rpc('endCall', { id: res.id });
+            return;
+        }
         if (!res || res.error) {
             Sound.stopRing();
             if (res && res.error === 'service') {
@@ -460,9 +465,9 @@ function FavoritesView(host) {
             const load = async () => { await Contacts.load(); draw(); };
             content.addEventListener('click', (e) => {
                 const info = e.target.closest('[data-info]');
-                if (info) return ContactDetail(nav, Contacts.cache.find((c) => c.id === +info.dataset.info), load);
+                if (info) { const c = Contacts.cache.find((x) => x.id === +info.dataset.info); return c ? ContactDetail(nav, c, load) : load(); }
                 const r = e.target.closest('[data-id]');
-                if (r) { const c = Contacts.cache.find((x) => x.id === +r.dataset.id); Call.start(c.number, c.name); }
+                if (r) { const c = Contacts.cache.find((x) => x.id === +r.dataset.id); if (c) Call.start(c.number, c.name); else load(); }
             });
             $('[data-act=add]', ctx.page).onclick = async () => {
                 const c = await pickContact('Add Favourite');

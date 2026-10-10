@@ -92,7 +92,7 @@ function ContactDetail(nav, contact, onChange) {
                         <div style="font-size:28px;font-weight:600;margin-top:12px;text-align:center">${esc(c.name)}</div>
                         <div style="display:flex;gap:8px;margin-top:16px;width:100%">
                             ${[['message', 'fa-message', 'message'], ['call', 'fa-phone', 'call'], ['mail', 'fa-envelope', 'mail'], ['share', 'fa-share-from-square', 'share']].map(([k, i, l]) => `
-                                <button data-act="${k}" style="flex:1;background:var(--cell);border-radius:10px;padding:9px 0 7px;color:var(--tint);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px" ${k === 'mail' && !c.email ? 'disabled style="opacity:.4"' : ''}>
+                                <button data-act="${k}" style="flex:1;background:var(--cell);border-radius:10px;padding:9px 0 7px;color:var(--tint);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px${k === 'mail' && !c.email ? ';opacity:.4" disabled' : '"'}>
                                     <i class="fa-solid ${i}" style="font-size:18px"></i>${l}</button>`).join('')}
                         </div>
                     </div>
@@ -197,8 +197,9 @@ function ContactEditor(contact = {}, onSaved) {
                 email: $('[data-f=email]', b).value.trim(),
                 avatar: contact.avatar || null,
             };
+            api.setRightEnabled(false);
             const id = await rpc('saveContact', data);
-            if (!id) return UI.alert({ title: 'Could not save contact' });
+            if (!id) { api.setRightEnabled(true); return UI.alert({ title: 'Could not save contact' }); }
             await Contacts.load();
             api.close();
             onSaved && onSaved({ ...data, id, favorite: contact.favorite || 0, blocked: contact.blocked || 0 });

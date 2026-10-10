@@ -481,7 +481,11 @@ function setupHomeGestures() {
     });
     window.addEventListener('pointerup', () => {
         clearTimeout(press);
-        if (menuShown) Phone._swallowHomeClick = true; // releasing after the menu appears isn't a tap
+        if (menuShown) {
+            Phone._swallowHomeClick = true; // releasing after the menu appears isn't a tap
+            // ...but only that release: if it lands on the menu instead of the home screen, don't eat the next tap
+            setTimeout(() => { Phone._swallowHomeClick = false; }, 0);
+        }
         pressIcon = null;
     });
 
@@ -581,6 +585,14 @@ function swipeRows(container, selector, { label = 'Delete', icon = 'fa-trash', o
 /* ---------------------------------------------------------------------
    boot
    --------------------------------------------------------------------- */
+
+// locking puts away everything that sits above the lock screen
+Phone.on('locked', () => {
+    Switcher.close();
+    Spotlight.close();
+    closeQuickActions();
+    exitJiggle();
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     setupStatusGestures();

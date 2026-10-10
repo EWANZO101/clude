@@ -24,13 +24,14 @@ function MailCompose(to = '', subject = '', onSent) {
         },
         async onRight(api) {
             const b = api.body;
+            api.setRightEnabled(false);
             const ok = await rpc('sendMail', {
                 to: $('[data-f=to]', b).value.trim(),
                 from: $('[data-f=from]', b) ? $('[data-f=from]', b).value : undefined,
                 subject: $('[data-f=subject]', b).value.trim() || '(No Subject)',
                 body: $('[data-f=body]', b).value,
             });
-            if (!ok) return UI.alert({ title: 'Cannot Send Mail', message: 'Check the recipient address.' });
+            if (!ok) { api.setRightEnabled(true); return UI.alert({ title: 'Cannot Send Mail', message: 'Check the recipient address.' }); }
             Sound.play('sent');
             api.close();
             onSent && onSent();
@@ -81,6 +82,7 @@ function MailBox(nav, box) {
     nav.push({
         title: box === 'sent' ? 'Sent' : 'Inbox',
         large: true,
+        className: 'mailbox-page',
         backLabel: 'Mailboxes',
         render(content, ctx) {
             content.innerHTML = `<div class="search"><i class="fa-solid fa-magnifying-glass"></i><input placeholder="Search"></div><div class="m-list"><div class="spinner"></div></div>
