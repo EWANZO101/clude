@@ -4,7 +4,7 @@ lua54 'yes'
 
 name 'opslabs-phone'
 author 'OpsLab Systems'
-description 'Smartphone, laptop and jobs platform (ESX / QBCore / QBox through rps_lib) with its own database'
+description 'Smartphone, laptop and jobs platform with its own database — detects ESX, QBCore, Qbox, ox_core, ND, vRP or runs standalone (bridge/)'
 version '1.0.0'
 
 shared_scripts {
@@ -12,10 +12,15 @@ shared_scripts {
     '@opslabs-license/guard.lua',     -- OPSHUB: every player action is checked (opslabs-license)
     'shared/opshub.lua',              -- what works while unlicensed (the license screen)
     'config.lua',
+    'bridge/shared.lua',              -- framework bridge registry (bridge/README.md)
     'shared/brand.lua',
 }
 
 client_scripts {
+    'bridge/client/frameworks/*.lua',
+    'bridge/client/inventories/*.lua',
+    'bridge/custom/client/*.lua',     -- your own adapters (bridge/README.md)
+    'bridge/client/core.lua',
     'client/settings.lua',
     'client/brand.lua',
     'client/brandtext.lua',
@@ -42,7 +47,10 @@ server_scripts {
     'server/opsconnect.lua',            -- multi-server: OPS tables → hosted OPS Hub database when connected (opslabs-connect)
     'server/settings.lua',
     'config_server.lua',
-    'server/framework.lua',
+    'bridge/server/frameworks/*.lua',   -- framework adapters: ESX, QBCore, Qbox, ox_core, ND, vRP, standalone
+    'bridge/server/inventories/*.lua',
+    'bridge/custom/server/*.lua',       -- your own adapters (bridge/README.md)
+    'bridge/server/core.lua',           -- detection, checks, FW.* for the rest of the phone
     'server/database.lua',
     'server/main.lua',
     'server/license.lua',               -- OPSHUB licensing: module gate for every phone call (asks opslabs-license)
@@ -93,7 +101,6 @@ files {
 }
 
 dependencies {
-    'rps_lib',      -- framework (ESX / QBCore / QBox) through rps_lib
     'oxmysql',
     'ox_lib',
 }

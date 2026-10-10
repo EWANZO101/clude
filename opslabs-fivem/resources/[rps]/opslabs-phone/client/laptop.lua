@@ -94,8 +94,8 @@ RegisterNUICallback('laptopClose', function(_, cb)
     cb(true)
 end)
 
-RegisterNetEvent('esx:onPlayerLogout', CloseLaptop)
-RegisterNetEvent('esx:playerLoaded', CloseLaptop)
+FW.OnPlayerUnloaded(CloseLaptop)
+FW.OnPlayerLoaded(CloseLaptop)
 AddEventHandler('onResourceStop', function(res)
     if res == GetCurrentResourceName() and LaptopOpen then
         SetNuiFocus(false, false)

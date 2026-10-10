@@ -64,8 +64,8 @@ function LicenseGate(src, name)
     return nil
 end
 
--- who may enter the key on the phone: FiveM permission (opshub.license / command, checked by opslabs-license) or an ESX
--- admin group
+-- who may enter the key on the phone: FiveM permission (opshub.license / command, checked by opslabs-license) or the
+-- framework's admins (FW.IsAdmin: ESX groups below, QBCore / Qbox permissions, the opslabs.admin ACE …)
 local ADMIN_GROUPS = { 'owner', 'superadmin', 'admin', 'god', 'dev', 'developer' }
 local function canManage(src)
     -- not licensed yet: anyone may enter the key (it only works with a real OPSHUB key); once licensed, only admins

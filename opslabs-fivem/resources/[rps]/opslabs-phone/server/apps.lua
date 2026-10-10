@@ -282,7 +282,7 @@ end
 
 Register('getBank', function(src, phone)
     local tx = MySQL.query.await('SELECT label, amount, created_at FROM opslabs_phone_bank_transactions WHERE identifier = ? ORDER BY id DESC LIMIT 50', { phone.identifier })
-    local bills = MySQL.query.await('SELECT id, label, amount, target FROM billing WHERE identifier = ? ORDER BY id DESC', { phone.identifier })
+    local bills = FW.GetBills(phone.identifier)
     return {
         name = phone.name,
         balance = FW.GetMoney(src, Config.Bank.Account),
@@ -313,13 +313,13 @@ Register('transfer', function(src, phone, data)
         Notify(targetSrc, { app = 'wallet', title = 'Money received', icon = 'fa-money-bill-transfer',
             body = ('%s sent you $%s%s'):format(phone.name, amount, note ~= '' and (' — ' .. note) or '') })
     else
-        -- offline recipient: credit the stored accounts JSON directly
-        local accountsJson = MySQL.scalar.await('SELECT accounts FROM users WHERE identifier = ?', { identifier })
-        local accounts = accountsJson and json.decode(accountsJson)
-        if not accounts then return { error = 'Recipient account unavailable' } end
+        -- offline recipient: the framework credits the stored character (not every framework can)
+        if FW.GetOfflineMoney(identifier, Config.Bank.Account) == nil then return { error = 'Recipient account unavailable' } end
         if not FW.RemoveMoney(src, amount, Config.Bank.Account, 'Phone transfer') then return { error = 'Insufficient funds' } end
-        accounts[Config.Bank.Account] = (accounts[Config.Bank.Account] or 0) + amount
-        MySQL.update.await('UPDATE users SET accounts = ? WHERE identifier = ?', { json.encode(accounts), identifier })
+        if not FW.AddOfflineMoney(identifier, amount, Config.Bank.Account) then
+            FW.AddMoney(src, amount, Config.Bank.Account, 'Phone transfer refund')
+            return { error = 'Recipient account unavailable' }
+        end
     end
 
     lastTransfer[src] = os.time()
@@ -330,26 +330,14 @@ Register('transfer', function(src, phone, data)
 end)
 
 Register('payBill', function(src, phone, data)
-    local bill = MySQL.single.await('SELECT * FROM billing WHERE id = ? AND identifier = ?', { tonumber(data.id), phone.identifier })
-    if not bill then return { error = 'Bill not found' } end
-    if FW.GetMoney(src, Config.Bank.Account) < bill.amount then return { error = 'Insufficient funds' } end
-
-    local deleted = MySQL.update.await('DELETE FROM billing WHERE id = ?', { bill.id })
-    if deleted == 0 then return { error = 'Bill already paid' } end
+    -- the bill is taken off the list first, so two taps can't pay it twice
+    local bill = FW.TakeBill(phone.identifier, data.id)
+    if not bill then return { error = 'Bill not found or already paid' } end
     if not FW.RemoveMoney(src, bill.amount, Config.Bank.Account, 'Bill payment') then
-        MySQL.insert.await('INSERT INTO billing (id, identifier, sender, target_type, target, label, amount) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            { bill.id, bill.identifier, bill.sender, bill.target_type, bill.target, bill.label, bill.amount })   -- put the bill back
+        FW.RestoreBill(bill)   -- put the bill back
         return { error = 'Insufficient funds' }
     end
-
-    if bill.target_type == 'society' then
-        TriggerEvent('esx_addonaccount:getSharedAccount', bill.target, function(account)
-            if account then account.addMoney(bill.amount) end
-        end)
-    else
-        local senderSrc = FW.SourceOf(bill.sender)
-        if senderSrc then FW.AddMoney(senderSrc, bill.amount, Config.Bank.Account, 'Bill paid') end
-    end
+    FW.SettleBill(bill)
     logTx(phone.identifier, 'Bill: ' .. bill.label, -bill.amount)
     return { ok = true }
 end)
@@ -359,17 +347,7 @@ end)
 ---------------------------------------------------------------------------
 
 Register('getVehicles', function(_, phone)
-    local rows = MySQL.query.await('SELECT `plate`, `vehicle`, `type`, `stored`, `parking`, `pound`, `custom_name`, `mileage` FROM owned_vehicles WHERE `owner` = ?', { phone.identifier })
-    local list = {}
-    for _, r in ipairs(rows or {}) do
-        local props = r.vehicle and json.decode(r.vehicle) or {}
-        list[#list + 1] = {
-            plate = r.plate, model = props.model, type = r.type, name = r.custom_name,
-            stored = IsTrue(r.stored), parking = r.parking, pound = r.pound, mileage = r.mileage,
-            fuel = props.fuelLevel, engine = props.engineHealth, body = props.bodyHealth,
-        }
-    end
-    return list
+    return FW.GetVehicles(phone.identifier)
 end)
 
 ---------------------------------------------------------------------------

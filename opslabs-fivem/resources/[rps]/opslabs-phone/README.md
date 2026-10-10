@@ -1,13 +1,16 @@
 # opslabs-phone
 
-**OPS OS** smartphone for ESX Legacy. It has its own database tables, a REST API, and outgoing webhooks for a companion website.
+**OPS OS** smartphone for FiveM. It works on ESX Legacy, QBCore, Qbox, ox_core, ND Core, vRP 1 or a server with no framework, and finds out which one by itself. It has its own database tables, a REST API, and outgoing webhooks for a companion website.
 
 ## Install
 
 1. The resource lives in `resources/[rps]/opslabs-phone` and starts with `ensure [rps]`.
 2. **Disable the old phone** so the two don't fight over F1 and the `phone` item:
    move `[standalone]/sd-phone` out of the `[standalone]` folder (or add `stop sd-phone` after `ensure [standalone]`).
-3. Requirements: `es_extended`, `oxmysql`, `ox_lib` (all installed). Optional: `pma-voice` (call audio).
+3. Requirements: `oxmysql` and `ox_lib`. A framework is optional: the phone detects ESX Legacy, QBCore, Qbox, ox_core,
+   ND Core or vRP 1 and its inventory, and runs standalone if there's none. The server console shows what it found
+   (`[opslabs-phone] Framework: …`). To force one, or to add your own framework, see [bridge/README.md](bridge/README.md).
+   Optional: `pma-voice` (call audio).
 4. Start the server. The tables are created automatically, so there's no SQL to import.
 
 Open the phone with **F1** (rebindable) or `/phone`, or use any phone item. You need one of the items listed in `Config.Items`, and the item decides the frame colour.
@@ -18,7 +21,7 @@ All data lives in `opslabs_phone_*` tables in the server database:
 
 | table | contents |
 |---|---|
-| `opslabs_phone_users` | phone number, email, settings per character |
+| `opslabs_phone_users` | phone number, email, settings, and the character's name and job per character |
 | `opslabs_phone_contacts` | contacts, favourites, blocked numbers |
 | `opslabs_phone_messages` | text messages and attachments (location, image) |
 | `opslabs_phone_calls` | call history |
@@ -31,7 +34,7 @@ All data lives in `opslabs_phone_*` tables in the server database:
 
 ## Apps
 
-Phone (favourites, recents, contacts, keypad, voicemail, live calls via pma-voice), Messages (chat bubbles, live location, photos), Contacts (OpsDrop to nearby players), Mail, Camera, Photos, Notes, Calculator, Clock (world clock, alarms, stopwatch, timer), Weather (live game weather), Maps (GPS waypoints, share location), Wallet (bank, cash, transfers by phone number, pay `esx_billing` bills), Settings (dark mode, wallpapers, ringtones, brightness, display zoom, Face Unlock & passcode), Chirp, Garage (`owned_vehicles`), Services (911/912/913/914 dispatch with GPS for police/EMS/mechanic/taxi), Calendar.
+Phone (favourites, recents, contacts, keypad, voicemail, live calls via pma-voice), Messages (chat bubbles, live location, photos), Contacts (OpsDrop to nearby players), Mail, Camera, Photos, Notes, Calculator, Clock (world clock, alarms, stopwatch, timer), Weather (live game weather), Maps (GPS waypoints, share location), Wallet (bank, cash, transfers by phone number, pay bills: `esx_billing` on ESX), Settings (dark mode, wallpapers, ringtones, brightness, display zoom, Face Unlock & passcode), Chirp, Garage (the framework's vehicles: `owned_vehicles`, `player_vehicles`, …), Services (911/912/913/914 dispatch with GPS for police/EMS/mechanic/taxi), Calendar.
 
 Device features: lock screen with Face Unlock (on raise) or passcode, Dynamic Island (live call timer, incoming calls, silent mode), Control Center, Notification Centre, notification banners that make the phone peek up when it's put away, swipe-up home gesture, swipe-back navigation, and the hardware buttons (Action button = silent mode, volume, power = lock, Camera Control = camera).
 

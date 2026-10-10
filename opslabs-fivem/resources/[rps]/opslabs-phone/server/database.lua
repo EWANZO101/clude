@@ -277,6 +277,11 @@ local schema = {
 local columns = {
     { 'opslabs_phone_users', 'display_name', '`display_name` VARCHAR(60) DEFAULT NULL' },
     { 'opslabs_phone_users', 'setup_done', '`setup_done` TINYINT(1) NOT NULL DEFAULT 0' },
+    -- the character's name and job, saved on every load (any framework), so admin lists need no framework tables
+    { 'opslabs_phone_users', 'char_first', '`char_first` VARCHAR(60) DEFAULT NULL' },
+    { 'opslabs_phone_users', 'char_last', '`char_last` VARCHAR(60) DEFAULT NULL' },
+    { 'opslabs_phone_users', 'char_job', '`char_job` VARCHAR(60) DEFAULT NULL' },
+    { 'opslabs_phone_users', 'char_grade', '`char_grade` INT DEFAULT NULL' },
 }
 
 DatabaseReady = false

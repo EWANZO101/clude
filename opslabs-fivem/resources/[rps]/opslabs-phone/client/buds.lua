@@ -343,8 +343,7 @@ local function ownsBuds()
     push()
 end
 local function onInventory(item) if item == ITEM and loaded then CreateThread(ownsBuds) end end
-RegisterNetEvent('esx:addInventoryItem', onInventory)
-RegisterNetEvent('esx:removeInventoryItem', onInventory)
+FW.OnInventoryChanged(function(item) if item == nil or item == ITEM then onInventory(ITEM) end end)
 
 CreateThread(function()
     local n = 0
@@ -450,7 +449,7 @@ CreateThread(function()
 end)
 
 -- character switch: everything comes back with the new character's settings
-RegisterNetEvent('esx:onPlayerLogout', function()
+FW.OnPlayerUnloaded(function()
     if S.worn then takeOut(true) end
     loaded = false
 end)

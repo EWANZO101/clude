@@ -18,8 +18,8 @@ local function endSession(src)
 end
 
 AddEventHandler('playerDropped', function() endSession(source) end)
-AddEventHandler('esx:playerLogout', function(src) endSession(src) end)
-AddEventHandler('esx:playerLoaded', function(src) endSession(src) end)
+FW.OnPlayerUnloaded(endSession)
+FW.OnPlayerLoaded(endSession)
 
 Register('devSession', function(src)
     return { loggedIn = IsDev(src) }
@@ -263,10 +263,10 @@ end)
 DevRegister('devFindUsers', function(_, _, data)
     local q = '%' .. Clean(data.query, 40) .. '%'
     local rows = MySQL.query.await([[
-        SELECT p.identifier, p.phone_number AS number, p.email, u.firstname, u.lastname
-        FROM opslabs_phone_users p LEFT JOIN users u ON u.identifier = p.identifier
-        WHERE p.phone_number LIKE ? OR CONCAT(IFNULL(u.firstname, ''), ' ', IFNULL(u.lastname, '')) LIKE ? OR p.email LIKE ?
-        ORDER BY u.firstname LIMIT 30]], { q, q, q }) or {}
+        SELECT p.identifier, p.phone_number AS number, p.email, p.char_first AS firstname, p.char_last AS lastname
+        FROM opslabs_phone_users p
+        WHERE p.phone_number LIKE ? OR CONCAT(IFNULL(p.char_first, ''), ' ', IFNULL(p.char_last, '')) LIKE ? OR p.email LIKE ?
+        ORDER BY p.char_first LIMIT 30]], { q, q, q }) or {}
     for _, r in ipairs(rows) do
         r.name = ((r.firstname or '') .. ' ' .. (r.lastname or '')):gsub('^%s+', ''):gsub('%s+$', '')
         r.online = GetSourceByIdentifier(r.identifier) ~= nil and Phones[GetSourceByIdentifier(r.identifier)] ~= nil

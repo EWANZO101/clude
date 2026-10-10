@@ -103,20 +103,20 @@ function HasPhoneCached() return hasPhoneCache end   -- client/battery.lua: no p
 RefreshHasPhone = refreshHasPhone
 
 local function onInventoryChange(item)
-    if not Config.RequireItem or Config.Items[item] then
+    if not Config.RequireItem or item == nil or Config.Items[item] then
         CreateThread(function()
             refreshHasPhone()
             if not hasPhoneCache and PhoneOpen then ClosePhone() end
         end)
     end
 end
-RegisterNetEvent('esx:addInventoryItem', onInventoryChange)
-RegisterNetEvent('esx:removeInventoryItem', onInventoryChange)
+FW.OnInventoryChanged(onInventoryChange)
 
 function OpenPhone()
     if PhoneOpen or LaptopOpen or not canUsePhone() then return end
     if not Config.RequireItem then hasPhoneCache = true end
-    if hasPhoneCache == nil or hasPhoneCache == false then refreshHasPhone() end
+    -- an inventory that can't report changes: ask every time (a dropped phone must not still open)
+    if hasPhoneCache == nil or hasPhoneCache == false or (Config.RequireItem and not FW.HasInventoryEvents()) then refreshHasPhone() end
     if not hasPhoneCache then
         lib.notify({ description = "You don't have a phone", type = 'error' })
         return
@@ -240,7 +240,7 @@ CreateThread(function()
 end)
 
 -- re-init on character switch
-RegisterNetEvent('esx:playerLoaded', function()
+FW.OnPlayerLoaded(function()
     initialized = false
     hasPhoneCache = nil
     ClosePhone()
@@ -260,7 +260,7 @@ CreateThread(function()
     end
 end)
 
-RegisterNetEvent('esx:onPlayerLogout', function()
+FW.OnPlayerUnloaded(function()
     initialized = false
     ClosePhone()
     SendNUIMessage({ action = 'reset' })

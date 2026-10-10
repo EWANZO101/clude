@@ -126,7 +126,7 @@ local function clearAll()
     reporting = false
 end
 
-RegisterNetEvent('esx:onPlayerLogout', clearAll)
+FW.OnPlayerUnloaded(clearAll)
 AddEventHandler('onResourceStop', function(res)
     if res == GetCurrentResourceName() then clearAll() end
 end)

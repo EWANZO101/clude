@@ -230,7 +230,7 @@ CreateThread(function()
 end)
 
 -- character switch: everything comes back with the new character's settings
-RegisterNetEvent('esx:onPlayerLogout', function()
+FW.OnPlayerUnloaded(function()
     if loaded then report() end
     loaded = false
 end)

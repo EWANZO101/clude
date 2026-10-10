@@ -1,4 +1,4 @@
--- players, jobs, money and items go through FW (server/framework.lua → rps_lib: ESX / QBCore / QBox)
+-- players, jobs, money and items go through FW (bridge/: the detected framework and inventory adapters)
 
 Phones = {}          -- [source] = { identifier, number, email, name, settings }
 local numberIndex = {} -- [number] = source
@@ -71,6 +71,8 @@ end
 
 function HasPhoneItem(src)
     if not Config.RequireItem then return true, 'black' end
+    if not FW.Await() then return false end                         -- the bridge isn't ready: never fail open
+    if not FW.HasInventory() then return true, 'black' end          -- no inventory at all: nothing to require
     for item, color in pairs(Config.Items) do
         if FW.ItemCount(src, item) > 0 then return true, color end
     end
@@ -79,6 +81,18 @@ function HasPhoneItem(src)
     if docked then return true, Config.Items[docked.item] or 'black' end
     return false
 end
+
+--- keeps the character's name and job on the phone's own row (admin lists, OPS Hub, the REST API)
+function SaveCharacter(identifier, p)
+    MySQL.update('UPDATE opslabs_phone_users SET char_first = ?, char_last = ?, char_job = ?, char_grade = ? WHERE identifier = ?',
+        { p.firstname or p.name, p.lastname or '', p.job and p.job.name or nil, p.job and p.job.grade and tonumber(p.job.grade.level) or nil, identifier })
+end
+
+-- a job change mid-session (ESX setJob, QBCore SetJob …)
+FW.OnJobChanged(function(src)
+    local p = FW.Player(src)
+    if p and Phones[src] then SaveCharacter(p.identifier, p) end
+end)
 
 --- Loads (or creates) the phone profile of an online player.
 function GetPhone(src)
@@ -106,6 +120,8 @@ function GetPhone(src)
         row.email = generateEmail(p)
         MySQL.update.await('UPDATE opslabs_phone_users SET email = ? WHERE identifier = ?', { row.email, identifier })
     end
+
+    SaveCharacter(identifier, p)
 
     local phone = {
         source = src,
@@ -199,8 +215,8 @@ local function unload(src)
 end
 
 AddEventHandler('playerDropped', function() unload(source) end)
-AddEventHandler('esx:playerLogout', function(src) unload(src) end)
-AddEventHandler('esx:playerLoaded', function(src)
+FW.OnPlayerUnloaded(unload)
+FW.OnPlayerLoaded(function(src)
     unload(src)
     CreateThread(function() GetPhone(src) end)
 end)
