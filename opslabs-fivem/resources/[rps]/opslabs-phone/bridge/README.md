@@ -149,6 +149,66 @@ Inventory adapters work the same way (`Bridge.RegisterInventory`): server `detec
 `RemoveItem`, optional `UsableItem`. Client `events.inventory`, or `watchInventory(changed)`, which calls
 `changed(item)` itself. `localEvents = { ['event'] = true }` marks client-side events (not network events).
 
+## Integrations (bank, bills, garage, homes, call audio)
+
+Besides the framework, the phone works with a few other kinds of resources. Each is picked the same way: the setting
+in `Config.Integrations` (or a convar like `setr opslabs_phone:billing "okokBilling"`), otherwise the first one
+found running. If none is running, the framework's own handling is used (for example `owned_vehicles` on ESX).
+Without that either, the feature is off. The console shows the choice:
+
+```
+[opslabs-phone] Integrations: banking esx_addonaccount · billing esx_billing · garage ESX Legacy (built in) · housing esx_property · voice pma-voice
+```
+
+| Kind | Used for | Built in (✓ verified on a live server, others experimental) |
+|---|---|---|
+| `banking` | job / society accounts (bills to a job, OPS invoices, carrier income); the bank's own statement for phone transfers and bills | esx_addonaccount ✓ (+ esx_banking statement), Renewed-Banking, qb-banking, okokBanking; ox_core group accounts through the framework |
+| `billing` | Wallet → Bills | esx_billing ✓, ox_core invoices |
+| `garage` | Garage app | jg-advancedgarages, renzu_garage; otherwise the framework's table: `owned_vehicles` (ESX / esx_garage ✓), `player_vehicles` (QBCore / Qbox / qb-garages / qbx_garages), ox_core, ND |
+| `housing` | Maps → My Homes | esx_property ✓, ps-housing, qbx_properties, qb-houses |
+| `voice` | call audio | pma-voice ✓, SaltyChat, YaCA, mumble-voip, TokoVOIP |
+
+**Not built in yet:** these have no published API, or one that couldn't be confirmed. Each needs a custom adapter (below): okokBilling (no pay export documented), cd_garage and okokGarage on ESX (columns not published), qs-housing, bcs_housing and loaf_housing (paid, no public API), fd_banking, and Creative / vRP 2 bases.
+
+Values:
+- `'auto'` (the default) picks the first one running.
+- `'framework'` uses the framework's own handling.
+- `'none'` turns the feature off.
+- Otherwise give the resource name; case doesn't matter.
+
+Each integration validates server-side:
+- A bill is taken off the list before money moves, so it can't be paid twice.
+- Society withdrawals check the balance, even where the resource itself doesn't (esx_addonaccount, qb-banking).
+- A player only ever sees their own homes, bills and vehicles.
+
+The console warns:
+- when a configured resource isn't running
+- when an integration fails its start-up check
+- when a society payment has nowhere to go
+
+### Your own integration
+
+`bridge/custom/server/example_integration.lua` is a full billing example. The shape is:
+
+```lua
+Bridge.RegisterIntegration('billing', 'my_billing', {
+    resource = 'my_billing',          -- detected while this resource runs
+    frameworks = { qb = true },       -- optional: only on these frameworks
+    GetBills = function(identifier) ... end,
+    TakeBill = function(identifier, id) ... end,     -- mark paid first, return the bill (nil if already paid)
+    RestoreBill = function(bill) ... end,
+    SettleBill = function(bill, payerSource) ... end,
+})
+```
+
+| Kind | Functions |
+|---|---|
+| banking | `AddSocietyMoney(society, amount)`, `RemoveSocietyMoney(society, amount)` (must refuse an overdraft), optional `LogTransaction(identifier, amount, label)` |
+| billing | `GetBills`, `TakeBill`, `RestoreBill`, `SettleBill` (above) |
+| garage | `GetVehicles(identifier)` → `{ { plate, model, name, stored, parking, pound, fuel, engine, body } }` (`model` is the hash) |
+| housing | `GetHomes(identifier)` → `{ { id, label, x, y, z, kind = 'owned' / 'rented' / 'key' } }` |
+| voice (a new file in `bridge/voice/`, loaded on server and client) | `Join(call)` with `call = { id, channel, peer }` (`peer` is the other phone's server id), `Leave(call)`, run on the client; give it `resource` so the server can detect it. Copy `bridge/voice/pma-voice.lua` |
+
 ## Tests
 
 ```

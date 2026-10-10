@@ -37,7 +37,7 @@ local function call(adapter, fn, fallback, ...)
         end
         return fallback
     end
-    if a == nil then return fallback end
+    if a == nil then return fallback, b end   -- keep a reason given with nil (nil, 'Insufficient funds')
     return a, b
 end
 
@@ -120,6 +120,66 @@ local function pickInventory()
     return nil, 'none', 'fallback'
 end
 
+-- integrations (banking, billing, garage, housing, voice): the chosen resource, else the framework's own, else none
+local integ = {}          -- [kind] = adapter (the framework adapter itself when it stands in)
+local integName = {}      -- [kind] = name shown in the console / sent to clients
+
+local function pickIntegration(kind)
+    local list = Bridge.Integrations[kind]
+    local fallbackFn = Bridge.IntegrationFallback[kind]
+    local function frameworkOwn()
+        if fallbackFn and fw[fallbackFn] then return fw, 'framework', 'framework' end
+        return nil, 'none', 'none'
+    end
+    local choice, from, typed = Bridge.Choice(kind)
+    -- the older setting: Config.Calls.UsePmaVoice = false meant no call audio
+    if kind == 'voice' and choice == 'auto' and (Config.Calls or {}).UsePmaVoice == false then return nil, 'none', 'config' end
+    if choice == 'none' then return nil, 'none', from end
+    if choice == 'framework' then return frameworkOwn() end
+    if choice ~= 'auto' then
+        -- resource names are mixed case (Renewed-Banking): match the setting without caring about case
+        local a
+        for name, def in pairs(list) do if name:lower() == choice then a, choice = def, name end end
+        if a and detects(a) then return a, choice, from end
+        if a then
+            log('3', '%s: "%s" is set in %s, but %s isn\'t running. Detecting another one instead.', kind, choice, from, a.resource or a.label)
+        else
+            log('1', '%s: "%s" (from %s) has no adapter. Detecting instead.', kind, typed, from)
+        end
+    end
+    local function usable(a)
+        -- adapters made for some frameworks only (e.g. a table layout) say so in `frameworks`
+        if a.frameworks and not a.frameworks[fw.name] then return false end
+        return detects(a)
+    end
+    for name, a in pairs(list) do
+        if not a.builtin and usable(a) then return a, name, 'detected' end
+    end
+    for _, name in ipairs(Bridge.IntegrationOrder[kind] or {}) do
+        local a = list[name]
+        if a and usable(a) then return a, name, 'detected' end
+    end
+    return frameworkOwn()
+end
+
+local function startIntegrations()
+    local parts = {}
+    for _, kind in ipairs({ 'banking', 'billing', 'garage', 'housing', 'voice' }) do
+        waitForStarting(Bridge.Integrations[kind])   -- a bank / garage resource still starting is waited for
+        local a, name = pickIntegration(kind)
+        if a and a ~= fw and a.init then
+            local ok, r, e = pcall(a.init)
+            if not ok or r == false then
+                log('1', '%s: %s failed its check (%s). Using the framework\'s own instead.', kind, a.label, tostring(ok and e or r))
+                if Bridge.IntegrationFallback[kind] and fw[Bridge.IntegrationFallback[kind]] then a, name = fw, 'framework' else a, name = nil, 'none' end
+            end
+        end
+        integ[kind], integName[kind] = a, name
+        parts[#parts + 1] = ('%s ^7%s^5'):format(kind, name == 'framework' and (fw.label .. ' (built in)') or (a and a.label or 'none'))
+    end
+    log('5', 'Integrations: %s', table.concat(parts, ' · '))
+end
+
 local function hookEvents()
     local recent = {}
     local function source(map, event, ...)
@@ -178,6 +238,10 @@ local function start()
                     if invName == 'none' and picked.ItemCount then inv, invName = picked, 'framework' end
                     info.label, info.status = picked.label, picked.status
                     log('2', 'Framework %s works now: phones load again.', picked.label)
+                    -- integrations that fall back to the framework (garage, ox_core accounts …) are picked again
+                    startIntegrations()
+                    info.integrations = integName
+                    GlobalState['opslabs-phone:bridge'] = { framework = fw.name, inventory = invName, voice = integName.voice }
                     break
                 end
             end
@@ -195,13 +259,15 @@ local function start()
     end
 
     hookEvents()
+    startIntegrations()
     info = {
         framework = fw.name, label = fw.label, status = fw.status, how = source,
         version = resourceVersion(fw.resource), inventory = invName,
         inventoryLabel = inv and (inv == fw and (fw.label .. ' inventory') or inv.label) or 'none',
+        integrations = integName,
     }
     -- the client picks the matching client adapters from this
-    GlobalState['opslabs-phone:bridge'] = { framework = fw.name, inventory = invName }
+    GlobalState['opslabs-phone:bridge'] = { framework = fw.name, inventory = invName, voice = integName.voice }
 
     local statusText = ({ verified = '^2verified^7', experimental = '^3experimental — not yet tested on a live server^7', custom = '^5custom adapter^7' })[fw.status] or fw.status
     log('5', 'Framework: ^7%s%s ^5(%s) · %s', fw.label, info.version and (' ' .. info.version) or '', source, statusText)
@@ -339,10 +405,10 @@ function FW.AddSocietyMoney(society, amount)
     amount = amountOf(amount)
     if not society or society == '' or not amount or not awaitReady() then return false end
     if amount == 0 then return true end
-    local done = call(fw, 'AddSocietyMoney', false, society, amount)
+    local done = call(integ.banking, 'AddSocietyMoney', false, society, amount)
     if not done and not societyWarned then
         societyWarned = true
-        log('3', 'Could not pay %s into the "%s" society account: %s has no society account integration.', amount, society, fw.label)
+        log('3', 'Could not pay %s into the "%s" society account (banking: %s). Set Config.Integrations.banking to your banking resource.', amount, society, integName.banking or 'none')
     end
     return done == true
 end
@@ -352,7 +418,7 @@ function FW.RemoveSocietyMoney(society, amount)
     amount = amountOf(amount)
     if not society or society == '' or not amount or not awaitReady() then return false end
     if amount == 0 then return true end
-    return call(fw, 'RemoveSocietyMoney', false, society, amount) == true
+    return call(integ.banking, 'RemoveSocietyMoney', false, society, amount) == true
 end
 
 -- items: the detected inventory, or the framework's own
@@ -392,20 +458,79 @@ end
 --- bills: { list(identifier) -> { {id, label, amount, target} }, take(identifier, id) -> bill|nil, restore(bill), settle(bill) }
 function FW.GetBills(identifier)
     if not awaitReady() then return {} end
-    return call(fw, 'GetBills', {}, identifier)
+    return call(integ.billing, 'GetBills', {}, identifier)
 end
 function FW.TakeBill(identifier, id)
     if not awaitReady() then return nil end
-    return call(fw, 'TakeBill', nil, identifier, id)
+    return call(integ.billing, 'TakeBill', nil, identifier, id)
 end
-function FW.RestoreBill(bill) if ready then call(fw, 'RestoreBill', nil, bill) end end
-function FW.SettleBill(bill) if ready then call(fw, 'SettleBill', nil, bill) end end
+function FW.RestoreBill(bill) if ready then call(integ.billing, 'RestoreBill', nil, bill) end end
+
+--- pays one of the character's bills from their bank. Returns the bill, or nil and a message for the player.
+--- Billing integrations that pay in one step (ox_core invoices) have PayBill(src, identifier, id) -> bill | nil, err;
+--- the rest: take the bill off the list first (so it can't be paid twice), take the money, give it to who's owed.
+local billLocks = {}   -- one payment per bill at a time (two fast taps, or the phone and another menu)
+
+function FW.PayBill(src, identifier, id)
+    if not awaitReady() or not integ.billing then return nil, 'Bills are not available' end
+    local key = tostring(integName.billing) .. ':' .. tostring(id)
+    if billLocks[key] then return nil, 'This bill is already being paid' end
+    billLocks[key] = true
+    local ok, bill, err = pcall(function()
+        if integ.billing.PayBill then
+            local b, e = call(integ.billing, 'PayBill', nil, src, identifier, id)
+            if not b then return nil, e or 'Could not pay the bill' end
+            return b
+        end
+        local b = call(integ.billing, 'TakeBill', nil, identifier, id)
+        if not b then return nil, 'Bill not found or already paid' end
+        if not FW.RemoveMoney(src, b.amount, Config.Bank.Account, 'Bill payment') then
+            call(integ.billing, 'RestoreBill', nil, b)   -- put the bill back
+            return nil, 'Insufficient funds'
+        end
+        -- whoever is owed couldn't be paid: give the money back and put the bill back, never lose it
+        if call(integ.billing, 'SettleBill', false, b, src) ~= true then
+            FW.AddMoney(src, b.amount, Config.Bank.Account, 'Bill payment refund')
+            call(integ.billing, 'RestoreBill', nil, b)
+            log('3', 'Bill %s (%s) could not be paid to %s: refunded and kept unpaid.', tostring(b.id), tostring(b.label), tostring(b.target or b.sender))
+            return nil, "This bill can't be paid right now"
+        end
+        return b
+    end)
+    billLocks[key] = nil
+    if not ok then return nil, 'Could not pay the bill' end
+    return bill, err
+end
+function FW.SettleBill(bill, payer) if ready then call(integ.billing, 'SettleBill', nil, bill, payer) end end
 
 --- garage: { { plate, model, type, name, stored, parking, pound, mileage, fuel, engine, body } }
 function FW.GetVehicles(identifier)
     if not awaitReady() then return {} end
-    return call(fw, 'GetVehicles', {}, identifier)
+    return call(integ.garage, 'GetVehicles', {}, identifier)
 end
+
+--- housing: { { id, label, x, y, z, kind = 'owned' | 'rented' | 'key' } } — the character's homes (Maps → My Homes)
+function FW.GetHomes(identifier)
+    if not awaitReady() then return {} end
+    return call(integ.housing, 'GetHomes', {}, identifier)
+end
+
+--- a phone payment in the banking resource's own history, if it keeps one (amount < 0 = money out)
+function FW.LogTransaction(identifier, amount, label)
+    if not ready or not integ.banking or integ.banking == fw then return end
+    call(integ.banking, 'LogTransaction', nil, identifier, amount, label)
+end
+
+--- call audio connected on the server (SaltyChat, YaCA). Client-side systems (pma-voice …) ignore these.
+function FW.VoiceCallStarted(callId, sources)
+    if ready and integ.voice and integ.voice.ServerJoin then call(integ.voice, 'ServerJoin', nil, { id = callId, channel = callId }, sources) end
+end
+function FW.VoiceCallEnded(callId, sources)
+    if ready and integ.voice and integ.voice.ServerLeave then call(integ.voice, 'ServerLeave', nil, { id = callId, channel = callId }, sources) end
+end
+
+--- the integration chosen for a kind ('banking' …): its name, or 'framework' / 'none'
+function FW.Integration(kind) return integName[kind] or 'none' end
 
 --- fn(src) when a character finishes loading / logs out (character switch). playerDropped is separate.
 function FW.OnPlayerLoaded(fn) loadedHandlers[#loadedHandlers + 1] = fn end

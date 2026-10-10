@@ -3,7 +3,7 @@
 
 local function client(choice, extra)
     H.reset()
-    H.load(H_ROOT, { 'bridge/shared.lua' })
+    H.load(H_ROOT, { 'bridge/shared.lua', 'bridge/voice/pma-voice.lua', 'bridge/voice/tokovoip.lua', 'bridge/voice/mumble-voip.lua' })
     for _, f in ipairs({ 'esx', 'qb', 'ox', 'nd', 'vrp', 'standalone' }) do H.load(H_ROOT, { 'bridge/client/frameworks/' .. f .. '.lua' }) end
     for _, f in ipairs({ 'ox_inventory', 'qb' }) do H.load(H_ROOT, { 'bridge/client/inventories/' .. f .. '.lua' }) end
     if extra then H.load(H_ROOT, extra) end
@@ -74,4 +74,27 @@ test('client ox_core / ND events', function()
     seen = client({ framework = 'nd', inventory = 'ox_inventory' })
     H.emit('ND:characterLoaded', nil, {}) H.emit('ND:characterUnloaded', nil) H.run()
     eq(seen.loaded, 1, 'nd loaded') eq(seen.unloaded, 1, 'nd unloaded')
+end)
+
+test('client voice: pma-voice joins the call channel and leaves with 0; TokoVOIP uses a radio channel above 100000', function()
+    client({ framework = 'esx', inventory = 'ox_inventory', voice = 'pma-voice' })
+    local set = {}
+    H.exportsOf['pma-voice'] = { setCallChannel = function(_, n) set[#set + 1] = n end }
+    FW.VoiceJoin({ id = 12, channel = 12, peer = 3 })
+    FW.VoiceLeave({ id = 12, channel = 12 })
+    eq(set[1], 12, 'joined') eq(set[2], 0, 'left')
+
+    client({ framework = 'qb', inventory = 'none', voice = 'tokovoip_script' })
+    local radio = {}
+    AddEventHandler('TokoVoip:addPlayerToRadio', function(ch) radio.join = ch end)
+    AddEventHandler('TokoVoip:removePlayerFromRadio', function(ch) radio.leave = ch end)
+    FW.VoiceJoin({ id = 7, channel = 7 }) FW.VoiceLeave({ id = 7, channel = 7 }) H.run()
+    eq(radio.join, 100007, 'radio channel') eq(radio.leave, 100007, 'left')
+end)
+
+test('client voice: an error in the voice resource is caught and reported', function()
+    client({ framework = 'esx', inventory = 'none', voice = 'pma-voice' })
+    H.exportsOf['pma-voice'] = { setCallChannel = function() error('voice_enableCalls is off') end }
+    FW.VoiceJoin({ id = 1, channel = 1 })
+    ok(H.logged('joining the call failed'), 'reported')
 end)

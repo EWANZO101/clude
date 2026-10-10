@@ -32,6 +32,7 @@ local function finish(call, status)
     call.ended = true
 
     local duration = call.startedAt and (os.time() - call.startedAt) or 0
+    if call.voice then FW.VoiceCallEnded(call.id, players(call)) end
     if call.logId then
         MySQL.update('UPDATE opslabs_phone_calls SET status = ?, duration = ? WHERE id = ?', { status, duration, call.logId })
     end
@@ -139,8 +140,11 @@ Register('answerCall', function(src, _, data)
         Push(src, 'callAccepted', { id = call.id, channel = 0, voip = Voip.Playback(call.hub.bridgeId) })
         return true
     end
+    call.voice = true
+    FW.VoiceCallStarted(call.id, { call.caller, call.callee })   -- voice systems that connect calls on the server (SaltyChat, YaCA)
     for _, s in ipairs({ call.caller, call.callee }) do
-        Push(s, 'callAccepted', { id = call.id, channel = call.id })
+        -- peer: the other phone's server id, for voice systems that connect two players instead of a channel
+        Push(s, 'callAccepted', { id = call.id, channel = call.id, peer = s == call.caller and call.callee or call.caller })
     end
     return true
 end)

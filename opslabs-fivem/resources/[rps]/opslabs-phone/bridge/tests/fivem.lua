@@ -169,6 +169,7 @@ function H.reset(opts)
     _G.MySQL = { scalar = q('scalar'), single = q('single'), query = q('query'), update = q('update'), insert = q('insert') }
     setmetatable(_G.MySQL.update, { __call = function(_, query, params) return _G.MySQL.update.await(query, params) end })
     setmetatable(_G.MySQL.query, { __call = function(_, query, params) return _G.MySQL.query.await(query, params) end })
+    setmetatable(_G.MySQL.insert, { __call = function(_, query, params) return _G.MySQL.insert.await(query, params) end })
 
     _G.Config = { Bank = { Account = 'bank' }, RequireItem = true, Items = { phone = 'black' }, Framework = 'auto', Inventory = 'auto' }
     _G.joaat = function(s) local h = 0 for c in tostring(s):gmatch('.') do h = (h * 31 + c:byte()) % 4294967296 end return h end

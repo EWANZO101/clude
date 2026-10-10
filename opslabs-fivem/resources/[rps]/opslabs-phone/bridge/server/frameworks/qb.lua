@@ -9,23 +9,6 @@ local function decode(v)
     return ok and type(t) == 'table' and t or {}
 end
 
--- society / business accounts: Renewed-Banking (Qbox's default) or qb-banking (QBCore's)
-local function societyAdd(name, amount)
-    if Bridge.Started('Renewed-Banking') then return exports['Renewed-Banking']:addAccountMoney(name, amount) == true end
-    if Bridge.Started('qb-banking') then return exports['qb-banking']:AddMoney(name, amount, 'OPS Phone') ~= false end
-    return false
-end
-
-local function societyRemove(name, amount)
-    if Bridge.Started('Renewed-Banking') then return exports['Renewed-Banking']:removeAccountMoney(name, amount) == true end
-    if Bridge.Started('qb-banking') then
-        -- qb-banking's RemoveMoney doesn't check the balance
-        if (tonumber(exports['qb-banking']:GetAccountBalance(name)) or 0) < amount then return false end
-        return exports['qb-banking']:RemoveMoney(name, amount, 'OPS Phone') ~= false
-    end
-    return false
-end
-
 local function playerData(p)
     if not p then return nil end
     local d = p.PlayerData or p
@@ -84,7 +67,7 @@ local events = {
 
 local qbx = {
     label = 'Qbox', resource = 'qbx_core', status = 'experimental', builtin = true, events = events,
-    GetVehicles = vehicles, BackfillNames = backfill, AddSocietyMoney = societyAdd, RemoveSocietyMoney = societyRemove,
+    GetVehicles = vehicles, BackfillNames = backfill,
 }
 
 function qbx.detect() return Bridge.Started('qbx_core') end
@@ -143,7 +126,7 @@ Bridge.RegisterFramework('qbx', qbx)
 local QBCore
 local qb = {
     label = 'QBCore', resource = 'qb-core', status = 'experimental', builtin = true, events = events,
-    GetVehicles = vehicles, BackfillNames = backfill, AddSocietyMoney = societyAdd, RemoveSocietyMoney = societyRemove,
+    GetVehicles = vehicles, BackfillNames = backfill,
 }
 
 -- Qbox also answers to 'qb-core' (provide 'qb-core'): never treat Qbox as QBCore

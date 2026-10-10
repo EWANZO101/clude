@@ -261,6 +261,7 @@ if (!IN_GAME) {
             bills: [{ id: 1, label: 'Speeding ticket', amount: 250, target: 'society_police' }],
         }),
         transfer: () => ({ ok: true }), payBill: () => ({ ok: true }),
+        getHomes: () => [{ label: '1076 Procopio Dr', x: -467.88, y: 6206.16, z: 28.57, kind: 'owned' }, { label: 'Vinewood Hills (Lamar)', x: -174.5, y: 497.4, z: 137.6, kind: 'key' }],
         getVehicles: () => [
             { plate: 'OPS 2024', model: 1, type: 'car', name: null, stored: true, parking: 'Legion Square', fuel: 76, engine: 980, body: 940, mileage: 1240.5 },
             { plate: '8KX 221', model: 2, type: 'car', name: 'Daily', stored: false, fuel: 22, engine: 610, body: 720 },

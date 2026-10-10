@@ -278,6 +278,7 @@ local lastTransfer = {}
 
 local function logTx(identifier, label, amount)
     MySQL.insert('INSERT INTO opslabs_phone_bank_transactions (identifier, label, amount) VALUES (?, ?, ?)', { identifier, label, amount })
+    FW.LogTransaction(identifier, amount, label)   -- and in the bank resource's own statement, if it keeps one
 end
 
 Register('getBank', function(src, phone)
@@ -330,14 +331,8 @@ Register('transfer', function(src, phone, data)
 end)
 
 Register('payBill', function(src, phone, data)
-    -- the bill is taken off the list first, so two taps can't pay it twice
-    local bill = FW.TakeBill(phone.identifier, data.id)
-    if not bill then return { error = 'Bill not found or already paid' } end
-    if not FW.RemoveMoney(src, bill.amount, Config.Bank.Account, 'Bill payment') then
-        FW.RestoreBill(bill)   -- put the bill back
-        return { error = 'Insufficient funds' }
-    end
-    FW.SettleBill(bill)
+    local bill, err = FW.PayBill(src, phone.identifier, data.id)
+    if not bill then return { error = err } end
     logTx(phone.identifier, 'Bill: ' .. bill.label, -bill.amount)
     return { ok = true }
 end)
@@ -348,6 +343,16 @@ end)
 
 Register('getVehicles', function(_, phone)
     return FW.GetVehicles(phone.identifier)
+end)
+
+-- Maps → My Homes: the character's own properties from the housing integration (Config.Integrations.housing)
+Register('getHomes', function(_, phone)
+    local out = {}
+    for _, h in ipairs(FW.GetHomes(phone.identifier) or {}) do
+        local x, y = tonumber(h.x), tonumber(h.y)
+        if x and y then out[#out + 1] = { label = Clean(tostring(h.label or 'Home'), 60), x = x, y = y, z = tonumber(h.z) or 0, kind = h.kind } end
+    end
+    return out
 end)
 
 ---------------------------------------------------------------------------
