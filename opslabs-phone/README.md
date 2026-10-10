@@ -15,6 +15,17 @@
 
 Open the phone with **F1** (rebindable) or `/phone`, or use any phone item. You need one of the items listed in `Config.Items`, and the item decides the frame colour.
 
+**Phone items carry their number** (`Config.PhoneItemMetadata`, ox_inventory):
+- **A new phone becomes yours.** The first time a player opens a new phone item, it's stamped with their number and
+  name, shown in the item's tooltip (`📱 555-0142 · John Doe`).
+- **Someone else's phone stays locked.** A phone that was picked up, stolen or handed over won't open:
+  "This phone belongs to 555-0142". The holder needs their own phone.
+- **Numbers never move between players.** A phone whose number was changed or deleted since is simply stamped
+  again, so its owner isn't locked out.
+- **The wireless charger keeps the stamp.** It takes the player's own phone and gives it back with its number.
+- **Settings.** Set `Lock = false` to only label phones without locking them. Set `Enabled = false` to go back to
+  "any phone item opens your phone". Inventories without item metadata (qb-inventory, …) always work that way.
+
 ## Database
 
 All data lives in `opslabs_phone_*` tables in the server database:

@@ -53,6 +53,14 @@ Config.Command = 'phone'
 -- Require a phone item in the inventory to open the phone (ignored when no inventory is found).
 Config.RequireItem = true
 
+-- Phone items carry their phone number (ox_inventory: shown in the item's tooltip). The first time a player uses a new
+-- phone item it becomes theirs. Lock: someone else's phone (picked up, stolen, handed over) won't open — the holder
+-- needs their own. Other inventories don't support item metadata yet: there any phone item opens your phone.
+Config.PhoneItemMetadata = {
+    Enabled = true,
+    Lock = true,
+}
+
 -- Item name -> frame colour (key into Config.FrameColors). The first item the
 -- player owns decides the colour of the phone.
 Config.Items = {

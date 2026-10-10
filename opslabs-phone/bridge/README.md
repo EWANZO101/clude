@@ -146,7 +146,9 @@ The client uses whatever the server picked (it's shared through `GlobalState['op
 client adapter must have the same name as the server one.
 
 Inventory adapters work the same way (`Bridge.RegisterInventory`): server `detect`, `ItemCount`, `AddItem`,
-`RemoveItem`, optional `UsableItem`. Client `events.inventory`, or `watchInventory(changed)`, which calls
+`RemoveItem(src, item, count, metadata?)`, optional `UsableItem`. Item metadata (the phone's number on the phone
+item) needs `GetSlots(src, item)` → `{ { slot, metadata } }` and `SetSlotMetadata(src, slot, metadata)`; ox_inventory
+has them, and without them a phone item just opens the holder's own phone. Client `events.inventory`, or `watchInventory(changed)`, which calls
 `changed(item)` itself. `localEvents = { ['event'] = true }` marks client-side events (not network events).
 
 ## Integrations (bank, bills, garage, homes, call audio)

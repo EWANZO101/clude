@@ -95,8 +95,12 @@ end
 -- trip. It is refreshed whenever a phone item enters/leaves the inventory.
 local hasPhoneCache = nil
 
+local lockedTo   -- the only phone held is someone else's (its number), see Config.PhoneItemMetadata
+
 local function refreshHasPhone()
-    hasPhoneCache = lib.callback.await(PREFIX .. 'canOpen', false) and true or false
+    local ok, _, locked = lib.callback.await(PREFIX .. 'canOpen', false)
+    hasPhoneCache = ok and true or false
+    lockedTo = not ok and locked or nil
     return hasPhoneCache
 end
 function HasPhoneCached() return hasPhoneCache end   -- client/battery.lua: no phone in your pockets, no drain
@@ -118,7 +122,8 @@ function OpenPhone()
     -- an inventory that can't report changes: ask every time (a dropped phone must not still open)
     if hasPhoneCache == nil or hasPhoneCache == false or (Config.RequireItem and not FW.HasInventoryEvents()) then refreshHasPhone() end
     if not hasPhoneCache then
-        lib.notify({ description = "You don't have a phone", type = 'error' })
+        lib.notify(lockedTo and { title = 'Phone locked', description = ('This phone belongs to %s.'):format(lockedTo), type = 'error' }
+            or { description = "You don't have a phone", type = 'error' })
         return
     end
     if PhoneIsDead and PhoneIsDead() then

@@ -78,13 +78,11 @@ RegisterNetEvent('opslabs-phone:dock', function(fixtureId)
     local identifier = FW.Identifier(src)
     if not identifier then return end
     if byOwner[identifier] then return notify(src, 'error', 'Your phone is already on a charger') end
-    local item
-    for name in pairs(Config.Items) do
-        if FW.ItemCount(src, name) > 0 then item = name break end
-    end
+    -- your own phone (not one you picked up), with its number kept for when it's taken back
+    local item, metadata = OwnPhoneItem(src)
     if not item then return notify(src, 'error', "You don't have a phone") end
-    if not FW.RemoveItem(src, item, 1) then return end
-    Docks[f.id] = { id = f.id, identifier = identifier, item = item, model = f.model, x = f.x, y = f.y, z = f.z, heading = f.heading, src = src }
+    if not FW.RemoveItem(src, item, 1, metadata and { phone_number = metadata.phone_number } or nil) then return end
+    Docks[f.id] = { id = f.id, identifier = identifier, item = item, metadata = metadata, model = f.model, x = f.x, y = f.y, z = f.z, heading = f.heading, src = src }
     byOwner[identifier] = f.id
     save()
     publish()
@@ -98,7 +96,7 @@ RegisterNetEvent('opslabs-phone:undock', function(fixtureId)
     local identifier = FW.Identifier(src)
     if CD.OwnerOnly ~= false and d.identifier ~= identifier then return notify(src, 'error', "That isn't your phone") end
     if not near(src, d.x, d.y, d.z, (CD.PromptDistance or 1.6) + 1.5) then return end
-    if not FW.AddItem(src, d.item, 1) then return notify(src, 'error', "You can't carry the phone") end
+    if not FW.AddItem(src, d.item, 1, d.metadata) then return notify(src, 'error', "You can't carry the phone") end
     Docks[d.id] = nil
     byOwner[d.identifier] = nil
     save()

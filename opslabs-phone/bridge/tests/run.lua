@@ -55,7 +55,7 @@ _G.H_ROOT = root
 
 -- the test files, one per framework
 local dir = root .. '/bridge/tests/'
-for _, f in ipairs({ 'core_test.lua', 'esx_test.lua', 'qb_test.lua', 'ox_test.lua', 'nd_test.lua', 'vrp_test.lua', 'inventory_test.lua', 'integrations_test.lua', 'integrations2_test.lua', 'client_test.lua' }) do
+for _, f in ipairs({ 'core_test.lua', 'esx_test.lua', 'qb_test.lua', 'ox_test.lua', 'nd_test.lua', 'vrp_test.lua', 'inventory_test.lua', 'integrations_test.lua', 'integrations2_test.lua', 'phoneitem_test.lua', 'client_test.lua' }) do
     local chunk = loadfile(dir .. f)
     if chunk then chunk() end
 end
