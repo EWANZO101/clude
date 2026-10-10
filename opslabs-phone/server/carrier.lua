@@ -296,9 +296,7 @@ Carrier.Text = carrierText
 local function balance(identifier)
     local src = FW.SourceOf(identifier)
     if src then return FW.GetMoney(src, Config.Bank.Account), FW.GetMoney(src, 'cash') end
-    local raw = MySQL.scalar.await('SELECT accounts FROM users WHERE identifier = ?', { identifier })
-    local acc = raw and json.decode(raw) or {}
-    return tonumber(acc[Config.Bank.Account]) or 0, tonumber(acc.money) or 0
+    return FW.GetOfflineMoney(identifier, Config.Bank.Account) or 0, FW.GetOfflineMoney(identifier, 'cash') or 0
 end
 Carrier.Balance = balance
 
@@ -327,20 +325,15 @@ local function takeBank(identifier, amount, label)
     local src = FW.SourceOf(identifier)
     if src then
         if not FW.RemoveMoney(src, amount, Config.Bank.Account, label) then return false, 'insufficient_funds' end
-    else                                                       -- offline: the ESX users.accounts column
-        local raw = MySQL.scalar.await('SELECT accounts FROM users WHERE identifier = ?', { identifier })
-        if not raw then return false, 'no_account' end
-        local acc = json.decode(raw) or {}
-        local have = tonumber(acc[Config.Bank.Account]) or 0
+    else                                                       -- offline: the framework's stored character
+        local have = FW.GetOfflineMoney(identifier, Config.Bank.Account)
+        if have == nil then return false, 'no_account' end
         if have < amount then return false, 'insufficient_funds' end
-        acc[Config.Bank.Account] = have - amount
-        MySQL.update.await('UPDATE users SET accounts = ? WHERE identifier = ?', { json.encode(acc), identifier })
+        if not FW.RemoveOfflineMoney(identifier, amount, Config.Bank.Account) then return false, 'insufficient_funds' end
     end
     MySQL.insert('INSERT INTO opslabs_phone_bank_transactions (identifier, label, amount) VALUES (?, ?, ?)', { identifier, label, -amount })
     local society = settings().Society
-    if society and society ~= '' then
-        TriggerEvent('esx_addonaccount:getSharedAccount', society, function(account) if account then account.addMoney(amount) end end)
-    end
+    if society and society ~= '' then FW.AddSocietyMoney(society, amount) end
     return true
 end
 
@@ -762,8 +755,8 @@ local function findPlan(v)
 end
 
 local function lineOut(identifier, extra)
-    local user = MySQL.single.await([[SELECT p.phone_number, p.email, p.display_name, u.firstname, u.lastname
-        FROM opslabs_phone_users p LEFT JOIN users u ON u.identifier = p.identifier WHERE p.identifier = ?]], { identifier })
+    local user = MySQL.single.await([[SELECT p.phone_number, p.email, p.display_name, p.char_first AS firstname, p.char_last AS lastname
+        FROM opslabs_phone_users p WHERE p.identifier = ?]], { identifier })
     local line = getLine(identifier)
     local bank, cash = balance(identifier)
     local out = {
@@ -896,15 +889,14 @@ route('GET', '/carrier/lines', function(_, q)
     local status = q.status and q.status ~= '' and q.status or nil
     local rows = MySQL.query.await([[
         SELECT l.id, l.status, l.installed, l.period_end, l.auto_renew, l.sms_used, l.seconds_used, l.data_kb, l.created_at,
-            p.phone_number AS number, p.email, CONCAT(COALESCE(u.firstname, ''), ' ', COALESCE(u.lastname, '')) AS name,
+            p.phone_number AS number, p.email, CONCAT(COALESCE(p.char_first, ''), ' ', COALESCE(p.char_last, '')) AS name,
             pl.name AS plan, pl.code AS plan_code, pl.color AS plan_color, pl.price AS plan_price,
             IF(pl.sms < 0, -1, pl.sms + l.extra_sms) AS sms_limit, IF(pl.minutes < 0, -1, pl.minutes + l.extra_minutes) AS minutes_limit,
             IF(pl.data_mb < 0, -1, pl.data_mb + l.extra_data_mb) AS data_limit_mb, l.identifier
         FROM opslabs_phone_carrier_lines l
         JOIN opslabs_phone_users p ON p.identifier = l.identifier
-        LEFT JOIN users u ON u.identifier = l.identifier
         LEFT JOIN opslabs_phone_carrier_plans pl ON pl.id = l.plan_id
-        WHERE (? IS NULL OR l.status = ?) AND (p.phone_number LIKE ? OR p.email LIKE ? OR CONCAT(COALESCE(u.firstname, ''), ' ', COALESCE(u.lastname, '')) LIKE ?)
+        WHERE (? IS NULL OR l.status = ?) AND (p.phone_number LIKE ? OR p.email LIKE ? OR CONCAT(COALESCE(p.char_first, ''), ' ', COALESCE(p.char_last, '')) LIKE ?)
         ORDER BY l.updated_at DESC LIMIT ? OFFSET ?]], { status, status, search, search, search, limit, offset })
     for _, r in ipairs(rows) do
         r.installed, r.auto_renew = IsTrue(r.installed), IsTrue(r.auto_renew)
@@ -1055,12 +1047,11 @@ route('GET', '/carrier/inbox', function(_, q)
     local rows = MySQL.query.await([[
         SELECT t.number, UNIX_TIMESTAMP(m.created_at) AS at, m.message, m.sender = ? AS from_carrier,
             (SELECT COUNT(*) FROM opslabs_phone_messages x WHERE x.sender = t.number AND x.receiver = ? AND x.is_read = 0) AS unread,
-            CONCAT(COALESCE(u.firstname, ''), ' ', COALESCE(u.lastname, '')) AS name
+            CONCAT(COALESCE(p.char_first, ''), ' ', COALESCE(p.char_last, '')) AS name
         FROM (SELECT IF(sender = ?, receiver, sender) AS number, MAX(id) AS last_id FROM opslabs_phone_messages
               WHERE sender = ? OR receiver = ? GROUP BY IF(sender = ?, receiver, sender)) t
         JOIN opslabs_phone_messages m ON m.id = t.last_id
         LEFT JOIN opslabs_phone_users p ON p.phone_number = t.number
-        LEFT JOIN users u ON u.identifier = p.identifier
         ORDER BY (unread > 0) DESC, t.last_id DESC LIMIT ? OFFSET ?]], { c, c, c, c, c, c, limit, offset })
     for _, r in ipairs(rows) do r.from_carrier = IsTrue(r.from_carrier) end
     return rows

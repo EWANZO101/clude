@@ -1,4 +1,4 @@
--- players, jobs, money and items go through FW (server/framework.lua → rps_lib: ESX / QBCore / QBox)
+-- players, jobs, money and items go through FW (bridge/: the detected framework and inventory adapters)
 
 Phones = {}          -- [source] = { identifier, number, email, name, settings }
 local numberIndex = {} -- [number] = source
@@ -70,7 +70,7 @@ local function generateEmail(p)
 end
 
 function HasPhoneItem(src)
-    if not Config.RequireItem then return true, 'black' end
+    if not Config.RequireItem or not FW.HasInventory() then return true, 'black' end   -- no inventory: nothing to require
     for item, color in pairs(Config.Items) do
         if FW.ItemCount(src, item) > 0 then return true, color end
     end
@@ -106,6 +106,9 @@ function GetPhone(src)
         row.email = generateEmail(p)
         MySQL.update.await('UPDATE opslabs_phone_users SET email = ? WHERE identifier = ?', { row.email, identifier })
     end
+
+    MySQL.update('UPDATE opslabs_phone_users SET char_first = ?, char_last = ?, char_job = ? WHERE identifier = ?',
+        { p.firstname or p.name, p.lastname or '', p.job and p.job.name or nil, identifier })
 
     local phone = {
         source = src,
@@ -199,8 +202,8 @@ local function unload(src)
 end
 
 AddEventHandler('playerDropped', function() unload(source) end)
-AddEventHandler('esx:playerLogout', function(src) unload(src) end)
-AddEventHandler('esx:playerLoaded', function(src)
+FW.OnPlayerUnloaded(unload)
+FW.OnPlayerLoaded(function(src)
     unload(src)
     CreateThread(function() GetPhone(src) end)
 end)

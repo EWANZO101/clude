@@ -103,7 +103,7 @@ end
 
 local function requireUser(number)
     -- exact match first, then the same digits in the server's number format ("5551234" -> "555-1234")
-    local user = MySQL.single.await('SELECT identifier, phone_number, email, settings, created_at FROM opslabs_phone_users WHERE phone_number IN (?, ?) LIMIT 1',
+    local user = MySQL.single.await('SELECT identifier, phone_number, email, settings, created_at, char_first, char_last, char_job FROM opslabs_phone_users WHERE phone_number IN (?, ?) LIMIT 1',
         { number, NormalizeNumber(number) })
     if not user then apiError(404, 'Phone number not found') end
     return user
@@ -159,15 +159,15 @@ route('GET', '/users', function(_, q)
     local limit, offset = paging(q)
     local search = q.search and ('%' .. q.search .. '%') or '%'
     return MySQL.query.await([[
-        SELECT p.phone_number AS number, p.email, p.created_at, u.firstname, u.lastname, u.job
-        FROM opslabs_phone_users p LEFT JOIN users u ON u.identifier = p.identifier
-        WHERE p.phone_number LIKE ? OR p.email LIKE ? OR CONCAT(u.firstname, ' ', u.lastname) LIKE ?
+        SELECT p.phone_number AS number, p.email, p.created_at, p.char_first AS firstname, p.char_last AS lastname, p.char_job AS job
+        FROM opslabs_phone_users p
+        WHERE p.phone_number LIKE ? OR p.email LIKE ? OR CONCAT(COALESCE(p.char_first, ''), ' ', COALESCE(p.char_last, '')) LIKE ?
         ORDER BY p.created_at DESC LIMIT ? OFFSET ?]], { search, search, search, limit, offset })
 end)
 
 route('GET', '/users/([^/]+)', function(p)
     local user = requireUser(p[1])
-    local char = MySQL.single.await('SELECT firstname, lastname, job, job_grade FROM users WHERE identifier = ?', { user.identifier })
+    local char = { firstname = user.char_first, lastname = user.char_last, job = user.char_job }
     return {
         number = user.phone_number,
         email = user.email,

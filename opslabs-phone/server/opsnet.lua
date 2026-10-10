@@ -349,8 +349,8 @@ local function endSession(src)
 end
 
 AddEventHandler('playerDropped', function() endSession(source) end)
-AddEventHandler('esx:playerLogout', function(src) endSession(src) end)
-AddEventHandler('esx:playerLoaded', function(src) endSession(src) end)
+FW.OnPlayerUnloaded(endSession)
+FW.OnPlayerLoaded(endSession)
 
 local function getUser(id)
     return MySQL.single.await('SELECT * FROM opslabs_phone_opsnet_users WHERE id = ?', { tonumber(id) })
@@ -972,7 +972,7 @@ end
 
 OnRegister('opsnetAdminUsers', { 'admin.users', 'admin.permissions' }, function()
     local rows = MySQL.query.await([[SELECT o.id, o.username, o.display_name, o.role, o.perms, o.disabled, o.default_pw, o.identifier, o.created_at, o.last_login,
-        u.firstname, u.lastname FROM opslabs_phone_opsnet_users o LEFT JOIN users u ON u.identifier = o.identifier ORDER BY o.disabled, o.username]]) or {}
+        p.char_first AS firstname, p.char_last AS lastname FROM opslabs_phone_opsnet_users o LEFT JOIN opslabs_phone_users p ON p.identifier = o.identifier ORDER BY o.disabled, o.username]]) or {}
     local out = {}
     for _, r in ipairs(rows) do
         local perms = permList(r)

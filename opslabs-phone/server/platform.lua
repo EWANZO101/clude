@@ -206,15 +206,7 @@ local function companyMove(coId, kind, amount, memo, refType, refId, counterpart
 end
 OpsCompanyMove = companyMove
 
-local function society(name, amount)
-    if not name or GetResourceState('esx_addonaccount') ~= 'started' then return false end
-    local p = promise.new()
-    TriggerEvent('esx_addonaccount:getSharedAccount', name, function(acc)
-        if acc and acc.money >= amount then acc.removeMoney(amount) p:resolve(true) else p:resolve(false) end
-    end)
-    SetTimeout(3000, function() p:resolve(false) end)
-    return Citizen.Await(p)
-end
+local function society(name, amount) return FW.RemoveSocietyMoney(name, amount) end
 
 local function invoiceNumber(c, id) return ('%s-%06d'):format(c.code:upper():sub(1, 3), id) end
 

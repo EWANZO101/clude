@@ -1,5 +1,15 @@
 Config = {}
 
+-- Framework and inventory. 'auto' (the default) detects them when the phone starts and prints what it found in the
+-- server console. Set a name only to override the detection:
+--   Config.Framework: 'auto' | 'qbx' (Qbox) | 'qb' (QBCore) | 'esx' (ESX Legacy) | 'ox' (ox_core) | 'nd' (ND Core)
+--                     | 'vrp' | 'standalone' | the name of your own adapter (bridge/README.md)
+--   Config.Inventory: 'auto' | 'ox_inventory' | 'qb-inventory' | 'ps-inventory' | 'lj-inventory' | 'qs-inventory'
+--                     | 'codem-inventory' | 'tgiann-inventory' | 'framework' (the framework's own) | 'none'
+-- A convar wins over this file: setr opslabs_phone:framework "qbx" / setr opslabs_phone:inventory "ox_inventory"
+Config.Framework = 'auto'
+Config.Inventory = 'auto'
+
 -- Branding — the MAIN company of this server and every platform name players see on phones, laptops, routers,
 -- stores, websites and OPS Hub. Leave a name empty to derive it from Name (OS → "<Name> OS", Hub → "<Name> Hub" …).
 -- Change any of it live on OPS Hub → Settings (no restart). Companies themselves are renamed on OPS Hub → Companies.
@@ -29,7 +39,7 @@ Config.Brand = {
 Config.Keybind = 'F1'
 Config.Command = 'phone'
 
--- Require a phone item in the inventory to open the phone.
+-- Require a phone item in the inventory to open the phone (ignored when no inventory is found).
 Config.RequireItem = true
 
 -- Item name -> frame colour (key into Config.FrameColors). The first item the
@@ -235,7 +245,7 @@ Config.LiveLocation = {
     BlipColour = 2,               -- green
 }
 
--- Bank app (uses the ESX "bank" account)
+-- Bank app (the framework's "bank" account)
 Config.Bank = {
     Account = 'bank',
     MaxTransfer = 1000000,
@@ -362,10 +372,9 @@ Config.Features = {
 -- How OPS jobs are worked.
 Config.Work = {
     -- 'standalone': no inventory items needed — tools are assumed to be in your van and kit is placed from /towers.
-    -- 'items':      realistic — tools and parts are inventory items (ox_inventory / ESX / qb). Engineers collect them
+    -- 'items':      realistic — tools and parts are inventory items (the inventory set by Config.Inventory). Engineers collect them
     --               from an OPS depot, need the right tools to start a job and use up the parts the job needs.
     Mode = 'standalone',
-    Inventory = 'auto',           -- 'auto' | 'ox' | 'esx' | 'qb'   (items mode only)
     ItemPrefix = 'ops_',          -- item names: ops_crimper, ops_cam_ip … (see items/ for ready-made definitions)
     ConsumeParts = true,          -- items mode: completing a job uses its parts from your inventory
     -- where tools and parts are collected (items mode) and where the job assistant sends you for them
