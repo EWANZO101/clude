@@ -33,6 +33,8 @@ const Apps = {
     list: [],
     byId: {},
     register(def) { this.list.push(def); this.byId[def.id] = def; },
+    /** a feature switched off in config.lua: gone from the home screen, the Store and search */
+    remove(id) { this.list = this.list.filter((d) => d.id !== id); delete this.byId[id]; },
 };
 
 /* ---------------------------------------------------------------------
@@ -1136,6 +1138,7 @@ async function init(data) {
     Phone.profile = data;
     Phone.settings = data.settings || {};
     Phone.config = data.config || Phone.config;
+    if (Phone.config && Phone.config.traffic === false) Apps.remove('traffic');
     // a setup finished in this session is never shown again for the same phone,
     // even if stale profile data arrives afterwards
     Phone.needsSetup = data.setupDone === false && !(typeof Setup !== 'undefined' && Setup.completedFor === data.email);

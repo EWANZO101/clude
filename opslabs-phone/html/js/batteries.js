@@ -101,6 +101,7 @@ Phone.on('safemag', (d) => SafeMag.update(d));
 Phone.on('init', () => {
     Batteries._shown = Batteries.visible();
     // the game may have sent these before the page was ready: ask again
-    nui('safemagState').then((d) => { if (d && d.label) SafeMag.update(d); });
-    nui('budsState').then((d) => { if (d && d.label && typeof Buds !== 'undefined') Buds.update(d); });
+    const cfg = Phone.config || {};
+    if (cfg.safemag !== false) nui('safemagState').then((d) => { if (d && d.label) SafeMag.update(d); });
+    if (cfg.buds !== false) nui('budsState').then((d) => { if (d && d.label && typeof Buds !== 'undefined') Buds.update(d); });
 });

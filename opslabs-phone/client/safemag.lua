@@ -10,7 +10,10 @@ function SafeMagDraw() end
 function SafeMagLoad() end
 function SafeMagOnProp() end
 function SafeMagOffProp() end
-if CS.Enabled == false then return end
+if CS.Enabled == false then
+    RegisterNUICallback('safemagState', function(_, cb) cb({}) end)   -- switched off: answer straight away
+    return
+end
 
 local PREFIX = 'opslabs-phone:'
 local S = { owned = false, on = false, level = 100.0, charging = false }

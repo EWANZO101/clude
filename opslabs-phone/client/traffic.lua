@@ -1,7 +1,13 @@
 -- OPS Traffic (Config.Traffic): automatic accident / fire reports, the lead unit's 10-80 position, street names.
 
 local CT = Config.Traffic or {}
-if CT.Enabled == false then return end
+if CT.Enabled == false then
+    -- switched off: answer the phone straight away instead of leaving it waiting for its 15 s timeout
+    RegisterNUICallback('trafficPursuitTrack', function(_, cb) cb(false) end)
+    RegisterNUICallback('trafficStreets', function(_, cb) cb(false) end)
+    RegisterNUICallback('trafficHere', function(_, cb) cb(false) end)
+    return
+end
 local PREFIX = 'opslabs-phone:'
 
 local function streetAt(x, y, z)

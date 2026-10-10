@@ -256,6 +256,9 @@ function BuildInit(src, phone)
             cameraMaxVideo = Config.Camera.MaxVideoSeconds or 60,
             music = Config.Music,
             batteriesWidget = Config.BatteriesWidget ~= false,
+            traffic = (Config.Traffic or {}).Enabled ~= false,     -- features switched off in config.lua: the UI hides them
+            buds = (Config.Buds or {}).Enabled ~= false,
+            safemag = (Config.SafeMag or {}).Enabled ~= false,
             license = LicenseForUi and LicenseForUi(src) or nil,      -- OPSHUB license (server/license.lua)
         },
     }
