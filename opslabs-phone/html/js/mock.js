@@ -220,7 +220,8 @@ if (!IN_GAME) {
         deletePhoto: (d) => { db.photos = db.photos.filter((p) => p.id !== d.id); return true; },
         favoritePhoto: (d) => { const p = db.photos.find((x) => x.id === d.id); p.favorite = p.favorite ? 0 : 1; return true; },
         getMail: (d) => (d.box === 'sent' ? [] : db.mail),
-        readMail: () => true, deleteMail: () => true, sendMail: () => true,
+        readMail: (d) => { const m = db.mail.find((x) => x.id === d.id); if (m) m.is_read = 1; return true; },
+        deleteMail: (d) => { db.mail = db.mail.filter((x) => x.id !== d.id); return true; }, sendMail: () => true,
         chirpProfile: () => ({ handle: 'johndoe', display_name: 'John Doe', bio: '', avatar: null }),
         // OPS Traffic
         trafficFeed: () => ({ police: true, closer: true, incidents: [
@@ -248,7 +249,9 @@ if (!IN_GAME) {
         datingChat: () => ({ messages: [{ id: 1, body: 'Hey! Loved your karaoke pic 😄', mine: false }, { id: 2, body: 'Haha thanks — you sing?', mine: true }, { id: 3, body: 'Coffee at Bean Machine tomorrow?', mine: false }] }),
         datingSend: () => ({ ok: true }), datingUnmatch: () => ({ ok: true }), datingReport: () => ({ ok: true }),
         chirpUpdateProfile: () => ({ ok: true }),
-        chirpFeed: (d) => (d.replyTo ? [] : db.posts),
+        chirpFeed: (d) => (d.replyTo ? [] : d.handle ? db.posts.filter((p) => p.handle === d.handle) : d.following ? db.posts.filter((p) => p.mine || (db.follows ||= new Set(['lamar'])).has(p.handle)) : db.posts),
+        chirpUser: (d) => { const p = db.posts.find((x) => x.handle === d.handle); const f = (db.follows ||= new Set(['lamar'])); return p ? { handle: p.handle, display_name: p.display_name, avatar: null, bio: p.mine ? '' : 'Grove Street for life', followers: 12 + (f.has(p.handle) ? 1 : 0), following: 40, followed: f.has(p.handle), mine: !!p.mine } : null; },
+        chirpFollow: (d) => { const f = (db.follows ||= new Set(['lamar'])); if (f.has(d.handle)) { f.delete(d.handle); return { following: false }; } f.add(d.handle); return { following: true }; },
         chirpPost: (d) => { db.posts.unshift({ id: Date.now(), content: d.content, image: d.image, created_at: Date.now(), handle: 'johndoe', display_name: 'John Doe', likes: 0, replies: 0, liked: 0, mine: 1 }); return 1; },
         chirpLike: (d) => { const p = db.posts.find((x) => x.id === d.id); p.liked = p.liked ? 0 : 1; return !!p.liked; },
         chirpDelete: (d) => { db.posts = db.posts.filter((p) => p.id !== d.id); return true; },

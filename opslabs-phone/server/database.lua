@@ -113,6 +113,14 @@ local schema = {
         PRIMARY KEY (`post_id`, `identifier`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
 
+    [[CREATE TABLE IF NOT EXISTS `opslabs_phone_chirp_follows` (
+        `follower` VARCHAR(60) NOT NULL,
+        `followee` VARCHAR(60) NOT NULL,
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`follower`, `followee`),
+        KEY `followee` (`followee`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
+
     [[CREATE TABLE IF NOT EXISTS `opslabs_phone_bank_transactions` (
         `id` INT NOT NULL AUTO_INCREMENT,
         `identifier` VARCHAR(60) NOT NULL,

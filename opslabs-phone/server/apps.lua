@@ -178,6 +178,19 @@ Register('chirpUpdateProfile', function(_, phone, data)
 end)
 
 Register('chirpFeed', function(_, phone, data)
+    -- replies to a post, one user's posts (profile page), the people you follow (+ you) or everyone
+    local where, vals = 'p.reply_to IS NULL', { phone.identifier, phone.identifier }
+    if data.replyTo then
+        where = 'p.reply_to = ?'
+        vals[#vals + 1] = tonumber(data.replyTo)
+    elseif data.handle then
+        where = where .. ' AND pr.handle = ?'
+        vals[#vals + 1] = tostring(data.handle)
+    elseif data.following then
+        where = where .. ' AND (p.author = ? OR p.author IN (SELECT f.followee FROM opslabs_phone_chirp_follows f WHERE f.follower = ?))'
+        vals[#vals + 1] = phone.identifier
+        vals[#vals + 1] = phone.identifier
+    end
     local rows = MySQL.query.await([[
         SELECT p.id, p.content, p.image, p.created_at, pr.handle, pr.display_name, pr.avatar,
             (SELECT COUNT(*) FROM opslabs_phone_chirp_likes l WHERE l.post_id = p.id) AS likes,
@@ -186,10 +199,38 @@ Register('chirpFeed', function(_, phone, data)
             p.author = ? AS mine
         FROM opslabs_phone_chirp_posts p
         JOIN opslabs_phone_chirp_profiles pr ON pr.identifier = p.author
-        WHERE ]] .. (data.replyTo and 'p.reply_to = ?' or 'p.reply_to IS NULL') .. [[
-        ORDER BY p.id DESC LIMIT 60]],
-        data.replyTo and { phone.identifier, phone.identifier, tonumber(data.replyTo) } or { phone.identifier, phone.identifier })
+        WHERE ]] .. where .. [[
+        ORDER BY p.id DESC LIMIT 60]], vals)
     return rows
+end)
+
+--- someone's profile page: bio, follower counts and whether you follow them
+Register('chirpUser', function(_, phone, data)
+    getProfile(phone)
+    local p = MySQL.single.await('SELECT identifier, handle, display_name, avatar, bio FROM opslabs_phone_chirp_profiles WHERE handle = ?', { tostring(data.handle or '') })
+    if not p then return nil end
+    p.followers = MySQL.scalar.await('SELECT COUNT(*) FROM opslabs_phone_chirp_follows WHERE followee = ?', { p.identifier })
+    p.following = MySQL.scalar.await('SELECT COUNT(*) FROM opslabs_phone_chirp_follows WHERE follower = ?', { p.identifier })
+    p.followed = MySQL.scalar.await('SELECT 1 FROM opslabs_phone_chirp_follows WHERE follower = ? AND followee = ?', { phone.identifier, p.identifier }) ~= nil
+    p.mine = p.identifier == phone.identifier
+    p.identifier = nil
+    return p
+end)
+
+--- follow / unfollow by handle; returns whether you now follow them
+Register('chirpFollow', function(_, phone, data)
+    local me = getProfile(phone)
+    local them = MySQL.single.await('SELECT identifier, handle FROM opslabs_phone_chirp_profiles WHERE handle = ?', { tostring(data.handle or '') })
+    if not them or them.identifier == phone.identifier then return { error = "You can't follow that account" } end
+    local removed = MySQL.update.await('DELETE FROM opslabs_phone_chirp_follows WHERE follower = ? AND followee = ?', { phone.identifier, them.identifier })
+    if removed > 0 then return { following = false } end
+    MySQL.insert.await('INSERT IGNORE INTO opslabs_phone_chirp_follows (follower, followee) VALUES (?, ?)', { phone.identifier, them.identifier })
+    for src, ph in pairs(Phones) do
+        if ph.identifier == them.identifier then
+            Notify(src, { app = 'chirp', title = 'Chirp', body = me.display_name .. ' (@' .. me.handle .. ') followed you', icon = 'fa-feather' })
+        end
+    end
+    return { following = true }
 end)
 
 Register('chirpPost', function(_, phone, data)

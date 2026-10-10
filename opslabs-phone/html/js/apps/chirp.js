@@ -3,9 +3,9 @@
 function chirpPostHtml(p, detail = false) {
     return `
         <div class="chirp-post ${detail ? 'detail' : ''}" data-post="${p.id}">
-            ${avatar(p.display_name, p.avatar)}
+            <span class="cp-av" data-user="${esc(p.handle)}">${avatar(p.display_name, p.avatar)}</span>
             <div class="cp-main">
-                <div class="cp-head"><b>${esc(p.display_name)}</b><span>@${esc(p.handle)} · ${esc(shortAgo(p.created_at))}</span>
+                <div class="cp-head"><b data-user="${esc(p.handle)}">${esc(p.display_name)}</b><span>@${esc(p.handle)} · ${esc(shortAgo(p.created_at))}</span>
                     ${p.mine ? `<button class="cp-more" data-del="${p.id}"><i class="fa-solid fa-ellipsis"></i></button>` : ''}</div>
                 <div class="cp-text">${esc(p.content).replace(/(^|\s)([#@]\w+)/g, '$1<span class="cp-tag">$2</span>')}</div>
                 ${p.image ? `<img class="cp-img" src="${escUrl(p.image)}" data-img="${escUrl(p.image)}">` : ''}
@@ -95,6 +95,8 @@ Apps.register({
         let posts = [];
 
         const handleClick = async (e, reload) => {
+            const user = e.target.closest('[data-user]');
+            if (user) { openUser(user.dataset.user); return true; }
             const like = e.target.closest('[data-like]');
             if (like) {
                 const liked = await rpc('chirpLike', { id: +like.dataset.like });
@@ -140,6 +142,51 @@ Apps.register({
             });
         };
 
+        // someone's profile: bio, counts, follow button and their posts
+        const openUser = (handle) => {
+            nav.push({
+                title: '@' + handle,
+                solidBar: true,
+                render(content) {
+                    const load = async () => {
+                        const [u, list] = await Promise.all([rpc('chirpUser', { handle }), rpc('chirpFeed', { handle })]);
+                        if (!u) { content.innerHTML = UI.empty('fa-solid fa-user-slash', 'Account not found', ''); return; }
+                        posts = [...(list || []), ...posts];
+                        content.innerHTML = `
+                            <div class="chirp-user">
+                                <div class="cu-top">${avatar(u.display_name, u.avatar, 'xl')}
+                                    ${u.mine ? '<button class="cu-btn" data-act="editprofile">Edit Profile</button>'
+                                        : `<button class="cu-btn ${u.followed ? '' : 'primary'}" data-act="follow">${u.followed ? 'Following' : 'Follow'}</button>`}</div>
+                                <div class="cu-name">${esc(u.display_name)}</div>
+                                <div class="cu-handle">@${esc(u.handle)}</div>
+                                ${u.bio ? `<div class="cu-bio" data-no-i18n>${esc(u.bio)}</div>` : ''}
+                                <div class="cu-counts"><span><b>${u.following || 0}</b> Following</span><span><b>${u.followers || 0}</b> Followers</span></div>
+                            </div>
+                            <div class="chirp-feed">${(list || []).map((p) => chirpPostHtml(p)).join('') || '<div class="muted" style="padding:30px;text-align:center">No posts yet</div>'}</div>`;
+                    };
+                    let busy = false;
+                    content.addEventListener('click', async (e) => {
+                        const a = e.target.closest('[data-act]');
+                        if (a && a.dataset.act === 'editprofile') return ChirpProfile(load);
+                        if (a && a.dataset.act === 'follow') {
+                            if (busy) return;
+                            busy = true;
+                            const r = await rpc('chirpFollow', { handle });
+                            busy = false;
+                            if (!r || r.error) return UI.alert({ title: (r && r.error) || "Couldn't follow" });
+                            return load();
+                        }
+                        const u = e.target.closest('[data-user]');
+                        if (u && u.dataset.user === handle) return; // already here
+                        if (await handleClick(e, load)) return;
+                        const p = e.target.closest('[data-post]');
+                        if (p) openPost(posts.find((x) => x.id === +p.dataset.post));
+                    });
+                    load();
+                },
+            });
+        };
+
         nav.push({
             title: 'Chirp',
             solidBar: true,
@@ -148,13 +195,27 @@ Apps.register({
             right: '<button class="nav-btn" data-act="refresh"><i class="fa-solid fa-rotate-right"></i></button>',
             render(content, ctx) {
                 $('.nav-title', ctx.page).innerHTML = '<i class="fa-solid fa-feather-pointed" style="color:#1d9bf0;font-size:22px"></i>';
-                content.innerHTML = `<div class="segmented chirp-tabs"><button class="on">For You</button><button>Following</button></div><div class="chirp-feed"><div class="spinner"></div></div>`;
+                content.innerHTML = `<div class="segmented chirp-tabs"><button class="on" data-tab="all">For You</button><button data-tab="following">Following</button></div><div class="chirp-feed"><div class="spinner"></div></div>`;
                 const feed = $('.chirp-feed', content);
+                let tab = 'all', seq = 0;
                 const load = async () => {
-                    posts = (await rpc('chirpFeed')) || [];
-                    feed.innerHTML = posts.length ? posts.map((p) => chirpPostHtml(p)).join('') : UI.empty('fa-solid fa-feather-pointed', 'Welcome to Chirp', 'Be the first to post something.');
+                    const mySeq = ++seq, following = tab === 'following';
+                    const list = (await rpc('chirpFeed', following ? { following: true } : {})) || [];
+                    if (mySeq !== seq) return; // switched tab while loading
+                    posts = list;
+                    feed.innerHTML = posts.length ? posts.map((p) => chirpPostHtml(p)).join('')
+                        : following ? UI.empty('fa-solid fa-user-plus', 'Nobody here yet', 'Tap someone’s name to see their profile and follow them.')
+                        : UI.empty('fa-solid fa-feather-pointed', 'Welcome to Chirp', 'Be the first to post something.');
                 };
                 content.addEventListener('click', async (e) => {
+                    const t = e.target.closest('[data-tab]');
+                    if (t) {
+                        if (t.dataset.tab === tab) return;
+                        tab = t.dataset.tab;
+                        $$('[data-tab]', content).forEach((b) => b.classList.toggle('on', b === t));
+                        feed.innerHTML = '<div class="spinner"></div>';
+                        return load();
+                    }
                     if (await handleClick(e, load)) return;
                     const p = e.target.closest('[data-post]');
                     if (p) openPost(posts.find((x) => x.id === +p.dataset.post));

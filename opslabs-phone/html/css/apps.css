@@ -33,6 +33,9 @@ button[disabled] { opacity: .4; pointer-events: none; }
 .unread-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; margin-top: 20px; }
 .unread-dot.on { background: var(--tint); }
 .mail-row .unread-dot { margin-top: 7px; }
+.mail-sel { align-items: flex-start; }
+.mail-check { width: 22px; height: 22px; margin: 4px -4px 0 -6px; border-radius: 50%; border: 1.5px solid var(--label3); flex: none; display: grid; place-items: center; color: transparent; font-size: 12px; }
+.mail-check.on { background: var(--tint); border-color: var(--tint); color: #fff; }
 .cv-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .cv-top .title { font-weight: 600; }
 .cv-time { font-size: 15px; color: var(--label2); white-space: nowrap; }
@@ -418,6 +421,17 @@ button[disabled] { opacity: .4; pointer-events: none; }
 .cp-actions button { display: flex; gap: 6px; align-items: center; color: var(--label2); min-width: 40px; }
 .cp-actions button.liked { color: #f91880; }
 .chirp-replies { border-top: 6px solid var(--fill3); }
+.chirp-post .cp-av { flex: none; }
+.cp-head b { cursor: pointer; overflow: hidden; text-overflow: ellipsis; flex: none; max-width: 60%; }
+.chirp-user { padding: 8px 16px 14px; border-bottom: .5px solid var(--sep); }
+.chirp-user .cu-top { display: flex; align-items: flex-end; justify-content: space-between; }
+.chirp-user .cu-btn { padding: 7px 16px; border-radius: 18px; border: 1px solid var(--sep); background: none; color: var(--label); font-weight: 600; font-size: 14px; }
+.chirp-user .cu-btn.primary { background: #1d9bf0; border-color: #1d9bf0; color: #fff; }
+.chirp-user .cu-name { font-size: 20px; font-weight: 700; margin-top: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chirp-user .cu-handle { color: var(--label2); font-size: 15px; }
+.chirp-user .cu-bio { margin-top: 8px; font-size: 15px; line-height: 1.35; overflow-wrap: anywhere; }
+.chirp-user .cu-counts { display: flex; gap: 16px; margin-top: 10px; font-size: 14px; color: var(--label2); }
+.chirp-user .cu-counts b { color: var(--label); }
 .chirp-feed, .chirp-replies { padding-bottom: 72px; } /* clear of the compose button */
 .chirp-fab { position: absolute; right: 18px; bottom: 44px; width: 56px; height: 56px; border-radius: 50%; background: #1d9bf0; color: #fff; font-size: 22px; box-shadow: 0 4px 14px rgba(29,155,240,.45); z-index: 40; }
 .chirp-compose { display: flex; gap: 12px; padding: 4px 16px; }
