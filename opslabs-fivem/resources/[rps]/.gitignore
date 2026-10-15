@@ -1,7 +1,9 @@
 # secrets — copy config_server.example.lua to config_server.lua on each server
 opslabs-phone/config_server.lua
+opslabs-bodycam/config_server.lua
 # runtime data written by the server
 opslabs-phone/media/
+opslabs-bodycam/media/
 opslabs-towers/uniform.json
 opslabs-towers/danger_backups/
 # local tooling
