@@ -41,6 +41,7 @@ client_scripts {
     'client/training.lua',
     'client/traffic.lua',
     'client/emergency.lua',
+    'client/bodycam.lua',             -- Bodycam app (opslabs-bodycam)
 }
 
 server_scripts {

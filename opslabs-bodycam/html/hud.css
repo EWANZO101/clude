@@ -1,0 +1,19 @@
+html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; font-family: Arial, Helvetica, sans-serif; user-select: none; }
+
+.hud {
+    position: fixed; display: flex; align-items: center; gap: 7px;
+    padding: 5px 10px; border-radius: 6px;
+    background: rgba(10, 12, 16, .62); color: #fff; font-size: 13px; letter-spacing: .04em;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, .35);
+}
+.hud[hidden] { display: none; }
+.hud.top-right { top: 18px; right: 18px; }
+.hud.top-left { top: 18px; left: 18px; }
+.hud.bottom-right { bottom: 18px; right: 18px; }
+.hud.bottom-left { bottom: 230px; left: 18px; }      /* above the minimap */
+.hud b { color: #ff453a; font-weight: 700; }
+.hud .dot { width: 9px; height: 9px; border-radius: 50%; background: #ff3b30; box-shadow: 0 0 8px #ff3b30; animation: blink 1.2s infinite; }
+.hud .up { color: #8fd3ff; font-size: 11px; }
+.hud.idle b, .hud.idle .dot { display: none; }
+
+@keyframes blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .2; } }

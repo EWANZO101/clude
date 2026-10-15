@@ -264,6 +264,7 @@ function BuildInit(src, phone)
             traffic = (Config.Traffic or {}).Enabled ~= false,     -- features switched off in config.lua: the UI hides them
             buds = (Config.Buds or {}).Enabled ~= false,
             safemag = (Config.SafeMag or {}).Enabled ~= false,
+            bodycam = GetResourceState('opslabs-bodycam') == 'started' and exports['opslabs-bodycam']:CanUse(src) == true,   -- Bodycam app: only for players issued one
             license = LicenseForUi and LicenseForUi(src) or nil,      -- OPSHUB license (server/license.lua)
         },
     }

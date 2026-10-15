@@ -1139,6 +1139,7 @@ async function init(data) {
     Phone.settings = data.settings || {};
     Phone.config = data.config || Phone.config;
     if (Phone.config && Phone.config.traffic === false) Apps.remove('traffic');
+    if (Phone.config && Phone.config.bodycam === false) Apps.remove('bodycam');
     // a setup finished in this session is never shown again for the same phone,
     // even if stale profile data arrives afterwards
     Phone.needsSetup = data.setupDone === false && !(typeof Setup !== 'undefined' && Setup.completedFor === data.email);

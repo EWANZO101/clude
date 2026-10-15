@@ -4,7 +4,7 @@ game 'gta5'
 name 'opslabs-props'
 description 'Custom props for OpsLabs (OPS network gear for opslabs-towers)'
 author 'OpsLabs'
-version '1.11.0'
+version '1.12.0'
 
 -- stream/ is streamed automatically; the ytyp registers the archetypes
 files {
@@ -42,6 +42,7 @@ files {
     'stream/opslabs_safemag.ytyp',
     'stream/opslabs_pos.ytyp',
     'stream/opslabs_powerline_props.ytyp',
+    'stream/opslabs_bodycam.ytyp',
 }
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_ap_props.ytyp'
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_gateway_props.ytyp'
@@ -77,3 +78,4 @@ data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_phone_props.ytyp'
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_safemag.ytyp'
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_pos.ytyp'
 data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_powerline_props.ytyp'
+data_file 'DLC_ITYP_REQUEST' 'stream/opslabs_bodycam.ytyp'
