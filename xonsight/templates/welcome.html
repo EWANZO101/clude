@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xon Sight</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            base: '#0a0a0b',
+            panel: '#131315',
+            panel2: '#0e0e10',
+            border: '#2c2c30',
+            accent: '#dc2626',
+            accent2: '#7d8694',
+          },
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #09090a;
+      background-image:
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
+        repeating-linear-gradient(-45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
+        radial-gradient(1100px 600px at 10% -10%, rgba(220,38,38,0.09), transparent 60%),
+        radial-gradient(1000px 600px at 100% 0%, rgba(255,255,255,0.035), transparent 55%);
+    }
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-thumb { background: #2c2c30; }
+    .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl { border-radius: 2px !important; }
+
+    .tac-corners { position: relative; }
+    .tac-corners::before, .tac-corners::after {
+      content: ""; position: absolute; width: 10px; height: 10px; pointer-events: none; opacity: 0.7;
+      border-color: #9aa1ab; border-style: solid; border-width: 0;
+    }
+    .tac-corners::before { top: 2px; left: 2px; border-top-width: 2px; border-left-width: 2px; }
+    .tac-corners::after { bottom: 2px; right: 2px; border-bottom-width: 2px; border-right-width: 2px; }
+
+    @keyframes recPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.55); }
+      50% { box-shadow: 0 0 0 7px rgba(239,68,68,0); }
+    }
+    .rec-dot { animation: recPulse 1.7s ease-in-out infinite; }
+
+    @keyframes travel {
+      0% { left: 2%; opacity: 0; transform: translateY(-50%) scale(0.6); }
+      8% { opacity: 1; transform: translateY(-50%) scale(1); }
+      88% { opacity: 1; transform: translateY(-50%) scale(1); }
+      100% { left: 96%; opacity: 0; transform: translateY(-50%) scale(0.6); }
+    }
+    .packet { animation: travel 3.2s cubic-bezier(.45,.05,.55,.95) infinite; }
+
+    @keyframes dashFlow {
+      to { background-position: -32px 0; }
+    }
+    .flow-line {
+      background-image: repeating-linear-gradient(90deg, rgba(148,163,184,0.5) 0 8px, transparent 8px 16px);
+      animation: dashFlow 1.4s linear infinite;
+    }
+
+    @keyframes thumbCycle {
+      0%, 62% { opacity: 0; transform: translateY(8px) scale(.96); }
+      78%, 92% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-6px) scale(.98); }
+    }
+    .thumb-in { animation: thumbCycle 3.2s ease-in-out infinite; }
+
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    .float-slow { animation: floatSlow 5s ease-in-out infinite; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp .6s ease both; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .rec-dot, .packet, .flow-line, .thumb-in, .float-slow, .fade-up { animation: none !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-base text-slate-200 font-sans">
+  {% from "_macros.html" import brand_mark %}
+  <header class="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
+    <div class="flex items-center gap-2.5">
+      {{ brand_mark() }}
+    </div>
+    <div class="flex items-center gap-2 text-sm">
+      <a href="{{ url_for('community_public.report_general') }}" class="px-3 py-1.5 rounded-lg bg-accent2/10 text-accent2 border border-accent2/30 hover:bg-accent2/20">Report evidence</a>
+      <a href="{{ url_for('auth.login') }}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">Log in</a>
+      <a href="{{ url_for('auth.signup') }}" class="px-3 py-1.5 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20">Sign up</a>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6">
+    <section class="pt-10 pb-16 text-center fade-up">
+      <span class="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-accent/90 bg-accent/10 border border-accent/30 rounded-full px-3 py-1 mb-6">
+        Bodycam evidence, end to end
+      </span>
+      <h1 class="text-4xl sm:text-5xl font-semibold text-white tracking-tight max-w-3xl mx-auto leading-tight">
+        Captured on <span class="text-accent">OPS Phone</span>.<br class="hidden sm:block">
+        Reviewed in <span class="text-accent2">Xon Sight</span>.
+      </h1>
+      <p class="text-slate-400 max-w-xl mx-auto mt-5 text-sm sm:text-base">
+        Officers record from their in-game phone. Evidence lands here automatically - searchable, scrubbable,
+        and ready to review, brief, or build a case around.
+      </p>
+      <div class="flex items-center justify-center gap-3 mt-8">
+        <a href="{{ url_for('auth.signup') }}" class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-accent to-accent2 text-base font-medium text-sm hover:opacity-90">
+          Get started
+        </a>
+        <a href="{{ url_for('auth.login') }}" class="px-5 py-2.5 rounded-lg border border-border text-slate-200 text-sm hover:border-accent/60">
+          Log in
+        </a>
+      </div>
+    </section>
+
+    <section class="pb-16 fade-up" style="animation-delay:.1s">
+      <div class="tac-corners rounded-2xl border border-border bg-panel/70 backdrop-blur p-8 sm:p-10 overflow-hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] items-center gap-6 sm:gap-2">
+          <!-- OPS Phone -->
+          <div class="flex flex-col items-center gap-3 float-slow">
+            <div class="relative w-20 h-36 rounded-[1.1rem] border-2 border-slate-600 bg-black/60 flex items-center justify-center shadow-xl">
+              <div class="absolute top-2 left-1/2 -translate-x-1/2 w-6 h-1 rounded-full bg-slate-700"></div>
+              <span class="rec-dot h-3 w-3 rounded-full bg-red-500"></span>
+            </div>
+            <div class="text-center">
+              <div class="text-sm text-white font-medium">OPS Phone</div>
+              <div class="text-[11px] text-slate-500">Bodycam app &middot; recording</div>
+            </div>
+          </div>
+
+          <!-- Flow line -->
+          <div class="relative h-10 hidden sm:block">
+            <div class="flow-line absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px"></div>
+            <span class="packet absolute top-1/2 h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_12px_rgba(220,38,38,0.9)]"></span>
+          </div>
+          <div class="sm:hidden flex justify-center">
+            <svg viewBox="0 0 24 24" class="h-6 w-6 text-slate-600 rotate-90" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </div>
+
+          <!-- Xon Sight portal -->
+          <div class="flex flex-col items-center gap-3">
+            <div class="relative w-40 rounded-xl border border-border bg-black/60 p-2.5 shadow-xl">
+              <div class="flex items-center gap-1.5 mb-2">
+                <span class="h-1.5 w-1.5 rounded-full bg-red-400/70"></span>
+                <span class="h-1.5 w-1.5 rounded-full bg-amber-400/70"></span>
+                <span class="h-1.5 w-1.5 rounded-full bg-accent2/70"></span>
+              </div>
+              <div class="thumb-in aspect-video rounded-md bg-gradient-to-br from-accent/20 to-accent2/20 border border-accent/30 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" class="h-5 w-5 text-accent" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+              <div class="mt-2 h-1.5 w-3/4 rounded bg-white/10"></div>
+              <div class="mt-1 h-1.5 w-1/2 rounded bg-white/5"></div>
+            </div>
+            <div class="text-center">
+              <div class="text-sm text-white font-medium">Xon Sight</div>
+              <div class="text-[11px] text-slate-500">Evidence portal &middot; new upload</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pb-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {% set features = [
+        ("Evidence viewer", "Scrub-bar thumbnails, frame-stepping, multicam sync, markers & clips.", "M4 5h16v12H4z M4 9h16 M8 13h3"),
+        ("Live respond", "Who's recording right now, and their last known position on a tactical map.", "M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"),
+        ("Cases", "Group evidence under a status with a lightweight audit trail.", "M4 6h16M4 12h16M4 18h10"),
+        ("AI assistant", "Draft report narratives, summarize footage, and chat over recent activity.", "M12 3l1.8 4.3L18 9l-4.2 1.7L12 15l-1.8-4.3L6 9l4.2-1.7z"),
+      ] %}
+      {% for title, desc, path in features %}
+      <div class="rounded-xl border border-border bg-panel p-5 hover:border-accent/50 transition fade-up" style="animation-delay: {{ loop.index0 * 0.08 + 0.2 }}s">
+        <div class="h-9 w-9 rounded-lg bg-accent/10 border border-accent/30 flex items-center justify-center mb-3">
+          <svg viewBox="0 0 24 24" class="h-[18px] w-[18px] text-accent" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ path }}" /></svg>
+        </div>
+        <div class="text-sm font-medium text-white">{{ title }}</div>
+        <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </section>
+
+    <section class="pb-16 fade-up" style="animation-delay:.3s">
+      <div class="tac-corners rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/10 to-transparent p-8 sm:p-10 text-center">
+        <span class="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-accent bg-accent/10 border border-accent/30 rounded-full px-3 py-1 mb-4">
+          For the community
+        </span>
+        <h2 class="text-2xl sm:text-3xl font-semibold text-white">Have evidence or a tip?</h2>
+        <p class="text-slate-400 max-w-lg mx-auto mt-3 text-sm">
+          Report a crime, share a statement, or upload a photo or video - no account needed. An investigator
+          will review it directly. Need to send someone a link for a specific case instead? An officer can
+          generate one from inside the portal.
+        </p>
+        <a href="{{ url_for('community_public.report_general') }}"
+           class="inline-block mt-6 px-6 py-3 rounded-lg bg-accent text-base font-medium text-sm text-white hover:bg-accent/85">
+          Submit a report
+        </a>
+      </div>
+    </section>
+
+    <footer class="pb-10 text-center text-[11px] text-slate-600">
+      Internal evidence-review tool for your server. Not affiliated with Axon Enterprise.
+      &middot; <a href="{{ url_for('site.api_docs') }}" class="hover:text-slate-400 underline">API reference</a>
+    </footer>
+  </main>
+</body>
+</html>

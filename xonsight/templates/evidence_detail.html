@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Evidence #{{ item.id }} · Xon Sight{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4 gap-4 flex-wrap">
+  <a href="{{ url_for('views.evidence_list') }}" class="text-sm text-slate-400 hover:text-white flex items-center gap-1.5">
+    {{ icon("arrow-left", "h-4 w-4") }} Back to evidence
+  </a>
+  <div class="flex items-center gap-2 text-xs text-slate-500 font-mono">
+    <span class="px-2 py-0.5 rounded-full border border-border">#{{ item.id }}</span>
+    <span class="flex items-center gap-1">{{ icon("clock", "h-3.5 w-3.5") }} {{ item.created_at.strftime("%Y-%m-%d %H:%M UTC") }}</span>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+  <div class="xl:col-span-2 space-y-3">
+    <div id="cam-grid" class="tac-corners grid grid-cols-1 gap-2 rounded-2xl overflow-hidden border border-border bg-black p-1 shadow-lg shadow-black/30"></div>
+
+    <div class="rounded-2xl border border-border bg-panel p-4">
+      <div id="scrub-wrap" class="relative h-10 select-none cursor-pointer">
+        <div id="scrub-track" class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-white/10"></div>
+        <div id="scrub-clip-range" class="absolute top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-amber-400/40 hidden"></div>
+        <div id="scrub-played" class="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-gradient-to-r from-accent to-accent2" style="width:0%"></div>
+        <div id="scrub-markers" class="absolute inset-0"></div>
+        <div id="scrub-handle" class="absolute top-1/2 -translate-y-1/2 h-3.5 w-3.5 -ml-1.5 rounded-full bg-white shadow-lg shadow-accent/40 ring-2 ring-accent" style="left:0%"></div>
+        <div id="scrub-preview" class="hidden absolute bottom-full mb-2 -translate-x-1/2 rounded-lg border border-border bg-black shadow-xl overflow-hidden">
+          <canvas id="scrub-preview-canvas" width="160" height="90"></canvas>
+          <div id="scrub-preview-time" class="text-[10px] text-center text-slate-300 bg-black/80 py-0.5"></div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between mt-2 text-xs text-slate-500 font-mono">
+        <span id="time-current">0:00</span>
+        <span id="time-duration">0:00</span>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-border bg-panel p-4 space-y-4">
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btn-playpause" type="button" class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-accent to-accent2 text-sm font-medium w-20 shadow-md shadow-accent/20 hover:opacity-90">Play</button>
+        <button id="btn-step-back" type="button" class="px-2.5 py-1.5 rounded-lg border border-border hover:border-accent/60 text-sm flex items-center gap-1">{{ icon("arrow-left", "h-3.5 w-3.5") }} Frame</button>
+        <button id="btn-step-fwd" type="button" class="px-2.5 py-1.5 rounded-lg border border-border hover:border-accent/60 text-sm flex items-center gap-1">Frame {{ icon("chevron-right", "h-3.5 w-3.5") }}</button>
+        <div class="h-5 w-px bg-border mx-1"></div>
+        <div class="flex items-center gap-1" id="speed-group">
+          <span class="text-xs text-slate-500 mr-1">Speed</span>
+          {% for s in [0.25, 0.5, 1, 1.5, 2, 4] %}
+          <button type="button" data-speed="{{ s }}" class="speed-btn px-2 py-1 rounded-md text-xs border {{ 'bg-accent/10 text-accent border-accent/40' if s == 1 else 'text-slate-400 border-border' }}">{{ s }}x</button>
+          {% endfor %}
+        </div>
+        <div class="h-5 w-px bg-border mx-1"></div>
+        <button id="btn-marker" type="button" class="px-2.5 py-1.5 rounded-lg border border-border hover:border-accent/60 text-sm flex items-center gap-1.5">{{ icon("flag", "h-3.5 w-3.5") }} Marker</button>
+        <button id="btn-clip-in" type="button" class="px-2.5 py-1.5 rounded-lg border border-border hover:border-accent/60 text-sm">Clip in</button>
+        <button id="btn-clip-out" type="button" class="px-2.5 py-1.5 rounded-lg border border-border hover:border-accent/60 text-sm">Clip out</button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-border/60">
+        <label class="text-xs text-slate-500 flex items-center gap-3">
+          Brightness
+          <input id="range-brightness" type="range" min="50" max="200" value="100" class="flex-1 accent-accent">
+        </label>
+        <label class="text-xs text-slate-500 flex items-center gap-3">
+          Contrast
+          <input id="range-contrast" type="range" min="50" max="200" value="100" class="flex-1 accent-accent">
+        </label>
+      </div>
+
+      <p class="text-[11px] text-slate-600 flex items-start gap-1.5">{{ icon("info", "h-3.5 w-3.5 mt-0.5 shrink-0") }} Shortcuts: Space play/pause &middot; A/D step a frame &middot; 1/2/4 set speed. Frame step assumes 30fps - Xon Sight doesn't report the capture rate.</p>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-border bg-panel flex flex-col h-fit">
+    <div class="flex border-b border-border text-xs font-mono uppercase tracking-wide overflow-x-auto" id="tab-bar">
+      <button data-tab="notes" class="tab-btn px-4 py-3 border-b-2 border-accent text-white shrink-0 flex items-center gap-1.5">{{ icon("mail", "h-3.5 w-3.5") }} Notes</button>
+      <button data-tab="transcript" class="tab-btn px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-white shrink-0">Transcript</button>
+      <button data-tab="metadata" class="tab-btn px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-white shrink-0">Metadata</button>
+      <button data-tab="markers" class="tab-btn px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-white shrink-0">Markers &amp; clips</button>
+      <button data-tab="multicam" class="tab-btn px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-white shrink-0">Multicam</button>
+      <button data-tab="ai" class="tab-btn px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-white shrink-0 flex items-center gap-1.5">{{ icon("assistant", "h-3.5 w-3.5") }} AI tools</button>
+    </div>
+
+    <div class="p-4 space-y-4">
+      <div data-pane="notes" class="tab-pane space-y-3">
+        <div id="notes-list" class="space-y-3 max-h-80 overflow-y-auto"></div>
+        <form id="note-form" class="space-y-2 pt-3 border-t border-border/60">
+          <input id="note-author" type="text" placeholder="Your name" class="w-full bg-base border border-border rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60">
+          <textarea id="note-body" rows="2" placeholder="Add a case note..." class="w-full bg-base border border-border rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60"></textarea>
+          <button type="submit" class="w-full px-3 py-1.5 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-xs font-medium">Add note</button>
+        </form>
+      </div>
+
+      <div data-pane="transcript" class="tab-pane hidden space-y-2">
+        <p class="text-[11px] text-slate-500">No automatic speech-to-text service is connected to Xon Sight. Paste a transcript here manually - the AI tools tab can draft a report/brief from it once it's filled in.</p>
+        <textarea id="transcript-text" rows="10" placeholder="Paste transcript..." class="w-full bg-base border border-border rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60"></textarea>
+        <div class="flex items-center gap-2">
+          <button id="btn-save-transcript" type="button" class="px-3 py-1.5 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-xs font-medium">Save transcript</button>
+          <span id="transcript-saved" class="text-[11px] text-accent2 hidden flex items-center gap-1">{{ icon("check-circle", "h-3.5 w-3.5") }} Saved</span>
+        </div>
+      </div>
+
+      <div data-pane="metadata" class="tab-pane hidden space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div><div class="text-slate-500 font-mono uppercase tracking-wide text-[10px]">Agency</div><div class="text-slate-200 mt-0.5">{{ agency_name }}</div></div>
+          <div><div class="text-slate-500 font-mono uppercase tracking-wide text-[10px]">Officer</div><div class="text-slate-200 mt-0.5">{{ item.submitter_name or "Unknown" }}</div></div>
+        </div>
+        <div><div class="text-slate-500 font-mono uppercase tracking-wide text-[10px]">Identifier</div><div class="text-slate-300 mt-0.5 font-mono break-all">{{ item.submitter_identifier or "—" }}</div></div>
+        <div>
+          <div class="text-slate-500 font-mono uppercase tracking-wide text-[10px]">Device serial</div>
+          <div class="flex gap-2 mt-1">
+            <input id="device-serial" type="text" value="{{ item.device_serial }}" placeholder="Not recorded" class="flex-1 bg-base border border-border rounded-lg px-2 py-1.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60">
+            <button id="btn-save-serial" type="button" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60 font-mono uppercase tracking-wide text-xs">Save</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><div class="text-slate-500 font-mono uppercase tracking-wide text-[10px]">Recorded</div><div class="text-slate-300 mt-0.5 font-mono">{{ item.created_at.strftime("%Y-%m-%d %H:%M:%S UTC") }}</div></div>
+          <div><div class="text-slate-500 font-mono uppercase tracking-wide text-[10px]">Received</div><div class="text-slate-300 mt-0.5 font-mono">{{ item.received_at.strftime("%Y-%m-%d %H:%M:%S UTC") }}</div></div>
+        </div>
+        <div><div class="text-slate-500 font-mono uppercase tracking-wide text-[10px]">Remote ID</div><div class="text-slate-300 mt-0.5 font-mono">{{ item.remote_id }}</div></div>
+        <div class="pt-2 border-t border-border/60">
+          <div class="text-slate-500 font-mono uppercase tracking-wide text-[10px]">Add to case</div>
+          <div class="flex gap-2 mt-1">
+            <select id="case-select" class="flex-1 bg-base border border-border rounded-lg px-2 py-1.5 text-slate-200 focus:outline-none focus:border-accent/60">
+              <option value="">Loading cases...</option>
+            </select>
+            <button id="btn-add-to-case" type="button" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60 font-mono uppercase tracking-wide text-xs">Add</button>
+          </div>
+          <span id="case-added" class="text-[11px] text-accent2 hidden mt-1 flex items-center gap-1">{{ icon("check-circle", "h-3.5 w-3.5") }} Added</span>
+        </div>
+        <a href="{{ item.video_url }}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1.5 text-center px-3 py-2 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 font-medium">
+          {{ icon("external-link", "h-3.5 w-3.5") }} Open video source
+        </a>
+      </div>
+
+      <div data-pane="markers" class="tab-pane hidden space-y-4 text-xs">
+        <div>
+          <div class="text-slate-400 mb-2 flex items-center gap-1.5">{{ icon("flag", "h-3.5 w-3.5") }} Markers</div>
+          <div id="markers-list" class="space-y-1.5"></div>
+        </div>
+        <div class="pt-3 border-t border-border/60">
+          <div class="text-slate-400 mb-2">Clips</div>
+          <p class="text-[11px] text-slate-600 mb-2">Clips play only the marked range - Xon Sight never has the raw file to cut, so this isn't a separate exported video.</p>
+          <div id="clips-list" class="space-y-1.5"></div>
+        </div>
+      </div>
+
+      <div data-pane="multicam" class="tab-pane hidden space-y-2 text-xs">
+        <p class="text-slate-500 text-[11px] mb-2">Evidence captured within 10 minutes of this one. Add up to 3 more to sync alongside this video - played in lockstep by capture time, not game location.</p>
+        <div id="related-list" class="space-y-1.5 max-h-96 overflow-y-auto"></div>
+      </div>
+
+      <div data-pane="ai" class="tab-pane hidden space-y-5 text-xs">
+        {% if not ai_configured %}
+        <p class="text-amber-400/90 bg-amber-400/10 border border-amber-400/30 rounded-lg px-3 py-2 flex items-start gap-2">
+          {{ icon("alert-triangle", "h-4 w-4 mt-0.5 shrink-0") }}
+          AI features aren't configured - set <code>ANTHROPIC_API_KEY</code> in <code>.env</code> on the server to enable Draft/Brief generation.
+        </p>
+        {% endif %}
+        <div class="rounded-xl border border-border bg-base/60 p-3">
+          <div class="flex items-center justify-between">
+            <div class="text-slate-300 font-medium flex items-center gap-1.5">{{ icon("assistant", "h-3.5 w-3.5 text-accent") }} Draft One &middot; report narrative</div>
+            <button id="btn-gen-draft" type="button" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60 text-[11px] font-mono uppercase tracking-wide" {{ "disabled" if not ai_configured }}>Generate</button>
+          </div>
+          <p class="text-[11px] text-slate-600 mt-1">Drafted from the transcript + case notes above. Always review and edit before using it anywhere.</p>
+          <div id="draft-output" class="mt-2 whitespace-pre-wrap text-slate-200 bg-base rounded-lg p-3 hidden"></div>
+        </div>
+        <div class="rounded-xl border border-border bg-base/60 p-3">
+          <div class="flex items-center justify-between">
+            <div class="text-slate-300 font-medium flex items-center gap-1.5">{{ icon("assistant", "h-3.5 w-3.5 text-accent") }} Brief One &middot; video summary</div>
+            <button id="btn-gen-brief" type="button" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60 text-[11px] font-mono uppercase tracking-wide" {{ "disabled" if not ai_configured }}>Generate</button>
+          </div>
+          <p class="text-[11px] text-slate-600 mt-1">Summarizes the transcript/notes/markers and flags likely evidentiary milestones - it reads text, it doesn't watch the video.</p>
+          <div id="brief-output" class="mt-2 hidden">
+            <p id="brief-summary" class="text-slate-200 bg-base rounded-lg p-3"></p>
+            <div id="brief-milestones" class="mt-2 space-y-1.5"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  window.XON_SIGHT_EVIDENCE = {{ item_json | tojson }};
+  window.XON_SIGHT_AGENCY = {{ agency_name | tojson }};
+  // Notes/markers/clips/cases/drafts/briefs aren't tenant-provisioned tables (tenancy.py) - this
+  // item's id only resolves against the control-plane database, which would silently look up a
+  // different (or no) row under its own id when this evidence actually lives in a tenant's MySQL
+  // database. evidence-player.js disables those panels entirely when this is true, rather than
+  // risk showing one community's case notes on another's evidence.
+  window.XON_SIGHT_TENANT_MODE = {{ "true" if g.tenant else "false" }};
+</script>
+<script src="{{ url_for('static', filename='evidence-player.js') }}"></script>
+{% endblock %}

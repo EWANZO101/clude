@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}{{ case.title }} · Xon Sight{% endblock %}
+{% block content %}
+<a href="{{ url_for('views.cases_list') }}" class="text-sm text-slate-400 hover:text-white flex items-center gap-1.5 w-fit">
+  {{ icon("arrow-left", "h-4 w-4") }} Back to cases
+</a>
+
+<div class="mt-4 flex items-center justify-between gap-4 flex-wrap">
+  <h1 class="text-2xl font-semibold text-white tracking-tight">{{ case.title }}</h1>
+  <div class="flex items-center gap-2">
+    <select id="status-select" class="bg-panel border border-border rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60">
+      <option value="open" {{ "selected" if case.status == "open" }}>Open</option>
+      <option value="under_review" {{ "selected" if case.status == "under_review" }}>Under review</option>
+      <option value="closed" {{ "selected" if case.status == "closed" }}>Closed</option>
+    </select>
+    <button id="btn-update-status" type="button" class="px-3 py-1.5 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-sm font-medium">Update status</button>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+  <div class="lg:col-span-2 space-y-3">
+    <h2 class="text-sm font-medium text-slate-400 flex items-center gap-1.5">{{ icon("evidence", "h-4 w-4") }} Linked evidence</h2>
+    <div id="case-evidence-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+  </div>
+
+  <div class="rounded-2xl border border-border bg-panel p-4 h-fit">
+    <h2 class="text-sm font-medium text-slate-400 mb-3 flex items-center gap-1.5">{{ icon("clock", "h-4 w-4") }} Status history</h2>
+    <div id="case-audit-list" class="space-y-3 text-xs"></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  window.XON_SIGHT_CASE_ID = {{ case.id }};
+</script>
+<script src="{{ url_for('static', filename='case-detail.js') }}"></script>
+{% endblock %}

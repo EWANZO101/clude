@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf_field %}
+{% block title %}Settings · Xon Sight{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold text-white tracking-tight mb-1 flex items-center gap-2">
+  {{ icon("settings", "h-5 w-5 text-accent") }} Server settings
+</h1>
+<p class="text-sm text-slate-500 mb-6 max-w-xl">
+  Controls how new accounts can be created on this server. Each Xon Sight deployment sets this independently -
+  there's no one right answer for every community.
+</p>
+
+<div class="tac-corners max-w-xl rounded-2xl border border-border bg-panel p-5 shadow-lg shadow-black/10">
+  {% if saved %}
+  <p class="text-accent2 bg-accent2/10 border border-accent2/30 rounded-lg px-3 py-2 text-sm mb-4 flex items-center gap-1.5">
+    {{ icon("check-circle", "h-4 w-4") }} Settings saved.
+  </p>
+  {% endif %}
+
+  <form method="post" class="space-y-5">
+    {{ csrf_field() }}
+    <div>
+      <label class="block text-xs font-mono uppercase tracking-wide text-slate-400 mb-2 flex items-center gap-1.5">{{ icon("key", "h-3.5 w-3.5") }} Signup mode</label>
+      <div class="space-y-2">
+        <label class="flex items-start gap-3 rounded-xl border border-border px-3 py-2.5 cursor-pointer hover:border-accent/50 has-[:checked]:border-accent/50 has-[:checked]:bg-accent/5 transition">
+          <input type="radio" name="signup_mode" value="open" class="mt-1 accent-accent" {{ "checked" if settings.signup_mode == "open" }}>
+          <span>
+            <span class="block text-sm text-slate-200">Open</span>
+            <span class="block text-xs text-slate-500">Anyone can create an account immediately.</span>
+          </span>
+        </label>
+        <label class="flex items-start gap-3 rounded-xl border border-border px-3 py-2.5 cursor-pointer hover:border-accent/50 has-[:checked]:border-accent/50 has-[:checked]:bg-accent/5 transition">
+          <input type="radio" name="signup_mode" value="invite" class="mt-1 accent-accent" {{ "checked" if settings.signup_mode == "invite" }}>
+          <span>
+            <span class="block text-sm text-slate-200">Invite code</span>
+            <span class="block text-xs text-slate-500">Requires the code below. Leave the code blank to close signups entirely.</span>
+          </span>
+        </label>
+        <label class="flex items-start gap-3 rounded-xl border border-border px-3 py-2.5 cursor-pointer hover:border-accent/50 has-[:checked]:border-accent/50 has-[:checked]:bg-accent/5 transition">
+          <input type="radio" name="signup_mode" value="approval" class="mt-1 accent-accent" {{ "checked" if settings.signup_mode == "approval" }}>
+          <span>
+            <span class="block text-sm text-slate-200">Admin approval</span>
+            <span class="block text-xs text-slate-500">Accounts are created disabled until an admin approves them on the Users page.</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-xs text-slate-400 mb-1">Invite code</label>
+      <input name="invite_code" type="text" value="{{ settings.invite_code }}" placeholder="e.g. a code you hand out in Discord"
+        class="w-full bg-base border border-border rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+    </div>
+
+    <button type="submit" class="px-4 py-2 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-sm font-medium">
+      Save settings
+    </button>
+  </form>
+</div>
+
+<div class="max-w-xl rounded-2xl border border-border bg-panel p-5 mt-6 shadow-lg shadow-black/10">
+  <h2 class="text-sm font-medium text-white mb-1 flex items-center gap-1.5">{{ icon("discord", "h-4 w-4 text-accent2") }} Discord notifications</h2>
+  <p class="text-xs text-slate-500 mb-4">
+    One webhook for this whole deployment, for now - not per-community yet. Create one in your Discord server:
+    Channel Settings &rarr; Integrations &rarr; Webhooks &rarr; New Webhook, then paste its URL here.
+  </p>
+  <form method="post" class="space-y-4">
+    {{ csrf_field() }}
+    <!-- keeps the signup settings above intact when this form posts on its own -->
+    <input type="hidden" name="signup_mode" value="{{ settings.signup_mode }}">
+    <input type="hidden" name="invite_code" value="{{ settings.invite_code }}">
+
+    <div>
+      <label class="block text-xs text-slate-400 mb-1">Webhook URL</label>
+      <input name="discord_webhook_url" type="url" value="{{ settings.discord_webhook_url }}" placeholder="https://discord.com/api/webhooks/..."
+        class="w-full bg-base border border-border rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+    </div>
+
+    <div class="space-y-2 text-sm">
+      <label class="flex items-center gap-2 text-slate-300">
+        <input type="checkbox" name="discord_notify_evidence" class="accent-accent" {{ "checked" if settings.discord_notify_evidence }}>
+        New evidence submitted
+      </label>
+      <label class="flex items-center gap-2 text-slate-300">
+        <input type="checkbox" name="discord_notify_alerts" class="accent-accent" {{ "checked" if settings.discord_notify_alerts }}>
+        Emergency alerts (weapon drawn, shots fired, ...)
+      </label>
+      <label class="flex items-center gap-2 text-slate-300">
+        <input type="checkbox" name="discord_notify_bolos" class="accent-accent" {{ "checked" if settings.discord_notify_bolos }}>
+        BOLOs published
+      </label>
+    </div>
+
+    <button type="submit" class="px-4 py-2 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-sm font-medium">
+      Save settings
+    </button>
+  </form>
+</div>
+{% endblock %}

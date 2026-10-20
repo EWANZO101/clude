@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ req.title }} · Xon Sight</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            base: '#0a0a0b',
+            panel: '#131315',
+            panel2: '#0e0e10',
+            border: '#2c2c30',
+            accent: '#dc2626',
+            accent2: '#7d8694',
+          },
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #09090a;
+      background-image:
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
+        repeating-linear-gradient(-45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
+        radial-gradient(900px 500px at 12% -10%, rgba(220,38,38,0.07), transparent 60%),
+        radial-gradient(900px 500px at 105% 5%, rgba(255,255,255,0.03), transparent 55%);
+      min-height: 100vh;
+    }
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-thumb { background: #2c2c30; }
+    .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl { border-radius: 2px !important; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-up { animation: fadeUp .5s ease both; }
+    @media (prefers-reduced-motion: reduce) { .fade-up { animation: none; } }
+  </style>
+</head>
+<body class="min-h-screen bg-base text-slate-200 font-sans">
+  {% from "_macros.html" import brand_mark, csrf_field %}
+  <header class="px-6 py-5 flex items-center justify-between max-w-2xl mx-auto">
+    <a href="{{ url_for('site.welcome') }}" class="inline-flex items-center gap-2.5">{{ brand_mark() }}</a>
+    <a href="{{ url_for('auth.login') }}" class="text-xs text-slate-500 hover:text-slate-300">Staff login</a>
+  </header>
+
+  <main class="max-w-2xl mx-auto px-6 pb-20">
+    {% if done %}
+      <div class="text-center py-20 fade-up">
+        <div class="mx-auto h-16 w-16 rounded-full bg-accent2/10 border border-accent2/30 flex items-center justify-center mb-5">
+          <svg viewBox="0 0 24 24" class="h-8 w-8 text-accent2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" /><path d="M8 12.5l2.8 2.8L16.5 9" />
+          </svg>
+        </div>
+        <h1 class="text-2xl font-semibold text-white mb-2">Submission received</h1>
+        <p class="text-sm text-slate-400 max-w-sm mx-auto">An investigator will review what you sent. You can close this page now.</p>
+        <a href="{{ request.path }}" class="inline-block mt-6 text-sm text-accent hover:underline">Submit another report</a>
+      </div>
+    {% elif req.status != "open" %}
+      <div class="text-center py-20 fade-up">
+        <div class="mx-auto h-16 w-16 rounded-full bg-white/5 border border-border flex items-center justify-center mb-5">
+          <svg viewBox="0 0 24 24" class="h-8 w-8 text-slate-500" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+          </svg>
+        </div>
+        <h1 class="text-xl font-semibold text-white mb-2">{{ req.title }}</h1>
+        <p class="text-sm text-slate-400">This request is no longer accepting submissions.</p>
+      </div>
+    {% else %}
+      <div class="pt-8 pb-6 text-center fade-up">
+        <span class="inline-block text-[11px] font-mono uppercase tracking-wider text-accent/90 bg-accent/10 border border-accent/30 rounded-full px-3 py-1 mb-4">{{ req.category }}</span>
+        <h1 class="text-2xl sm:text-3xl font-semibold text-white tracking-tight">{{ req.title }}</h1>
+        {% if req.description %}
+        <p class="text-sm text-slate-400 max-w-lg mx-auto mt-3 whitespace-pre-wrap">{{ req.description }}</p>
+        {% endif %}
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 fade-up" style="animation-delay:.05s">
+        <div class="rounded-xl border border-border bg-panel/60 px-4 py-3 flex items-center gap-2.5">
+          <svg viewBox="0 0 24 24" class="h-4 w-4 text-accent shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 7.4-2" />
+          </svg>
+          <span class="text-xs text-slate-400">No account needed</span>
+        </div>
+        <div class="rounded-xl border border-border bg-panel/60 px-4 py-3 flex items-center gap-2.5">
+          <svg viewBox="0 0 24 24" class="h-4 w-4 text-accent shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z" /><circle cx="12" cy="12" r="2.6" />
+          </svg>
+          <span class="text-xs text-slate-400">Reviewed by an investigator</span>
+        </div>
+        <div class="rounded-xl border border-border bg-panel/60 px-4 py-3 flex items-center gap-2.5">
+          <svg viewBox="0 0 24 24" class="h-4 w-4 text-accent shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2.5l7.5 3.5v5.5c0 4.8-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.7-7.5-9.5V6l7.5-3.5z" />
+          </svg>
+          <span class="text-xs text-slate-400">Confidential by default</span>
+        </div>
+      </div>
+
+      {% if req.instructions %}
+      <div class="flex items-start gap-3 text-sm text-accent/90 bg-accent/5 border border-accent/20 rounded-xl px-4 py-3 mb-6 fade-up" style="animation-delay:.08s">
+        <svg viewBox="0 0 24 24" class="h-4 w-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><circle cx="12" cy="8" r="0.6" fill="currentColor" stroke="none" />
+        </svg>
+        <p>{{ req.instructions }}</p>
+      </div>
+      {% endif %}
+
+      {% if error %}
+      <p class="text-red-300 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-sm mb-6 fade-up">{{ error }}</p>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data" class="space-y-5 fade-up" style="animation-delay:.1s">
+        {{ csrf_field() }}
+        <!-- Honeypot - hidden from real visitors via CSS, bots often fill every field -->
+        <div style="position:absolute; left:-9999px;" aria-hidden="true">
+          <input type="text" name="website" tabindex="-1" autocomplete="off">
+        </div>
+
+        <div class="rounded-2xl border border-border bg-panel p-5 sm:p-6">
+          <div class="flex items-center gap-2.5 mb-4">
+            <svg viewBox="0 0 24 24" class="h-[18px] w-[18px] text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="3.2" /><path d="M5 20c0-3.6 3.2-6 7-6s7 2.4 7 6" />
+            </svg>
+            <h2 class="text-sm font-medium text-white">Your information <span class="text-slate-500 font-normal">(optional)</span></h2>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1.5">Your name</label>
+              <input name="submitter_name" type="text" placeholder="Anonymous"
+                class="w-full bg-base border border-border rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1.5">Contact</label>
+              <input name="submitter_contact" type="text" placeholder="Phone, Discord, in-game name..."
+                class="w-full bg-base border border-border rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+            </div>
+          </div>
+          <label class="flex items-center gap-2 text-xs text-slate-400 mt-3">
+            <input type="checkbox" name="store_contact_consent" class="accent-accent">
+            It's OK to store my contact info so an investigator can follow up
+          </label>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-panel p-5 sm:p-6">
+          <div class="flex items-center gap-2.5 mb-4">
+            <svg viewBox="0 0 24 24" class="h-[18px] w-[18px] text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v7A2.5 2.5 0 0 1 17.5 15H9l-4 4V5.5z" />
+            </svg>
+            <h2 class="text-sm font-medium text-white">What did you see?</h2>
+          </div>
+          <textarea name="message" rows="5" placeholder="Describe what you witnessed or what footage you have..."
+            class="w-full bg-base border border-border rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30"></textarea>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-panel p-5 sm:p-6">
+          <div class="flex items-center gap-2.5 mb-4">
+            <svg viewBox="0 0 24 24" class="h-[18px] w-[18px] text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2.5" /><circle cx="9" cy="10" r="1.8" /><path d="M21 16.5l-4.5-4.5-4 4-2.5-2.5L3.5 19" />
+            </svg>
+            <h2 class="text-sm font-medium text-white">Evidence <span class="text-slate-500 font-normal">(optional)</span></h2>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1.5">Link to footage you already have hosted somewhere</label>
+              <input name="external_link" type="url" placeholder="https://..."
+                class="w-full bg-base border border-border rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1.5">Or upload a photo/video directly</label>
+              <label for="file-input" class="flex items-center justify-between gap-3 w-full bg-base border border-dashed border-border rounded-lg px-4 py-3 cursor-pointer hover:border-accent/50 transition">
+                <span id="file-chosen-label" class="text-sm text-slate-500">Choose a file - jpg, png, webp, mp4, webm, or mov</span>
+                <span class="text-xs px-2.5 py-1 rounded-lg border border-border text-slate-300 shrink-0">Browse</span>
+              </label>
+              <input id="file-input" name="file" type="file" accept=".jpg,.jpeg,.png,.webp,.mp4,.webm,.mov" class="sr-only">
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-panel p-5 sm:p-6 space-y-4">
+          <div class="flex items-center gap-2.5">
+            <svg viewBox="0 0 24 24" class="h-[18px] w-[18px] text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2.5l7.5 3.5v5.5c0 4.8-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.7-7.5-9.5V6l7.5-3.5z" /><path d="M8.7 12l2.3 2.3 4.3-4.3" />
+            </svg>
+            <h2 class="text-sm font-medium text-white">Verify</h2>
+          </div>
+
+          {% if req.requires_consent %}
+          <label class="flex items-start gap-2 text-xs text-slate-400 bg-base rounded-lg px-3 py-2.5">
+            <input type="checkbox" name="consent" required class="mt-0.5 accent-accent">
+            I'm submitting this voluntarily and understand it may be used as evidence.
+          </label>
+          {% endif %}
+
+          {% if hcaptcha_site_key %}
+          <div class="h-captcha" data-sitekey="{{ hcaptcha_site_key }}"></div>
+          {% else %}
+          <div>
+            <label class="block text-xs text-slate-400 mb-1.5">Quick check: what is {{ captcha_a }} + {{ captcha_b }}?</label>
+            <input name="captcha_answer" type="text" inputmode="numeric" autocomplete="off" required
+              class="w-full sm:w-48 bg-base border border-border rounded-lg px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+          </div>
+          {% endif %}
+        </div>
+
+        <button type="submit"
+          class="w-full px-4 py-3.5 rounded-xl bg-gradient-to-r from-accent to-accent2 text-base font-semibold hover:opacity-90 shadow-lg shadow-accent/20">
+          Submit report
+        </button>
+        <p class="text-center text-[11px] text-slate-600">
+          By submitting, you agree this information may be reviewed{{ " by " + agency_name if agency_name else "" }}.
+        </p>
+      </form>
+    {% endif %}
+  </main>
+
+  <script>
+    (function () {
+      var input = document.getElementById("file-input");
+      var label = document.getElementById("file-chosen-label");
+      if (!input || !label) return;
+      input.addEventListener("change", function () {
+        label.textContent = input.files.length ? input.files[0].name : "Choose a file - jpg, png, webp, mp4, webm, or mov";
+      });
+    })();
+  </script>
+  {% if hcaptcha_site_key %}
+  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+  {% endif %}
+</body>
+</html>

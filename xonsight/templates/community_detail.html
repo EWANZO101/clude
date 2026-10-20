@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}{{ req.title }} · Xon Sight{% endblock %}
+{% block content %}
+<a href="{{ url_for('views.community_list') }}" class="text-sm text-slate-400 hover:text-white flex items-center gap-1.5 w-fit">
+  {{ icon("arrow-left", "h-4 w-4") }} Back to requests
+</a>
+
+<div class="mt-4 flex items-center justify-between gap-4 flex-wrap">
+  <div>
+    <div class="flex items-center gap-2">
+      <h1 class="text-2xl font-semibold text-white tracking-tight">{{ req.title }}</h1>
+      {% if req.is_general %}
+      <span class="text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full border border-accent/40 text-accent">General tip line</span>
+      {% endif %}
+    </div>
+    <p class="text-xs text-slate-500 mt-1">{{ req.category }} &middot; created by {{ created_by_username or "unknown" }}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <span id="status-badge" class="text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full border {{ 'border-accent2/40 text-accent2' if req.status == 'open' else 'border-slate-600 text-slate-400' }}">
+      {{ req.status }}
+    </span>
+    <button id="btn-toggle-status" type="button" class="px-3 py-1.5 rounded-lg border border-border hover:border-accent/60 text-xs">
+      {{ "Close request" if req.status == "open" else "Reopen request" }}
+    </button>
+    {% if not req.is_general %}
+    <button id="btn-delete-request" type="button" class="px-3 py-1.5 rounded-lg border border-border hover:border-red-400/50 hover:text-red-400 text-xs flex items-center gap-1.5">
+      {{ icon("trash", "h-3.5 w-3.5") }} Delete
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+<div class="rounded-2xl border border-border bg-panel p-4 mt-4">
+  <div class="text-xs text-slate-500 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">{{ icon("link", "h-3.5 w-3.5") }} Public link</div>
+  <div class="flex items-center gap-2">
+    {% if req.is_general %}
+    <input id="public-link" type="text" readonly value="{{ request.url_root.rstrip('/') }}{{ url_for('community_public.report_general') }}"
+      class="flex-1 bg-base border border-border rounded-lg px-3 py-2 text-sm text-slate-300 font-mono">
+    {% else %}
+    <input id="public-link" type="text" readonly value="{{ request.url_root.rstrip('/') }}{{ url_for('community_public.submit', code=req.reference_code) }}"
+      class="flex-1 bg-base border border-border rounded-lg px-3 py-2 text-sm text-slate-300 font-mono">
+    {% endif %}
+    <button id="btn-copy-link" type="button" class="px-3 py-2 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-sm font-medium flex items-center gap-1.5 shrink-0">
+      {{ icon("copy", "h-3.5 w-3.5") }} Copy
+    </button>
+  </div>
+  <p class="text-[11px] text-slate-600 mt-2">
+    {% if req.is_general %}
+    This is the permanent link on the homepage - it's always on, for anyone, not tied to a specific case.
+    {% else %}
+    Share this however you'd reach the person - Discord, the in-game phone, etc. No account needed to submit.
+    {% endif %}
+  </p>
+</div>
+
+<h2 class="text-sm font-medium text-slate-400 mt-6 mb-3 flex items-center gap-1.5">{{ icon("mail", "h-4 w-4") }} Submissions</h2>
+<div id="submissions-list" class="space-y-3"></div>
+{% endblock %}
+{% block scripts %}
+<script>
+  window.XON_SIGHT_REQUEST_ID = {{ req.id }};
+</script>
+<script src="{{ url_for('static', filename='community-detail.js') }}"></script>
+{% endblock %}

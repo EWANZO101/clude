@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Reference · Xon Sight</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            base: '#0a0a0b',
+            panel: '#131315',
+            border: '#2c2c30',
+            accent: '#dc2626',
+            accent2: '#7d8694',
+          },
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #09090a;
+      background-image:
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
+        repeating-linear-gradient(-45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
+        radial-gradient(900px 500px at 15% -10%, rgba(220,38,38,0.07), transparent 60%),
+        radial-gradient(900px 500px at 110% 10%, rgba(255,255,255,0.03), transparent 60%);
+      min-height: 100vh;
+    }
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-thumb { background: #2c2c30; border-radius: 8px; }
+    pre { background: #0e0e10; border: 1px solid #2c2c30; border-radius: 0.65rem; padding: 0.9rem 1rem; overflow-x: auto; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8rem; }
+    .toc a.active { color: #dc2626; }
+    .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl { border-radius: 2px !important; }
+    .tac-corners { position: relative; }
+    .tac-corners::before, .tac-corners::after {
+      content: ""; position: absolute; width: 10px; height: 10px; pointer-events: none; opacity: 0.7;
+      border-color: #9aa1ab; border-style: solid; border-width: 0;
+    }
+    .tac-corners::before { top: 2px; left: 2px; border-top-width: 2px; border-left-width: 2px; }
+    .tac-corners::after { bottom: 2px; right: 2px; border-bottom-width: 2px; border-right-width: 2px; }
+  </style>
+</head>
+<body class="min-h-screen bg-base text-slate-200 font-sans">
+  {% from "_macros.html" import brand_mark %}
+  <header class="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
+    <a href="{{ url_for('site.welcome') }}" class="inline-flex items-center gap-2.5">{{ brand_mark() }}</a>
+    <div class="flex items-center gap-2 text-sm">
+      <a href="{{ url_for('site.welcome') }}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">Home</a>
+      <a href="{{ url_for('auth.login') }}" class="px-3 py-1.5 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20">Staff login</a>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 pb-20">
+    <div class="pt-4 pb-8">
+      <h1 class="text-3xl font-semibold text-white tracking-tight">API reference</h1>
+      <p class="text-sm text-slate-400 max-w-2xl mt-3">
+        Xon Sight's public API is a small set of inbound webhooks - a FiveM resource (or any bridge script) POSTs to
+        these to push evidence, a live roster, alerts, and non-bodycam feed pins into a portal. There's no public
+        read API: everything you can query back (evidence lists, cases, etc.) lives behind a logged-in session and
+        isn't meant for third-party integration.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-8">
+      <nav class="toc hidden lg:block font-mono text-sm sticky top-6 self-start space-y-1">
+        <a href="#auth" class="block text-slate-400 hover:text-white py-1">Authentication</a>
+        <a href="#evidence" class="block text-slate-400 hover:text-white py-1">POST /evidence</a>
+        <a href="#recorders" class="block text-slate-400 hover:text-white py-1">POST /recorders/sync</a>
+        <a href="#alerts" class="block text-slate-400 hover:text-white py-1">POST /alerts</a>
+        <a href="#feeds" class="block text-slate-400 hover:text-white py-1">POST /external-feeds/sync</a>
+        <a href="#errors" class="block text-slate-400 hover:text-white py-1">Errors</a>
+        <a href="#roadmap" class="block text-slate-400 hover:text-white py-1">What's coming</a>
+      </nav>
+
+      <div class="space-y-10 min-w-0">
+        <section id="auth">
+          <h2 class="text-lg font-semibold text-white mb-3">Authentication</h2>
+          <p class="text-sm text-slate-400 mb-3">Every endpoint below accepts either header - checked in this order:</p>
+          <pre><code>X-XonSight-Token: &lt;your community's API token&gt;</code></pre>
+          <p class="text-sm text-slate-400 mb-3">
+            Per-community (get one from <code class="text-accent">/admin/communities</code>, admin-only). Routes this
+            request's reads/writes to that community's own database. An unrecognized token is always a hard 401 -
+            it never falls back to the header below.
+          </p>
+          <pre><code>X-XonSight-Key: &lt;shared deployment secret&gt;</code></pre>
+          <p class="text-sm text-slate-400 mt-3">
+            The original single shared secret (<code class="text-accent">XONSIGHT_WEBHOOK_KEY</code> in the portal's
+            <code>.env</code>) - still fully supported for any resource not yet updated to use a community token.
+            If the portal was deployed with no key configured, this header is optional (matches Xon Sight's own
+            documented "optional key" behavior) - not recommended for anything internet-facing. A wrong or missing
+            key when one is configured returns <code class="text-accent">401</code>.
+          </p>
+        </section>
+
+        <section id="evidence">
+          <h2 class="font-mono text-lg font-semibold text-white mb-1">POST /api/xonsight/evidence</h2>
+          <p class="text-xs text-slate-500 mb-3">Documented Xon Sight contract. One call per recorded video part.</p>
+          <p class="text-sm text-slate-400 mb-3">
+            Submits one piece of evidence. The portal never receives video bytes - only a link, so
+            <code class="text-accent">videoUrl</code> must already be reachable over https from wherever the portal
+            runs. Calling again with the same <code class="text-accent">id</code> updates that item in place
+            (used for retries) rather than creating a duplicate.
+          </p>
+          <pre><code>{
+  "id": 1000042,                              // integer, unique per item - re-posting the same id updates it
+  "submitterIdentifier": "char1:a1b2c3...",   // in-game identifier, opaque to the portal
+  "submitterName": "Officer Doe",
+  "caption": "Officer Doe · LSPD · part 1 · 21:08",
+  "videoUrl": "https://your-cdn.example.com/clip.webm",
+  "createdAt": "2026-10-19T21:08:28Z",         // ISO 8601, UTC
+  "deviceSerial": "X00012345"                 // optional extension - fills the Metadata tab's device serial
+}</code></pre>
+          <p class="text-xs text-slate-500 mt-2 mb-2">Required: <code>id</code>, <code>videoUrl</code>. Everything else defaults to blank if omitted.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+            <div class="rounded-lg border border-accent2/30 bg-accent2/5 p-3">
+              <div class="font-mono text-xs text-accent2 mb-1">200 OK</div>
+              <pre class="!mt-0"><code>{ "ok": true, "id": 6 }</code></pre>
+            </div>
+            <div class="rounded-lg border border-red-500/30 bg-red-500/5 p-3">
+              <div class="font-mono text-xs text-red-400 mb-1">400</div>
+              <pre class="!mt-0"><code>{ "error": "id and videoUrl are required" }</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section id="recorders">
+          <h2 class="font-mono text-lg font-semibold text-white mb-1">POST /api/xonsight/recorders/sync</h2>
+          <p class="text-xs text-slate-500 mb-3">Extension - not every Xon Sight deployment implements this.</p>
+          <p class="text-sm text-slate-400 mb-3">
+            Pushes the <strong>full current roster</strong> of who is actively recording, for the Live page's map
+            and sidebar. This is a replace, not an append: any recorder id missing from the array is immediately
+            removed from <code class="text-accent">/live</code> - send an empty array (or call this on an interval)
+            once nobody is recording, don't just stop calling it.
+          </p>
+          <pre><code>{
+  "recorders": [
+    {
+      "id": "bc-12-1792440000",        // stable per recording session
+      "name": "Officer Doe",
+      "job": "LSPD · Captain",
+      "status": "recording",          // "recording" | "buffering" - omit for "recording"
+      "startedAt": 1792440000,        // unix seconds
+      "lastFrame": {                  // position/heading sample - omit while none has arrived yet
+        "x": 215.4, "y": -800.1, "z": 29.2,
+        "heading": 134.0, "pitch": 0.0, "fov": 50.0
+      }
+    }
+  ],
+  "syncedAt": 1792440005
+}</code></pre>
+          <p class="text-sm text-slate-400 mt-3">
+            <code class="text-accent">lastFrame</code> is a position/orientation sample, never a video frame or
+            stream - Xon Sight has no live video feed to give a website. The Live page draws it on a schematic grid
+            of in-game world coordinates, not a real map.
+          </p>
+          <pre><code>{ "ok": true, "count": 1 }</code></pre>
+        </section>
+
+        <section id="alerts">
+          <h2 class="font-mono text-lg font-semibold text-white mb-1">POST /api/xonsight/alerts</h2>
+          <p class="text-xs text-slate-500 mb-3">Extension - not every Xon Sight deployment implements this.</p>
+          <p class="text-sm text-slate-400 mb-3">
+            Raises a flashing banner on the Live page for an emergency trigger (weapon drawn, shots fired, a panic
+            button - whatever you wire up). Fire-and-forget: there's no roster concept here, each call creates one
+            alert a staff member acknowledges from the portal.
+          </p>
+          <pre><code>{
+  "recorderId": "bc-12-1792440000",
+  "recorderName": "Officer Doe",
+  "type": "weapon_drawn",      // free-form slug - shown as-is on the banner ("weapon drawn")
+  "message": "Weapon drawn"    // optional human-readable detail
+}</code></pre>
+          <p class="text-xs text-slate-500 mt-2 mb-2">Required: <code>recorderId</code>, <code>type</code>.</p>
+          <pre><code>{ "ok": true, "id": 1 }</code></pre>
+        </section>
+
+        <section id="feeds">
+          <h2 class="font-mono text-lg font-semibold text-white mb-1">POST /api/xonsight/external-feeds/sync</h2>
+          <p class="text-xs text-slate-500 mb-3">Extension - not every Xon Sight deployment implements this.</p>
+          <p class="text-sm text-slate-400 mb-3">
+            An Axon Fusus-style "single pane of glass" layer: pins non-bodycam assets (fixed cameras, sensors,
+            drones) on the Live map. Same full-replace semantics as <code class="text-accent">recorders/sync</code> -
+            anything missing from the array is removed.
+          </p>
+          <pre><code>{
+  "feeds": [
+    {
+      "id": "cam-1",
+      "label": "Vinewood Blvd Cam",
+      "kind": "camera",          // "camera" | "sensor" | "drone" | "other"
+      "status": "online",        // "online" | "offline"
+      "position": { "x": 215.0, "y": -800.0 }
+    }
+  ]
+}</code></pre>
+          <pre><code>{ "ok": true, "count": 1 }</code></pre>
+        </section>
+
+        <section id="errors">
+          <h2 class="text-lg font-semibold text-white mb-3">Errors</h2>
+          <div class="tac-corners rounded-xl border border-border bg-panel overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-black/20 text-left font-mono text-xs uppercase tracking-wide text-slate-500">
+                <tr><th class="px-4 py-3">Status</th><th class="px-4 py-3">Meaning</th></tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                <tr><td class="px-4 py-3 text-slate-200">400</td><td class="px-4 py-3 text-slate-400">Missing a required field - see each endpoint above.</td></tr>
+                <tr><td class="px-4 py-3 text-slate-200">401</td><td class="px-4 py-3 text-slate-400"><code>X-XonSight-Key</code> missing or wrong, and the portal has a key configured.</td></tr>
+                <tr><td class="px-4 py-3 text-slate-200">200</td><td class="px-4 py-3 text-slate-400">Always <code>{"ok": true, ...}</code> on success - none of these endpoints return partial success.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="roadmap">
+          <h2 class="text-lg font-semibold text-white mb-3">What's coming</h2>
+          <p class="text-sm text-slate-400 max-w-2xl">
+            Per-community tokens and isolated databases are live for the webhook endpoints above
+            (<code class="text-accent">/admin/communities</code>). Still ahead: reaching a community by its own
+            custom domain or an OPS subdomain instead of only by token (blocked on wildcard DNS actually resolving),
+            and the browser-facing app (dashboard, evidence viewer, cases, assistant) becoming tenant-aware too -
+            today it only ever shows the control-plane database's data, regardless of any community token used
+            against the webhooks.
+          </p>
+        </section>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
