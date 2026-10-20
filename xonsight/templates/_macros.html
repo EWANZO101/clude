@@ -1,15 +1,13 @@
 {% macro csrf_field() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
 
 {% macro brand_mark(icon_size="h-7 w-7", text_size="text-lg") %}
-<span class="relative flex {{ icon_size }} shrink-0 items-center justify-center bg-[#050506] ring-1 ring-white/10 shadow-lg shadow-black/50">
-  <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="#dc2626" stroke-width="1.6">
-    <circle cx="12" cy="12" r="7" />
-    <path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22" stroke-width="1.8" />
-    <circle cx="12" cy="12" r="1.6" fill="#dc2626" stroke="none" />
+<span class="relative flex {{ icon_size }} shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent2 shadow-lg shadow-black/30">
+  <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="#fff" stroke-width="2">
+    <path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z" />
+    <circle cx="12" cy="10" r="2.4" fill="#fff" stroke="none" />
   </svg>
-  <span class="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-red-500"></span>
 </span>
-<span class="{{ text_size }} font-mono font-bold tracking-widest text-white leading-none whitespace-nowrap">XON<span class="text-accent">SIGHT</span></span>
+<span class="{{ text_size }} font-bold tracking-tight text-white leading-none whitespace-nowrap">Xon<span class="text-accent2">Sight</span></span>
 {% endmacro %}
 
 {#
@@ -89,20 +87,20 @@
 
 {% macro status_badge(text, tone="neutral") %}
 {%- set tones = {
-  "success": "border-accent2/50 text-accent2 bg-accent2/10",
-  "warning": "border-amber-500/50 text-amber-400 bg-amber-500/10",
-  "danger": "border-red-500/50 text-red-400 bg-red-500/10",
-  "info": "border-accent2/50 text-accent2 bg-accent2/10",
-  "neutral": "border-border text-slate-400 bg-white/5",
+  "success": "text-accent2 bg-accent2/15",
+  "warning": "text-amber-400 bg-amber-400/15",
+  "danger": "text-red-400 bg-red-400/15",
+  "info": "text-sky-400 bg-sky-400/15",
+  "neutral": "text-slate-400 bg-white/10",
 } -%}
-<span class="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 border {{ tones.get(tone, tones['neutral']) }}">
-  <span class="h-1.5 w-1.5 rounded-full bg-current/90 shrink-0"></span>{{ text }}
+<span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full {{ tones.get(tone, tones['neutral']) }}">
+  <span class="h-1.5 w-1.5 rounded-full bg-current shrink-0"></span>{{ text }}
 </span>
 {% endmacro %}
 
 {% macro empty_state(message, icon_name="info") %}
-<div class="tac-corners border border-dashed border-border bg-panel/40 px-6 py-10 text-center">
-  <div class="mx-auto h-10 w-10 bg-white/5 flex items-center justify-center mb-3 text-slate-600">
+<div class="border border-dashed border-border bg-panel/40 rounded-2xl px-6 py-10 text-center">
+  <div class="mx-auto h-10 w-10 rounded-full bg-white/5 flex items-center justify-center mb-3 text-slate-600">
     {{ icon(icon_name, "h-5 w-5") }}
   </div>
   <p class="text-sm text-slate-500">{{ message }}</p>
@@ -117,11 +115,11 @@
   narrow ones.
 #}
 {% macro page_header(title, subtitle=none, eyebrow=none, actions=none) %}
-<div class="mb-9 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+<div class="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
   <div class="min-w-0">
-    {% if eyebrow %}<div class="page-eyebrow mb-2">{{ eyebrow }}</div>{% endif %}
-    <h1 class="text-2xl sm:text-[28px] font-semibold text-white tracking-tight leading-tight">{{ title }}</h1>
-    {% if subtitle %}<p class="text-sm text-slate-400 mt-2 max-w-2xl leading-relaxed">{{ subtitle }}</p>{% endif %}
+    {% if eyebrow %}<div class="page-eyebrow mb-1.5">{{ eyebrow }}</div>{% endif %}
+    <h1 class="text-[26px] sm:text-[30px] font-bold text-white tracking-tight leading-tight">{{ title }}</h1>
+    {% if subtitle %}<p class="text-sm text-slate-400 mt-1.5 max-w-2xl leading-relaxed">{{ subtitle }}</p>{% endif %}
   </div>
   {% if actions %}<div class="flex items-center gap-2 shrink-0">{{ actions }}</div>{% endif %}
 </div>
@@ -130,13 +128,23 @@
 {#
   Stat tile used on Dashboard/Analytics - `tag` lets a caller make the
   whole tile a link (pass tag="a" href="...") or leave it static (default).
+  `color` tints the icon chip: accent (pink), accent2 (teal), sky, amber,
+  or emerald - vary it across a row of tiles rather than repeating one hue.
 #}
-{% macro stat_tile(label, value, icon_name=none, href=none, tac=true, value_id=none) %}
-<{{ "a" if href else "div" }}{% if href %} href="{{ href }}"{% endif %} class="{{ 'tac-corners ' if tac }}border border-border bg-panel p-5 relative{{ ' hover:border-accent/40 transition group' if href }}">
-  <div class="flex items-center justify-between">
-    <div class="card-label">{{ label }}</div>
-    {% if icon_name %}{{ icon(icon_name, "h-4 w-4 text-accent" ~ (" group-hover:translate-x-0.5 transition" if href else "")) }}{% endif %}
+{% macro stat_tile(label, value, icon_name=none, href=none, color="accent", value_id=none) %}
+{%- set chip_tones = {
+  "accent": "bg-accent/15 text-accent",
+  "accent2": "bg-accent2/15 text-accent2",
+  "sky": "bg-sky-400/15 text-sky-400",
+  "amber": "bg-amber-400/15 text-amber-400",
+  "emerald": "bg-emerald-400/15 text-emerald-400",
+} -%}
+<{{ "a" if href else "div" }}{% if href %} href="{{ href }}"{% endif %} class="border border-border bg-panel rounded-2xl p-5{{ ' hover:border-accent/40 transition group' if href }}">
+  <div class="flex items-center justify-between mb-3">
+    {% if icon_name %}<span class="h-9 w-9 rounded-full flex items-center justify-center {{ chip_tones.get(color, chip_tones['accent']) }}">{{ icon(icon_name, "h-4 w-4") }}</span>{% endif %}
+    {% if href %}{{ icon("chevron-right", "h-4 w-4 text-slate-600 group-hover:text-accent group-hover:translate-x-0.5 transition") }}{% endif %}
   </div>
-  <div{% if value_id %} id="{{ value_id }}"{% endif %} class="text-[26px] font-semibold text-white mt-2.5 font-mono leading-none">{{ value }}</div>
+  <div{% if value_id %} id="{{ value_id }}"{% endif %} class="text-2xl font-bold text-white leading-none">{{ value }}</div>
+  <div class="card-label mt-1.5">{{ label }}</div>
 </{{ "a" if href else "div" }}>
 {% endmacro %}

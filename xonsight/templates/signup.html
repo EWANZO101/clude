@@ -2,24 +2,21 @@
 {% block title %}Sign up · Xon Sight{% endblock %}
 {% block content %}
 <div class="w-full max-w-sm">
-  <div class="tac-corners border border-border bg-panel p-7 shadow-xl shadow-black/20">
+  <div class="rounded-2xl border border-border bg-panel p-7 shadow-xl shadow-black/20">
     {% if pending %}
-      <span class="card-label text-accent2/80 mb-2 block">Request sent</span>
-      <h1 class="text-xl font-semibold text-white mb-1.5">Request sent</h1>
+      <h1 class="text-xl font-bold text-white mb-1.5">Request sent</h1>
       <p class="text-sm text-slate-400 leading-relaxed">
         Your account was created but needs admin approval before you can log in. Check back once an admin has
         approved it.
       </p>
-      <a href="{{ url_for('auth.login') }}" class="inline-block mt-6 text-sm text-accent hover:underline">Back to login</a>
+      <a href="{{ url_for('auth.login') }}" class="inline-block mt-6 text-sm text-accent hover:underline font-medium">Back to login</a>
     {% elif settings.signup_mode == "invite" and not settings.invite_code %}
-      <span class="card-label text-amber-400/80 mb-2 block">Closed</span>
-      <h1 class="text-xl font-semibold text-white mb-1.5">Sign-ups are closed</h1>
+      <h1 class="text-xl font-bold text-white mb-1.5">Sign-ups are closed</h1>
       <p class="text-sm text-slate-400 leading-relaxed">This server hasn't set an invite code yet. Ask an admin for access.</p>
-      <a href="{{ url_for('auth.login') }}" class="inline-block mt-6 text-sm text-accent hover:underline">Back to login</a>
+      <a href="{{ url_for('auth.login') }}" class="inline-block mt-6 text-sm text-accent hover:underline font-medium">Back to login</a>
     {% else %}
-      <span class="card-label text-accent/80 mb-2 block">Access</span>
-      <h1 class="text-xl font-semibold text-white mb-1.5">Create an account</h1>
-      <p class="text-sm text-slate-500 mb-7 leading-relaxed">
+      <h1 class="text-xl font-bold text-white mb-1.5">Create an account</h1>
+      <p class="text-sm text-slate-400 mb-7 leading-relaxed">
         {% if settings.signup_mode == "approval" %}
           An admin will need to approve your account before you can log in.
         {% elif settings.signup_mode == "invite" %}
@@ -30,7 +27,7 @@
       </p>
 
       {% if error %}
-      <p class="text-red-300 bg-red-500/10 border border-red-500/30 px-3 py-2 text-sm mb-5">{{ error }}</p>
+      <p class="text-red-300 bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2 text-sm mb-5">{{ error }}</p>
       {% endif %}
 
       <form method="post" class="space-y-5">
@@ -38,33 +35,33 @@
         <div>
           <label class="card-label block mb-1.5">Username</label>
           <input name="username" type="text" required minlength="3" autofocus
-            class="w-full bg-base border border-border px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40">
+            class="w-full bg-base border border-border rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40">
         </div>
         <div>
           <label class="card-label block mb-1.5">Password</label>
           <input name="password" type="password" required minlength="8"
-            class="w-full bg-base border border-border px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40">
+            class="w-full bg-base border border-border rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40">
         </div>
         <div>
           <label class="card-label block mb-1.5">Confirm password</label>
           <input name="confirm" type="password" required minlength="8"
-            class="w-full bg-base border border-border px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40">
+            class="w-full bg-base border border-border rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40">
         </div>
         {% if settings.signup_mode == "invite" %}
         <div>
           <label class="card-label block mb-1.5">Invite code</label>
           <input name="invite_code" type="text" required
-            class="w-full bg-base border border-border px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40">
+            class="w-full bg-base border border-border rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40">
         </div>
         {% endif %}
         <button type="submit"
-          class="w-full px-4 py-2.5 bg-gradient-to-r from-accent to-accent2 text-sm font-medium text-white hover:opacity-90">
+          class="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent to-accent2 text-sm font-semibold text-white hover:opacity-90">
           Create account
         </button>
       </form>
 
-      <p class="text-xs text-slate-500 mt-6 text-center">
-        Already have an account? <a href="{{ url_for('auth.login') }}" class="text-accent hover:underline">Log in</a>
+      <p class="text-sm text-slate-500 mt-6 text-center">
+        Already have an account? <a href="{{ url_for('auth.login') }}" class="text-accent hover:underline font-medium">Log in</a>
       </p>
     {% endif %}
   </div>

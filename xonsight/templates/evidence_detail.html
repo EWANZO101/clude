@@ -7,7 +7,7 @@
 </a>
 
 {% set meta %}
-<span class="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
+<span class="flex items-center gap-1.5 text-xs text-slate-500">
   {{ icon("clock", "h-3.5 w-3.5") }} {{ item.created_at.strftime("%Y-%m-%d %H:%M UTC") }}
 </span>
 {% endset %}
@@ -15,7 +15,7 @@
 
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
   <div class="xl:col-span-2 space-y-4">
-    <div id="cam-grid" class="tac-corners grid grid-cols-1 gap-2 rounded-2xl overflow-hidden border border-border bg-black p-1 shadow-lg shadow-black/30"></div>
+    <div id="cam-grid" class="grid grid-cols-1 gap-2 rounded-2xl overflow-hidden border border-border bg-black p-1 shadow-lg shadow-black/30"></div>
 
     <div class="rounded-2xl border border-border bg-panel p-4">
       <div id="scrub-wrap" class="relative h-10 select-none cursor-pointer">
@@ -29,7 +29,7 @@
           <div id="scrub-preview-time" class="text-[10px] text-center text-slate-300 bg-black/80 py-0.5"></div>
         </div>
       </div>
-      <div class="flex items-center justify-between mt-2 text-xs text-slate-500 font-mono">
+      <div class="flex items-center justify-between mt-2 text-xs text-slate-500">
         <span id="time-current">0:00</span>
         <span id="time-duration">0:00</span>
       </div>
@@ -44,7 +44,7 @@
         <div class="flex items-center gap-1" id="speed-group">
           <span class="text-xs text-slate-500 mr-1">Speed</span>
           {% for s in [0.25, 0.5, 1, 1.5, 2, 4] %}
-          <button type="button" data-speed="{{ s }}" class="speed-btn px-2 py-1 rounded-md text-xs border {{ 'bg-accent/10 text-accent border-accent/40' if s == 1 else 'text-slate-400 border-border' }}">{{ s }}x</button>
+          <button type="button" data-speed="{{ s }}" class="speed-btn px-2 py-1 rounded-lg text-xs border {{ 'bg-accent/10 text-accent border-accent/40' if s == 1 else 'text-slate-400 border-border' }}">{{ s }}x</button>
           {% endfor %}
         </div>
         <div class="h-5 w-px bg-border mx-1"></div>
@@ -69,7 +69,7 @@
   </div>
 
   <div class="rounded-2xl border border-border bg-panel flex flex-col h-fit">
-    <div class="flex border-b border-border text-xs font-mono uppercase tracking-wide overflow-x-auto" id="tab-bar">
+    <div class="flex border-b border-border text-xs font-medium overflow-x-auto" id="tab-bar">
       <button data-tab="notes" class="tab-btn px-4 py-3 border-b-2 border-accent text-white shrink-0 flex items-center gap-1.5">{{ icon("mail", "h-3.5 w-3.5") }} Notes</button>
       <button data-tab="transcript" class="tab-btn px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-white shrink-0">Transcript</button>
       <button data-tab="metadata" class="tab-btn px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-white shrink-0">Metadata</button>
@@ -107,12 +107,12 @@
           <div class="card-label">Device serial</div>
           <div class="flex gap-2 mt-1.5">
             <input id="device-serial" type="text" value="{{ item.device_serial }}" placeholder="Not recorded" class="flex-1 bg-base border border-border rounded-lg px-2 py-1.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60">
-            <button id="btn-save-serial" type="button" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60 font-mono uppercase tracking-wide text-xs">Save</button>
+            <button id="btn-save-serial" type="button" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60 font-medium text-xs">Save</button>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
-          <div><div class="card-label">Recorded</div><div class="text-slate-300 mt-1 font-mono">{{ item.created_at.strftime("%Y-%m-%d %H:%M:%S UTC") }}</div></div>
-          <div><div class="card-label">Received</div><div class="text-slate-300 mt-1 font-mono">{{ item.received_at.strftime("%Y-%m-%d %H:%M:%S UTC") }}</div></div>
+          <div><div class="card-label">Recorded</div><div class="text-slate-300 mt-1">{{ item.created_at.strftime("%Y-%m-%d %H:%M:%S UTC") }}</div></div>
+          <div><div class="card-label">Received</div><div class="text-slate-300 mt-1">{{ item.received_at.strftime("%Y-%m-%d %H:%M:%S UTC") }}</div></div>
         </div>
         <div><div class="card-label">Remote ID</div><div class="text-slate-300 mt-1 font-mono">{{ item.remote_id }}</div></div>
         <div class="pt-3 border-t border-border/60">
@@ -121,7 +121,7 @@
             <select id="case-select" class="flex-1 bg-base border border-border rounded-lg px-2 py-1.5 text-slate-200 focus:outline-none focus:border-accent/60">
               <option value="">Loading cases...</option>
             </select>
-            <button id="btn-add-to-case" type="button" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60 font-mono uppercase tracking-wide text-xs">Add</button>
+            <button id="btn-add-to-case" type="button" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60 font-medium text-xs">Add</button>
           </div>
           <span id="case-added" class="text-[11px] text-accent2 hidden mt-1 flex items-center gap-1">{{ icon("check-circle", "h-3.5 w-3.5") }} Added</span>
         </div>
@@ -157,7 +157,7 @@
         <div class="rounded-xl border border-border bg-base/60 p-3">
           <div class="flex items-center justify-between">
             <div class="text-slate-300 font-medium flex items-center gap-1.5">{{ icon("assistant", "h-3.5 w-3.5 text-accent") }} Draft One &middot; report narrative</div>
-            <button id="btn-gen-draft" type="button" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60 text-[11px] font-mono uppercase tracking-wide" {{ "disabled" if not ai_configured }}>Generate</button>
+            <button id="btn-gen-draft" type="button" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60 text-[11px] font-medium" {{ "disabled" if not ai_configured }}>Generate</button>
           </div>
           <p class="text-[11px] text-slate-600 mt-1">Drafted from the transcript + case notes above. Always review and edit before using it anywhere.</p>
           <div id="draft-output" class="mt-2 whitespace-pre-wrap text-slate-200 bg-base rounded-lg p-3 hidden"></div>
@@ -165,7 +165,7 @@
         <div class="rounded-xl border border-border bg-base/60 p-3">
           <div class="flex items-center justify-between">
             <div class="text-slate-300 font-medium flex items-center gap-1.5">{{ icon("assistant", "h-3.5 w-3.5 text-accent") }} Brief One &middot; video summary</div>
-            <button id="btn-gen-brief" type="button" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60 text-[11px] font-mono uppercase tracking-wide" {{ "disabled" if not ai_configured }}>Generate</button>
+            <button id="btn-gen-brief" type="button" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60 text-[11px] font-medium" {{ "disabled" if not ai_configured }}>Generate</button>
           </div>
           <p class="text-[11px] text-slate-600 mt-1">Summarizes the transcript/notes/markers and flags likely evidentiary milestones - it reads text, it doesn't watch the video.</p>
           <div id="brief-output" class="mt-2 hidden">

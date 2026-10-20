@@ -5,23 +5,23 @@
 {{ page_header("Communities", "Multi-tenancy, in progress: each community gets its own dedicated MySQL database and API token for the webhook endpoints (X-XonSight-Token). Subdomain/custom-domain browser routing isn't wired up yet - these communities are reachable today only through their token on /api/xonsight/*. This site's own existing evidence/live data is not one of these yet - it still runs on the original shared-key path below.", eyebrow="Admin · Communities") }}
 
 {% if not mysql_enabled %}
-<p class="text-amber-400/90 bg-amber-400/10 border border-amber-400/30 px-4 py-2.5 text-sm mb-6 max-w-2xl flex items-start gap-2">
+<p class="text-amber-400/90 bg-amber-400/10 border border-amber-400/30 rounded-xl px-4 py-2.5 text-sm mb-6 max-w-2xl flex items-start gap-2">
   {{ icon("alert-triangle", "h-4 w-4 mt-0.5 shrink-0") }}
   <code>MYSQL_PROVISIONER_PASSWORD</code> isn't set - community creation is disabled until it is.
 </p>
 {% endif %}
 
 {% if error %}
-<p class="text-red-300 bg-red-500/10 border border-red-500/30 px-4 py-2.5 text-sm mb-6 max-w-2xl">{{ error }}</p>
+<p class="text-red-300 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5 text-sm mb-6 max-w-2xl">{{ error }}</p>
 {% endif %}
 
 {% if created_token %}
-<div class="border border-accent2/30 bg-accent2/5 p-5 mb-8 max-w-2xl">
+<div class="border border-accent2/30 bg-accent2/5 rounded-2xl p-5 mb-8 max-w-2xl">
   <div class="text-sm text-accent2 font-medium mb-1.5 flex items-center gap-1.5">{{ icon("check-circle", "h-4 w-4") }} Community created</div>
   <p class="text-xs text-slate-400 mb-2.5 leading-relaxed">
     Its API token (shown once here - copy it now, it's visible again below only in masked form):
   </p>
-  <code class="block bg-base px-3 py-2.5 text-sm text-slate-200 break-all">{{ created_token }}</code>
+  <code class="block bg-base rounded-xl px-3 py-2.5 text-sm text-slate-200 break-all">{{ created_token }}</code>
   <p class="text-xs text-slate-500 mt-2.5 leading-relaxed">
     Put this in that server's <code>config_server.lua</code> as <code>ServerConfig.XonSight.Token</code> (a future
     opslabs-bodycam update will support sending it as <code>X-XonSight-Token</code> instead of the shared key).
@@ -32,20 +32,20 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
   <div class="lg:col-span-2">
     {% if communities %}
-    <div class="tac-corners border border-border bg-panel divide-y divide-border">
+    <div class="border border-border bg-panel rounded-2xl divide-y divide-border overflow-hidden">
       {% for c in communities %}
       <div class="p-5">
         <div class="flex items-center justify-between gap-2">
           <div class="text-white font-medium">{{ c.name }}</div>
-          <span class="text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 border {{ 'border-accent2/40 text-accent2' if c.status == 'active' else 'border-slate-600 text-slate-400' }}">{{ c.status }}</span>
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full {{ 'bg-accent2/15 text-accent2' if c.status == 'active' else 'bg-white/10 text-slate-400' }}">{{ c.status }}</span>
         </div>
         <div class="text-xs text-slate-500 mt-2 flex items-center gap-1.5">{{ icon("database", "h-3 w-3") }} slug: <code class="text-accent">{{ c.slug }}</code> &middot; db: <code class="text-accent">{{ c.db_name }}</code></div>
         <div class="flex items-center justify-between gap-2 mt-3">
-          <div class="flex items-center gap-1.5 text-[11px] font-mono text-slate-600">{{ icon("clock", "h-3 w-3") }} Created {{ c.created_at.strftime("%Y-%m-%d %H:%M UTC") }}</div>
+          <div class="flex items-center gap-1.5 text-xs text-slate-600">{{ icon("clock", "h-3 w-3") }} Created {{ c.created_at.strftime("%Y-%m-%d %H:%M UTC") }}</div>
           <form method="post" action="{{ url_for('admin.toggle_community_phone_app', community_id=c.id) }}">
             {{ csrf_field() }}
             <button type="submit" title="Premium: the in-game phone's Bodycam app (My footage / Live tabs)"
-              class="text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 border flex items-center gap-1 {{ 'border-accent/40 text-accent bg-accent/5' if c.phone_app_enabled else 'border-slate-600 text-slate-500 hover:text-slate-300 hover:border-slate-500' }}">
+              class="text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 {{ 'bg-accent/15 text-accent' if c.phone_app_enabled else 'bg-white/10 text-slate-500 hover:text-slate-300' }}">
               {{ icon("check-circle" if c.phone_app_enabled else "x-circle", "h-3 w-3") }} Phone app {{ "on" if c.phone_app_enabled else "off" }}
             </button>
           </form>
@@ -58,22 +58,22 @@
     {% endif %}
   </div>
 
-  <div class="border border-border bg-panel p-6 h-fit">
+  <div class="border border-border bg-panel rounded-2xl p-6 h-fit">
     <h2 class="text-sm font-medium text-white mb-5 flex items-center gap-1.5">{{ icon("plus", "h-4 w-4 text-accent") }} New community</h2>
     <form method="post" class="space-y-4 text-xs">
       {{ csrf_field() }}
       <div>
         <label class="block text-slate-400 mb-1.5">Name</label>
         <input name="name" type="text" required placeholder="e.g. Maple County RP" {{ "disabled" if not mysql_enabled }}
-          class="w-full bg-base border border-border px-3 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 disabled:opacity-50">
+          class="w-full bg-base border border-border rounded-xl px-3 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 disabled:opacity-50">
       </div>
       <div>
         <label class="block text-slate-400 mb-1.5">Slug (optional - derived from name otherwise)</label>
         <input name="slug" type="text" placeholder="maple_county" pattern="[a-z0-9_]{3,32}" {{ "disabled" if not mysql_enabled }}
-          class="w-full bg-base border border-border px-3 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 disabled:opacity-50">
+          class="w-full bg-base border border-border rounded-xl px-3 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 disabled:opacity-50">
       </div>
       <button type="submit" {{ "disabled" if not mysql_enabled }}
-        class="w-full px-3 py-2.5 bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 disabled:opacity-50 font-medium flex items-center justify-center gap-1.5">
+        class="w-full rounded-xl px-3 py-2.5 bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 disabled:opacity-50 font-medium flex items-center justify-center gap-1.5">
         {{ icon("plus", "h-3.5 w-3.5") }} Create community
       </button>
     </form>

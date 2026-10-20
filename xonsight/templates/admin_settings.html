@@ -5,31 +5,31 @@
 {{ page_header("Server settings", "Controls how new accounts can be created on this server. Each Xon Sight deployment sets this independently - there's no one right answer for every community.", eyebrow="Admin · Settings") }}
 
 {% if saved %}
-<p class="max-w-xl text-accent2 bg-accent2/10 border border-accent2/30 px-4 py-2.5 text-sm mb-8 flex items-center gap-1.5">
+<p class="max-w-xl text-accent2 bg-accent2/10 border border-accent2/30 rounded-xl px-4 py-2.5 text-sm mb-8 flex items-center gap-1.5">
   {{ icon("check-circle", "h-4 w-4") }} Settings saved.
 </p>
 {% endif %}
 
-<div class="tac-corners max-w-xl border border-border bg-panel p-6">
+<div class="max-w-xl border border-border bg-panel rounded-2xl p-6">
   <div class="card-label mb-4 flex items-center gap-1.5">{{ icon("key", "h-3.5 w-3.5") }} Signup mode</div>
   <form method="post" class="space-y-5">
     {{ csrf_field() }}
     <div class="space-y-2.5">
-      <label class="flex items-start gap-3 border border-border px-3.5 py-3 cursor-pointer hover:border-accent/50 has-[:checked]:border-accent/50 has-[:checked]:bg-accent/5 transition">
+      <label class="flex items-start gap-3 rounded-xl border border-border px-3.5 py-3 cursor-pointer hover:border-accent/50 has-[:checked]:border-accent/50 has-[:checked]:bg-accent/5 transition">
         <input type="radio" name="signup_mode" value="open" class="mt-1 accent-accent" {{ "checked" if settings.signup_mode == "open" }}>
         <span>
           <span class="block text-sm text-slate-200">Open</span>
           <span class="block text-xs text-slate-500 mt-0.5">Anyone can create an account immediately.</span>
         </span>
       </label>
-      <label class="flex items-start gap-3 border border-border px-3.5 py-3 cursor-pointer hover:border-accent/50 has-[:checked]:border-accent/50 has-[:checked]:bg-accent/5 transition">
+      <label class="flex items-start gap-3 rounded-xl border border-border px-3.5 py-3 cursor-pointer hover:border-accent/50 has-[:checked]:border-accent/50 has-[:checked]:bg-accent/5 transition">
         <input type="radio" name="signup_mode" value="invite" class="mt-1 accent-accent" {{ "checked" if settings.signup_mode == "invite" }}>
         <span>
           <span class="block text-sm text-slate-200">Invite code</span>
           <span class="block text-xs text-slate-500 mt-0.5">Requires the code below. Leave the code blank to close signups entirely.</span>
         </span>
       </label>
-      <label class="flex items-start gap-3 border border-border px-3.5 py-3 cursor-pointer hover:border-accent/50 has-[:checked]:border-accent/50 has-[:checked]:bg-accent/5 transition">
+      <label class="flex items-start gap-3 rounded-xl border border-border px-3.5 py-3 cursor-pointer hover:border-accent/50 has-[:checked]:border-accent/50 has-[:checked]:bg-accent/5 transition">
         <input type="radio" name="signup_mode" value="approval" class="mt-1 accent-accent" {{ "checked" if settings.signup_mode == "approval" }}>
         <span>
           <span class="block text-sm text-slate-200">Admin approval</span>
@@ -41,16 +41,16 @@
     <div>
       <label class="block text-xs text-slate-400 mb-1.5">Invite code</label>
       <input name="invite_code" type="text" value="{{ settings.invite_code }}" placeholder="e.g. a code you hand out in Discord"
-        class="w-full bg-base border border-border px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+        class="w-full bg-base border border-border rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
     </div>
 
-    <button type="submit" class="px-4 py-2.5 bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-sm font-medium">
+    <button type="submit" class="rounded-xl px-4 py-2.5 bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-sm font-medium">
       Save settings
     </button>
   </form>
 </div>
 
-<div class="max-w-xl border border-border bg-panel p-6 mt-10">
+<div class="max-w-xl border border-border bg-panel rounded-2xl p-6 mt-10">
   <h2 class="text-sm font-medium text-white mb-1 flex items-center gap-1.5">{{ icon("discord", "h-4 w-4 text-accent2") }} Discord notifications</h2>
   <p class="text-xs text-slate-500 mb-5 leading-relaxed">
     One webhook for this whole deployment, for now - not per-community yet. Create one in your Discord server:
@@ -65,7 +65,7 @@
     <div>
       <label class="block text-xs text-slate-400 mb-1.5">Webhook URL</label>
       <input name="discord_webhook_url" type="url" value="{{ settings.discord_webhook_url }}" placeholder="https://discord.com/api/webhooks/..."
-        class="w-full bg-base border border-border px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+        class="w-full bg-base border border-border rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
     </div>
 
     <div class="space-y-2.5 text-sm">
@@ -83,7 +83,7 @@
       </label>
     </div>
 
-    <button type="submit" class="px-4 py-2.5 bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-sm font-medium">
+    <button type="submit" class="rounded-xl px-4 py-2.5 bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-sm font-medium">
       Save settings
     </button>
   </form>

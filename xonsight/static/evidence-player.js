@@ -302,7 +302,7 @@
             (m) => `
       <div class="flex items-center justify-between gap-2 bg-base rounded-lg px-2 py-1.5">
         <button type="button" data-jump="${m.timestampSeconds}" class="text-left flex-1 text-slate-300 hover:text-white">
-          <span class="text-accent font-mono">${fmtTime(m.timestampSeconds)}</span> ${m.label}
+          <span class="text-accent font-medium">${fmtTime(m.timestampSeconds)}</span> ${m.label}
         </button>
         <button type="button" data-del-marker="${m.id}" class="text-slate-600 hover:text-red-400">✕</button>
       </div>`
@@ -317,7 +317,7 @@
             (c) => `
       <div class="flex items-center justify-between gap-2 bg-base rounded-lg px-2 py-1.5">
         <button type="button" data-jump="${c.startSeconds}" class="text-left flex-1 text-slate-300 hover:text-white">
-          <span class="text-accent font-mono">${fmtTime(c.startSeconds)}–${fmtTime(c.endSeconds)}</span> ${c.label}
+          <span class="text-accent font-medium">${fmtTime(c.startSeconds)}–${fmtTime(c.endSeconds)}</span> ${c.label}
         </button>
         <button type="button" data-del-clip="${c.id}" class="text-slate-600 hover:text-red-400">✕</button>
       </div>`

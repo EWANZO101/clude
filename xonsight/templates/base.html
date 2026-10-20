@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -16,12 +16,12 @@
       theme: {
         extend: {
           colors: {
-            base: '#0a0a0b',
-            panel: '#131315',
-            panel2: '#0e0e10',
-            border: '#2c2c30',
-            accent: '#dc2626',
-            accent2: '#7d8694',
+            base: '#0a0a0c',
+            panel: '#141417',
+            panel2: '#19191d',
+            border: '#26262b',
+            accent: '#ec4899',
+            accent2: '#14b8a6',
           },
           fontFamily: {
             sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
@@ -32,52 +32,23 @@
     }
   </script>
   <style>
-    body {
-      background-color: #09090a;
-      background-image:
-        repeating-linear-gradient(45deg, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 1px, transparent 1px, transparent 9px),
-        repeating-linear-gradient(-45deg, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 1px, transparent 1px, transparent 9px),
-        radial-gradient(1200px 560px at 100% -10%, rgba(220,38,38,0.045), transparent 55%),
-        radial-gradient(900px 500px at -5% 0%, rgba(255,255,255,0.018), transparent 55%);
-    }
-    body::before {
-      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 999; opacity: 0.02;
-      background: repeating-linear-gradient(0deg, #000 0px, #000 1px, transparent 1px, transparent 3px);
-      mix-blend-mode: overlay;
-    }
+    body { background-color: #0a0a0c; }
     ::-webkit-scrollbar { width: 10px; height: 10px; }
-    ::-webkit-scrollbar-thumb { background: #2c2c30; }
-    ::-webkit-scrollbar-thumb:hover { background: #3f3f45; }
-    ::selection { background: rgba(220, 38, 38, 0.3); }
+    ::-webkit-scrollbar-thumb { background: #26262b; border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: #38383f; }
+    ::selection { background: rgba(236, 72, 153, 0.25); }
     a, button { transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease; }
     main { animation: pageIn .2s ease both; }
     @keyframes pageIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Tactical corner-bracket framing for panels/cards instead of rounded corners. */
-    .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl { border-radius: 2px !important; }
-
-    .navlink { position: relative; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.03em; text-transform: uppercase; font-size: 11.5px; border-left: 2px solid transparent; }
-    .navlink.active { border-left-color: #dc2626; }
-    .navlink.active::before {
-      content: ""; position: absolute; left: -1rem; top: 50%; transform: translateY(-50%);
-      height: 16px; width: 2px;
-      background: #dc2626;
-      box-shadow: 0 0 6px rgba(220,38,38,0.6);
-    }
-    #live-dot.is-live { background: #dc2626 !important; box-shadow: 0 0 6px rgba(220,38,38,0.85); animation: livePulse 1.6s ease-in-out infinite; }
+    .navlink { position: relative; font-size: 13.5px; font-weight: 500; }
+    .navlink.active { background: rgba(20,184,166,0.1); color: #5eead4; }
+    #live-dot.is-live { background: #ec4899 !important; box-shadow: 0 0 6px rgba(236,72,153,0.85); animation: livePulse 1.6s ease-in-out infinite; }
     @keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-    .tac-corners { position: relative; }
-    .tac-corners::before, .tac-corners::after {
-      content: ""; position: absolute; width: 9px; height: 9px; pointer-events: none; opacity: 0.55;
-      border-color: #9aa1ab; border-style: solid; border-width: 0;
-    }
-    .tac-corners::before { top: 2px; left: 2px; border-top-width: 2px; border-left-width: 2px; }
-    .tac-corners::after { bottom: 2px; right: 2px; border-bottom-width: 2px; border-right-width: 2px; }
-
     /* Shared page-header rhythm - see page_header() in _macros.html */
-    .page-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #dc2626; }
-    .card-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #6b7280; }
+    .page-eyebrow { font-size: 13px; color: #8b8b93; }
+    .card-label { font-size: 12.5px; color: #8b8b93; font-weight: 500; }
   </style>
 </head>
 <body class="min-h-screen bg-base text-slate-200 font-sans">
@@ -88,7 +59,7 @@
         {{ brand_mark() }}
       </a>
       {% if g.tenant %}
-      <div class="mx-1 mb-4 px-2.5 py-2 border border-accent/30 bg-accent/5 text-[11px] font-mono uppercase tracking-wide text-accent flex items-center gap-1.5">
+      <div class="mx-1 mb-4 px-2.5 py-2 rounded-lg border border-accent/30 bg-accent/5 text-xs font-medium text-accent flex items-center gap-1.5">
         {{ icon("database", "h-3 w-3 shrink-0") }}
         <span class="truncate">{{ g.tenant.name }}</span>
       </div>
@@ -110,8 +81,8 @@
         {% for prefix, href, icon_name, label in nav_items %}
         {% set active = request.endpoint and request.endpoint.startswith(prefix) %}
         <a href="{{ href }}"
-           class="navlink flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/[0.04] hover:text-white {{ 'active bg-white/[0.05] text-white' if active else 'text-slate-400' }}">
-          {{ icon(icon_name, "h-4 w-4 " ~ ("text-accent" if active else "text-slate-500")) }}
+           class="navlink flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] hover:text-white {{ 'active' if active else 'text-slate-400' }}">
+          {{ icon(icon_name, "h-4 w-4 " ~ ("text-accent2" if active else "text-slate-500")) }}
           <span class="flex-1">{{ label }}</span>
           {% if icon_name == "live" %}<span id="live-dot" class="h-1.5 w-1.5 rounded-full bg-slate-600 shrink-0"></span>{% endif %}
         </a>
@@ -119,7 +90,7 @@
 
         {% if current_user.is_authenticated and current_user.is_admin and not g.tenant %}
         <div class="pt-5 mt-4 border-t border-border/70">
-          <div class="px-3 pb-2 text-[10px] font-mono uppercase tracking-wider text-slate-600 font-medium">Admin</div>
+          <div class="px-3 pb-2 text-xs text-slate-500 font-medium">Admin</div>
           {% set admin_items = [
             ("admin.settings", url_for('admin.settings'), "settings", "Settings"),
             ("admin.users", url_for('admin.users'), "users", "Users"),
@@ -129,8 +100,8 @@
           {% for endpoint, href, icon_name, label in admin_items %}
           {% set active = request.endpoint == endpoint %}
           <a href="{{ href }}"
-             class="navlink flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/[0.04] hover:text-white {{ 'active bg-white/[0.05] text-white' if active else 'text-slate-400' }}">
-            {{ icon(icon_name, "h-4 w-4 " ~ ("text-accent" if active else "text-slate-500")) }}
+             class="navlink flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] hover:text-white {{ 'active' if active else 'text-slate-400' }}">
+            {{ icon(icon_name, "h-4 w-4 " ~ ("text-accent2" if active else "text-slate-500")) }}
             <span>{{ label }}</span>
           </a>
           {% endfor %}
@@ -140,18 +111,18 @@
 
       {% if current_user.is_authenticated %}
       <div class="mt-auto pt-4 border-t border-border/70">
-        <a href="{{ url_for('auth.account') }}" class="flex items-center gap-2.5 px-2 py-2 hover:bg-white/[0.04] group">
-          <span class="h-7 w-7 bg-gradient-to-br from-accent/20 to-accent2/20 border border-accent/30 text-accent text-xs font-mono font-semibold flex items-center justify-center shrink-0">
+        <a href="{{ url_for('auth.account') }}" class="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-white/[0.04] group">
+          <span class="h-8 w-8 rounded-full bg-gradient-to-br from-accent to-accent2 text-white text-xs font-semibold flex items-center justify-center shrink-0">
             {{ current_user.username[:1].upper() }}
           </span>
           <span class="min-w-0">
-            <span class="block text-xs text-slate-200 truncate group-hover:text-white">{{ current_user.username }}</span>
-            <span class="block text-[10px] font-mono text-slate-500 uppercase tracking-wide">{{ current_user.role }}</span>
+            <span class="block text-sm text-slate-200 truncate group-hover:text-white">{{ current_user.username }}</span>
+            <span class="block text-xs text-slate-500 capitalize">{{ current_user.role }}</span>
           </span>
         </a>
         <form action="{{ url_for('auth.logout') }}" method="post" class="mt-1">
           {{ csrf_field() }}
-          <button type="submit" class="w-full flex items-center gap-2 text-left text-xs font-mono uppercase tracking-wide text-slate-500 hover:text-red-400 px-2 py-2 hover:bg-red-500/5">
+          <button type="submit" class="w-full flex items-center gap-2 text-left text-sm text-slate-500 hover:text-red-400 px-2 py-2 rounded-xl hover:bg-red-500/5">
             {{ icon("arrow-left", "h-3.5 w-3.5") }} Log out
           </button>
         </form>

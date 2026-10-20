@@ -7,12 +7,12 @@
 </a>
 
 {% set actions %}
-<select id="status-select" class="bg-panel border border-border px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent/60">
+<select id="status-select" class="bg-panel border border-border rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent/60">
   <option value="open" {{ "selected" if case.status == "open" }}>Open</option>
   <option value="under_review" {{ "selected" if case.status == "under_review" }}>Under review</option>
   <option value="closed" {{ "selected" if case.status == "closed" }}>Closed</option>
 </select>
-<button id="btn-update-status" type="button" class="px-3 py-2 bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-sm font-medium">Update status</button>
+<button id="btn-update-status" type="button" class="px-3 py-2 rounded-xl bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-sm font-medium">Update status</button>
 {% endset %}
 {{ page_header(case.title, eyebrow="Case detail", actions=actions) }}
 
@@ -22,7 +22,7 @@
     <div id="case-evidence-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
   </div>
 
-  <div class="tac-corners border border-border bg-panel p-5 h-fit">
+  <div class="border border-border bg-panel rounded-2xl p-5 h-fit">
     <h2 class="text-sm font-semibold text-white mb-4 flex items-center gap-1.5">{{ icon("clock", "h-4 w-4 text-accent") }} Status history</h2>
     <div id="case-audit-list" class="space-y-3 text-xs"></div>
   </div>

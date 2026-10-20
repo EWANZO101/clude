@@ -5,36 +5,38 @@
 {{ page_header("Welcome back, " ~ current_user.username, "Evidence submitted from in-game bodycams, at a glance.", eyebrow="Dashboard") }}
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-  {{ stat_tile("Total evidence", total_evidence, icon_name="evidence", value_id="stat-total-evidence") }}
-  {{ stat_tile("Active recorders", active_recorders, icon_name="live") }}
+  {{ stat_tile("Total evidence", total_evidence, icon_name="evidence", color="accent", value_id="stat-total-evidence") }}
+  {{ stat_tile("Active recorders", active_recorders, icon_name="live", color="accent2") }}
 
-  <a href="{{ url_for('views.live') }}" class="tac-corners border border-border bg-panel p-5 hover:border-accent/40 transition group">
-    <div class="flex items-center justify-between">
-      <div class="card-label">Live view</div>
+  <a href="{{ url_for('views.live') }}" class="border border-border bg-panel rounded-2xl p-5 hover:border-accent/40 transition group flex flex-col">
+    <div class="flex items-center justify-between mb-3">
+      <span class="h-9 w-9 rounded-full flex items-center justify-center bg-sky-400/15 text-sky-400">{{ icon("live", "h-4 w-4") }}</span>
       {{ icon("chevron-right", "h-4 w-4 text-slate-600 group-hover:text-accent group-hover:translate-x-0.5 transition") }}
     </div>
-    <div class="text-sm text-accent mt-2.5 font-medium">Open live recorders</div>
+    <div class="text-sm font-semibold text-white mt-auto">Live view</div>
+    <div class="card-label mt-1">Open live recorders</div>
   </a>
 
   {% if not g.tenant %}
-  <a href="{{ url_for('views.community_list') }}" class="tac-corners border border-border bg-panel p-5 hover:border-accent/40 transition group">
-    <div class="flex items-center justify-between">
-      <div class="card-label">Community</div>
+  <a href="{{ url_for('views.community_list') }}" class="border border-border bg-panel rounded-2xl p-5 hover:border-accent/40 transition group flex flex-col">
+    <div class="flex items-center justify-between mb-3">
+      <span class="h-9 w-9 rounded-full flex items-center justify-center bg-amber-400/15 text-amber-400">{{ icon("community", "h-4 w-4") }}</span>
       {{ icon("chevron-right", "h-4 w-4 text-slate-600 group-hover:text-accent group-hover:translate-x-0.5 transition") }}
     </div>
-    <div class="text-sm text-accent mt-2.5 font-medium">Manage requests</div>
+    <div class="text-sm font-semibold text-white mt-auto">Community</div>
+    <div class="card-label mt-1">Manage requests</div>
   </a>
   {% endif %}
 </div>
 
 <div class="flex items-center justify-between mb-5">
   <h2 class="text-base font-semibold text-white">Recent submissions</h2>
-  <a href="{{ url_for('views.evidence_list') }}" class="text-xs font-mono uppercase tracking-wide text-slate-500 hover:text-accent flex items-center gap-1">
+  <a href="{{ url_for('views.evidence_list') }}" class="text-sm text-accent hover:text-accent/80 font-medium flex items-center gap-1">
     View all {{ icon("chevron-right", "h-3.5 w-3.5") }}
   </a>
 </div>
 <button id="new-evidence-banner" type="button" hidden
-  class="w-full mb-5 flex items-center justify-center gap-2 border border-accent/40 bg-accent/10 text-accent text-xs font-mono uppercase tracking-wide px-4 py-2.5 hover:bg-accent/15 transition">
+  class="w-full mb-5 flex items-center justify-center gap-2 rounded-xl border border-accent/40 bg-accent/10 text-accent text-sm font-medium px-4 py-2.5 hover:bg-accent/15 transition">
   {{ icon("evidence", "h-3.5 w-3.5") }}
   <span id="new-evidence-count"></span> new since you opened this page &middot; click to refresh
 </button>

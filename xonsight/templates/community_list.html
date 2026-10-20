@@ -9,17 +9,17 @@
     <div id="request-list" class="space-y-4"></div>
   </div>
 
-  <div class="tac-corners border border-border bg-panel p-6 h-fit">
+  <div class="border border-border bg-panel rounded-2xl p-6 h-fit">
     <h2 class="text-sm font-medium text-white mb-5 flex items-center gap-1.5">{{ icon("plus", "h-4 w-4 text-accent") }} New request</h2>
     <form id="new-request-form" class="space-y-4 text-xs">
       <div>
         <label class="card-label block mb-1.5">Title</label>
         <input name="title" type="text" required placeholder="e.g. Hit and run on Vinewood Blvd"
-          class="w-full bg-base border border-border px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+          class="w-full bg-base border border-border rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
       </div>
       <div>
         <label class="card-label block mb-1.5">Category</label>
-        <select name="category" class="w-full bg-base border border-border px-3 py-2 text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+        <select name="category" class="w-full bg-base border border-border rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
           <option>General</option>
           <option>Traffic incident</option>
           <option>Theft</option>
@@ -33,16 +33,16 @@
       <div>
         <label class="card-label block mb-1.5">Description (shown publicly)</label>
         <textarea name="description" rows="3" placeholder="What happened, and what you're looking for..."
-          class="w-full bg-base border border-border px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30"></textarea>
+          class="w-full bg-base border border-border rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30"></textarea>
       </div>
       <div>
         <label class="card-label block mb-1.5">Instructions to submitter (optional)</label>
         <input name="instructions" type="text" placeholder="e.g. Please note the time you saw this"
-          class="w-full bg-base border border-border px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+          class="w-full bg-base border border-border rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
       </div>
       <div>
         <label class="card-label block mb-1.5">Link to case (optional)</label>
-        <select name="caseId" id="case-select" class="w-full bg-base border border-border px-3 py-2 text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+        <select name="caseId" id="case-select" class="w-full bg-base border border-border rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
           <option value="">No case</option>
         </select>
       </div>
@@ -50,7 +50,7 @@
         <input type="checkbox" name="requiresConsent" checked class="accent-accent">
         Require a consent statement before submitting
       </label>
-      <button type="submit" class="w-full px-3 py-2.5 bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 font-medium flex items-center justify-center gap-1.5">
+      <button type="submit" class="w-full px-3 py-2.5 rounded-xl bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 font-medium flex items-center justify-center gap-1.5">
         {{ icon("plus", "h-3.5 w-3.5") }} Create request
       </button>
     </form>

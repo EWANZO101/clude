@@ -22,14 +22,24 @@
     return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   }
 
-  function statTile(label, value, iconPath) {
+  const CHIP_TONES = {
+    accent: "background:rgba(236,72,153,0.15);color:#ec4899",
+    accent2: "background:rgba(20,184,166,0.15);color:#14b8a6",
+    sky: "background:rgba(56,189,248,0.15);color:#38bdf8",
+    amber: "background:rgba(251,191,36,0.15);color:#fbbf24",
+    emerald: "background:rgba(52,211,153,0.15);color:#34d399",
+  };
+
+  function statTile(label, value, iconPath, tone) {
     return `
-      <div class="tac-corners border border-border bg-panel p-5 relative">
-        <div class="flex items-center justify-between">
-          <span class="card-label">${label}</span>
-          <svg viewBox="0 0 24 24" class="h-4 w-4 text-accent" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
+      <div class="border border-border bg-panel rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-3">
+          <span class="h-9 w-9 rounded-full flex items-center justify-center" style="${CHIP_TONES[tone] || CHIP_TONES.accent}">
+            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
+          </span>
         </div>
-        <div class="text-[26px] font-semibold text-white mt-2.5 font-mono leading-none">${value}</div>
+        <div class="text-2xl font-bold text-white leading-none">${value}</div>
+        <div class="card-label mt-1.5">${label}</div>
       </div>`;
   }
 
@@ -49,12 +59,12 @@
         const el = document.getElementById("stat-tiles");
         if (!el) return;
         el.innerHTML = [
-          statTile("Total evidence", s.totalEvidence, ICONS.evidence),
-          statTile("Active recorders", s.activeRecorders, ICONS.live),
-          statTile("Open cases", s.openCases, ICONS.cases),
-          statTile("Active BOLOs", s.activeBolos, ICONS.flag),
-          statTile("Pending submissions", s.pendingSubmissions, ICONS.mail),
-          statTile("Alerts (30d)", s.alerts30d, ICONS.alert),
+          statTile("Total evidence", s.totalEvidence, ICONS.evidence, "accent"),
+          statTile("Active recorders", s.activeRecorders, ICONS.live, "accent2"),
+          statTile("Open cases", s.openCases, ICONS.cases, "sky"),
+          statTile("Active BOLOs", s.activeBolos, ICONS.flag, "amber"),
+          statTile("Pending submissions", s.pendingSubmissions, ICONS.mail, "emerald"),
+          statTile("Alerts (30d)", s.alerts30d, ICONS.alert, "accent"),
         ].join("");
       })
       .catch(() => {});
@@ -101,7 +111,7 @@
       </div>`;
   }
 
-  const CATEGORICAL = ["#dc2626", "#7d8694", "#b6bec9", "#991b1b", "#4b5563"];
+  const CATEGORICAL = ["#ec4899", "#14b8a6", "#38bdf8", "#fbbf24", "#a78bfa"];
 
   function loadAlertsByType() {
     fetch("/api/analytics/alerts-by-type?days=30")
@@ -151,8 +161,8 @@
 
   function caseTile(label, value, colorClasses) {
     return `
-      <div class="border border-border bg-panel2/60 p-4 text-center">
-        <div class="text-xl font-mono font-semibold ${colorClasses}">${value}</div>
+      <div class="border border-border bg-panel2/60 rounded-xl p-4 text-center">
+        <div class="text-xl font-bold ${colorClasses}">${value}</div>
         <div class="card-label mt-1.5">${label}</div>
       </div>`;
   }

@@ -10,7 +10,7 @@
 {{ page_header("Live operations", "Position samples relayed by xonsight-livesync, refreshed every ~3s. Xon Sight has no live video or audio feed to a website - this shows who is recording and their last known in-game position, not a camera stream. The map is a schematic grid of in-game world coordinates, not a real street map.", eyebrow="Live", actions=actions) }}
 
 <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-  <div class="tac-corners rounded-2xl border border-border bg-panel overflow-hidden relative shadow-lg shadow-black/20">
+  <div class="rounded-2xl border border-border bg-panel overflow-hidden relative shadow-lg shadow-black/20">
     <div class="absolute top-3 left-3 z-10 flex gap-2">
       <button id="map-mode-grid" type="button" class="map-mode-btn px-2.5 py-1.5 text-xs rounded-lg border border-accent/40 bg-accent/10 text-accent font-medium">Grid</button>
       <button id="map-mode-terrain" type="button" class="map-mode-btn px-2.5 py-1.5 text-xs rounded-lg border border-border text-slate-400 hover:border-accent/60 bg-black/30">Terrain</button>
@@ -22,15 +22,15 @@
     </div>
     <canvas id="map-canvas" class="w-full h-[560px] block cursor-grab active:cursor-grabbing"></canvas>
     <div id="map-tooltip" class="hidden absolute z-20 pointer-events-none bg-black/90 border border-border rounded-lg px-2.5 py-1.5 text-xs text-slate-200 max-w-[220px]"></div>
-    <div class="absolute bottom-3 left-3 z-10 flex flex-wrap items-center gap-3 text-[11px] font-mono uppercase tracking-wide text-slate-400 bg-black/50 backdrop-blur px-2.5 py-1.5 border border-white/5">
+    <div class="absolute bottom-3 left-3 z-10 flex flex-wrap items-center gap-3 text-xs text-slate-300 bg-black/50 backdrop-blur px-2.5 py-1.5 rounded-lg border border-white/5">
       <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]"></span>Recording</span>
-      <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-accent2 shadow-[0_0_6px_rgba(125,134,148,0.8)]"></span>Buffering</span>
+      <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-accent2 shadow-[0_0_6px_rgba(20,184,166,0.8)]"></span>Buffering</span>
       <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-slate-400"></span>External feed</span>
       <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full border border-slate-300"></span>Position marker</span>
     </div>
   </div>
 
-  <div class="tac-corners rounded-2xl border border-border bg-panel flex flex-col h-[560px] shadow-lg shadow-black/20">
+  <div class="rounded-2xl border border-border bg-panel flex flex-col h-[560px] shadow-lg shadow-black/20">
     <div class="p-3 border-b border-border relative">
       <span class="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{{ icon("search", "h-3.5 w-3.5") }}</span>
       <input id="roster-search" type="text" placeholder="Search officer or unit..." class="w-full bg-base border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
