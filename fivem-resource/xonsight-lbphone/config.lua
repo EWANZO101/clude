@@ -23,3 +23,15 @@ Config.Price = nil
 
 -- Rough app size shown in the store listing (kb). Cosmetic only.
 Config.Size = 4096
+
+-- Lets the app submit evidence straight from LB Phone's own camera
+-- (server.lua posts it to /api/xonsight/evidence) - you don't need
+-- OPS Phone / opslabs-bodycam at all to use this path. Must match
+-- XONSIGHT_WEBHOOK_KEY in the portal's .env, or leave blank if the
+-- portal was deployed with no key configured.
+Config.WebhookKey = ""
+
+-- Set to false to hide the in-app "Record evidence" capture button and
+-- only use this app as a viewer (e.g. if you'd rather evidence only ever
+-- come from OPS Phone / another bodycam resource).
+Config.AllowCapture = true
