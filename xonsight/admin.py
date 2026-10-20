@@ -70,7 +70,7 @@ def change_role(user_id):
     if user.id == current_user.id:
         abort(400)
     new_role = request.form.get("role")
-    if new_role in ("admin", "officer"):
+    if new_role in ("admin", "supervisor", "officer"):
         log_audit("user.change_role", f"{user.username}: {user.role} -> {new_role}")
         user.role = new_role
         db.session.commit()

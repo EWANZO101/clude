@@ -1,19 +1,13 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon, empty_state %}
+{% from "_macros.html" import icon, empty_state, page_header %}
 {% block title %}Audit log · Xon Sight{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold text-white tracking-tight mb-1 flex items-center gap-2">
-  {{ icon("clock", "h-5 w-5 text-accent") }} Audit log
-</h1>
-<p class="text-sm text-slate-500 mb-6 max-w-2xl">
-  Append-only record of admin actions - settings changes, user approvals/role changes, community creation.
-  Most recent 200 entries. There's no edit or delete endpoint for this on purpose.
-</p>
+{{ page_header("Audit log", "Append-only record of admin actions - settings changes, user approvals/role changes, community creation. Most recent 200 entries. There's no edit or delete endpoint for this on purpose.", eyebrow="Admin · Audit log") }}
 
 {% if entries %}
-<div class="tac-corners rounded-2xl border border-border bg-panel overflow-hidden shadow-lg shadow-black/10">
+<div class="tac-corners border border-border bg-panel overflow-hidden">
   <table class="w-full text-sm">
-    <thead class="bg-black/20 text-left text-xs font-mono uppercase tracking-wide text-slate-500">
+    <thead class="bg-black/20 text-left card-label">
       <tr>
         <th class="px-4 py-3">When</th>
         <th class="px-4 py-3">Actor</th>

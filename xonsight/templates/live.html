@@ -1,22 +1,13 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon %}
+{% from "_macros.html" import icon, page_header %}
 {% block title %}Live · Xon Sight{% endblock %}
 {% block content %}
-<div id="alert-banner" class="hidden mb-4 space-y-2"></div>
+<div id="alert-banner" class="hidden mb-6 space-y-2"></div>
 
-<div class="flex items-center justify-between mb-4 gap-4 flex-wrap">
-  <div>
-    <h1 class="text-2xl font-semibold text-white tracking-tight flex items-center gap-2">
-      {{ icon("live", "h-5 w-5 text-accent2") }} Live operations
-    </h1>
-    <p class="text-xs text-slate-500 mt-1.5 max-w-2xl">
-      Position samples relayed by xonsight-livesync, refreshed every ~3s. Xon Sight has no live video or audio
-      feed to a website - this shows who is recording and their last known in-game position, not a camera stream.
-      The map is a schematic grid of in-game world coordinates, not a real street map.
-    </p>
-  </div>
-  <span class="text-xs text-slate-500 max-w-xs text-right">Wire <code class="text-accent">POST /api/xonsight/recorders/sync</code>, <code class="text-accent">/alerts</code> and <code class="text-accent">/external-feeds/sync</code> to populate this.</span>
-</div>
+{% set actions %}
+<span class="text-xs text-slate-500 max-w-xs sm:text-right block">Wire <code class="text-accent">POST /api/xonsight/recorders/sync</code>, <code class="text-accent">/alerts</code> and <code class="text-accent">/external-feeds/sync</code> to populate this.</span>
+{% endset %}
+{{ page_header("Live operations", "Position samples relayed by xonsight-livesync, refreshed every ~3s. Xon Sight has no live video or audio feed to a website - this shows who is recording and their last known in-game position, not a camera stream. The map is a schematic grid of in-game world coordinates, not a real street map.", eyebrow="Live", actions=actions) }}
 
 <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
   <div class="tac-corners rounded-2xl border border-border bg-panel overflow-hidden relative shadow-lg shadow-black/20">

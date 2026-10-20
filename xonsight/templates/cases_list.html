@@ -1,30 +1,20 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon, empty_state %}
+{% from "_macros.html" import icon, empty_state, page_header %}
 {% block title %}Cases · Xon Sight{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-5 gap-4 flex-wrap">
-  <div>
-    <h1 class="text-2xl font-semibold text-white tracking-tight flex items-center gap-2">
-      {{ icon("cases", "h-5 w-5 text-accent") }} Cases
-    </h1>
-    <p class="text-xs text-slate-500 mt-1.5 max-w-2xl">
-      A lightweight records wrapper - groups evidence under a status with an audit trail. Not a full records-management
-      suite: no use-of-force review workflow, no compliance auditing beyond the status log below.
-    </p>
-  </div>
-</div>
+{% set actions %}
+<form id="new-case-form" class="flex gap-2">
+  <input id="new-case-title" type="text" placeholder="New case title..." class="bg-panel border border-border px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 w-56 sm:w-64">
+  <button class="px-4 py-2.5 bg-accent/10 text-accent text-sm border border-accent/30 hover:bg-accent/20 font-medium flex items-center gap-1.5 shrink-0">{{ icon("plus", "h-4 w-4") }} Create</button>
+</form>
+{% endset %}
+{{ page_header("Cases", "A lightweight records wrapper - groups evidence under a status with an audit trail. Not a full records-management suite: no use-of-force review workflow, no compliance auditing beyond the status log below.", eyebrow="Cases", actions=actions) }}
 
-<div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
-  <div class="flex gap-2 text-xs font-mono uppercase tracking-wide">
-    <a href="{{ url_for('views.cases_list') }}" class="px-3 py-1.5 rounded-lg border {{ 'border-accent/40 bg-accent/10 text-accent' if not status else 'border-border text-slate-400 hover:border-accent/60' }}">All</a>
-    <a href="{{ url_for('views.cases_list', status='open') }}" class="px-3 py-1.5 rounded-lg border {{ 'border-accent/40 bg-accent/10 text-accent' if status == 'open' else 'border-border text-slate-400 hover:border-accent/60' }}">Open</a>
-    <a href="{{ url_for('views.cases_list', status='under_review') }}" class="px-3 py-1.5 rounded-lg border {{ 'border-accent/40 bg-accent/10 text-accent' if status == 'under_review' else 'border-border text-slate-400 hover:border-accent/60' }}">Under review</a>
-    <a href="{{ url_for('views.cases_list', status='closed') }}" class="px-3 py-1.5 rounded-lg border {{ 'border-accent/40 bg-accent/10 text-accent' if status == 'closed' else 'border-border text-slate-400 hover:border-accent/60' }}">Closed</a>
-  </div>
-  <form id="new-case-form" class="flex gap-2">
-    <input id="new-case-title" type="text" placeholder="New case title..." class="bg-panel border border-border rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 w-64">
-    <button class="px-4 py-2 rounded-lg bg-accent/10 text-accent text-sm border border-accent/30 hover:bg-accent/20 font-medium flex items-center gap-1.5">{{ icon("plus", "h-4 w-4") }} Create</button>
-  </form>
+<div class="flex gap-2 text-xs font-mono uppercase tracking-wide mb-10">
+  <a href="{{ url_for('views.cases_list') }}" class="px-3 py-1.5 border {{ 'border-accent/40 bg-accent/10 text-accent' if not status else 'border-border text-slate-400 hover:border-accent/60' }}">All</a>
+  <a href="{{ url_for('views.cases_list', status='open') }}" class="px-3 py-1.5 border {{ 'border-accent/40 bg-accent/10 text-accent' if status == 'open' else 'border-border text-slate-400 hover:border-accent/60' }}">Open</a>
+  <a href="{{ url_for('views.cases_list', status='under_review') }}" class="px-3 py-1.5 border {{ 'border-accent/40 bg-accent/10 text-accent' if status == 'under_review' else 'border-border text-slate-400 hover:border-accent/60' }}">Under review</a>
+  <a href="{{ url_for('views.cases_list', status='closed') }}" class="px-3 py-1.5 border {{ 'border-accent/40 bg-accent/10 text-accent' if status == 'closed' else 'border-border text-slate-400 hover:border-accent/60' }}">Closed</a>
 </div>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -1,15 +1,12 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon, csrf_field %}
+{% from "_macros.html" import icon, csrf_field, page_header %}
 {% block title %}Users · Xon Sight{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold text-white tracking-tight mb-1 flex items-center gap-2">
-  {{ icon("users", "h-5 w-5 text-accent") }} Users
-</h1>
-<p class="text-sm text-slate-500 mb-6">Approve pending signups, promote/demote roles, or disable an account.</p>
+{{ page_header("Users", "Approve pending signups, promote/demote roles, or disable an account.", eyebrow="Admin · Users") }}
 
-<div class="tac-corners rounded-2xl border border-border bg-panel overflow-hidden shadow-lg shadow-black/10">
+<div class="tac-corners border border-border bg-panel overflow-hidden">
   <table class="w-full text-sm">
-    <thead class="bg-black/20 text-left text-xs font-mono uppercase tracking-wide text-slate-500">
+    <thead class="bg-black/20 text-left card-label">
       <tr>
         <th class="px-4 py-3">Username</th>
         <th class="px-4 py-3">Role</th>
@@ -29,7 +26,7 @@
           </span>
         </td>
         <td class="px-4 py-3 text-slate-400">
-          <span class="inline-flex items-center gap-1">{{ icon("shield", "h-3 w-3") if user.role == "admin" }} {{ user.role }}</span>
+          <span class="inline-flex items-center gap-1">{{ icon("shield", "h-3 w-3 text-accent") if user.role == "admin" }} {{ user.role }}</span>
         </td>
         <td class="px-4 py-3">
           {% if user.is_active_account %}
@@ -46,20 +43,22 @@
             {% if not user.is_active_account %}
             <form action="{{ url_for('admin.approve_user', user_id=user.id) }}" method="post">
               {{ csrf_field() }}
-              <button type="submit" class="px-2.5 py-1 rounded-lg border border-accent2/40 text-accent2 hover:bg-accent2/10">Approve</button>
+              <button type="submit" class="px-2.5 py-1 border border-accent2/40 text-accent2 hover:bg-accent2/10">Approve</button>
             </form>
             {% else %}
             <form action="{{ url_for('admin.toggle_active', user_id=user.id) }}" method="post">
               {{ csrf_field() }}
-              <button type="submit" class="px-2.5 py-1 rounded-lg border border-border hover:border-red-400/50 hover:text-red-400">Disable</button>
+              <button type="submit" class="px-2.5 py-1 border border-border hover:border-red-400/50 hover:text-red-400">Disable</button>
             </form>
             {% endif %}
             <form action="{{ url_for('admin.change_role', user_id=user.id) }}" method="post">
               {{ csrf_field() }}
-              <input type="hidden" name="role" value="{{ 'officer' if user.role == 'admin' else 'admin' }}">
-              <button type="submit" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60">
-                {{ "Demote" if user.role == "admin" else "Promote" }}
-              </button>
+              <select name="role" onchange="this.form.submit()"
+                class="bg-base border border-border px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-accent/60">
+                <option value="officer" {{ "selected" if user.role == "officer" }}>Officer</option>
+                <option value="supervisor" {{ "selected" if user.role == "supervisor" }}>Supervisor</option>
+                <option value="admin" {{ "selected" if user.role == "admin" }}>Admin</option>
+              </select>
             </form>
           </div>
           {% else %}

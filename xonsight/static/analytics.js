@@ -24,12 +24,12 @@
 
   function statTile(label, value, iconPath) {
     return `
-      <div class="rounded-2xl border border-border bg-panel p-4">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[11px] uppercase tracking-wide text-slate-500">${label}</span>
-          <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
+      <div class="tac-corners border border-border bg-panel p-5 relative">
+        <div class="flex items-center justify-between">
+          <span class="card-label">${label}</span>
+          <svg viewBox="0 0 24 24" class="h-4 w-4 text-accent" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
         </div>
-        <div class="text-2xl font-semibold text-white tracking-tight">${value}</div>
+        <div class="text-[26px] font-semibold text-white mt-2.5 font-mono leading-none">${value}</div>
       </div>`;
   }
 
@@ -151,9 +151,9 @@
 
   function caseTile(label, value, colorClasses) {
     return `
-      <div class="rounded-xl border border-border bg-panel2/60 p-3 text-center">
-        <div class="text-xl font-semibold ${colorClasses}">${value}</div>
-        <div class="text-[11px] text-slate-500 mt-1">${label}</div>
+      <div class="border border-border bg-panel2/60 p-4 text-center">
+        <div class="text-xl font-mono font-semibold ${colorClasses}">${value}</div>
+        <div class="card-label mt-1.5">${label}</div>
       </div>`;
   }
 

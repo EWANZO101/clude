@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guide · Xon Sight</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            base: '#0a0a0b',
+            panel: '#131315',
+            panel2: '#0e0e10',
+            border: '#2c2c30',
+            accent: '#dc2626',
+            accent2: '#7d8694',
+          },
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #09090a;
+      background-image:
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
+        repeating-linear-gradient(-45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
+        radial-gradient(900px 500px at 15% -10%, rgba(220,38,38,0.06), transparent 60%),
+        radial-gradient(900px 500px at 110% 10%, rgba(255,255,255,0.025), transparent 60%);
+      min-height: 100vh;
+    }
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-thumb { background: #2c2c30; border-radius: 8px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8rem; }
+    .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl { border-radius: 2px !important; }
+
+    .tac-corners { position: relative; }
+    .tac-corners::before, .tac-corners::after {
+      content: ""; position: absolute; width: 10px; height: 10px; pointer-events: none; opacity: 0.7;
+      border-color: #9aa1ab; border-style: solid; border-width: 0;
+    }
+    .tac-corners::before { top: 2px; left: 2px; border-top-width: 2px; border-left-width: 2px; }
+    .tac-corners::after { bottom: 2px; right: 2px; border-bottom-width: 2px; border-right-width: 2px; }
+
+    /* Sidebar nav - scrollspy-driven active state, mirrors the app's own sidebar language */
+    .toc a { display: block; border-left: 2px solid transparent; padding: 0.3rem 0 0.3rem 0.75rem; color: #8a8f99; transition: color .15s ease, border-color .15s ease; }
+    .toc a:hover { color: #e5e7eb; }
+    .toc a.active { color: #dc2626; border-left-color: #dc2626; }
+    .toc .group-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #52525b; padding: 0.9rem 0 0.25rem 0.75rem; }
+    .toc .sub a { padding-left: 1.5rem; font-size: 12.5px; }
+
+    /* Architecture diagram */
+    .diagram-box {
+      border: 1px solid #2c2c30; background: #131315; padding: 0.9rem 1.4rem;
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .04em; text-transform: uppercase;
+      font-weight: 600; color: #e5e7eb; text-align: center; white-space: nowrap;
+    }
+    .diagram-box.hub { border-color: rgba(220,38,38,0.5); box-shadow: 0 0 0 1px rgba(220,38,38,0.15), 0 0 24px rgba(220,38,38,0.08); color: #fff; }
+    .diagram-box.wide { white-space: normal; padding: 0.8rem 1.6rem; }
+    .diagram-box .diagram-kind { display: block; font-size: 9px; font-weight: 500; color: #7d8694; letter-spacing: .08em; margin-top: 2px; }
+    .diagram-sources { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem; text-transform: none; letter-spacing: normal; font-weight: 500; color: #e5e7eb; }
+    .diagram-sources span { color: #52525b; }
+    .diagram-sources .dim { color: #7d8694; }
+    .diagram-connector { display: flex; flex-direction: column; align-items: center; height: 3.75rem; justify-content: center; position: relative; }
+    .diagram-connector .line { width: 1px; height: 100%; background: linear-gradient(#2c2c30, #dc2626); position: absolute; top: 0; }
+    .diagram-connector.reverse .line { background: linear-gradient(#7d8694, #2c2c30); }
+    .diagram-connector .label {
+      position: relative; background: #09090a; border: 1px solid #2c2c30; padding: 0.2rem 0.6rem;
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8a8f99; white-space: nowrap; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .diagram-connector .arrow { position: absolute; bottom: -1px; font-size: 10px; line-height: 1; color: #dc2626; }
+    .diagram-connector.reverse .arrow { top: -1px; bottom: auto; color: #7d8694; transform: rotate(180deg); }
+
+    /* Component index badge */
+    .idx { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: #52525b; letter-spacing: .05em; }
+
+    /* Setup stepper */
+    .stepper { position: relative; }
+    .stepper::before { content: ""; position: absolute; left: 0.85rem; top: 0.5rem; bottom: 0.5rem; width: 1px; background: #2c2c30; }
+    .stepper .step { position: relative; padding-left: 2.75rem; }
+    .stepper .step-num {
+      position: absolute; left: 0; top: 0; width: 1.75rem; height: 1.75rem; border-radius: 50%;
+      border: 1px solid #2c2c30; background: #0e0e10; display: flex; align-items: center; justify-content: center;
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: #dc2626; z-index: 1;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-base text-slate-200 font-sans">
+  {% from "_macros.html" import brand_mark, icon %}
+  <header class="sticky top-0 z-30 backdrop-blur bg-base/85 border-b border-border">
+    <div class="px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
+      <a href="{{ url_for('site.welcome') }}" class="inline-flex items-center gap-2.5">{{ brand_mark() }}</a>
+      <div class="flex items-center gap-2 text-sm">
+        <a href="{{ url_for('site.welcome') }}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">Home</a>
+        <a href="{{ url_for('site.api_docs') }}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">API reference</a>
+        <a href="{{ url_for('auth.login') }}" class="px-3 py-1.5 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20">Staff login</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 pb-24">
+    <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
+      <nav class="toc hidden lg:block text-sm sticky top-20 self-start space-y-0.5 max-h-[calc(100vh-6rem)] overflow-y-auto pb-10">
+        <a href="#overview" class="font-medium">Overview</a>
+        <a href="#architecture" class="font-medium">Architecture</a>
+        <div class="group-label">Components</div>
+        <div class="sub">
+          <a href="#ops-phone">01 &middot; OPS Phone</a>
+          <a href="#portal">02 &middot; The Portal</a>
+          <a href="#tablet">03 &middot; In-game Tablet</a>
+          <a href="#lbphone">04 &middot; LB Phone App</a>
+        </div>
+        <a href="#requirements" class="font-medium mt-2">Requirements</a>
+        <a href="#setup" class="font-medium">Setting it up</a>
+      </nav>
+
+      <div class="min-w-0">
+        <div class="pt-8 pb-10 max-w-3xl">
+          <span class="inline-block text-[11px] font-mono uppercase tracking-wider text-accent/90 bg-accent/10 border border-accent/30 rounded-full px-3 py-1 mb-4">Guide</span>
+          <h1 class="text-4xl font-semibold text-white tracking-tight leading-tight">How Xon Sight fits together</h1>
+          <p class="text-[15px] text-slate-400 mt-4 leading-relaxed">
+            Xon Sight is four pieces working together: a bodycam app that captures and uploads footage in-game,
+            this website that stores and reviews it, and two ways to reach the website without leaving the game -
+            an in-hand tablet prop and an LB Phone app. This page covers what each one does and how they talk to
+            each other. For the webhook wire format, see the
+            <a href="{{ url_for('site.api_docs') }}" class="text-accent hover:underline">API reference</a> instead.
+          </p>
+          <div class="flex flex-wrap gap-2 mt-5 font-mono text-[11px] uppercase tracking-wide text-slate-500">
+            <span class="border border-border px-2.5 py-1">4 components</span>
+            <span class="border border-border px-2.5 py-1">Flask + FiveM</span>
+            <span class="border border-border px-2.5 py-1">Self-hosted</span>
+          </div>
+        </div>
+
+        <section id="overview" class="max-w-3xl scroll-mt-24 mb-16">
+          <h2 class="text-xs font-mono uppercase tracking-widest text-slate-500 mb-3">Overview</h2>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Nothing here gives a website a live video feed - Xon Sight (the in-game resource) has no documented
+            way to stream actual camera frames out of the game. What moves between the pieces below is: finished
+            clips (uploaded after the fact), a schematic position feed ("who's recording and roughly where"), and
+            the portal's own pages, which the tablet and phone app simply display in a window rather than
+            rebuilding.
+          </p>
+        </section>
+
+        <section id="architecture" class="scroll-mt-24 mb-20">
+          <h2 class="text-xs font-mono uppercase tracking-widest text-slate-500 mb-6">Architecture</h2>
+          <div class="tac-corners border border-border bg-panel2/60 py-12 px-6 flex flex-col items-center">
+            <div class="diagram-box wide">
+              <span class="diagram-kind" style="margin-top:0">evidence sources &middot; any webhook-compatible resource</span>
+              <span class="diagram-sources">OPS Phone<span>&middot;</span>LB Phone camera<span>&middot;</span><span class="dim">your own</span></span>
+            </div>
+            <div class="diagram-connector">
+              <span class="line"></span>
+              <span class="label">webhook &middot; clips / roster / alerts</span>
+              <span class="arrow">&#9660;</span>
+            </div>
+            <div class="diagram-box hub">The Portal<span class="diagram-kind">xonsight.opslabsystems.cloud</span></div>
+            <div class="diagram-connector reverse">
+              <span class="line"></span>
+              <span class="label">iframe &middot; same pages, no separate backend</span>
+              <span class="arrow">&#9660;</span>
+            </div>
+            <div class="flex flex-wrap gap-4 justify-center">
+              <div class="diagram-box">In-game Tablet<span class="diagram-kind">held prop</span></div>
+              <div class="diagram-box">LB Phone App<span class="diagram-kind">viewer + capture</span></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 mt-4 max-w-3xl leading-relaxed">
+            The portal is the only piece holding data - the tablet and phone app are just windows onto it, so
+            there's nothing to keep in sync between them. Xon Sight doesn't require OPS Phone specifically -
+            its webhook is generic, so the LB Phone app above can submit evidence straight from LB Phone's own
+            camera too, alongside (or instead of) a dedicated bodycam resource.
+          </p>
+        </section>
+
+        <div class="max-w-3xl mb-6">
+          <h2 class="text-xs font-mono uppercase tracking-widest text-slate-500">Components</h2>
+        </div>
+
+        <section id="ops-phone" class="max-w-3xl scroll-mt-24 mb-14">
+          <div class="flex items-baseline gap-3 mb-1">
+            <span class="idx">01</span>
+            <h3 class="text-xl font-semibold text-white">OPS Phone <span class="text-sm font-normal text-slate-500">&middot; a bodycam</span></h3>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 mb-4 ml-7">
+            <span class="text-[10px] font-mono uppercase tracking-wide border border-accent2/40 text-accent2 px-2 py-0.5">Reference implementation</span>
+            <span class="text-[10px] font-mono uppercase tracking-wide border border-border text-slate-500 px-2 py-0.5">FiveM resource &middot; opslabs-bodycam</span>
+          </div>
+          <p class="text-sm text-slate-400 leading-relaxed ml-7 mb-4">
+            Xon Sight's webhook contract is generic - it doesn't require OPS Phone or any other specific resource,
+            it just needs <em>something</em> to POST evidence to it. OPS Phone is the reference bodycam
+            implementation this portal was built against: a bodycam app on an officer's in-game phone. When they
+            stop recording, the finished clip uploads to wherever LB Phone's camera upload is configured to put it
+            (Fivemanage, S3, etc. - this site never touches the raw video), and a webhook tells the portal the clip
+            exists, who submitted it, and a caption. The LB Phone App below can submit evidence the same way,
+            straight from LB Phone's own camera, if you'd rather not run a separate bodycam resource at all.
+          </p>
+          <ul class="space-y-2 ml-7">
+            <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Sends the device serial automatically, so the Evidence viewer's Metadata tab fills itself in</span></li>
+            <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Fires an alert (shots fired, weapon drawn) the instant it happens - raises the banner on the Live page</span></li>
+            <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Pushes the live roster on start/stop, not just on a timer - a new recorder shows up on <code>/live</code> within ~1s</span></li>
+            <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Optional chest-mounted camera mode for a true body-worn-camera angle instead of free-look</span></li>
+          </ul>
+        </section>
+
+        <section id="portal" class="max-w-4xl scroll-mt-24 mb-14">
+          <div class="flex items-baseline gap-3 mb-1">
+            <span class="idx">02</span>
+            <h3 class="text-xl font-semibold text-white">The Portal <span class="text-sm font-normal text-slate-500">&middot; this website</span></h3>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 mb-4 ml-7">
+            <span class="text-[10px] font-mono uppercase tracking-wide border border-accent/40 text-accent px-2 py-0.5">Core</span>
+            <span class="text-[10px] font-mono uppercase tracking-wide border border-border text-slate-500 px-2 py-0.5">Web app &middot; Flask</span>
+          </div>
+          <p class="text-sm text-slate-400 leading-relaxed ml-7 mb-5 max-w-3xl">
+            Everything OPS Phone sends lands here. It's the one place all of it gets reviewed, organized, and
+            searched - the tablet and phone app don't have their own separate view of this data, they just open
+            these same pages. Everything below needs a staff login except the public tip line.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 ml-7">
+            {% set portal_pieces = [
+              ("dashboard", "Dashboard", "/dashboard", "Recent submissions and a quick count of what's active, at a glance."),
+              ("evidence", "Evidence", "/evidence", "Every clip, with a frame-stepping player, markers, clips-within-clips, and a transcript tab."),
+              ("live", "Live", "/live", "Who's recording right now and their last known position on a schematic map."),
+              ("cases", "Cases", "/cases", "Group evidence under a status (open / under review / closed) with an audit trail."),
+              ("community", "Community", "/community", "The public tip line and per-case request links - no account needed on their end."),
+              ("assistant", "Assistant", "/assistant", "AI-drafted report narratives, footage summaries, and BOLOs."),
+              ("chart", "Analytics", "/analytics", "Submission volume, alert types, case status, top submitting officers."),
+              ("settings", "Admin", "/admin/*", "Users, communities, Discord notifications, and the audit log."),
+            ] %}
+            {% for icon_name, title, route, desc in portal_pieces %}
+            <div class="tac-corners border border-border bg-panel p-4 flex gap-3">
+              <div class="w-8 h-8 flex items-center justify-center border border-accent2/40 bg-accent2/5 text-accent2 shrink-0">{{ icon(icon_name, "h-4 w-4") }}</div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <div class="text-sm font-medium text-white">{{ title }}</div>
+                  <code class="text-[10px] text-slate-600">{{ route }}</code>
+                </div>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">{{ desc }}</p>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section id="tablet" class="max-w-3xl scroll-mt-24 mb-14">
+          <div class="flex items-baseline gap-3 mb-1">
+            <span class="idx">03</span>
+            <h3 class="text-xl font-semibold text-white">In-game Tablet <span class="text-sm font-normal text-slate-500">&middot; held prop</span></h3>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 mb-4 ml-7">
+            <span class="text-[10px] font-mono uppercase tracking-wide border border-accent2/40 text-accent2 px-2 py-0.5">Optional</span>
+            <span class="text-[10px] font-mono uppercase tracking-wide border border-border text-slate-500 px-2 py-0.5">FiveM resource &middot; xonsight-tablet</span>
+          </div>
+          <p class="text-sm text-slate-400 leading-relaxed ml-7 mb-4">
+            A stock in-game prop an officer holds and reads from without tabbing out of GTA. It's the real portal
+            in a window, not a reimplementation of it.
+          </p>
+          <ul class="space-y-2 ml-7">
+            <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Stock GTA prop (<code>prop_cs_tablet</code>) - no custom model to source or stream in</span></li>
+            <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Opens on a configurable key (<code class="text-accent">F6</code> by default); closes with the same key, the on-screen &times;, or Esc</span></li>
+            <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Logs in once and stays logged in between uses, same as a normal browser tab</span></li>
+          </ul>
+        </section>
+
+        <section id="lbphone" class="max-w-3xl scroll-mt-24 mb-16">
+          <div class="flex items-baseline gap-3 mb-1">
+            <span class="idx">04</span>
+            <h3 class="text-xl font-semibold text-white">LB Phone App <span class="text-sm font-normal text-slate-500">&middot; installable app, viewer + capture</span></h3>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 mb-4 ml-7">
+            <span class="text-[10px] font-mono uppercase tracking-wide border border-accent2/40 text-accent2 px-2 py-0.5">Optional</span>
+            <span class="text-[10px] font-mono uppercase tracking-wide border border-border text-slate-500 px-2 py-0.5">FiveM resource &middot; xonsight-lbphone &middot; requires LB Phone</span>
+          </div>
+          <p class="text-sm text-slate-400 leading-relaxed ml-7 mb-4">
+            Installed as a proper app icon on an officer's LB Phone - open it from the home screen like any other
+            app. It's the only piece that's two things at once: a viewer onto the portal, and - with a tap of its
+            "Record evidence" button - an independent way to <em>submit</em> evidence too, using LB Phone's own
+            camera. Third-party phone frameworks work with Xon Sight through this same path: nothing about the
+            webhook cares what recorded the footage.
+          </p>
+          <ul class="space-y-2 ml-7">
+            <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Records video with LB Phone's camera and posts it straight to the evidence webhook - no bodycam resource required</span></li>
+            <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>The webhook key stays server-side (<code>server.lua</code>) - never exposed to the NUI/browser layer</span></li>
+            <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Capture can be turned off (<code>Config.AllowCapture = false</code>) to ship this as a viewer-only app instead</span></li>
+            <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Registers itself via lb-phone's own <code>AddCustomApp</code> export - nothing to edit in lb-phone's config</span></li>
+            <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Free, paid, or installed on every phone automatically - your choice per server</span></li>
+            <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Same persistent login as the tablet, inside the phone's own NUI browser</span></li>
+          </ul>
+        </section>
+
+        <section id="requirements" class="max-w-4xl scroll-mt-24 mb-16">
+          <h2 class="text-xs font-mono uppercase tracking-widest text-slate-500 mb-3">Requirements</h2>
+          <p class="text-sm text-slate-400 leading-relaxed mb-6">
+            Xon Sight can host the portal for you - there's nothing to deploy, patch, or keep online yourself.
+            With a hosted portal, <strong class="text-slate-200 font-medium">the only real requirement is the FiveM side</strong>:
+            a server to add resources to, and something sending it evidence over its webhook - OPS Phone is the
+            reference implementation, but it's not mandatory; the LB Phone app can submit evidence directly from
+            LB Phone's own camera instead. Self-hosting the portal instead is supported too, if you'd rather run
+            your own.
+          </p>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+            <div class="tac-corners border border-accent/40 bg-panel p-5">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="w-8 h-8 flex items-center justify-center border border-accent/40 bg-accent/5 text-accent shrink-0">{{ icon("flag", "h-4 w-4") }}</div>
+                <div class="text-sm font-medium text-white">In-game &middot; the FiveM side</div>
+              </div>
+              <span class="text-[10px] font-mono uppercase tracking-wide border border-accent/40 text-accent px-2 py-0.5 ml-10">Required either way</span>
+              <ul class="space-y-2.5 mt-4">
+                <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>A FiveM server you can add resources to</span></li>
+                <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>One evidence source speaking Xon Sight's webhook contract - OPS Phone / <code>opslabs-bodycam</code> is the reference one, but not mandatory</span></li>
+                <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>...or just <code>xonsight-lbphone</code> with <code>Config.AllowCapture</code> on - it can be that evidence source by itself, via LB Phone's own camera</span></li>
+                <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span><code>lb-phone</code> already installed and running - only if you want <code>xonsight-lbphone</code></span></li>
+                <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span><code>xonsight-tablet</code> and <code>xonsight-livesync</code> need nothing extra - stock GTA assets only, no other resource dependency</span></li>
+                <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span class="text-slate-500">Every piece just needs the portal's URL and (for the webhook-speaking ones) its key - nothing else to provision</span></li>
+              </ul>
+            </div>
+            <div class="tac-corners border border-border bg-panel p-5">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="w-8 h-8 flex items-center justify-center border border-accent2/40 bg-accent2/5 text-accent2 shrink-0">{{ icon("dashboard", "h-4 w-4") }}</div>
+                <div class="text-sm font-medium text-white">The portal</div>
+              </div>
+              <span class="text-[10px] font-mono uppercase tracking-wide border border-accent2/40 text-accent2 px-2 py-0.5 ml-10">Hosted or self-hosted</span>
+
+              <div class="mt-4 mb-4">
+                <div class="text-xs font-mono uppercase tracking-wide text-slate-300 mb-2">Hosted by Xon Sight &middot; default</div>
+                <ul class="space-y-2.5">
+                  <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Nothing to install - you get a portal URL and a webhook key, ready to point OPS Phone at</span></li>
+                  <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Uptime, backups, and updates are handled for you</span></li>
+                </ul>
+              </div>
+
+              <div class="pt-4 border-t border-border">
+                <div class="text-xs font-mono uppercase tracking-wide text-slate-500 mb-2">Self-hosting instead &middot; optional</div>
+                <ul class="space-y-2.5">
+                  <li class="flex gap-2 text-sm text-slate-500"><span class="shrink-0 mt-0.5 text-slate-600">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Python 3.10+ and the packages in <code>requirements.txt</code> (Flask, SQLAlchemy, Flask-Login, Flask-Limiter, Flask-WTF, PyMySQL, gunicorn)</span></li>
+                  <li class="flex gap-2 text-sm text-slate-500"><span class="shrink-0 mt-0.5 text-slate-600">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>A database - SQLite works with zero setup (default if <code>DATABASE_URL</code> is blank); MySQL only for multi-tenancy</span></li>
+                  <li class="flex gap-2 text-sm text-slate-500"><span class="shrink-0 mt-0.5 text-slate-600">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>A reverse proxy (nginx or similar) with TLS - session cookies are hardcoded <code>Secure</code>, so logins silently won't work over plain HTTP</span></li>
+                  <li class="flex gap-2 text-sm text-slate-500"><span class="shrink-0 mt-0.5 text-slate-600">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span><code>SECRET_KEY</code> and <code>XONSIGHT_WEBHOOK_KEY</code> set in <code>.env</code> at minimum - see <code>.env.example</code> for the full list</span></li>
+                  <li class="flex gap-2 text-sm text-slate-500"><span class="shrink-0 mt-0.5 text-slate-600">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Optional: <code>ANTHROPIC_API_KEY</code> (Assistant), hCaptcha keys (Community form), a Discord webhook URL (notifications)</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 mt-4 leading-relaxed">
+            Self-hosting behind multiple gunicorn workers? Point <code>RATELIMIT_STORAGE_URI</code> at a shared
+            backend (e.g. <code>redis://...</code>) - the default in-memory limiter counts per worker, not per
+            actual visitor, once you're past a single process.
+          </p>
+        </section>
+
+        <section id="setup" class="max-w-3xl scroll-mt-24">
+          <h2 class="text-xs font-mono uppercase tracking-widest text-slate-500 mb-6">Setting it up</h2>
+          <p class="text-sm text-slate-400 leading-relaxed mb-8">
+            Each in-game piece is an independent FiveM resource - install whichever ones your server actually uses.
+          </p>
+          <div class="stepper space-y-7">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="text-sm font-medium text-white">Pick an evidence source</div>
+              <p class="text-sm text-slate-400 mt-1 leading-relaxed">OPS Phone / <code>opslabs-bodycam</code> is the reference bodycam, but the only real requirement is <em>something</em> posting to the webhook - <code>xonsight-lbphone</code> with capture enabled can be that on its own, no separate bodycam resource needed.</p>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="text-sm font-medium text-white"><code>xonsight-livesync</code> <span class="text-slate-500 font-normal text-xs">&middot; optional</span></div>
+              <p class="text-sm text-slate-400 mt-1 leading-relaxed">Pushes the active-recorder roster so the Live page shows more than "no active recorders." Only meaningful alongside a bodycam resource that exposes a roster, like OPS Phone.</p>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="text-sm font-medium text-white"><code>xonsight-tablet</code> and/or <code>xonsight-lbphone</code> <span class="text-slate-500 font-normal text-xs">&middot; optional</span></div>
+              <p class="text-sm text-slate-400 mt-1 leading-relaxed">Either or both, depending on whether officers should reach the portal via a held prop, an LB Phone app, or neither - the website works fine on its own in a browser tab.</p>
+            </div>
+          </div>
+          <p class="text-sm text-slate-400 leading-relaxed mt-8 pt-6 border-t border-border">
+            Each resource ships with its own <code>README.md</code> and <code>config.lua</code> covering exactly
+            what to edit (mainly the portal's URL and the webhook key). See the
+            <a href="{{ url_for('site.api_docs') }}" class="text-accent hover:underline">API reference</a> for the
+            wire format if you're writing your own bridge instead of using the ones above.
+          </p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+      var map = {};
+      links.forEach(function (l) { map[l.getAttribute('href').slice(1)] = l; });
+
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var link = map[entry.target.id];
+          if (!link || !entry.isIntersecting) return;
+          links.forEach(function (l) { l.classList.remove('active'); });
+          link.classList.add('active');
+        });
+      }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+
+      document.querySelectorAll('main section[id]').forEach(function (s) { observer.observe(s); });
+    })();
+  </script>
+</body>
+</html>

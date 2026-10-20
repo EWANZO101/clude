@@ -108,3 +108,35 @@
   <p class="text-sm text-slate-500">{{ message }}</p>
 </div>
 {% endmacro %}
+
+{#
+  Standard page header - every authenticated page should open with this
+  instead of a one-off <h1>, so title/eyebrow/subtitle spacing stays
+  identical across the whole app. `actions` is raw HTML (buttons/links)
+  right-aligned next to the title on wide screens, stacked below it on
+  narrow ones.
+#}
+{% macro page_header(title, subtitle=none, eyebrow=none, actions=none) %}
+<div class="mb-9 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+  <div class="min-w-0">
+    {% if eyebrow %}<div class="page-eyebrow mb-2">{{ eyebrow }}</div>{% endif %}
+    <h1 class="text-2xl sm:text-[28px] font-semibold text-white tracking-tight leading-tight">{{ title }}</h1>
+    {% if subtitle %}<p class="text-sm text-slate-400 mt-2 max-w-2xl leading-relaxed">{{ subtitle }}</p>{% endif %}
+  </div>
+  {% if actions %}<div class="flex items-center gap-2 shrink-0">{{ actions }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{#
+  Stat tile used on Dashboard/Analytics - `tag` lets a caller make the
+  whole tile a link (pass tag="a" href="...") or leave it static (default).
+#}
+{% macro stat_tile(label, value, icon_name=none, href=none, tac=true, value_id=none) %}
+<{{ "a" if href else "div" }}{% if href %} href="{{ href }}"{% endif %} class="{{ 'tac-corners ' if tac }}border border-border bg-panel p-5 relative{{ ' hover:border-accent/40 transition group' if href }}">
+  <div class="flex items-center justify-between">
+    <div class="card-label">{{ label }}</div>
+    {% if icon_name %}{{ icon(icon_name, "h-4 w-4 text-accent" ~ (" group-hover:translate-x-0.5 transition" if href else "")) }}{% endif %}
+  </div>
+  <div{% if value_id %} id="{{ value_id }}"{% endif %} class="text-[26px] font-semibold text-white mt-2.5 font-mono leading-none">{{ value }}</div>
+</{{ "a" if href else "div" }}>
+{% endmacro %}
