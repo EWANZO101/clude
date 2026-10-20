@@ -28,9 +28,23 @@ Config.Command = 'bodycam'
 -- Starts by itself, like a real camera with signal triggers. It never stops by itself (only on going off duty).
 Config.Auto = {
     OnShooting = true,          -- firing any weapon (taser included)
-    OnSiren = true,             -- driving with the emergency lights / siren on
-    OnWeaponDrawn = false,      -- aiming a gun
+    OnSiren = true,             -- driving with the emergency lights / siren on - AND at least SirenSpeedMph
+    OnWeaponDrawn = true,       -- drawing a gun OR taser out of the holster (not just aiming - the moment it's equipped)
+    SirenSpeedMph = 68,         -- siren alone isn't a trigger by itself; a parked/crawling vehicle with lights on isn't a stop
     Cooldown = 15,              -- seconds after a manual stop before an auto trigger can start it again
+}
+
+-- Pre-event buffer: a real bodycam is never really "off" - it keeps a short rolling buffer so an auto trigger
+-- (shots fired, weapon drawn, pursuit) catches what led up to it, not just what comes after. Implemented as a
+-- separate, much smaller/cheaper continuous capture (own low resolution, fps and bitrate below) that only
+-- officers issued a bodycam ever run, and that stops the moment a real recording starts (no point buffering
+-- while already recording at full quality) and picks back up the moment it stops.
+Config.PreRoll = {
+    Enabled = true,
+    Seconds = 30,               -- how far back an auto trigger reaches
+    Width = 320, Height = 180,  -- intentionally tiny - this runs the whole time an officer is on duty
+    Fps = 8,
+    Bitrate = 200000,           -- ~200 kbps - a fraction of Config.Video.Bitrate
 }
 
 -- The video. Drawn from the game view (no screenshot resource needed): what the player sees, including the game's own
@@ -76,6 +90,16 @@ Config.Beep = {
     Volume = 0.25,
 }
 
+-- Spoken line on start/stop (NUI text-to-speech, in addition to the beep above - set either's *Enabled off if
+-- you only want one). Plays through whatever TTS voice the client has available; if it has none, this is a
+-- silent no-op rather than an error, so it's safe to leave on for everyone.
+Config.Voice = {
+    Enabled = true,
+    OnStart = 'Xon recording',
+    OnStop = 'Xon off',
+    Rate = 1.0, Pitch = 1.0, Volume = 0.8,
+}
+
 -- The black vest (opslabs-props: opslabs_vest_black) with the camera clipped to its chest. While recording the camera
 -- shows its red LEDs. Put on / taken off with the item or the command.
 Config.Vest = {
@@ -89,6 +113,8 @@ Config.Vest = {
     CameraOn = 'opslabs_bodycam_on',
     CamOffset = vector3(0.0, 0.169, 0.0),   -- where the camera clips on the vest (vest model space, from build_bodycam.py)
     CameraWithoutVest = true,   -- recording without the vest: the camera is clipped to the shirt instead
+    RequiredToRecord = false,   -- true = /vest (or the item) must be ON before the bodycam will start at all, manual
+                                -- or auto - false (default) = recording works regardless, same as it always has
     -- where the vest sits, from SKEL_Spine3, in body directions (metres). Each player can fine-tune their own with
     -- /vestfit up|forward|side <metres> (saved for them, seen by everyone); put good values here for everybody.
     Fit = {

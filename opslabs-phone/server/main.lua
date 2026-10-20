@@ -264,7 +264,11 @@ function BuildInit(src, phone)
             traffic = (Config.Traffic or {}).Enabled ~= false,     -- features switched off in config.lua: the UI hides them
             buds = (Config.Buds or {}).Enabled ~= false,
             safemag = (Config.SafeMag or {}).Enabled ~= false,
-            bodycam = GetResourceState('opslabs-bodycam') == 'started' and exports['opslabs-bodycam']:CanUse(src) == true,   -- Bodycam app: only for players issued one
+            -- Bodycam app: only for players issued one, and only while Xon Sight has it turned on for this
+            -- community (premium add-on, opslabs-bodycam/server/xonsight.lua - IsPhoneAppEnabled() is cached,
+            -- not a live HTTP call per player, so this check is cheap).
+            bodycam = GetResourceState('opslabs-bodycam') == 'started' and exports['opslabs-bodycam']:CanUse(src) == true
+                and exports['opslabs-bodycam']:IsPhoneAppEnabled() ~= false,
             license = LicenseForUi and LicenseForUi(src) or nil,      -- OPSHUB license (server/license.lua)
         },
     }

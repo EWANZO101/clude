@@ -42,3 +42,15 @@ ServerConfig.Audio = {
     PublicUrl = '',      -- where the bridge's videos with sound are served (nginx → /var/lib/opsvoip-bridge/bodycam)
     KeepSilentCopy = false,    -- keep the video-only file as well
 }
+
+-- Voice commands ("xonsight on"/"xonsight off") through the officer's own push-to-talk mic - same OPS Voice
+-- bridge connection as Audio above (requires Audio.Enabled too), using a local/offline speech-to-text model
+-- (no cloud API, no per-use cost, runs on the bridge server's own CPU). Only ever hears the recording officer's
+-- own mic, never bystanders or radio traffic also heard in their channel. Phrases are matched case-insensitively
+-- as a substring of what was heard, so minor misrecognition ("exon sight on") still works; keep them distinct
+-- from each other and from ordinary radio chatter.
+ServerConfig.VoiceCommand = {
+    Enabled = true,
+    OnPhrases = { 'xonsight on', 'xon sight on', 'xon on' },
+    OffPhrases = { 'xonsight off', 'xon sight off', 'xon off' },
+}

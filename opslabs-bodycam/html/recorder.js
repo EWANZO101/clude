@@ -19,63 +19,71 @@ async function post(name, data = {}) {
     return text ? JSON.parse(text) : null;
 }
 
-const cfg = { video: {}, hud: {}, beep: {}, upload: {} };
+const cfg = { video: {}, hud: {}, beep: {}, voice: {}, upload: {} };
 const S = { session: null, street: '', info: {}, part: 0, rec: null, partStart: 0, draw: null, segTimer: null, maxTimer: null, beepTimer: null, clock: null, startedAt: 0 };
 
 /* ------------------------------------------------------------------ game view → canvas */
+
+/**
+ * One instance of this is the main (full-quality) recorder's capture pipeline; a second, independent instance
+ * (Preroll, below) is the always-on rolling buffer - same technique, its own tiny canvas/GL context/MediaRecorder
+ * so the two can run at completely different resolutions and start/stop independently of each other.
+ */
+function buildCapture() {
+    const c = document.createElement('canvas');
+    const gl = c.getContext('webgl', { antialias: false, alpha: false, depth: false, preserveDrawingBuffer: false });
+    if (!gl) return null;
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
+    const prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, `
+        attribute vec2 p; varying vec2 vUv; uniform vec4 uCrop;
+        void main() { vUv = uCrop.xy + vec2(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5) * uCrop.zw; gl_Position = vec4(p, 0.0, 1.0); }`));
+    // downscaling the full-resolution game frame: 4 taps per output pixel instead of 1 (no shimmering edges)
+    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, `
+        precision mediump float; varying vec2 vUv; uniform sampler2D uTex; uniform vec2 uStep;
+        void main() {
+            vec3 c = texture2D(uTex, vUv + vec2(-uStep.x, -uStep.y)).rgb + texture2D(uTex, vUv + vec2(uStep.x, -uStep.y)).rgb
+                   + texture2D(uTex, vUv + vec2(-uStep.x, uStep.y)).rgb + texture2D(uTex, vUv + vec2(uStep.x, uStep.y)).rgb;
+            gl_FragColor = vec4(c * 0.25, 1.0);
+        }`));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+    gl.useProgram(prog);
+    const u = { uCrop: gl.getUniformLocation(prog, 'uCrop'), uStep: gl.getUniformLocation(prog, 'uStep') };
+
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, 'p');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+    // the game view texture: FiveM swaps the game frame into a texture set up exactly like this
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array(3));
+    gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
+    gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.uniform1i(gl.getUniformLocation(prog, 'uTex'), 0);
+
+    const out = document.createElement('canvas');
+    return { gl, glCanvas: c, out, ctx: out.getContext('2d', { alpha: false }), u };
+}
 
 const View = {
     gl: null, glCanvas: null, out: null, ctx: null, u: {},
 
     init() {
         if (this.gl) return true;
-        const c = document.createElement('canvas');
-        const gl = c.getContext('webgl', { antialias: false, alpha: false, depth: false, preserveDrawingBuffer: false });
-        if (!gl) return false;
-        const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
-        const prog = gl.createProgram();
-        gl.attachShader(prog, sh(gl.VERTEX_SHADER, `
-            attribute vec2 p; varying vec2 vUv; uniform vec4 uCrop;
-            void main() { vUv = uCrop.xy + vec2(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5) * uCrop.zw; gl_Position = vec4(p, 0.0, 1.0); }`));
-        // downscaling the full-resolution game frame: 4 taps per output pixel instead of 1 (no shimmering edges)
-        gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, `
-            precision mediump float; varying vec2 vUv; uniform sampler2D uTex; uniform vec2 uStep;
-            void main() {
-                vec3 c = texture2D(uTex, vUv + vec2(-uStep.x, -uStep.y)).rgb + texture2D(uTex, vUv + vec2(uStep.x, -uStep.y)).rgb
-                       + texture2D(uTex, vUv + vec2(-uStep.x, uStep.y)).rgb + texture2D(uTex, vUv + vec2(uStep.x, uStep.y)).rgb;
-                gl_FragColor = vec4(c * 0.25, 1.0);
-            }`));
-        gl.linkProgram(prog);
-        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
-        gl.useProgram(prog);
-        this.u.uCrop = gl.getUniformLocation(prog, 'uCrop');
-        this.u.uStep = gl.getUniformLocation(prog, 'uStep');
-
-        const buf = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-        const loc = gl.getAttribLocation(prog, 'p');
-        gl.enableVertexAttribArray(loc);
-        gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-
-        // the game view texture: FiveM swaps the game frame into a texture set up exactly like this
-        const tex = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array(3));
-        gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
-        gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-        gl.uniform1i(gl.getUniformLocation(prog, 'uTex'), 0);
-
-        this.gl = gl;
-        this.glCanvas = c;
-        this.out = document.createElement('canvas');
-        this.ctx = this.out.getContext('2d', { alpha: false });
+        const p = buildCapture();
+        if (!p) return false;
+        Object.assign(this, p);
         return true;
     },
 
@@ -168,6 +176,120 @@ const View = {
         while (loc && x.measureText('LOC ' + loc).width > w - pad * 2 - rw) loc = loc.slice(0, -2) + '…';
         if (loc) field('LOC', loc, pad, yb, 'left');
         if (right) field('', right, w - pad, yb, 'right');
+    },
+};
+
+/* ------------------------------------------------------------------ pre-event rolling buffer (Config.PreRoll)
+ *
+ * Always-on while an officer is eligible and not already recording: a separate, much smaller/cheaper capture
+ * (own tiny canvas + GL context + MediaRecorder, built with the same buildCapture() as View above) that rotates
+ * through short self-contained segments and keeps only the last few. A single MediaRecorder's later chunks
+ * aren't independently playable (only the very first chunk of a session carries the WebM header), so a true
+ * "trim old frames, keep new ones" buffer isn't possible with one continuous recorder - this restarts the
+ * recorder itself every segment instead, so every kept segment is its own complete, valid, playable file.
+ * On a real trigger (Preroll.flush), whatever's buffered ships as its own short "PRE-EVENT BUFFER" evidence
+ * part(s) - not spliced into the real recording, but immediately before it and clearly labelled as what it is.
+ */
+const Preroll = {
+    pipe: null, cfg: null, drawId: null, rec: null, segTimer: null, running: false,
+    ring: [], ringMax: 3, segSeconds: 10,
+
+    ensure() {
+        if (this.pipe) return true;
+        this.pipe = buildCapture();
+        return !!this.pipe;
+    },
+
+    start(preCfg) {
+        if (this.running || !preCfg || typeof MediaRecorder === 'undefined') return;
+        if (!this.ensure() || !this.pipe.out.captureStream) return;
+        this.cfg = preCfg;
+        this.segSeconds = Math.max(5, Math.round((preCfg.Seconds || 30) / 3));
+        this.ringMax = Math.max(1, Math.ceil((preCfg.Seconds || 30) / this.segSeconds));
+        const w = preCfg.Width || 320, h = preCfg.Height || 180, fps = preCfg.Fps || 8;
+        for (const c of [this.pipe.glCanvas, this.pipe.out]) { c.width = w; c.height = h; }
+        this.running = true;
+        this.ring = [];
+        this.drawId = setInterval(() => this.frame(), Math.round(1000 / fps));
+        this.beginSegment();
+    },
+
+    frame() {
+        const p = this.pipe, w = p.out.width, h = p.out.height;
+        const gl = p.gl;
+        const g = (window.innerWidth || 16) / (window.innerHeight || 9), a = w / h;
+        gl.viewport(0, 0, w, h);
+        const crop = a < g ? [(1 - a / g) / 2, 0, a / g, 1] : [0, (1 - g / a) / 2, 1, g / a];
+        gl.uniform4fv(p.u.uCrop, crop);
+        gl.uniform2f(p.u.uStep, 0.25 * crop[2] / w, 0.25 * crop[3] / h);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        p.ctx.drawImage(p.glCanvas, 0, 0);
+        if (cfg.video.Overlay !== false) View.overlay(p.ctx, w, h);
+    },
+
+    beginSegment() {
+        if (!this.running) return;
+        const v = this.cfg;
+        const mime = MIME.find((m) => MediaRecorder.isTypeSupported(m));
+        const stream = this.pipe.out.captureStream(v.Fps || 8);
+        const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: v.Bitrate || 200000 });
+        const chunks = [];
+        const segStart = Date.now();
+        rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+        rec.onstop = () => {
+            stream.getTracks().forEach((t) => t.stop());
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            if (blob.size > 2048) {
+                this.ring.push({ blob, start: segStart, ms: Date.now() - segStart });
+                if (this.ring.length > this.ringMax) this.ring.shift();
+            }
+            if (this.running && this.rec === rec) this.beginSegment();   // keep rotating
+        };
+        rec.start();
+        this.rec = rec;
+        clearTimeout(this.segTimer);
+        this.segTimer = setTimeout(() => { if (this.rec === rec) rec.stop(); }, this.segSeconds * 1000);
+    },
+
+    /** eligibility gone (off duty, job change, ...) - stop without handing anything over */
+    stop() {
+        if (!this.running) return;
+        this.running = false;
+        clearInterval(this.drawId); this.drawId = null;
+        clearTimeout(this.segTimer);
+        const rec = this.rec;
+        this.rec = null;
+        if (rec && rec.state !== 'inactive') {
+            rec.onstop = () => rec.stream && rec.stream.getTracks().forEach((t) => t.stop());
+            rec.stop();
+        }
+        this.ring = [];
+    },
+
+    /** a real recording is starting: finish the in-flight segment (so the freshest few seconds aren't lost),
+     * then hand every buffered segment over as its own short evidence part, oldest first. */
+    flush(session) {
+        const handOver = () => {
+            const segs = this.ring.slice();
+            this.ring = [];
+            segs.forEach((seg, i) => {
+                const part = { n: 0, session: session.id, street: S.street, start: seg.start, preroll: true, index: i + 1, of: segs.length };
+                Uploader.add(seg.blob, part, seg.ms);
+            });
+        };
+        if (!this.running || !this.rec || this.rec.state === 'inactive') {
+            this.stop();
+            handOver();
+            return;
+        }
+        this.running = false;      // beginSegment()'s own onstop won't try to rotate again
+        clearInterval(this.drawId); this.drawId = null;
+        clearTimeout(this.segTimer);
+        const rec = this.rec;
+        this.rec = null;
+        const original = rec.onstop;
+        rec.onstop = (ev) => { original(ev); handOver(); };
+        rec.stop();
     },
 };
 
@@ -284,6 +406,7 @@ function start(session) {
     if (v.MaxMinutes > 0) S.maxTimer = setTimeout(() => post('maxLength'), v.MaxMinutes * 60000);
     if (cfg.beep.OnStartStop !== false) Beep.play(1);
     if (cfg.beep.Interval > 0) S.beepTimer = setInterval(() => Beep.play(2), cfg.beep.Interval * 1000);
+    if (cfg.voice.Enabled !== false) Speech.say(cfg.voice.OnStart);
     Hud.show();
 }
 
@@ -300,6 +423,7 @@ function stop() {
         rec.stop();
     } else clearInterval(drawId);
     if (cfg.beep.OnStartStop !== false) Beep.play(1, 520);
+    if (cfg.voice.Enabled !== false) Speech.say(cfg.voice.OnStop);
     Hud.update();
 }
 
@@ -336,7 +460,11 @@ const Uploader = {
         });
         const size = Math.max(4, (cfg.upload.ChunkKB || 384) * 1024 & ~3);
         const chunks = Math.ceil(b64.length / size);
-        const r = await post('partBegin', { session: part.session, part: part.n, size: fixed.size, chunks, duration: Math.round(ms / 1000), durationMs: Math.round(ms), startedAt: Math.floor(part.start / 1000), street: part.street });
+        const r = await post('partBegin', {
+            session: part.session, part: part.n, size: fixed.size, chunks, duration: Math.round(ms / 1000), durationMs: Math.round(ms),
+            startedAt: Math.floor(part.start / 1000), street: part.street,
+            preroll: part.preroll || false, segIndex: part.index, segCount: part.of,
+        });
         if (!r || !r.ok) return (r && r.reason) || 'refused';
         for (let i = 0; i < chunks; i++) {
             Hud.progress(part.n, i / chunks);
@@ -398,6 +526,23 @@ const Beep = {
     },
 };
 
+/** Config.Voice: a spoken line through whatever TTS voice the client's browser engine has, if any - not every
+ * FiveM client build necessarily ships one, so this stays a silent no-op rather than erroring when it can't. */
+const Speech = {
+    say(text) {
+        if (!text) return;
+        try {
+            if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return;
+            const u = new SpeechSynthesisUtterance(text);
+            u.rate = cfg.voice.Rate || 1.0;
+            u.pitch = cfg.voice.Pitch || 1.0;
+            u.volume = cfg.voice.Volume != null ? cfg.voice.Volume : 0.8;
+            window.speechSynthesis.cancel();   // don't queue a stale line behind a fresh one if these fire close together
+            window.speechSynthesis.speak(u);
+        } catch (_) { /* no TTS available in this client */ }
+    },
+};
+
 /* ------------------------------------------------------------------ /bodycammic: is the microphone usable from the NUI? */
 
 async function micTest() {
@@ -426,11 +571,15 @@ async function micTest() {
 
 window.addEventListener('message', (e) => {
     const m = e.data || {};
-    if (m.action === 'start') start(m.session);
+    if (m.action === 'start') {
+        start(m.session);                                          // the real recording starts right away -
+        if (Preroll.running) Preroll.flush(m.session);              // the buffer hand-off runs alongside it, not before it
+    }
     else if (m.action === 'stop') stop();
     else if (m.action === 'overlay') { S.street = m.street || ''; S.info = { street: S.street, x: m.x, y: m.y, heading: m.heading }; }
     else if (m.action === 'note' && S.session) S.session.note = m.note || '';
     else if (m.action === 'micTest') micTest();
+    else if (m.action === 'preroll') { if (m.enabled) Preroll.start(m.config); else Preroll.stop(); }
 });
 
 if (IN_GAME) post('ready').then((c) => { if (c) Object.assign(cfg, c); Hud.update(); }).catch(() => {});

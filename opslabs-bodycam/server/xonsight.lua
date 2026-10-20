@@ -25,6 +25,14 @@ end
 
 local function iso(t) return os.date('!%Y-%m-%dT%H:%M:%SZ', t) end
 
+local function get(path, cb)
+    if not cfg.Url or cfg.Url == '' then return cb and cb(0, nil) end
+    PerformHttpRequest(cfg.Url .. path, function(status, text)
+        local ok, data = pcall(json.decode, text or '')
+        cb(status or 0, (ok and type(data) == 'table') and data or nil)
+    end, 'GET', '', { ['X-XonSight-Key'] = cfg.Key or '' })
+end
+
 --- send one recording; cb(ok, status)
 function XonSight.SendEvidence(rec, cb)
     local caption = rec.caption or ''
@@ -91,3 +99,36 @@ function XonSight.SyncRoster(recorders)
 end
 
 function XonSight.Configured() return cfg.Url and cfg.Url ~= '' end
+
+-- remote feature flags (GET /api/xonsight/features) ------------------------------------------------------------
+--
+-- Polled, not checked live: the phone (opslabs-phone) asks every player's config every few seconds, far too
+-- often for an HTTP round trip each time. Fails open (stays at whatever it last knew, true until the first
+-- poll ever completes) - a network hiccup shouldn't suddenly hide a feature that's actually meant to be on;
+-- if the portal is unreachable for good, that's exactly as visible in the console as any other failed send here.
+local phoneAppEnabled = true
+
+function XonSight.IsPhoneAppEnabled() return phoneAppEnabled end
+
+local function pollFeatures()
+    get('/api/xonsight/features', function(status, data)
+        if status >= 200 and status < 300 and data and data.phoneAppEnabled ~= nil then
+            phoneAppEnabled = data.phoneAppEnabled == true
+        elseif status == 401 then
+            print('^3[opslabs-bodycam] Xon Sight refused the feature check (401): check the key in config_server.lua^7')
+        end
+    end)
+end
+
+CreateThread(function()
+    if not XonSight.Configured() then return end
+    while true do
+        pollFeatures()
+        Wait(5 * 60000)
+    end
+end)
+
+-- opslabs-phone checks this before showing the Bodycam app's "My footage"/"Live" tabs at all (its own
+-- server/main.lua config.bodycam) - keeps the Xon Sight relationship entirely inside this resource rather
+-- than duplicating the portal URL/key into opslabs-phone's own config too.
+exports('IsPhoneAppEnabled', XonSight.IsPhoneAppEnabled)

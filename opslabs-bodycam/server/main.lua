@@ -137,7 +137,11 @@ local function caption(s, u)
     local job = jobText(s.player)
     if job ~= '' then bits[#bits + 1] = job end
     if u.street and u.street ~= '' then bits[#bits + 1] = u.street end
-    bits[#bits + 1] = ('part %d · %s'):format(u.part, os.date('%H:%M', u.startedAt))
+    if u.preroll then
+        bits[#bits + 1] = ('PRE-EVENT BUFFER %d/%d · %s'):format(u.segIndex or 1, u.segCount or 1, os.date('%H:%M', u.startedAt))
+    else
+        bits[#bits + 1] = ('part %d · %s'):format(u.part, os.date('%H:%M', u.startedAt))
+    end
     if s.trigger ~= 'manual' then bits[#bits + 1] = 'auto: ' .. s.trigger end
     if s.note and s.note ~= '' then bits[#bits + 1] = s.note end
     return table.concat(bits, ' · '):sub(1, 255)
@@ -235,6 +239,7 @@ handlers.uploadBegin = function(src, d)
         src = src, session = s.id, part = tonumber(d.part) or s.parts, total = tonumber(d.chunks) or 0, chunks = {}, received = 0, bytes = 0,
         max = math.ceil(max * 4 / 3) + 16, duration = tonumber(d.duration) or 0, durationMs = tonumber(d.durationMs), startedAt = tonumber(d.startedAt) or os.time(),
         street = type(d.street) == 'string' and d.street:sub(1, 80) or nil, touched = os.time(),
+        preroll = d.preroll == true, segIndex = tonumber(d.segIndex), segCount = tonumber(d.segCount),
     }
     return { ok = true, upload = id }
 end
@@ -330,8 +335,14 @@ local function initDb()
         KEY idx_unsent (sent, attempts)
     )]])
     -- column added after some servers already had this table - CREATE TABLE IF NOT EXISTS above doesn't touch an
-    -- existing one, so add it here too; pcall swallows "duplicate column" on servers that already have it
-    pcall(dbAwait, 'query', [[ALTER TABLE opslabs_bodycam_recordings ADD COLUMN serial VARCHAR(16) NOT NULL DEFAULT '']])
+    -- existing one, so add it here too. MySQL (unlike MariaDB) has no ADD COLUMN IF NOT EXISTS, and oxmysql logs
+    -- a query error to console even when pcall catches it Lua-side - so check first instead of attempting-and-
+    -- swallowing, which was spamming "Duplicate column name 'serial'" on every single restart.
+    local hasSerial = dbAwait('scalar', [[SELECT COUNT(*) FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'opslabs_bodycam_recordings' AND COLUMN_NAME = 'serial']])
+    if tonumber(hasSerial) == 0 then
+        pcall(dbAwait, 'query', [[ALTER TABLE opslabs_bodycam_recordings ADD COLUMN serial VARCHAR(16) NOT NULL DEFAULT '']])
+    end
     return ok
 end
 

@@ -43,7 +43,7 @@ local function changed() TriggerEvent('opslabs-bodycam:state', state()) end   --
 
 local REASONS = {
     wrong_job = 'Your job isn\'t issued a bodycam', off_duty = 'Go on duty to use your bodycam', grade = 'Your rank isn\'t issued a bodycam',
-    no_item = 'You don\'t have a bodycam', not_allowed = 'You aren\'t issued a bodycam',
+    no_item = 'You don\'t have a bodycam', not_allowed = 'You aren\'t issued a bodycam', vest_off = 'Put your vest on first (/vest)',
 }
 
 local function start(trigger)
@@ -58,6 +58,8 @@ local function start(trigger)
         return false
     end
     recording, session = true, r.session
+    -- hand off whatever's in the pre-roll buffer first (it stops itself once this 'start' message arrives), then
+    -- the real, full-quality recording - see html/recorder.js Preroll.flush()/View start.
     SendNUIMessage({ action = 'start', session = session })
     Config.Notify(trigger == 'manual' and 'Bodycam recording' or ('Bodycam recording (auto: ' .. trigger .. ')'), 'success')
     if ChestCam then ChestCam.Start() end
@@ -78,6 +80,22 @@ local function stop(reason)
     return true
 end
 
+-- pre-roll eligibility: only officers actually issued a bodycam should pay for the rolling buffer. Cheap single
+-- round trip, checked occasionally rather than on every frame - duty/job status doesn't change that often.
+local preRollWanted = false
+CreateThread(function()
+    if not (Config.PreRoll and Config.PreRoll.Enabled) then return end
+    while true do
+        local can = (not recording) and request('canUse')
+        local want = can and can.allowed or false
+        if want ~= preRollWanted then
+            preRollWanted = want
+            SendNUIMessage({ action = 'preroll', enabled = want, config = Config.PreRoll })
+        end
+        Wait(20000)
+    end
+end)
+
 local function toggle() if recording then return stop('manual') end return start('manual') end
 
 RegisterCommand(Config.Command or 'bodycam', function() toggle() end, false)
@@ -91,7 +109,7 @@ RegisterNetEvent('opslabs-bodycam:remoteStop', function(reason) stop(reason or '
 -- NUI: config + the video relay ------------------------------------------------------------------------------------
 
 RegisterNUICallback('ready', function(_, cb)
-    cb({ video = Config.Video, hud = Config.Hud, beep = Config.Beep, upload = Config.Upload })
+    cb({ video = Config.Video, hud = Config.Hud, beep = Config.Beep, voice = Config.Voice, upload = Config.Upload })
     if recording then SendNUIMessage({ action = 'start', session = session }) end
 end)
 
@@ -165,21 +183,26 @@ end
 CreateThread(function()
     local lastReport = 0
     while true do
-        if recording then
+        -- the overlay (local only - no network) also needs to stay fresh while the pre-roll buffer is running,
+        -- not just during a real recording, so its footage carries real location/heading too, not a blank/stale
+        -- one from whenever recording last stopped. The /live position report to the server stays recording-only:
+        -- pre-rolling isn't a session, there's nothing for the Live page to show yet.
+        if recording or preRollWanted then
             local ped = PlayerPedId()
             local pos = GetEntityCoords(ped)
             street = streetHere(pos)
             local rot = GetGameplayCamRot(2)
             SendNUIMessage({ action = 'overlay', street = street, x = pos.x, y = pos.y, heading = (360.0 - rot.z) % 360.0 })
-            local now = GetGameTimer()
-            if now - lastReport >= (Config.Live.ReportSeconds or 3) * 1000 then
-                lastReport = now
-                local rot = GetGameplayCamRot(2)
-                TriggerServerEvent('opslabs-bodycam:frame', {
-                    x = pos.x, y = pos.y, z = pos.z,
-                    heading = (360.0 - rot.z) % 360.0,      -- GTA turns anticlockwise; the portal's compass clockwise
-                    pitch = rot.x, fov = GetGameplayCamFov(),
-                })
+            if recording then
+                local now = GetGameTimer()
+                if now - lastReport >= (Config.Live.ReportSeconds or 3) * 1000 then
+                    lastReport = now
+                    TriggerServerEvent('opslabs-bodycam:frame', {
+                        x = pos.x, y = pos.y, z = pos.z,
+                        heading = (360.0 - rot.z) % 360.0,      -- GTA turns anticlockwise; the portal's compass clockwise
+                        pitch = rot.x, fov = GetGameplayCamFov(),
+                    })
+                end
             end
             Wait(1000)
         else
@@ -224,6 +247,22 @@ local function autoStart(reason)
     CreateThread(function() start(reason) end)
 end
 
+-- "Drawn" means equipped - a gun or taser selected as the current weapon - not merely aiming (aiming implies
+-- already drawn, so this covers that case too, just earlier). GetWeapontypeGroup/GROUP_* are the same natives
+-- already proven elsewhere on this server (opslabs-towers/client/gunshots.lua, ox_inventory's weapon module).
+local DRAWN_GROUPS = {
+    [`GROUP_PISTOL`] = true, [`GROUP_SMG`] = true, [`GROUP_RIFLE`] = true, [`GROUP_MG`] = true,
+    [`GROUP_SHOTGUN`] = true, [`GROUP_SNIPER`] = true, [`GROUP_HEAVY`] = true,
+}
+local function drawnWeaponReason(ped)
+    local group = GetWeapontypeGroup(GetSelectedPedWeapon(ped))
+    if group == `GROUP_STUNGUN` then return 'taser drawn' end
+    if DRAWN_GROUPS[group] then return 'weapon drawn' end
+    return nil
+end
+
+local MPH_TO_MS = 0.44704
+
 CreateThread(function()
     local A = Config.Auto or {}
     if not (A.OnShooting or A.OnSiren or A.OnWeaponDrawn) then return end
@@ -232,14 +271,21 @@ CreateThread(function()
         local ped = PlayerPedId()
         local armed = IsPedArmed(ped, 4)
         if not recording and armed then
-            if A.OnShooting and IsPedShooting(ped) then autoStart('shots fired')
-            elseif A.OnWeaponDrawn and IsPlayerFreeAiming(PlayerId()) then autoStart('weapon drawn') end
+            if A.OnShooting and IsPedShooting(ped) then
+                autoStart('shots fired')
+            elseif A.OnWeaponDrawn then
+                local reason = drawnWeaponReason(ped)
+                if reason then autoStart(reason) end
+            end
         end
         local now = GetGameTimer()
         if not recording and A.OnSiren and now - lastSlow > 1000 then
             lastSlow = now
             local veh = GetVehiclePedIsIn(ped, false)
-            if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped and IsVehicleSirenOn(veh) then autoStart('lights and siren') end
+            if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped and IsVehicleSirenOn(veh) then
+                local minSpeed = (A.SirenSpeedMph or 0) * MPH_TO_MS
+                if GetEntitySpeed(veh) >= minSpeed then autoStart('lights and siren') end
+            end
         end
         Wait((armed and not recording) and 0 or 250)
     end
