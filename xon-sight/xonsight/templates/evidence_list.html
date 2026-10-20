@@ -1,18 +1,15 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon, empty_state %}
+{% from "_macros.html" import icon, empty_state, page_header %}
 {% block title %}Evidence · Xon Sight{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
-  <div>
-    <h1 class="text-2xl font-semibold text-white tracking-tight">Evidence</h1>
-    <p class="text-sm text-slate-500 mt-1">{{ pagination.total }} item{{ "" if pagination.total == 1 else "s" }} total</p>
-  </div>
-  <form method="get" class="relative">
-    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{{ icon("search", "h-4 w-4") }}</span>
-    <input type="text" name="q" value="{{ q }}" placeholder="Search by officer or caption..."
-      class="bg-panel border border-border rounded-lg pl-9 pr-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 w-72">
-  </form>
-</div>
+{% set search_form %}
+<form method="get" class="relative">
+  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">{{ icon("search", "h-4 w-4") }}</span>
+  <input type="text" name="q" value="{{ q }}" placeholder="Search by officer or caption..."
+    class="bg-panel border border-border pl-9 pr-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 w-full sm:w-72">
+</form>
+{% endset %}
+{{ page_header("Evidence", pagination.total ~ " item" ~ ("" if pagination.total == 1 else "s") ~ " total", eyebrow="Evidence library", actions=search_form) }}
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
   {% for item in pagination.items %}
@@ -23,14 +20,14 @@
 </div>
 
 {% if pagination.pages > 1 %}
-<div class="flex items-center justify-center gap-2 mt-8 text-sm">
+<div class="flex items-center justify-center gap-2 mt-10 text-sm">
   <a href="{{ url_for('views.evidence_list', page=pagination.prev_num, q=q) if pagination.has_prev else '#' }}"
-     class="h-9 w-9 flex items-center justify-center rounded-lg border border-border hover:border-accent/60 {{ 'opacity-30 pointer-events-none' if not pagination.has_prev }}">
+     class="h-9 w-9 flex items-center justify-center border border-border hover:border-accent/60 {{ 'opacity-30 pointer-events-none' if not pagination.has_prev }}">
     {{ icon("arrow-left", "h-4 w-4") }}
   </a>
-  <span class="text-slate-500 px-2">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+  <span class="font-mono text-xs uppercase tracking-wide text-slate-500 px-2">Page {{ pagination.page }} of {{ pagination.pages }}</span>
   <a href="{{ url_for('views.evidence_list', page=pagination.next_num, q=q) if pagination.has_next else '#' }}"
-     class="h-9 w-9 flex items-center justify-center rounded-lg border border-border hover:border-accent/60 {{ 'opacity-30 pointer-events-none' if not pagination.has_next }}">
+     class="h-9 w-9 flex items-center justify-center border border-border hover:border-accent/60 {{ 'opacity-30 pointer-events-none' if not pagination.has_next }}">
     {{ icon("chevron-right", "h-4 w-4") }}
   </a>
 </div>

@@ -1,20 +1,12 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon %}
+{% from "_macros.html" import icon, page_header %}
 {% block title %}Analytics · Xon Sight{% endblock %}
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-2xl font-semibold text-white tracking-tight flex items-center gap-2">
-    {{ icon("chart", "h-5 w-5 text-accent") }} Analytics
-  </h1>
-  <p class="text-sm text-slate-500 mt-1.5 max-w-2xl">
-    Control-plane data only for now, same scope boundary as the rest of the app before multi-tenancy reaches
-    the browser-facing pages.
-  </p>
-</div>
+{{ page_header("Analytics", "Control-plane data only for now, same scope boundary as the rest of the app before multi-tenancy reaches the browser-facing pages.", eyebrow="Analytics") }}
 
-<div id="stat-tiles" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8"></div>
+<div id="stat-tiles" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-10"></div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
   <div class="tac-corners rounded-2xl border border-border bg-panel p-5 relative overflow-hidden">
     <div class="flex items-center justify-between mb-5">
       <h2 class="text-sm font-medium text-white">Evidence submitted &middot; last 30 days</h2>

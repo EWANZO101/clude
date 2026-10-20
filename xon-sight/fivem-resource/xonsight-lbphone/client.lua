@@ -47,5 +47,19 @@ RegisterNUICallback("xonsight:getConfig", function(_, cb)
     cb({
         siteUrl = Config.SiteUrl,
         startPath = Config.StartPath,
+        allowCapture = Config.AllowCapture,
     })
+end)
+
+-- The actual webhook POST happens in server.lua (keeps the webhook key
+-- out of NUI-reachable code) - this just relays the captured media URL
+-- there and acks the UI immediately so it isn't left waiting on the
+-- HTTP round trip.
+RegisterNUICallback("xonsight:submitEvidence", function(data, cb)
+    TriggerServerEvent("xonsight-lbphone:submitEvidence", data)
+    cb({ ok = true })
+end)
+
+RegisterNetEvent("xonsight-lbphone:submitResult", function(ok, message)
+    SendNUIMessage({ action = "submitResult", ok = ok, message = message })
 end)

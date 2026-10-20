@@ -1,40 +1,39 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon, csrf_field %}
+{% from "_macros.html" import icon, csrf_field, page_header %}
 {% block title %}Account · Xon Sight{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold text-white tracking-tight mb-1">Account</h1>
-<p class="text-sm text-slate-500 mb-6">Signed in as <span class="text-slate-300">{{ current_user.username }}</span> ({{ current_user.role }})</p>
+{{ page_header("Account", "Signed in as " ~ current_user.username ~ " (" ~ current_user.role ~ ")", eyebrow="Account") }}
 
-<div class="max-w-md rounded-2xl border border-border bg-panel p-5 shadow-lg shadow-black/10">
-  <h2 class="text-sm font-medium text-white mb-4 flex items-center gap-1.5">{{ icon("key", "h-4 w-4 text-accent") }} Change password</h2>
+<div class="tac-corners max-w-md border border-border bg-panel p-6">
+  <h2 class="text-sm font-medium text-white mb-5 flex items-center gap-1.5">{{ icon("key", "h-4 w-4 text-accent") }} Change password</h2>
 
   {% if saved %}
-  <p class="text-accent2 bg-accent2/10 border border-accent2/30 rounded-lg px-3 py-2 text-sm mb-4 flex items-center gap-1.5">
+  <p class="text-accent2 bg-accent2/10 border border-accent2/30 px-3 py-2 text-sm mb-5 flex items-center gap-1.5">
     {{ icon("check-circle", "h-4 w-4") }} Password updated.
   </p>
   {% endif %}
   {% if error %}
-  <p class="text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 text-sm mb-4">{{ error }}</p>
+  <p class="text-red-300 bg-red-500/10 border border-red-500/30 px-3 py-2 text-sm mb-5">{{ error }}</p>
   {% endif %}
 
-  <form method="post" class="space-y-4">
+  <form method="post" class="space-y-5">
     {{ csrf_field() }}
     <div>
-      <label class="block text-xs text-slate-400 mb-1">Current password</label>
+      <label class="card-label block mb-1.5">Current password</label>
       <input name="current_password" type="password" required
-        class="w-full bg-base border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+        class="w-full bg-base border border-border px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
     </div>
     <div>
-      <label class="block text-xs text-slate-400 mb-1">New password</label>
+      <label class="card-label block mb-1.5">New password</label>
       <input name="new_password" type="password" required minlength="8"
-        class="w-full bg-base border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+        class="w-full bg-base border border-border px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
     </div>
     <div>
-      <label class="block text-xs text-slate-400 mb-1">Confirm new password</label>
+      <label class="card-label block mb-1.5">Confirm new password</label>
       <input name="confirm" type="password" required minlength="8"
-        class="w-full bg-base border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
+        class="w-full bg-base border border-border px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
     </div>
-    <button type="submit" class="px-4 py-2 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-sm font-medium">
+    <button type="submit" class="px-4 py-2.5 bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-sm font-medium">
       Update password
     </button>
   </form>

@@ -13,7 +13,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), nullable=False, unique=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(16), nullable=False, default="officer")  # admin | officer
+    role = db.Column(db.String(16), nullable=False, default="officer")  # admin | supervisor | officer
     is_active_account = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     last_login_at = db.Column(db.DateTime, nullable=True)
@@ -27,6 +27,13 @@ class User(UserMixin, db.Model):
     @property
     def is_admin(self):
         return self.role == "admin"
+
+    # Admins count as supervisors too - they outrank the role and shouldn't
+    # have to also be flagged "supervisor" to get the same shots-fired
+    # banner (see static/supervisor-alerts.js).
+    @property
+    def is_supervisor(self):
+        return self.role in ("admin", "supervisor")
 
     # UserMixin's is_active - Flask-Login checks this to refuse login/
     # session validation for accounts pending approval.

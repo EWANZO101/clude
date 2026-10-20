@@ -56,7 +56,7 @@ body {
   color: var(--accent);
 }
 
-#reload {
+#reload, #capture {
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 3px;
@@ -68,10 +68,18 @@ body {
   cursor: pointer;
 }
 
-#reload:hover {
+#reload:hover, #capture:hover {
   color: var(--accent);
   border-color: var(--accent);
 }
+
+#capture {
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.4);
+  font-size: 0.6rem;
+}
+
+#capture[hidden] { display: none; }
 
 .screen {
   position: relative;
@@ -100,3 +108,94 @@ body {
   letter-spacing: 0.08em;
   z-index: 0;
 }
+
+.capture-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.capture-overlay.hidden { display: none; }
+
+.capture-card {
+  width: min(88%, 20rem);
+  background: var(--topbar-bg);
+  border: 1px solid var(--border);
+  padding: 1.1rem;
+}
+
+.capture-title {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+}
+
+.capture-hint {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 0.8rem;
+}
+
+.capture-card input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 0.5rem 0.6rem;
+  font-size: 0.78rem;
+  margin-bottom: 0.9rem;
+}
+
+.capture-card input:focus { outline: none; border-color: #dc2626; }
+
+.capture-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.capture-actions button {
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border) !important;
+}
+
+.btn-accent {
+  background: #dc2626;
+  color: #fff;
+}
+
+.btn-accent:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.capture-status {
+  margin-top: 0.7rem;
+  font-size: 0.72rem;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+.capture-status[hidden] { display: none; }
+.capture-status.ok { color: #7d8694; }
+.capture-status.err { color: #dc2626; }

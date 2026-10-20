@@ -14,11 +14,25 @@
     <div class="topbar">
       <span class="dot"></span>
       <span class="brand">XON<span class="accent">SIGHT</span></span>
+      <button id="capture" title="Record evidence" hidden>&#9679;</button>
       <button id="reload" title="Reload">&#8635;</button>
     </div>
     <div class="screen">
       <iframe id="frame" src="about:blank"></iframe>
       <div class="screen-empty" id="screenEmpty">Loading&hellip;</div>
+    </div>
+
+    <div class="capture-overlay hidden" id="captureOverlay">
+      <div class="capture-card">
+        <div class="capture-title">Record evidence</div>
+        <p class="capture-hint">Captures video with LB Phone's camera and submits it to Xon Sight directly - no bodycam resource needed.</p>
+        <input type="text" id="captureCaption" placeholder="Caption (optional)" maxlength="200" />
+        <div class="capture-actions">
+          <button id="captureCancel" class="btn-ghost">Cancel</button>
+          <button id="captureStart" class="btn-accent">Record</button>
+        </div>
+        <div class="capture-status" id="captureStatus" hidden></div>
+      </div>
     </div>
   </div>
 

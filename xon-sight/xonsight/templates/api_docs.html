@@ -60,6 +60,7 @@
     <a href="{{ url_for('site.welcome') }}" class="inline-flex items-center gap-2.5">{{ brand_mark() }}</a>
     <div class="flex items-center gap-2 text-sm">
       <a href="{{ url_for('site.welcome') }}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">Home</a>
+      <a href="{{ url_for('site.guide') }}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">Guide</a>
       <a href="{{ url_for('auth.login') }}" class="px-3 py-1.5 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20">Staff login</a>
     </div>
   </header>
@@ -186,6 +187,19 @@
 }</code></pre>
           <p class="text-xs text-slate-500 mt-2 mb-2">Required: <code>recorderId</code>, <code>type</code>.</p>
           <pre><code>{ "ok": true, "id": 1 }</code></pre>
+          <div class="mt-4 flex items-start gap-3 text-sm text-accent/90 bg-accent/5 border border-accent/20 rounded-xl px-4 py-3">
+            <svg viewBox="0 0 24 24" class="h-4 w-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><circle cx="12" cy="8" r="0.6" fill="currentColor" stroke="none" /></svg>
+            <p>
+              <code class="text-accent">"type": "shots_fired"</code> specifically also raises a persistent,
+              acknowledge-required banner on <strong class="text-accent">every page</strong> of the portal (not just
+              <code class="text-accent">/live</code>) for every logged-in <strong class="text-accent">supervisor or
+              admin</strong> account - set a user's role to <code class="text-accent">supervisor</code> from
+              <code class="text-accent">/admin/users</code> to opt them into this. Every other alert type still only
+              shows as the normal toast notification + the <code class="text-accent">/live</code> page banner, same
+              as before. This is polling-based (checked every ~4s, or immediately on the next real-time push), not a
+              push notification to a device - nothing here sends an SMS/text message.
+            </p>
+          </div>
         </section>
 
         <section id="feeds">

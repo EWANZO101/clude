@@ -1,34 +1,25 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon %}
+{% from "_macros.html" import icon, page_header %}
 {% block title %}Community requests · Xon Sight{% endblock %}
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-2xl font-semibold text-white tracking-tight flex items-center gap-2">
-    {{ icon("community", "h-5 w-5 text-accent") }} Community requests
-  </h1>
-  <p class="text-sm text-slate-500 mt-1.5 max-w-2xl">
-    Axon Community Request analog - ask the public (or an in-game civilian with dashcam/doorbell footage) for
-    evidence or tips. Xon Sight has no email/SMS delivery system like Axon App's invite flow, so there's no
-    automatic "send invite" - share the generated link yourself, however you'd reach that person.
-  </p>
-</div>
+{{ page_header("Community requests", "Axon Community Request analog - ask the public (or an in-game civilian with dashcam/doorbell footage) for evidence or tips. Xon Sight has no email/SMS delivery system like Axon App's invite flow, so there's no automatic \"send invite\" - share the generated link yourself, however you'd reach that person.", eyebrow="Community") }}
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <div class="lg:col-span-2 space-y-3">
-    <div id="request-list" class="space-y-3"></div>
+  <div class="lg:col-span-2 space-y-4">
+    <div id="request-list" class="space-y-4"></div>
   </div>
 
-  <div class="rounded-2xl border border-border bg-panel p-5 h-fit">
-    <h2 class="text-sm font-medium text-white mb-4 flex items-center gap-1.5">{{ icon("plus", "h-4 w-4 text-accent") }} New request</h2>
-    <form id="new-request-form" class="space-y-3 text-xs">
+  <div class="tac-corners border border-border bg-panel p-6 h-fit">
+    <h2 class="text-sm font-medium text-white mb-5 flex items-center gap-1.5">{{ icon("plus", "h-4 w-4 text-accent") }} New request</h2>
+    <form id="new-request-form" class="space-y-4 text-xs">
       <div>
-        <label class="block text-slate-400 mb-1">Title</label>
+        <label class="card-label block mb-1.5">Title</label>
         <input name="title" type="text" required placeholder="e.g. Hit and run on Vinewood Blvd"
-          class="w-full bg-base border border-border rounded-lg px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60">
+          class="w-full bg-base border border-border px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
       </div>
       <div>
-        <label class="block text-slate-400 mb-1">Category</label>
-        <select name="category" class="w-full bg-base border border-border rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-accent/60">
+        <label class="card-label block mb-1.5">Category</label>
+        <select name="category" class="w-full bg-base border border-border px-3 py-2 text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
           <option>General</option>
           <option>Traffic incident</option>
           <option>Theft</option>
@@ -40,18 +31,18 @@
         </select>
       </div>
       <div>
-        <label class="block text-slate-400 mb-1">Description (shown publicly)</label>
+        <label class="card-label block mb-1.5">Description (shown publicly)</label>
         <textarea name="description" rows="3" placeholder="What happened, and what you're looking for..."
-          class="w-full bg-base border border-border rounded-lg px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60"></textarea>
+          class="w-full bg-base border border-border px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30"></textarea>
       </div>
       <div>
-        <label class="block text-slate-400 mb-1">Instructions to submitter (optional)</label>
+        <label class="card-label block mb-1.5">Instructions to submitter (optional)</label>
         <input name="instructions" type="text" placeholder="e.g. Please note the time you saw this"
-          class="w-full bg-base border border-border rounded-lg px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60">
+          class="w-full bg-base border border-border px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
       </div>
       <div>
-        <label class="block text-slate-400 mb-1">Link to case (optional)</label>
-        <select name="caseId" id="case-select" class="w-full bg-base border border-border rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-accent/60">
+        <label class="card-label block mb-1.5">Link to case (optional)</label>
+        <select name="caseId" id="case-select" class="w-full bg-base border border-border px-3 py-2 text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30">
           <option value="">No case</option>
         </select>
       </div>
@@ -59,7 +50,7 @@
         <input type="checkbox" name="requiresConsent" checked class="accent-accent">
         Require a consent statement before submitting
       </label>
-      <button type="submit" class="w-full px-3 py-2 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 font-medium flex items-center justify-center gap-1.5">
+      <button type="submit" class="w-full px-3 py-2.5 bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 font-medium flex items-center justify-center gap-1.5">
         {{ icon("plus", "h-3.5 w-3.5") }} Create request
       </button>
     </form>

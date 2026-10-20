@@ -17,3 +17,8 @@ def welcome():
 @site_bp.route("/api-docs")
 def api_docs():
     return render_template("api_docs.html")
+
+
+@site_bp.route("/docs")
+def guide():
+    return render_template("guide.html")
