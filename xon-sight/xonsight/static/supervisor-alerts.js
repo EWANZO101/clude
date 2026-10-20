@@ -28,12 +28,12 @@
     banner.innerHTML = shotsFired
       .map(
         (a) => `
-      <div class="flex items-center justify-between gap-4 border border-red-500 bg-red-600/90 px-5 py-3 shadow-lg shadow-red-900/40" style="animation: supervisorAlertPulse 1.4s ease-in-out infinite;">
+      <div class="flex items-center justify-between gap-4 rounded-2xl bg-red-500 px-5 py-3.5 shadow-lg shadow-red-900/30" style="animation: supervisorAlertPulse 1.4s ease-in-out infinite;">
         <div class="flex items-center gap-3 text-white">
           <svg viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.5 16.5H2.5L12 3.5z" /><path d="M12 10v4" /><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none" /></svg>
-          <span class="text-sm font-semibold font-mono uppercase tracking-wide">Shots fired - ${a.recorderName || a.recorderId}${a.message ? " - " + a.message : ""}</span>
+          <span class="text-sm font-semibold">Shots fired &middot; ${a.recorderName || a.recorderId}${a.message ? " &middot; " + a.message : ""}</span>
         </div>
-        <button type="button" data-ack="${a.id}" class="text-xs font-mono uppercase tracking-wide px-3 py-1.5 border border-white/40 text-white hover:bg-white/15 shrink-0">Acknowledge</button>
+        <button type="button" data-ack="${a.id}" class="text-sm font-medium px-3.5 py-1.5 rounded-full bg-white/15 text-white hover:bg-white/25 shrink-0">Acknowledge</button>
       </div>`
       )
       .join("");

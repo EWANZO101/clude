@@ -48,11 +48,11 @@
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
     } else {
-      ctx.fillStyle = "#09090a";
+      ctx.fillStyle = "#0a0a0c";
       ctx.fillRect(0, 0, w, h);
     }
 
-    ctx.strokeStyle = mode === "terrain" ? "rgba(255,255,255,0.08)" : "rgba(220,38,38,0.14)";
+    ctx.strokeStyle = mode === "terrain" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.07)";
     ctx.lineWidth = 1;
     const step = 500;
     for (let x = Math.ceil(WORLD_BOUNDS.minX / step) * step; x <= WORLD_BOUNDS.maxX; x += step) {
@@ -86,8 +86,8 @@
   }
 
   function statusColor(r) {
-    if (r.isStale) return "#4b4b50";
-    if (r.status === "buffering") return "#7d8694";
+    if (r.isStale) return "#52525b";
+    if (r.status === "buffering") return "#14b8a6";
     return "#ef4444";
   }
 
@@ -137,7 +137,7 @@
       if (!f.position) return;
       const p = worldToScreen(f.position.x, f.position.y);
       ctx.beginPath();
-      ctx.fillStyle = f.status === "offline" ? "#4b4b50" : "#9aa1ab";
+      ctx.fillStyle = f.status === "offline" ? "#52525b" : "#38bdf8";
       ctx.rect(p.x - 4, p.y - 4, 8, 8);
       ctx.fill();
       ctx.fillStyle = "rgba(226,232,240,0.7)";
@@ -324,7 +324,7 @@
 
     list.innerHTML = filtered
       .map((r) => {
-        const color = r.isStale ? "bg-slate-600" : r.status === "buffering" ? "bg-accent2 shadow-[0_0_6px_rgba(125,134,148,0.8)]" : "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]";
+        const color = r.isStale ? "bg-slate-600" : r.status === "buffering" ? "bg-accent2 shadow-[0_0_6px_rgba(20,184,166,0.8)]" : "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]";
         const selected = r.id === selectedId;
         return `
       <div data-roster-row="${r.id}" class="p-3 text-xs transition ${selected ? "bg-accent/5 border-l-2 border-accent" : "border-l-2 border-transparent hover:bg-white/[0.02]"}">

@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -15,16 +15,15 @@
       theme: {
         extend: {
           colors: {
-            base: '#0a0a0b',
-            panel: '#131315',
-            panel2: '#0e0e10',
-            border: '#2c2c30',
-            accent: '#dc2626',
-            accent2: '#7d8694',
+            base: '#0a0a0c',
+            panel: '#141417',
+            panel2: '#19191d',
+            border: '#26262b',
+            accent: '#ec4899',
+            accent2: '#14b8a6',
           },
           fontFamily: {
             sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-            mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
           },
         }
       }
@@ -32,67 +31,56 @@
   </script>
   <style>
     body {
-      background-color: #09090a;
+      background-color: #0a0a0c;
       background-image:
-        repeating-linear-gradient(45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
-        repeating-linear-gradient(-45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
-        radial-gradient(900px 500px at 15% -10%, rgba(220,38,38,0.06), transparent 60%),
-        radial-gradient(900px 500px at 110% 10%, rgba(255,255,255,0.025), transparent 60%);
+        radial-gradient(900px 500px at 15% -10%, rgba(236,72,153,0.06), transparent 60%),
+        radial-gradient(900px 500px at 110% 10%, rgba(20,184,166,0.05), transparent 60%);
       min-height: 100vh;
     }
     ::-webkit-scrollbar { width: 10px; }
-    ::-webkit-scrollbar-thumb { background: #2c2c30; border-radius: 8px; }
+    ::-webkit-scrollbar-thumb { background: #26262b; border-radius: 8px; }
     code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8rem; }
-    .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl { border-radius: 2px !important; }
-
-    .tac-corners { position: relative; }
-    .tac-corners::before, .tac-corners::after {
-      content: ""; position: absolute; width: 10px; height: 10px; pointer-events: none; opacity: 0.7;
-      border-color: #9aa1ab; border-style: solid; border-width: 0;
-    }
-    .tac-corners::before { top: 2px; left: 2px; border-top-width: 2px; border-left-width: 2px; }
-    .tac-corners::after { bottom: 2px; right: 2px; border-bottom-width: 2px; border-right-width: 2px; }
 
     /* Sidebar nav - scrollspy-driven active state, mirrors the app's own sidebar language */
     .toc a { display: block; border-left: 2px solid transparent; padding: 0.3rem 0 0.3rem 0.75rem; color: #8a8f99; transition: color .15s ease, border-color .15s ease; }
     .toc a:hover { color: #e5e7eb; }
-    .toc a.active { color: #dc2626; border-left-color: #dc2626; }
-    .toc .group-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #52525b; padding: 0.9rem 0 0.25rem 0.75rem; }
+    .toc a.active { color: #ec4899; border-left-color: #ec4899; }
+    .toc .group-label { font-size: 11px; color: #70707a; font-weight: 500; padding: 0.9rem 0 0.25rem 0.75rem; }
     .toc .sub a { padding-left: 1.5rem; font-size: 12.5px; }
 
     /* Architecture diagram */
     .diagram-box {
-      border: 1px solid #2c2c30; background: #131315; padding: 0.9rem 1.4rem;
-      font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .04em; text-transform: uppercase;
-      font-weight: 600; color: #e5e7eb; text-align: center; white-space: nowrap;
+      border: 1px solid #26262b; background: #141417; padding: 0.9rem 1.4rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: .04em; text-transform: uppercase;
+      font-weight: 600; color: #e5e7eb; text-align: center; white-space: nowrap; border-radius: 0.9rem;
     }
-    .diagram-box.hub { border-color: rgba(220,38,38,0.5); box-shadow: 0 0 0 1px rgba(220,38,38,0.15), 0 0 24px rgba(220,38,38,0.08); color: #fff; }
+    .diagram-box.hub { border-color: rgba(236,72,153,0.5); box-shadow: 0 0 0 1px rgba(236,72,153,0.15), 0 0 24px rgba(236,72,153,0.08); color: #fff; }
     .diagram-box.wide { white-space: normal; padding: 0.8rem 1.6rem; }
-    .diagram-box .diagram-kind { display: block; font-size: 9px; font-weight: 500; color: #7d8694; letter-spacing: .08em; margin-top: 2px; }
+    .diagram-box .diagram-kind { display: block; font-size: 9px; font-weight: 500; color: #9a9aa3; letter-spacing: .08em; margin-top: 2px; }
     .diagram-sources { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem; text-transform: none; letter-spacing: normal; font-weight: 500; color: #e5e7eb; }
     .diagram-sources span { color: #52525b; }
-    .diagram-sources .dim { color: #7d8694; }
+    .diagram-sources .dim { color: #9a9aa3; }
     .diagram-connector { display: flex; flex-direction: column; align-items: center; height: 3.75rem; justify-content: center; position: relative; }
-    .diagram-connector .line { width: 1px; height: 100%; background: linear-gradient(#2c2c30, #dc2626); position: absolute; top: 0; }
-    .diagram-connector.reverse .line { background: linear-gradient(#7d8694, #2c2c30); }
+    .diagram-connector .line { width: 1px; height: 100%; background: linear-gradient(#26262b, #ec4899); position: absolute; top: 0; }
+    .diagram-connector.reverse .line { background: linear-gradient(#14b8a6, #26262b); }
     .diagram-connector .label {
-      position: relative; background: #09090a; border: 1px solid #2c2c30; padding: 0.2rem 0.6rem;
-      font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8a8f99; white-space: nowrap; text-transform: uppercase; letter-spacing: .04em;
+      position: relative; background: #0a0a0c; border: 1px solid #26262b; border-radius: 999px; padding: 0.2rem 0.6rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10px; color: #8a8f99; white-space: nowrap; text-transform: uppercase; letter-spacing: .04em;
     }
-    .diagram-connector .arrow { position: absolute; bottom: -1px; font-size: 10px; line-height: 1; color: #dc2626; }
-    .diagram-connector.reverse .arrow { top: -1px; bottom: auto; color: #7d8694; transform: rotate(180deg); }
+    .diagram-connector .arrow { position: absolute; bottom: -1px; font-size: 10px; line-height: 1; color: #ec4899; }
+    .diagram-connector.reverse .arrow { top: -1px; bottom: auto; color: #14b8a6; transform: rotate(180deg); }
 
     /* Component index badge */
-    .idx { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: #52525b; letter-spacing: .05em; }
+    .idx { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; font-weight: 700; color: #70707a; letter-spacing: .05em; }
 
     /* Setup stepper */
     .stepper { position: relative; }
-    .stepper::before { content: ""; position: absolute; left: 0.85rem; top: 0.5rem; bottom: 0.5rem; width: 1px; background: #2c2c30; }
+    .stepper::before { content: ""; position: absolute; left: 0.85rem; top: 0.5rem; bottom: 0.5rem; width: 1px; background: #26262b; }
     .stepper .step { position: relative; padding-left: 2.75rem; }
     .stepper .step-num {
       position: absolute; left: 0; top: 0; width: 1.75rem; height: 1.75rem; border-radius: 50%;
-      border: 1px solid #2c2c30; background: #0e0e10; display: flex; align-items: center; justify-content: center;
-      font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: #dc2626; z-index: 1;
+      border: 1px solid #26262b; background: #19191d; display: flex; align-items: center; justify-content: center;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; font-weight: 700; color: #ec4899; z-index: 1;
     }
   </style>
 </head>
@@ -127,7 +115,7 @@
 
       <div class="min-w-0">
         <div class="pt-8 pb-10 max-w-3xl">
-          <span class="inline-block text-[11px] font-mono uppercase tracking-wider text-accent/90 bg-accent/10 border border-accent/30 rounded-full px-3 py-1 mb-4">Guide</span>
+          <span class="inline-block text-xs font-medium text-accent bg-accent/10 border border-accent/30 rounded-full px-3 py-1 mb-4">Guide</span>
           <h1 class="text-4xl font-semibold text-white tracking-tight leading-tight">How Xon Sight fits together</h1>
           <p class="text-[15px] text-slate-400 mt-4 leading-relaxed">
             Xon Sight is four pieces working together: a bodycam app that captures and uploads footage in-game,
@@ -136,15 +124,15 @@
             each other. For the webhook wire format, see the
             <a href="{{ url_for('site.api_docs') }}" class="text-accent hover:underline">API reference</a> instead.
           </p>
-          <div class="flex flex-wrap gap-2 mt-5 font-mono text-[11px] uppercase tracking-wide text-slate-500">
-            <span class="border border-border px-2.5 py-1">4 components</span>
-            <span class="border border-border px-2.5 py-1">Flask + FiveM</span>
-            <span class="border border-border px-2.5 py-1">Self-hosted</span>
+          <div class="flex flex-wrap gap-2 mt-5 text-xs font-medium text-slate-500">
+            <span class="rounded-full border border-border px-2.5 py-1">4 components</span>
+            <span class="rounded-full border border-border px-2.5 py-1">Flask + FiveM</span>
+            <span class="rounded-full border border-border px-2.5 py-1">Self-hosted</span>
           </div>
         </div>
 
         <section id="overview" class="max-w-3xl scroll-mt-24 mb-16">
-          <h2 class="text-xs font-mono uppercase tracking-widest text-slate-500 mb-3">Overview</h2>
+          <h2 class="text-xs font-semibold text-slate-500 mb-3">Overview</h2>
           <p class="text-sm text-slate-400 leading-relaxed">
             Nothing here gives a website a live video feed - Xon Sight (the in-game resource) has no documented
             way to stream actual camera frames out of the game. What moves between the pieces below is: finished
@@ -155,8 +143,8 @@
         </section>
 
         <section id="architecture" class="scroll-mt-24 mb-20">
-          <h2 class="text-xs font-mono uppercase tracking-widest text-slate-500 mb-6">Architecture</h2>
-          <div class="tac-corners border border-border bg-panel2/60 py-12 px-6 flex flex-col items-center">
+          <h2 class="text-xs font-semibold text-slate-500 mb-6">Architecture</h2>
+          <div class="rounded-2xl border border-border bg-panel2/60 py-12 px-6 flex flex-col items-center">
             <div class="diagram-box wide">
               <span class="diagram-kind" style="margin-top:0">evidence sources &middot; any webhook-compatible resource</span>
               <span class="diagram-sources">OPS Phone<span>&middot;</span>LB Phone camera<span>&middot;</span><span class="dim">your own</span></span>
@@ -186,7 +174,7 @@
         </section>
 
         <div class="max-w-3xl mb-6">
-          <h2 class="text-xs font-mono uppercase tracking-widest text-slate-500">Components</h2>
+          <h2 class="text-xs font-semibold text-slate-500">Components</h2>
         </div>
 
         <section id="ops-phone" class="max-w-3xl scroll-mt-24 mb-14">
@@ -195,8 +183,8 @@
             <h3 class="text-xl font-semibold text-white">OPS Phone <span class="text-sm font-normal text-slate-500">&middot; a bodycam</span></h3>
           </div>
           <div class="flex flex-wrap items-center gap-2 mb-4 ml-7">
-            <span class="text-[10px] font-mono uppercase tracking-wide border border-accent2/40 text-accent2 px-2 py-0.5">Reference implementation</span>
-            <span class="text-[10px] font-mono uppercase tracking-wide border border-border text-slate-500 px-2 py-0.5">FiveM resource &middot; opslabs-bodycam</span>
+            <span class="text-[11px] font-medium rounded-full bg-accent2/15 text-accent2 px-2.5 py-0.5">Reference implementation</span>
+            <span class="text-[11px] font-medium rounded-full border border-border text-slate-500 px-2.5 py-0.5">FiveM resource &middot; opslabs-bodycam</span>
           </div>
           <p class="text-sm text-slate-400 leading-relaxed ml-7 mb-4">
             Xon Sight's webhook contract is generic - it doesn't require OPS Phone or any other specific resource,
@@ -221,8 +209,8 @@
             <h3 class="text-xl font-semibold text-white">The Portal <span class="text-sm font-normal text-slate-500">&middot; this website</span></h3>
           </div>
           <div class="flex flex-wrap items-center gap-2 mb-4 ml-7">
-            <span class="text-[10px] font-mono uppercase tracking-wide border border-accent/40 text-accent px-2 py-0.5">Core</span>
-            <span class="text-[10px] font-mono uppercase tracking-wide border border-border text-slate-500 px-2 py-0.5">Web app &middot; Flask</span>
+            <span class="text-[11px] font-medium rounded-full bg-accent/15 text-accent px-2.5 py-0.5">Core</span>
+            <span class="text-[11px] font-medium rounded-full border border-border text-slate-500 px-2.5 py-0.5">Web app &middot; Flask</span>
           </div>
           <p class="text-sm text-slate-400 leading-relaxed ml-7 mb-5 max-w-3xl">
             Everything OPS Phone sends lands here. It's the one place all of it gets reviewed, organized, and
@@ -231,18 +219,24 @@
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 ml-7">
             {% set portal_pieces = [
-              ("dashboard", "Dashboard", "/dashboard", "Recent submissions and a quick count of what's active, at a glance."),
-              ("evidence", "Evidence", "/evidence", "Every clip, with a frame-stepping player, markers, clips-within-clips, and a transcript tab."),
-              ("live", "Live", "/live", "Who's recording right now and their last known position on a schematic map."),
-              ("cases", "Cases", "/cases", "Group evidence under a status (open / under review / closed) with an audit trail."),
-              ("community", "Community", "/community", "The public tip line and per-case request links - no account needed on their end."),
-              ("assistant", "Assistant", "/assistant", "AI-drafted report narratives, footage summaries, and BOLOs."),
-              ("chart", "Analytics", "/analytics", "Submission volume, alert types, case status, top submitting officers."),
-              ("settings", "Admin", "/admin/*", "Users, communities, Discord notifications, and the audit log."),
+              ("dashboard", "Dashboard", "/dashboard", "Recent submissions and a quick count of what's active, at a glance.", "accent"),
+              ("evidence", "Evidence", "/evidence", "Every clip, with a frame-stepping player, markers, clips-within-clips, and a transcript tab.", "accent2"),
+              ("live", "Live", "/live", "Who's recording right now and their last known position on a schematic map.", "sky"),
+              ("cases", "Cases", "/cases", "Group evidence under a status (open / under review / closed) with an audit trail.", "amber"),
+              ("community", "Community", "/community", "The public tip line and per-case request links - no account needed on their end.", "accent2"),
+              ("assistant", "Assistant", "/assistant", "AI-drafted report narratives, footage summaries, and BOLOs.", "accent"),
+              ("chart", "Analytics", "/analytics", "Submission volume, alert types, case status, top submitting officers.", "sky"),
+              ("settings", "Admin", "/admin/*", "Users, communities, Discord notifications, and the audit log.", "amber"),
             ] %}
-            {% for icon_name, title, route, desc in portal_pieces %}
-            <div class="tac-corners border border-border bg-panel p-4 flex gap-3">
-              <div class="w-8 h-8 flex items-center justify-center border border-accent2/40 bg-accent2/5 text-accent2 shrink-0">{{ icon(icon_name, "h-4 w-4") }}</div>
+            {% set chip_tones = {
+              "accent": "bg-accent/15 text-accent",
+              "accent2": "bg-accent2/15 text-accent2",
+              "sky": "bg-sky-400/15 text-sky-400",
+              "amber": "bg-amber-400/15 text-amber-400",
+            } %}
+            {% for icon_name, title, route, desc, tone in portal_pieces %}
+            <div class="rounded-xl border border-border bg-panel p-4 flex gap-3">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 {{ chip_tones[tone] }}">{{ icon(icon_name, "h-4 w-4") }}</div>
               <div class="min-w-0">
                 <div class="flex items-center gap-2">
                   <div class="text-sm font-medium text-white">{{ title }}</div>
@@ -261,8 +255,8 @@
             <h3 class="text-xl font-semibold text-white">In-game Tablet <span class="text-sm font-normal text-slate-500">&middot; held prop</span></h3>
           </div>
           <div class="flex flex-wrap items-center gap-2 mb-4 ml-7">
-            <span class="text-[10px] font-mono uppercase tracking-wide border border-accent2/40 text-accent2 px-2 py-0.5">Optional</span>
-            <span class="text-[10px] font-mono uppercase tracking-wide border border-border text-slate-500 px-2 py-0.5">FiveM resource &middot; xonsight-tablet</span>
+            <span class="text-[11px] font-medium rounded-full bg-accent2/15 text-accent2 px-2.5 py-0.5">Optional</span>
+            <span class="text-[11px] font-medium rounded-full border border-border text-slate-500 px-2.5 py-0.5">FiveM resource &middot; xonsight-tablet</span>
           </div>
           <p class="text-sm text-slate-400 leading-relaxed ml-7 mb-4">
             A stock in-game prop an officer holds and reads from without tabbing out of GTA. It's the real portal
@@ -281,8 +275,8 @@
             <h3 class="text-xl font-semibold text-white">LB Phone App <span class="text-sm font-normal text-slate-500">&middot; installable app, viewer + capture</span></h3>
           </div>
           <div class="flex flex-wrap items-center gap-2 mb-4 ml-7">
-            <span class="text-[10px] font-mono uppercase tracking-wide border border-accent2/40 text-accent2 px-2 py-0.5">Optional</span>
-            <span class="text-[10px] font-mono uppercase tracking-wide border border-border text-slate-500 px-2 py-0.5">FiveM resource &middot; xonsight-lbphone &middot; requires LB Phone</span>
+            <span class="text-[11px] font-medium rounded-full bg-accent2/15 text-accent2 px-2.5 py-0.5">Optional</span>
+            <span class="text-[11px] font-medium rounded-full border border-border text-slate-500 px-2.5 py-0.5">FiveM resource &middot; xonsight-lbphone &middot; requires LB Phone</span>
           </div>
           <p class="text-sm text-slate-400 leading-relaxed ml-7 mb-4">
             Installed as a proper app icon on an officer's LB Phone - open it from the home screen like any other
@@ -302,7 +296,7 @@
         </section>
 
         <section id="requirements" class="max-w-4xl scroll-mt-24 mb-16">
-          <h2 class="text-xs font-mono uppercase tracking-widest text-slate-500 mb-3">Requirements</h2>
+          <h2 class="text-xs font-semibold text-slate-500 mb-3">Requirements</h2>
           <p class="text-sm text-slate-400 leading-relaxed mb-6">
             Xon Sight can host the portal for you - there's nothing to deploy, patch, or keep online yourself.
             With a hosted portal, <strong class="text-slate-200 font-medium">the only real requirement is the FiveM side</strong>:
@@ -312,12 +306,12 @@
             your own.
           </p>
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-            <div class="tac-corners border border-accent/40 bg-panel p-5">
+            <div class="rounded-2xl border border-accent/40 bg-panel p-5">
               <div class="flex items-center gap-2 mb-1">
-                <div class="w-8 h-8 flex items-center justify-center border border-accent/40 bg-accent/5 text-accent shrink-0">{{ icon("flag", "h-4 w-4") }}</div>
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-accent/15 text-accent shrink-0">{{ icon("flag", "h-4 w-4") }}</div>
                 <div class="text-sm font-medium text-white">In-game &middot; the FiveM side</div>
               </div>
-              <span class="text-[10px] font-mono uppercase tracking-wide border border-accent/40 text-accent px-2 py-0.5 ml-10">Required either way</span>
+              <span class="text-[11px] font-medium rounded-full bg-accent/15 text-accent px-2.5 py-0.5 ml-10">Required either way</span>
               <ul class="space-y-2.5 mt-4">
                 <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>A FiveM server you can add resources to</span></li>
                 <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>One evidence source speaking Xon Sight's webhook contract - OPS Phone / <code>opslabs-bodycam</code> is the reference one, but not mandatory</span></li>
@@ -327,15 +321,15 @@
                 <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span class="text-slate-500">Every piece just needs the portal's URL and (for the webhook-speaking ones) its key - nothing else to provision</span></li>
               </ul>
             </div>
-            <div class="tac-corners border border-border bg-panel p-5">
+            <div class="rounded-2xl border border-border bg-panel p-5">
               <div class="flex items-center gap-2 mb-1">
-                <div class="w-8 h-8 flex items-center justify-center border border-accent2/40 bg-accent2/5 text-accent2 shrink-0">{{ icon("dashboard", "h-4 w-4") }}</div>
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-accent2/15 text-accent2 shrink-0">{{ icon("dashboard", "h-4 w-4") }}</div>
                 <div class="text-sm font-medium text-white">The portal</div>
               </div>
-              <span class="text-[10px] font-mono uppercase tracking-wide border border-accent2/40 text-accent2 px-2 py-0.5 ml-10">Hosted or self-hosted</span>
+              <span class="text-[11px] font-medium rounded-full bg-accent2/15 text-accent2 px-2.5 py-0.5 ml-10">Hosted or self-hosted</span>
 
               <div class="mt-4 mb-4">
-                <div class="text-xs font-mono uppercase tracking-wide text-slate-300 mb-2">Hosted by Xon Sight &middot; default</div>
+                <div class="text-xs font-medium text-slate-300 mb-2">Hosted by Xon Sight &middot; default</div>
                 <ul class="space-y-2.5">
                   <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Nothing to install - you get a portal URL and a webhook key, ready to point OPS Phone at</span></li>
                   <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Uptime, backups, and updates are handled for you</span></li>
@@ -343,7 +337,7 @@
               </div>
 
               <div class="pt-4 border-t border-border">
-                <div class="text-xs font-mono uppercase tracking-wide text-slate-500 mb-2">Self-hosting instead &middot; optional</div>
+                <div class="text-xs font-medium text-slate-500 mb-2">Self-hosting instead &middot; optional</div>
                 <ul class="space-y-2.5">
                   <li class="flex gap-2 text-sm text-slate-500"><span class="shrink-0 mt-0.5 text-slate-600">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Python 3.10+ and the packages in <code>requirements.txt</code> (Flask, SQLAlchemy, Flask-Login, Flask-Limiter, Flask-WTF, PyMySQL, gunicorn)</span></li>
                   <li class="flex gap-2 text-sm text-slate-500"><span class="shrink-0 mt-0.5 text-slate-600">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>A database - SQLite works with zero setup (default if <code>DATABASE_URL</code> is blank); MySQL only for multi-tenancy</span></li>
@@ -362,7 +356,7 @@
         </section>
 
         <section id="setup" class="max-w-3xl scroll-mt-24">
-          <h2 class="text-xs font-mono uppercase tracking-widest text-slate-500 mb-6">Setting it up</h2>
+          <h2 class="text-xs font-semibold text-slate-500 mb-6">Setting it up</h2>
           <p class="text-sm text-slate-400 leading-relaxed mb-8">
             Each in-game piece is an independent FiveM resource - install whichever ones your server actually uses.
           </p>

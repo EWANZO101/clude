@@ -39,7 +39,7 @@
           .map(
             (a) => `
       <div class="relative">
-        <span class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_6px_rgba(220,38,38,0.6)]"></span>
+        <span class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_6px_rgba(236,72,153,0.6)]"></span>
         <div class="bg-base rounded-lg px-3 py-2">
           <div class="text-slate-200 font-medium">${a.fromStatus ? a.fromStatus.replace(/_/g, " ") : "created"} &rarr; ${a.toStatus.replace(/_/g, " ")}</div>
           <div class="text-slate-500 mt-0.5">${new Date(a.createdAt).toLocaleString()}</div>

@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -15,16 +15,15 @@
       theme: {
         extend: {
           colors: {
-            base: '#0a0a0b',
-            panel: '#131315',
-            panel2: '#0e0e10',
-            border: '#2c2c30',
-            accent: '#dc2626',
-            accent2: '#7d8694',
+            base: '#0a0a0c',
+            panel: '#141417',
+            panel2: '#19191d',
+            border: '#26262b',
+            accent: '#ec4899',
+            accent2: '#14b8a6',
           },
           fontFamily: {
             sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-            mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
           },
         }
       }
@@ -32,17 +31,14 @@
   </script>
   <style>
     body {
-      background-color: #09090a;
+      background-color: #0a0a0c;
       background-image:
-        repeating-linear-gradient(45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
-        repeating-linear-gradient(-45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
-        radial-gradient(900px 500px at 12% -10%, rgba(220,38,38,0.07), transparent 60%),
-        radial-gradient(900px 500px at 105% 5%, rgba(255,255,255,0.03), transparent 55%);
+        radial-gradient(900px 500px at 12% -10%, rgba(236,72,153,0.07), transparent 60%),
+        radial-gradient(900px 500px at 105% 5%, rgba(20,184,166,0.06), transparent 55%);
       min-height: 100vh;
     }
     ::-webkit-scrollbar { width: 10px; }
-    ::-webkit-scrollbar-thumb { background: #2c2c30; }
-    .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl { border-radius: 2px !important; }
+    ::-webkit-scrollbar-thumb { background: #26262b; border-radius: 8px; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     .fade-up { animation: fadeUp .5s ease both; }
     @media (prefers-reduced-motion: reduce) { .fade-up { animation: none; } }
@@ -79,7 +75,7 @@
       </div>
     {% else %}
       <div class="pt-8 pb-6 text-center fade-up">
-        <span class="inline-block text-[11px] font-mono uppercase tracking-wider text-accent/90 bg-accent/10 border border-accent/30 rounded-full px-3 py-1 mb-4">{{ req.category }}</span>
+        <span class="inline-block text-xs font-medium text-accent bg-accent/10 border border-accent/30 rounded-full px-3 py-1 mb-4">{{ req.category }}</span>
         <h1 class="text-2xl sm:text-3xl font-semibold text-white tracking-tight">{{ req.title }}</h1>
         {% if req.description %}
         <p class="text-sm text-slate-400 max-w-lg mx-auto mt-3 whitespace-pre-wrap">{{ req.description }}</p>
