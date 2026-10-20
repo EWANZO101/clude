@@ -30,7 +30,10 @@ end
 function Audio.Start(id, src)
     local channel = Player(src).state.assignedChannel
     if not channel then return end
-    call('start', { id = id, serverId = src, channel = channel })
+    local vc = ServerConfig.VoiceCommand or {}
+    local voicePhrases = nil
+    if vc.Enabled ~= false then voicePhrases = { on = vc.OnPhrases or {}, off = vc.OffPhrases or {} } end
+    call('start', { id = id, serverId = src, channel = channel, voicePhrases = voicePhrases })
 end
 
 function Audio.Mark(id, part) call('mark', { id = id, part = part }) end

@@ -49,9 +49,42 @@ exports('DeleteVideo', (name) => {
     try { fs.unlinkSync(path.join(DIR, name)); return true; } catch { return false; }
 });
 
+const VOICE_KEY = GetConvar('opsvoip_key', '');     // same shared secret audio.lua already trusts, just the other direction
+const REC_ID = /^bc-(\d+)-\d+$/;
+
+function reply(res, status, body) {
+    try {
+        res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        res.send(JSON.stringify(body));
+    } catch (e) { /* the caller gave up - a write to a closed request must never take the server down */ }
+}
+
+/** the OPS Voice bridge (voicecmd.js) calling back in: an officer said "xonsight on/off" over their own mic. */
+function handleVoiceCommand(req, res, body) {
+    const given = String((req.headers && (req.headers.Authorization || req.headers.authorization)) || '').replace(/^Bearer\s+/, '');
+    const keyOk = VOICE_KEY.length >= 24 && given.length === VOICE_KEY.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(VOICE_KEY));
+    if (!keyOk) return reply(res, 401, { error: 'unauthorized' });
+    let data;
+    try { data = JSON.parse(body || '{}'); } catch (e) { return reply(res, 400, { error: 'invalid json' }); }
+    const m = REC_ID.exec(String(data.recordingId || ''));
+    if (!m) return reply(res, 400, { error: 'bad recordingId' });
+    const src = Number(m[1]);
+    if (!GetPlayerName(src)) return reply(res, 404, { error: 'player not connected' });
+    const cmd = data.command === 'on' ? 'remoteStart' : data.command === 'off' ? 'remoteStop' : null;
+    if (!cmd) return reply(res, 400, { error: 'command must be on or off' });
+    TriggerClientEvent(`opslabs-bodycam:${cmd}`, src, 'voice command');
+    reply(res, 200, { ok: true });
+}
+
 // No video bytes go out through FXServer's HTTP: sending them from a resource crashed the whole game server (live,
-// 2026-10-14). The folder is served by a web server from disk instead (README: nginx + bind mount).
+// 2026-10-14). The folder is served by a web server from disk instead (README: nginx + bind mount). The one
+// exception is /voice-command (POST, Bearer opsvoip_key) - no video bytes involved, just a short JSON control
+// message from the voice bridge.
 SetHttpHandler((req, res) => {
+    if (req.path === '/voice-command' && req.method === 'POST') {
+        req.setDataHandler((body) => handleVoiceCommand(req, res, body));
+        return;
+    }
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.send('bodycam videos are served by the web server, not FXServer');
 });

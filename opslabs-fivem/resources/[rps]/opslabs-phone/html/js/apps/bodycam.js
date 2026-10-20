@@ -77,10 +77,10 @@ const Bodycam = {
                     if (my !== lseq || !box.isConnected) return;
                     if (tab === 'mine') {
                         box.innerHTML = rows.length ? `<div class="group">${rows.map((r) => `
-                            <div class="row has-icon"><span class="ri" style="background:${r.sent ? '#30d158' : '#ff9f0a'}"><i class="fa-solid fa-${r.sent ? 'cloud' : 'clock'}"></i></span>
+                            <div class="row ${r.url ? 'tap' : ''} has-icon" ${r.url ? `data-open-url="${escUrl(r.url)}"` : ''}><span class="ri" style="background:${r.sent ? '#30d158' : '#ff9f0a'}"><i class="fa-solid fa-${r.sent ? 'cloud' : 'clock'}"></i></span>
                                 <div class="grow" style="min-width:0"><div>Part ${r.part} · ${fmtDuration(r.duration || 0)} <span class="muted" style="font-size:13px">${r.startedAt ? shortAgo(r.startedAt * 1000) : ''}</span></div>
                                 <div class="sub muted bc-cap">${esc(r.caption || '')}</div></div>
-                                <span class="sub muted">${r.sent ? '#' + esc(String(r.evidenceId)) : 'Pending'}</span></div>`).join('')}</div>`
+                                <span class="sub muted">${r.sent ? '#' + esc(String(r.evidenceId)) : 'Pending'}</span>${r.url ? '<i class="fa-solid fa-chevron-right chev"></i>' : ''}</div>`).join('')}</div>`
                             : '<div class="group"><div class="row"><div class="grow muted">Nothing recorded yet</div></div></div>';
                     } else {
                         box.innerHTML = rows.length ? `<div class="group">${rows.map((r) => `
@@ -109,6 +109,8 @@ const Bodycam = {
                 c.addEventListener('click', async (e) => {
                     const t = e.target.closest('[data-t]');
                     if (t) { tab = t.dataset.t; $$('[data-t]', c).forEach((b) => b.classList.toggle('on', b.dataset.t === tab)); return list(); }
+                    const open = e.target.closest('[data-open-url]');
+                    if (open) return PhotoViewer(open.dataset.openUrl);
                     const a = e.target.closest('[data-act]');
                     if (!a) return;
                     if (a.dataset.act === 'toggle') {

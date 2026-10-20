@@ -18,6 +18,7 @@ local recent = {}        -- identifier → recordings, newest first (without a d
 local retryQueue = {}    -- recordings Xon Sight didn't take (without a database)
 local useDb = false
 local publicBase = ''
+local roster           -- forward-declared: startSession/stopSession push an immediate sync, defined further down
 
 -- helpers ---------------------------------------------------------------------------------------------------------
 
@@ -75,6 +76,8 @@ local function startSession(src, trigger)
     Audio.Start(s.id, src)
     print(('[opslabs-bodycam] %s started recording (%s)'):format(s.officer, s.trigger))
     TriggerEvent('opslabs-bodycam:started', src, s.id, s.trigger)
+    XonSight.SyncRoster(roster())      -- don't wait for the periodic thread - the Live page should show this now
+    XonSight.SendAlert(s.id, s.officer, s.trigger)
     return { ok = true, session = clientState(src) }
 end
 
@@ -84,6 +87,7 @@ local function stopSession(src, reason)
     sessions[src] = nil
     s.endedAt = os.time()
     Audio.Stop(s.id)
+    XonSight.SyncRoster(roster())      -- same - the officer should disappear from /live immediately, not up to SyncSeconds later
     print(('[opslabs-bodycam] %s stopped recording (%s, %ds)'):format(s.officer, reason or 'manual', s.endedAt - s.startedAt))
     TriggerEvent('opslabs-bodycam:stopped', src, s.id, reason or 'manual')
     -- parts still uploading may arrive for a while
@@ -92,12 +96,12 @@ local function stopSession(src, reason)
 end
 
 --- roster for Xon Sight /live and the phone app
-local function roster()
+function roster()
     local list = {}
     for _, s in pairs(sessions) do
         local f = s.frame
         list[#list + 1] = {
-            id = s.id, name = s.officer, job = jobText(s.player), startedAt = s.startedAt,
+            id = s.id, name = s.officer, job = jobText(s.player), startedAt = s.startedAt, status = 'recording',
             lastFrame = f and { x = f.x, y = f.y, z = f.z, heading = f.heading, pitch = f.pitch, fov = f.fov } or nil,
         }
     end
@@ -133,7 +137,11 @@ local function caption(s, u)
     local job = jobText(s.player)
     if job ~= '' then bits[#bits + 1] = job end
     if u.street and u.street ~= '' then bits[#bits + 1] = u.street end
-    bits[#bits + 1] = ('part %d · %s'):format(u.part, os.date('%H:%M', u.startedAt))
+    if u.preroll then
+        bits[#bits + 1] = ('PRE-EVENT BUFFER %d/%d · %s'):format(u.segIndex or 1, u.segCount or 1, os.date('%H:%M', u.startedAt))
+    else
+        bits[#bits + 1] = ('part %d · %s'):format(u.part, os.date('%H:%M', u.startedAt))
+    end
     if s.trigger ~= 'manual' then bits[#bits + 1] = 'auto: ' .. s.trigger end
     if s.note and s.note ~= '' then bits[#bits + 1] = s.note end
     return table.concat(bits, ' · '):sub(1, 255)
@@ -160,13 +168,13 @@ local function finishUpload(id)
     local rec = {
         src = u.src, session = u.session, part = u.part, identifier = s.player.identifier, license = s.player.license,
         name = s.officer, job = jobText(s.player), file = file, url = url, bytes = saved.bytes, sound = avUrl ~= nil,
-        duration = u.duration, startedAt = u.startedAt, caption = caption(s, u),
+        duration = u.duration, startedAt = u.startedAt, caption = caption(s, u), serial = s.serial,
     }
     if useDb then
         rec.dbId = dbAwait('insert', [[INSERT INTO opslabs_bodycam_recordings
-            (session, part, identifier, license, name, job, file, url, bytes, duration, caption, trigger_reason, started_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FROM_UNIXTIME(?))]],
-            { rec.session, rec.part, rec.identifier, rec.license, rec.name, rec.job, rec.file, rec.url, rec.bytes, rec.duration, rec.caption, s.trigger, rec.startedAt })
+            (session, part, identifier, license, name, job, file, url, bytes, duration, caption, trigger_reason, started_at, serial)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FROM_UNIXTIME(?), ?)]],
+            { rec.session, rec.part, rec.identifier, rec.license, rec.name, rec.job, rec.file, rec.url, rec.bytes, rec.duration, rec.caption, s.trigger, rec.startedAt, rec.serial })
         rec.evidenceId = (xsCfg.EvidenceIdOffset or 0) + rec.dbId
         exports.oxmysql:update('UPDATE opslabs_bodycam_recordings SET evidence_id = ? WHERE id = ?', { rec.evidenceId, rec.dbId })
     else
@@ -231,6 +239,7 @@ handlers.uploadBegin = function(src, d)
         src = src, session = s.id, part = tonumber(d.part) or s.parts, total = tonumber(d.chunks) or 0, chunks = {}, received = 0, bytes = 0,
         max = math.ceil(max * 4 / 3) + 16, duration = tonumber(d.duration) or 0, durationMs = tonumber(d.durationMs), startedAt = tonumber(d.startedAt) or os.time(),
         street = type(d.street) == 'string' and d.street:sub(1, 80) or nil, touched = os.time(),
+        preroll = d.preroll == true, segIndex = tonumber(d.segIndex), segCount = tonumber(d.segCount),
     }
     return { ok = true, upload = id }
 end
@@ -321,9 +330,19 @@ local function initDb()
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         sent TINYINT(1) NOT NULL DEFAULT 0,
         attempts SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+        serial VARCHAR(16) NOT NULL DEFAULT '',
         KEY idx_identifier (identifier),
         KEY idx_unsent (sent, attempts)
     )]])
+    -- column added after some servers already had this table - CREATE TABLE IF NOT EXISTS above doesn't touch an
+    -- existing one, so add it here too. MySQL (unlike MariaDB) has no ADD COLUMN IF NOT EXISTS, and oxmysql logs
+    -- a query error to console even when pcall catches it Lua-side - so check first instead of attempting-and-
+    -- swallowing, which was spamming "Duplicate column name 'serial'" on every single restart.
+    local hasSerial = dbAwait('scalar', [[SELECT COUNT(*) FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'opslabs_bodycam_recordings' AND COLUMN_NAME = 'serial']])
+    if tonumber(hasSerial) == 0 then
+        pcall(dbAwait, 'query', [[ALTER TABLE opslabs_bodycam_recordings ADD COLUMN serial VARCHAR(16) NOT NULL DEFAULT '']])
+    end
     return ok
 end
 
@@ -368,10 +387,10 @@ CreateThread(function()
     while true do
         Wait(120000)
         if useDb then
-            local rows = dbAwait('query', [[SELECT id, evidence_id, identifier, name, url, caption, UNIX_TIMESTAMP(started_at) AS startedAt
+            local rows = dbAwait('query', [[SELECT id, evidence_id, identifier, name, url, caption, serial, UNIX_TIMESTAMP(started_at) AS startedAt
                 FROM opslabs_bodycam_recordings WHERE sent = 0 AND attempts < 10 AND evidence_id IS NOT NULL ORDER BY id LIMIT 20]]) or {}
             for _, r in ipairs(rows) do
-                deliver({ dbId = r.id, evidenceId = r.evidence_id, identifier = r.identifier, name = r.name, url = r.url, caption = r.caption, startedAt = r.startedAt })
+                deliver({ dbId = r.id, evidenceId = r.evidence_id, identifier = r.identifier, name = r.name, url = r.url, caption = r.caption, serial = r.serial, startedAt = r.startedAt })
             end
         elseif #retryQueue > 0 then
             local q = retryQueue

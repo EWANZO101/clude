@@ -170,31 +170,47 @@ end
 --- is this player issued a bodycam right now? (allowed, reason)
 function Bridge.CanUse(src)
     local acc = Config.Access or {}
-    if acc.Ace and IsPlayerAceAllowed(src, acc.Ace) then return true end
-    local mode = acc.Mode or 'job'
-    if mode == 'everyone' then return true end
-    if mode == 'ace' then return false, 'not_allowed' end
 
-    local function job()
-        local p = Bridge.Player(src)
-        local min = p.job and (acc.Jobs or {})[p.job]
-        if not min then return false, 'wrong_job' end
-        if (p.grade or 0) < min then return false, 'grade' end
-        if acc.OnDutyOnly and p.onDuty == false then return false, 'off_duty' end
-        return true
-    end
-    local function item() if Bridge.HasItem(src, acc.Item) then return true end return false, 'no_item' end
+    local function decide()
+        if acc.Ace and IsPlayerAceAllowed(src, acc.Ace) then return true end
+        local mode = acc.Mode or 'job'
+        if mode == 'everyone' then return true end
+        if mode == 'ace' then return false, 'not_allowed' end
 
-    if mode == 'job' then return job() end
-    if mode == 'item' then return item() end
-    if mode == 'job_and_item' then
-        local ok, why = job()
-        if not ok then return false, why end
-        return item()
+        local function job()
+            local p = Bridge.Player(src)
+            local min = p.job and (acc.Jobs or {})[p.job]
+            if not min then return false, 'wrong_job' end
+            if (p.grade or 0) < min then return false, 'grade' end
+            if acc.OnDutyOnly and p.onDuty == false then return false, 'off_duty' end
+            return true
+        end
+        local function item() if Bridge.HasItem(src, acc.Item) then return true end return false, 'no_item' end
+
+        if mode == 'job' then return job() end
+        if mode == 'item' then return item() end
+        if mode == 'job_and_item' then
+            local ok, why = job()
+            if not ok then return false, why end
+            return item()
+        end
+        if mode == 'job_or_item' then
+            if job() then return true end
+            return item()
+        end
+        return false, 'not_allowed'
     end
-    if mode == 'job_or_item' then
-        if job() then return true end
-        return item()
+
+    local ok, why = decide()
+    if not ok then return ok, why end
+
+    -- Config.Vest.RequiredToRecord: the vest (item or /vest command) has to physically be on, not just carried/
+    -- issued, before the bodycam will start at all. Player(src).state.opsVest is set by
+    -- opslabs-bodycam:vestState (server/vest.lua) whenever the vest/shirt-cam actually goes on or off.
+    if (Config.Vest or {}).RequiredToRecord then
+        local st = Player(src).state
+        if st.opsVest ~= true then return false, 'vest_off' end
     end
-    return false, 'not_allowed'
+
+    return true
 end

@@ -10,6 +10,13 @@ ServerConfig.XonSight = {
     -- (e.g. the XonSight resource) sends to the same portal.
     EvidenceIdOffset = 1000000,
     ServerTag = '',              -- put in front of every caption when several servers share one portal, e.g. 'S1'
+    -- trigger (session.trigger, e.g. the auto-start reasons below) -> alert sent to the portal's Live page
+    -- (POST /api/xonsight/alerts - an extension endpoint, not every Xon Sight deployment has it). Anything not
+    -- listed here never fires an alert - keep it short, or routine triggers like sirens become noise on /live.
+    -- AlertTriggers = {
+    --     ['shots fired']  = { type = 'weapon_fired', message = 'Shots fired' },
+    --     ['weapon drawn'] = { type = 'weapon_drawn', message = 'Weapon drawn' },
+    -- },
 }
 
 -- Where the videos are kept. The portal only stores a link, so the files must be reachable from the internet over
@@ -34,4 +41,16 @@ ServerConfig.Audio = {
     Enabled = true,
     PublicUrl = '',      -- where the bridge's videos with sound are served (nginx → /var/lib/opsvoip-bridge/bodycam)
     KeepSilentCopy = false,    -- keep the video-only file as well
+}
+
+-- Voice commands ("xonsight on"/"xonsight off") through the officer's own push-to-talk mic - same OPS Voice
+-- bridge connection as Audio above (requires Audio.Enabled too), using a local/offline speech-to-text model
+-- (no cloud API, no per-use cost, runs on the bridge server's own CPU). Only ever hears the recording officer's
+-- own mic, never bystanders or radio traffic also heard in their channel. Phrases are matched case-insensitively
+-- as a substring of what was heard, so minor misrecognition ("exon sight on") still works; keep them distinct
+-- from each other and from ordinary radio chatter.
+ServerConfig.VoiceCommand = {
+    Enabled = true,
+    OnPhrases = { 'xonsight on', 'xon sight on', 'xon on' },
+    OffPhrases = { 'xonsight off', 'xon sight off', 'xon off' },
 }
