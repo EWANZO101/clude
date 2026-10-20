@@ -10,6 +10,7 @@ version '1.0.0'
 shared_script 'config.lua'
 
 client_scripts {
+    'client/chestcam.lua',   -- optional: render from a chest-clipped camera while recording (Config.ChestCam)
     'client/main.lua',
     'client/vest.lua',       -- the black vest + the camera you can see on it (opslabs-props models)
 }

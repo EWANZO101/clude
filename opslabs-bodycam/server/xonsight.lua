@@ -1,9 +1,13 @@
 -- Xon Sight evidence portal (https://github.com/EWANZO101/xonsight):
---   POST /api/xonsight/evidence        { id, submitterIdentifier, submitterName, caption, videoUrl, createdAt }
---                                      one per recorded part; the portal keeps the link, the video stays with us
---   POST /api/xonsight/recorders/sync  { recorders = [{ id, name, job, startedAt, lastFrame }], syncedAt }
---                                      the whole live roster each time (anyone missing is taken off /live)
--- Both carry the X-XonSight-Key header (XONSIGHT_WEBHOOK_KEY in the portal's .env).
+--   POST /api/xonsight/evidence          { id, submitterIdentifier, submitterName, caption, videoUrl, createdAt,
+--                                           deviceSerial }
+--                                        one per recorded part; the portal keeps the link, the video stays with us
+--   POST /api/xonsight/recorders/sync    { recorders = [{ id, name, job, status, startedAt, lastFrame }], syncedAt }
+--                                        the whole live roster each time (anyone missing is taken off /live)
+--   POST /api/xonsight/alerts            { recorderId, recorderName, type, message }
+--                                        emergency trigger banner on the portal's Live page - see AlertTriggers
+--                                        below; extension endpoint, not guaranteed on every Xon Sight deployment
+-- All three carry the X-XonSight-Key header (XONSIGHT_WEBHOOK_KEY in the portal's .env).
 
 XonSight = {}
 
@@ -32,6 +36,7 @@ function XonSight.SendEvidence(rec, cb)
         caption = caption:sub(1, 255),
         videoUrl = rec.url,
         createdAt = iso(rec.startedAt),
+        deviceSerial = rec.serial,     -- already computed per-officer (serialFor() in server/main.lua)
     }, function(status, text)
         local ok = status >= 200 and status < 300
         if not ok then
@@ -39,6 +44,29 @@ function XonSight.SendEvidence(rec, cb)
                 status == 401 and ': the key in config_server.lua does not match XONSIGHT_WEBHOOK_KEY' or ''))
         end
         if cb then cb(ok, status) end
+    end)
+end
+
+-- alerts (emergency trigger banner) ---------------------------------------------------------------------------------
+
+--- reason (session.trigger, e.g. 'shots fired') -> { type, message } sent to the portal; anything not listed here
+--- never fires an alert (routine triggers like 'lights and siren' would just be noise on the Live page)
+local alertTriggers = cfg.AlertTriggers or {
+    ['shots fired'] = { type = 'weapon_fired', message = 'Shots fired' },
+    ['weapon drawn'] = { type = 'weapon_drawn', message = 'Weapon drawn' },
+}
+
+--- fire-and-forget; call right when a session starts (see server/main.lua)
+function XonSight.SendAlert(recorderId, recorderName, trigger)
+    local mapped = alertTriggers[trigger]
+    if not mapped then return end
+    post('/api/xonsight/alerts', {
+        recorderId = recorderId,
+        recorderName = recorderName,
+        type = mapped.type,
+        message = mapped.message,
+    }, function(status)
+        if status == 401 then print('^3[opslabs-bodycam] Xon Sight refused the alert (401): check the key in config_server.lua^7') end
     end)
 end
 

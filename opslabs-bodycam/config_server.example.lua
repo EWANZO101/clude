@@ -10,6 +10,13 @@ ServerConfig.XonSight = {
     -- (e.g. the XonSight resource) sends to the same portal.
     EvidenceIdOffset = 1000000,
     ServerTag = '',              -- put in front of every caption when several servers share one portal, e.g. 'S1'
+    -- trigger (session.trigger, e.g. the auto-start reasons below) -> alert sent to the portal's Live page
+    -- (POST /api/xonsight/alerts - an extension endpoint, not every Xon Sight deployment has it). Anything not
+    -- listed here never fires an alert - keep it short, or routine triggers like sirens become noise on /live.
+    -- AlertTriggers = {
+    --     ['shots fired']  = { type = 'weapon_fired', message = 'Shots fired' },
+    --     ['weapon drawn'] = { type = 'weapon_drawn', message = 'Weapon drawn' },
+    -- },
 }
 
 -- Where the videos are kept. The portal only stores a link, so the files must be reachable from the internet over

@@ -60,6 +60,7 @@ local function start(trigger)
     recording, session = true, r.session
     SendNUIMessage({ action = 'start', session = session })
     Config.Notify(trigger == 'manual' and 'Bodycam recording' or ('Bodycam recording (auto: ' .. trigger .. ')'), 'success')
+    if ChestCam then ChestCam.Start() end
     changed()
     return true
 end
@@ -71,6 +72,7 @@ local function stop(reason)
     if reason == 'manual' then lastManualStop = GetGameTimer() end
     CreateThread(function() request('stop', { reason = reason or 'manual' }) end)
     Config.Notify(reason == 'manual' and 'Bodycam stopped — footage is uploading' or ('Bodycam stopped: ' .. tostring(reason)), 'inform')
+    if ChestCam then ChestCam.Stop() end
     session = nil
     changed()
     return true

@@ -19,8 +19,13 @@ server roster ──POST /api/xonsight/recorders/sync──▶ Xon Sight /live  
 - Long recordings are split into parts (`Config.Video.SegmentSeconds`, default 3 min). Each part is its own
   evidence item, captioned *officer · job · street · part N · time · trigger · note*.
 - The picture is exactly what the player sees (their current view, the game's own HUD / minimap included, NUI screens
-  like the phone not). The game draws one view per frame, so there's no separate chest camera to record;
-  `Config.Video.FirstPerson = true` holds the player in first person while recording instead.
+  like the phone not). The game draws one view per frame, so there's no separate chest camera to record by default;
+  `Config.Video.FirstPerson = true` holds the player in first person while recording instead. For an actual
+  chest-mounted perspective, see **Chest cam** below.
+- Shots fired / weapon drawn also raise an alert banner on the portal's Live page (`Config.Auto` + `XonSight.AlertTriggers`
+  in `server/xonsight.lua`) - lights-and-siren deliberately doesn't, or every routine traffic stop would flash red.
+- The live roster pushes to Xon Sight immediately when someone starts/stops recording, not just on the periodic
+  `SyncSeconds` timer - the Live page reflects a new recorder within about a second, not up to `SyncSeconds` later.
 - **Voice** (the officer's mic, people talking near them, radio) comes from the OPS Voice bridge — see below. Game
   sound (shots, sirens, engines) can't be recorded: FiveM gives neither the NUI nor the server the game's audio.
 
@@ -74,6 +79,21 @@ camera within 20 seconds. Callsigns come from QBCore / Qbox metadata, or from an
 - **Auto start** (`Config.Auto`): firing a weapon (taser too), driving with lights / siren, optionally aiming.
   It never stops by itself; a manual stop holds auto start off for `Cooldown` seconds.
 - A beep on start / stop and a double beep every 2 minutes while recording, like the real thing.
+
+## Chest cam (optional, `Config.ChestCam`)
+
+By default the recording is whatever the player is looking at - free mouse-look included, same as their own screen.
+Turn `Config.ChestCam.Enabled` on and recording instead renders from a scripted camera clipped to the chest
+(`AttachCamToPedBone`, bone/offsets from `Your-Spy/spy-bodycam`'s self-watch camera), following the ped's **heading**
+every frame rather than the camera's aim - a true body-worn-camera perspective, not a first-person one.
+
+**The trade-off is real, not a bug:** there's no way with these natives to render a second camera to an off-screen
+texture while keeping the player's own free-look view - the same screen the NUI captures is what the officer sees.
+So while chest cam is active, looking around means turning the character; aiming down sights and strafe-looking
+independent of where you're walking stops working the way it normally does. That's why it defaults to `false` -
+try it with a few officers before turning it on server-wide. `Config.ChestCam.Shake` adds a gentle handheld wobble
+(off by default; spy-bodycam's own default is much stronger, tuned for passive watching rather than footage you
+still need to review afterward).
 
 ## Voice (OPS Voice bridge)
 
@@ -131,6 +151,9 @@ Client: `IsRecording()`, `GetState()`, `Start(reason)`, `Stop(reason)`, `Toggle(
 
 ## Notes
 
+- The per-officer serial burned into the overlay (`serialFor()` in `server/main.lua`) now also reaches the portal as
+  `deviceSerial` on the evidence webhook, filling in the Metadata tab's "Device serial" field automatically - it only
+  ever sets a non-blank value, so a manual correction in the portal is never overwritten by a later retry resend.
 - Evidence ids start at `XonSight.EvidenceIdOffset` (1 000 000) so they never collide with another source on the
   same portal. The portal's live roster is replaced on every sync, so **one game server per portal** for `/live`.
 - Recording costs some client FPS (one extra draw + VP8 encode at 960×540, 20 fps). Lower `Config.Video` on

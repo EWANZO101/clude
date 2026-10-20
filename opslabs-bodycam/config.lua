@@ -50,6 +50,21 @@ Config.Video = {
     OverlayTitle = 'OPS BODY CAM',
 }
 
+-- Optional: render from a camera clipped to the chest instead of the player's free-look view while recording, so the
+-- footage is a true body-worn-camera perspective (follows body heading, not mouse-aim) - technique and bone/offsets
+-- from Your-Spy/spy-bodycam's self-watch camera. Trade-off, by design: while this is active the officer can't look
+-- around independent of which way they're facing - that's a real chest cam doing that, not a bug. Off by default:
+-- it changes how recording *feels to play through* (aiming/looking), not just how the footage looks, so try it
+-- before turning it on for everyone.
+Config.ChestCam = {
+    Enabled = false,
+    Fov = 100.0,
+    Offset = { x = 0.1, y = 0.025, z = 0.1 },           -- on foot, bone-local (spy-bodycam's values)
+    VehicleOffset = { x = 0.1, y = 0.25, z = -0.1 },    -- seated in a vehicle
+    Shake = false,              -- subtle handheld wobble (ShakeCam 'HAND_SHAKE')
+    ShakeAmplitude = 0.3,       -- spy-bodycam uses 2.0 (quite strong); gentler here so footage stays reviewable
+}
+
 Config.Hud = {
     Enabled = true,             -- the small "● REC 00:00" badge on screen
     Position = 'top-right',     -- 'top-right', 'top-left', 'bottom-right', 'bottom-left'
