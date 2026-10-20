@@ -100,11 +100,11 @@
 
     <section class="relative pt-10 pb-16 text-center fade-up overflow-hidden">
       <!-- Decorative background: a bodycam device on the left, the OPS Phone
-           app UI on the right. Pure line-art at low opacity so it reads as
-           atmosphere, not content - the headline stays the only thing a
-           reader actually has to look at. Hidden below lg since there's no
-           room for it without crowding the text. -->
-      <svg viewBox="0 0 220 260" class="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-44 h-auto text-slate-600" style="opacity:.14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+           app UI on the right. Line-art kept behind the headline (z-0) but
+           bright enough to actually read at a glance. Hidden below xl -
+           there isn't enough side margin next to the centered copy on
+           narrower screens to avoid overlapping it. -->
+      <svg viewBox="0 0 220 260" class="hidden xl:block absolute left-4 top-1/2 -translate-y-1/2 w-56 h-auto text-slate-400" style="opacity:.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="55" y="10" width="20" height="14" rx="3" />
         <rect x="30" y="24" width="160" height="150" rx="22" />
         <circle cx="110" cy="92" r="38" />
@@ -116,7 +116,7 @@
         <circle cx="105" cy="160" r="3" fill="currentColor" stroke="none" />
         <path d="M30 200 Q110 230 190 200" />
       </svg>
-      <svg viewBox="0 0 220 320" class="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-40 h-auto text-slate-600" style="opacity:.14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 220 320" class="hidden xl:block absolute right-4 top-1/2 -translate-y-1/2 w-52 h-auto text-slate-400" style="opacity:.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="20" y="10" width="180" height="300" rx="26" />
         <line x1="85" y1="28" x2="135" y2="28" stroke-width="4" />
         <!-- status bar -->
