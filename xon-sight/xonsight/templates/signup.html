@@ -1,0 +1,69 @@
+{% extends "guest_base.html" %}
+{% block title %}Sign up · Xon Sight{% endblock %}
+{% block content %}
+<div class="w-full max-w-sm">
+  <div class="rounded-2xl border border-border bg-panel p-6 shadow-xl shadow-black/20">
+    {% if pending %}
+      <h1 class="text-xl font-semibold text-white mb-1">Request sent</h1>
+      <p class="text-sm text-slate-400">
+        Your account was created but needs admin approval before you can log in. Check back once an admin has
+        approved it.
+      </p>
+      <a href="{{ url_for('auth.login') }}" class="inline-block mt-5 text-sm text-accent hover:underline">Back to login</a>
+    {% elif settings.signup_mode == "invite" and not settings.invite_code %}
+      <h1 class="text-xl font-semibold text-white mb-1">Sign-ups are closed</h1>
+      <p class="text-sm text-slate-400">This server hasn't set an invite code yet. Ask an admin for access.</p>
+      <a href="{{ url_for('auth.login') }}" class="inline-block mt-5 text-sm text-accent hover:underline">Back to login</a>
+    {% else %}
+      <h1 class="text-xl font-semibold text-white mb-1">Create an account</h1>
+      <p class="text-sm text-slate-500 mb-6">
+        {% if settings.signup_mode == "approval" %}
+          An admin will need to approve your account before you can log in.
+        {% elif settings.signup_mode == "invite" %}
+          Requires an invite code from your server's admin.
+        {% else %}
+          Join the evidence portal.
+        {% endif %}
+      </p>
+
+      {% if error %}
+      <p class="text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 text-sm mb-4">{{ error }}</p>
+      {% endif %}
+
+      <form method="post" class="space-y-4">
+        {% from "_macros.html" import csrf_field %}{{ csrf_field() }}
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Username</label>
+          <input name="username" type="text" required minlength="3" autofocus
+            class="w-full bg-base border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Password</label>
+          <input name="password" type="password" required minlength="8"
+            class="w-full bg-base border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Confirm password</label>
+          <input name="confirm" type="password" required minlength="8"
+            class="w-full bg-base border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40">
+        </div>
+        {% if settings.signup_mode == "invite" %}
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Invite code</label>
+          <input name="invite_code" type="text" required
+            class="w-full bg-base border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40">
+        </div>
+        {% endif %}
+        <button type="submit"
+          class="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-accent to-accent2 text-base font-medium text-sm hover:opacity-90">
+          Create account
+        </button>
+      </form>
+
+      <p class="text-xs text-slate-500 mt-5 text-center">
+        Already have an account? <a href="{{ url_for('auth.login') }}" class="text-accent hover:underline">Log in</a>
+      </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

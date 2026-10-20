@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, empty_state %}
+{% block title %}Dashboard · Xon Sight{% endblock %}
+{% block content %}
+<div class="mb-8">
+  <h1 class="text-2xl font-semibold text-white tracking-tight">Welcome back, {{ current_user.username }}</h1>
+  <p class="text-sm text-slate-500 mt-1">Evidence submitted from in-game bodycams, at a glance.</p>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+  <div class="tac-corners rounded-2xl border border-border bg-panel p-5 relative overflow-hidden">
+    <div class="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-accent/10 blur-xl"></div>
+    <div class="relative flex items-center justify-between">
+      <div class="text-xs font-mono uppercase tracking-wide text-slate-500">Total evidence</div>
+      {{ icon("evidence", "h-4 w-4 text-accent") }}
+    </div>
+    <div id="stat-total-evidence" class="relative text-3xl font-mono font-semibold text-white mt-2">{{ total_evidence }}</div>
+  </div>
+
+  <div class="rounded-2xl border border-border bg-panel p-5 relative overflow-hidden">
+    <div class="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-accent2/10 blur-xl"></div>
+    <div class="relative flex items-center justify-between">
+      <div class="text-xs font-mono uppercase tracking-wide text-slate-500">Active recorders</div>
+      {{ icon("live", "h-4 w-4 text-accent2") }}
+    </div>
+    <div class="relative text-3xl font-mono font-semibold text-white mt-2">{{ active_recorders }}</div>
+  </div>
+
+  <a href="{{ url_for('views.live') }}" class="rounded-2xl border border-border bg-panel p-5 hover:border-accent/50 transition group">
+    <div class="flex items-center justify-between">
+      <div class="text-xs font-mono uppercase tracking-wide text-slate-500">Live view</div>
+      {{ icon("chevron-right", "h-4 w-4 text-slate-600 group-hover:text-accent group-hover:translate-x-0.5 transition") }}
+    </div>
+    <div class="text-sm text-accent mt-2 font-medium">Open live recorders</div>
+  </a>
+
+  {% if not g.tenant %}
+  <a href="{{ url_for('views.community_list') }}" class="rounded-2xl border border-border bg-panel p-5 hover:border-accent/50 transition group">
+    <div class="flex items-center justify-between">
+      <div class="text-xs font-mono uppercase tracking-wide text-slate-500">Community</div>
+      {{ icon("chevron-right", "h-4 w-4 text-slate-600 group-hover:text-accent group-hover:translate-x-0.5 transition") }}
+    </div>
+    <div class="text-sm text-accent mt-2 font-medium">Manage requests</div>
+  </a>
+  {% endif %}
+</div>
+
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-lg font-medium text-white">Recent submissions</h2>
+  <a href="{{ url_for('views.evidence_list') }}" class="text-xs text-slate-500 hover:text-accent flex items-center gap-1">
+    View all {{ icon("chevron-right", "h-3.5 w-3.5") }}
+  </a>
+</div>
+<button id="new-evidence-banner" type="button" hidden
+  class="w-full mb-4 flex items-center justify-center gap-2 rounded-xl border border-accent/40 bg-accent/10 text-accent text-xs font-medium px-4 py-2.5 hover:bg-accent/15 transition">
+  {{ icon("evidence", "h-3.5 w-3.5") }}
+  <span id="new-evidence-count"></span> new since you opened this page &middot; click to refresh
+</button>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for item in recent %}
+    {% include "_evidence_card.html" %}
+  {% else %}
+    <div class="col-span-full">{{ empty_state("No evidence submitted yet - it'll show up here as soon as a bodycam uploads something.", "evidence") }}</div>
+  {% endfor %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  (function () {
+    let newCount = 0;
+    const banner = document.getElementById("new-evidence-banner");
+    const countEl = document.getElementById("new-evidence-count");
+    const totalEl = document.getElementById("stat-total-evidence");
+    const baseTotal = {{ total_evidence|int }};
+    banner.addEventListener("click", () => window.location.reload());
+    window.addEventListener("xonsight:evidence.created", () => {
+      newCount += 1;
+      countEl.textContent = newCount;
+      banner.hidden = false;
+      if (totalEl) totalEl.textContent = baseTotal + newCount;
+    });
+  })();
+</script>
+{% endblock %}

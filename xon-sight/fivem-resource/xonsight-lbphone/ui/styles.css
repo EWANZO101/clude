@@ -1,0 +1,102 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  visibility: hidden;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+}
+
+.topbar {
+  flex-shrink: 0;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.9rem;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0px, rgba(255, 255, 255, 0.03) 1px, transparent 1px, transparent 6px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 0px, rgba(255, 255, 255, 0.03) 1px, transparent 1px, transparent 6px),
+    var(--topbar-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 5px rgba(220, 38, 38, 0.8);
+  flex-shrink: 0;
+}
+
+.brand {
+  flex: 1;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+}
+
+.brand .accent {
+  color: var(--accent);
+}
+
+#reload {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#reload:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.screen {
+  position: relative;
+  flex: 1;
+  background: var(--bg);
+}
+
+.screen iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.screen-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  z-index: 0;
+}

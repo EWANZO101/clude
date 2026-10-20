@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf_field %}
+{% block title %}Users · Xon Sight{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold text-white tracking-tight mb-1 flex items-center gap-2">
+  {{ icon("users", "h-5 w-5 text-accent") }} Users
+</h1>
+<p class="text-sm text-slate-500 mb-6">Approve pending signups, promote/demote roles, or disable an account.</p>
+
+<div class="tac-corners rounded-2xl border border-border bg-panel overflow-hidden shadow-lg shadow-black/10">
+  <table class="w-full text-sm">
+    <thead class="bg-black/20 text-left text-xs font-mono uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-4 py-3">Username</th>
+        <th class="px-4 py-3">Role</th>
+        <th class="px-4 py-3">Status</th>
+        <th class="px-4 py-3">Joined</th>
+        <th class="px-4 py-3">Last login</th>
+        <th class="px-4 py-3 text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-border">
+      {% for user in users %}
+      <tr class="hover:bg-white/[0.02] transition">
+        <td class="px-4 py-3 text-slate-200 font-medium">
+          <span class="inline-flex items-center gap-2">
+            <span class="h-6 w-6 rounded-full bg-accent/15 border border-accent/30 text-accent text-[10px] font-semibold flex items-center justify-center">{{ user.username[:1].upper() }}</span>
+            {{ user.username }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-slate-400">
+          <span class="inline-flex items-center gap-1">{{ icon("shield", "h-3 w-3") if user.role == "admin" }} {{ user.role }}</span>
+        </td>
+        <td class="px-4 py-3">
+          {% if user.is_active_account %}
+          <span class="text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full border border-accent2/40 text-accent2">active</span>
+          {% else %}
+          <span class="text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full border border-amber-500/40 text-amber-400">pending/disabled</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-slate-500 text-xs font-mono">{{ user.created_at.strftime("%Y-%m-%d") }}</td>
+        <td class="px-4 py-3 text-slate-500 text-xs font-mono">{{ user.last_login_at.strftime("%Y-%m-%d %H:%M") if user.last_login_at else "never" }}</td>
+        <td class="px-4 py-3">
+          {% if user.id != current_user.id %}
+          <div class="flex items-center justify-end gap-2 text-xs">
+            {% if not user.is_active_account %}
+            <form action="{{ url_for('admin.approve_user', user_id=user.id) }}" method="post">
+              {{ csrf_field() }}
+              <button type="submit" class="px-2.5 py-1 rounded-lg border border-accent2/40 text-accent2 hover:bg-accent2/10">Approve</button>
+            </form>
+            {% else %}
+            <form action="{{ url_for('admin.toggle_active', user_id=user.id) }}" method="post">
+              {{ csrf_field() }}
+              <button type="submit" class="px-2.5 py-1 rounded-lg border border-border hover:border-red-400/50 hover:text-red-400">Disable</button>
+            </form>
+            {% endif %}
+            <form action="{{ url_for('admin.change_role', user_id=user.id) }}" method="post">
+              {{ csrf_field() }}
+              <input type="hidden" name="role" value="{{ 'officer' if user.role == 'admin' else 'admin' }}">
+              <button type="submit" class="px-2.5 py-1 rounded-lg border border-border hover:border-accent/60">
+                {{ "Demote" if user.role == "admin" else "Promote" }}
+              </button>
+            </form>
+          </div>
+          {% else %}
+          <span class="text-slate-600 text-xs block text-right">you</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

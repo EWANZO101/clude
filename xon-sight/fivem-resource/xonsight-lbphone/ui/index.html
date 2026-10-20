@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Xon Sight</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="colors.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="app" id="app">
+    <div class="topbar">
+      <span class="dot"></span>
+      <span class="brand">XON<span class="accent">SIGHT</span></span>
+      <button id="reload" title="Reload">&#8635;</button>
+    </div>
+    <div class="screen">
+      <iframe id="frame" src="about:blank"></iframe>
+      <div class="screen-empty" id="screenEmpty">Loading&hellip;</div>
+    </div>
+  </div>
+
+  <script>
+    // lb-phone only guarantees fetchNui/onSettingsChange/getSettings etc.
+    // exist once it posts this message - script.js uses all of them.
+    window.addEventListener('message', (e) => {
+      if (e.data !== 'componentsLoaded') return;
+      const script = document.createElement('script');
+      script.src = 'script.js';
+      document.body.appendChild(script);
+    });
+  </script>
+</body>
+</html>

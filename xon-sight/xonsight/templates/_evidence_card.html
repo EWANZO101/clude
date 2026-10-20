@@ -1,0 +1,24 @@
+{% from "_macros.html" import icon %}
+<a href="{{ url_for('views.evidence_detail', evidence_id=item.id) }}"
+   class="group rounded-2xl border border-border bg-panel overflow-hidden hover:border-accent/50 hover:-translate-y-0.5 transition shadow-sm hover:shadow-lg hover:shadow-black/30">
+  <div class="relative aspect-video bg-black/40 overflow-hidden">
+    <video src="{{ item.video_url }}" class="evidence-thumb w-full h-full object-cover" muted preload="metadata"></video>
+    <div class="evidence-thumb-error hidden absolute inset-0 flex-col items-center justify-center gap-1.5 bg-black/60 text-center px-2">
+      {{ icon("alert-triangle", "h-5 w-5 text-slate-500") }}
+      <span class="text-[10px] text-slate-500">Video unavailable</span>
+    </div>
+    <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+      <span class="h-9 w-9 rounded-full bg-black/60 backdrop-blur border border-white/20 flex items-center justify-center">
+        {{ icon("evidence", "h-4 w-4 text-white") }}
+      </span>
+    </div>
+  </div>
+  <div class="p-4">
+    <div class="text-sm font-medium text-white truncate">{{ item.submitter_name or "Unknown officer" }}</div>
+    <p class="text-xs text-slate-400 mt-1 line-clamp-2">{{ item.caption or "No caption provided." }}</p>
+    <div class="flex items-center gap-1.5 text-[11px] font-mono text-slate-500 mt-3">
+      {{ icon("clock", "h-3 w-3") }} {{ item.created_at.strftime("%Y-%m-%d %H:%M UTC") }}
+    </div>
+  </div>
+</a>
