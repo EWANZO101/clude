@@ -33,25 +33,33 @@
     body {
       background-color: #09090a;
       background-image:
-        repeating-linear-gradient(45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
-        repeating-linear-gradient(-45deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 7px),
-        radial-gradient(900px 500px at 15% -10%, rgba(220,38,38,0.07), transparent 60%),
-        radial-gradient(900px 500px at 110% 10%, rgba(255,255,255,0.03), transparent 60%);
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 1px, transparent 1px, transparent 9px),
+        repeating-linear-gradient(-45deg, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 1px, transparent 1px, transparent 9px),
+        radial-gradient(900px 500px at 15% -10%, rgba(220,38,38,0.05), transparent 60%),
+        radial-gradient(900px 500px at 110% 10%, rgba(255,255,255,0.018), transparent 60%);
       min-height: 100vh;
     }
     ::-webkit-scrollbar { width: 10px; }
     ::-webkit-scrollbar-thumb { background: #2c2c30; }
     .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl { border-radius: 2px !important; }
+    .card-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #6b7280; }
+    .tac-corners { position: relative; }
+    .tac-corners::before, .tac-corners::after {
+      content: ""; position: absolute; width: 9px; height: 9px; pointer-events: none; opacity: 0.55;
+      border-color: #9aa1ab; border-style: solid; border-width: 0;
+    }
+    .tac-corners::before { top: 2px; left: 2px; border-top-width: 2px; border-left-width: 2px; }
+    .tac-corners::after { bottom: 2px; right: 2px; border-bottom-width: 2px; border-right-width: 2px; }
   </style>
 </head>
 <body class="min-h-screen bg-base text-slate-200 font-sans flex flex-col">
   {% from "_macros.html" import brand_mark %}
-  <header class="px-6 py-5">
+  <header class="px-6 sm:px-8 py-6">
     <a href="{{ url_for('site.welcome') }}" class="inline-flex items-center gap-2.5">
       {{ brand_mark() }}
     </a>
   </header>
-  <main class="flex-1 flex items-center justify-center px-4 pb-16">
+  <main class="flex-1 flex items-center justify-center px-4 pb-20">
     {% block content %}{% endblock %}
   </main>
   {% block scripts %}{% endblock %}
