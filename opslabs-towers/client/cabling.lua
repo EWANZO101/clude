@@ -209,13 +209,19 @@ FIBRE_KIT[ONT_MODEL] = true
 local PL = Config.PhoneLine or {}
 local COPPER_KIT = setOf(PL.Exchange)
 for _, list in ipairs({ PL.PassThrough, PL.Sockets }) do for k in pairs(setOf(list)) do COPPER_KIT[k] = true end end
+-- underground ducting: chamber joints / risers / footway boxes any cable kind can drop down a pipe and terminate at
+-- (dig a chamber, pull cable in from above ground through a riser, splice on at a joint placed inside) — not just fibre's own joints
+local UG_DUCT = setOf({ 'opslabs_ucbt', 'opslabs_track_joint', 'opslabs_base_node', 'opslabs_ug_riser', 'opslabs_ug_riser_flush',
+    'opslabs_footway_box', 'opslabs_chamber_modular', 'opslabs_manhole' })
+for k in pairs(UG_DUCT) do FIBRE_KIT[k] = true COPPER_KIT[k] = true end
 local function connectable(kind, model)
     if kind == 'fibre' then return FIBRE_KIT[model] == true end
     if kind == 'copper' then return COPPER_KIT[model] == true end
-    -- CAT6: the ONT's LAN port, a laptop, CCTV cameras (PoE) and recorders (NVR / DVR)
+    -- CAT6: the ONT's LAN port, a laptop, CCTV cameras (PoE), recorders (NVR / DVR) and any underground duct/chamber joint
     local CV = Config.Cctv or {}
     if kind == 'cable' and Config.DataCentre and model == Config.DataCentre.Rack then return true end   -- the rack's switch uplink
-    return kind == 'cable' and (model == ONT_MODEL or LAPTOPS[model] == true or ((CV.Cameras or {})[model] ~= nil and (CV.Cameras[model].kind == 'ip' or CV.Cameras[model].kind == 'analog')) or (CV.Recorders or {})[model] ~= nil)
+    return kind == 'cable' and (model == ONT_MODEL or LAPTOPS[model] == true or UG_DUCT[model] == true
+        or ((CV.Cameras or {})[model] ~= nil and (CV.Cameras[model].kind == 'ip' or CV.Cameras[model].kind == 'analog')) or (CV.Recorders or {})[model] ~= nil)
 end
 local function fixtureLabel(id)
     local f = id and data.fixtures[id]

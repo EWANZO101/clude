@@ -33,7 +33,7 @@ end
 
 local function progress(label, secs)
     busy = true
-    ClimbPaused = PoleClimb ~= nil
+    ClimbPaused = PoleClimb ~= nil or LadderClimb ~= nil   -- "Pre-use check" is reachable from a ladder too, not just a pole
     local ok = lib.progressBar({ duration = math.floor(secs * 1000), label = label, canCancel = true, disable = { move = true, combat = true, car = true } })
     ClimbPaused = false
     busy = false

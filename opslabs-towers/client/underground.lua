@@ -384,7 +384,11 @@ local function digStart(ped)
                 local r = lib.callback.await('opslabs-towers:fixture:save', false, { model = TEE, x = f.x, y = f.y, z = f.z, heading = heading })
                 if not (r and r.ok) then return nil, (r and r.error) or 'Could not break out the wall' end
                 local t = { model = TEE, x = f.x, y = f.y, z = f.z, heading = heading }
-                if not awaitPiece(TEE, t, 6000) then return nil, 'The new section didn\'t appear — try again' end
+                if not awaitPiece(TEE, t, 6000) then
+                    -- it never rendered (lag/hitch) — undo the new TEE so it doesn't sit there overlapping the old section
+                    lib.callback.await('opslabs-towers:fixture:delete', false, r.fixture.id)
+                    return nil, 'The new section didn\'t appear — try again'
+                end
                 lib.callback.await('opslabs-towers:fixture:delete', false, f.id)
                 local ox, oy = toWorld(t, 1.2, 0)
                 local dx, dy = dirOf(heading, 1, 0)

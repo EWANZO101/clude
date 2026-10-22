@@ -38,28 +38,10 @@ local function nearest()
     return best
 end
 
-local function bullet(t)
-    local out = {}
-    for i, s in ipairs(t or {}) do out[#out + 1] = ('%d. %s'):format(i, s) end
-    return table.concat(out, '  \n')
-end
-
---- diagnose → show what's wrong and how to fix it → do the repair
-local function repair(f)
-    if working then return end
+--- the actual repair: harness check, progress bar, tell the server. `working` is re-asserted here regardless of
+--- how the fix-steps menu closed, so there's never a window where a second repair can be started underneath it.
+local function doRepair(full)
     working = true
-    local d = lib.callback.await('opslabs-towers:faults:diagnose', false, f.id)
-    if not d or not d.ok then
-        working = false
-        return lib.notify({ type = 'error', description = (d and d.error) or 'Could not reach the fault' })
-    end
-    local full = d.fault
-    local md = ('**%s** · %s  \n%s\n\n**Diagnosis**  \n%s\n\n**Fix**  \n%s\n\n**Tools:** %s%s'):format(full.label, full.location or full.asset.label,
-        table.concat(full.symptoms or {}, ' · '), full.diagnosis or '', bullet(full.fix_steps), table.concat(full.tools or {}, ', '),
-        full.at_height and '\n\n⚠ Work at height: be up the pole with your harness clipped on.' or '')
-    local ok = lib.alertDialog({ header = ('Fault #%d'):format(full.id), content = md, centered = true, cancel = true, size = 'lg',
-        labels = { confirm = 'Start repair', cancel = 'Not now' } }) == 'confirm'
-    if not ok then working = false return end
     if full.at_height and CF.RequireHarness ~= false and not (HarnessClipped and HarnessClipped(full.pole_id)) then
         working = false
         return lib.notify({ type = 'error', description = 'Clip your harness on to this pole first (' .. (HarnessKeyLabel and HarnessKeyLabel() or 'J') .. ')' })
@@ -81,6 +63,46 @@ local function repair(f)
         end
     end
     working = false
+end
+
+--- step-by-step: diagnosis up top, tick each fix step off as you do it (just your own checklist — there's no way
+--- to auto-verify flavour-text steps), then "Start repair" when you're ready. Mirrors coach.lua's guideMenu().
+local function fixStepsMenu(full, checked)
+    local options = {
+        { title = full.label, description = (full.location or (full.asset and full.asset.label) or '') .. (full.symptoms and #full.symptoms > 0 and (' · ' .. table.concat(full.symptoms, ' · ')) or ''),
+            icon = 'triangle-exclamation', iconColor = SEV_HEX[full.severity] or '#8e8e93', readOnly = true },
+    }
+    if full.diagnosis and full.diagnosis ~= '' then
+        options[#options + 1] = { title = 'Diagnosis', description = full.diagnosis, icon = 'stethoscope', iconColor = '#636366', readOnly = true }
+    end
+    for i, step in ipairs(full.fix_steps or {}) do
+        options[#options + 1] = { title = ('%d. %s'):format(i, step), icon = checked[i] and 'square-check' or 'square',
+            iconColor = checked[i] and '#30d158' or '#8e8e93', onSelect = function() checked[i] = not checked[i] fixStepsMenu(full, checked) end }
+    end
+    if full.tools and #full.tools > 0 then
+        options[#options + 1] = { title = 'Tools', description = table.concat(full.tools, ', '), icon = 'toolbox', iconColor = '#636366', readOnly = true }
+    end
+    if full.at_height then
+        options[#options + 1] = { title = 'Work at height', description = 'Be up the pole with your harness clipped on', icon = 'person-falling', iconColor = '#ff9500', readOnly = true }
+    end
+    options[#options + 1] = { title = 'Start repair', icon = 'screwdriver-wrench', iconColor = '#0a84ff', onSelect = function() doRepair(full) end }
+    options[#options + 1] = { title = 'Not now', icon = 'xmark', onSelect = function() working = false end }
+    if PoleClimb or LadderClimb then ForceClassicMenus = true ClimbPaused = true end
+    lib.registerContext({ id = 'fault_fix', root = true, title = ('Fault #%d'):format(full.id), options = options,
+        onExit = function() ClimbPaused = false working = false end })
+    lib.showContext('fault_fix')
+end
+
+--- diagnose → step through the fix → do the repair
+local function repair(f)
+    if working then return end
+    working = true
+    local d = lib.callback.await('opslabs-towers:faults:diagnose', false, f.id)
+    if not d or not d.ok then
+        working = false
+        return lib.notify({ type = 'error', description = (d and d.error) or 'Could not reach the fault' })
+    end
+    fixStepsMenu(d.fault, {})
 end
 
 --- client/target.lua: is there a fault here this player can repair?

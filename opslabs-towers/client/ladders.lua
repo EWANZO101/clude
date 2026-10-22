@@ -495,9 +495,15 @@ local function ladderTopNear(pos)
 end
 
 local function climb(l, startS)
+    if not lib.callback.await('opslabs-towers:ladder:claim', false, l.id) then
+        lib.notify({ type = 'error', description = 'Someone is already on this ladder' })
+        return
+    end
     local ped = PlayerPedId()
     local haveAnim = ClimbAnims.load('ladder', startS or 0.0)
     climbingLadder = l.id
+    LadderClimb = true   -- exposed for other scripts (coach.lua) the same way poles.lua exposes PoleClimb
+    ForceClassicMenus = true   -- on a ladder: always the small menus (the big console panel steals focus mid-climb)
     if Coach then Coach('climb_ladder') end
     FreezeEntityPosition(ped, true)
     SetEntityCollision(ped, false, false)
@@ -525,7 +531,7 @@ local function climb(l, startS)
             s = s - 1.6 * dt
             state = 'down'
             if s <= 0 then break end
-        elseif menuOpen then
+        elseif menuOpen or ClimbPaused then
             state = 'work'
         else
             local up, down = IsDisabledControlPressed(0, 32) and s < top, IsDisabledControlPressed(0, 33) and s > 0
@@ -582,11 +588,14 @@ local function climb(l, startS)
                 or (not onPole and s >= top - 0.4 and RoofAtTop(cur)) and '   ·   F to step onto the roof' or ''), { 255, 159, 10 }) end
     end
     PlaceHud.release(sf)
+    TriggerServerEvent('opslabs-towers:ladder:release', l.id)
+    if not transfer then ForceClassicMenus = false end   -- transferring onto a pole: ClimbPole sets its own right away
     if transfer then
         -- straight onto the pole at the same height, on the ladder's side
         local cur = ladders[l.id] or l
         local feet = vector3(cur.x, cur.y, cur.z) + axisFor(cur.heading, cur.lean, cur.roll) * s
         climbingLadder = nil
+        LadderClimb = nil
         ClimbAnims.unload(ped)
         return ClimbPole(transfer, feet.z - transfer.z, math.atan(feet.y - transfer.y, feet.x - transfer.x))
     end
@@ -601,6 +610,7 @@ local function climb(l, startS)
         SetEntityCoords(ped, l.x + back.x * 0.9, l.y + back.y * 0.9, l.z + 0.1, false, false, false, false)
     end
     climbingLadder = nil
+    LadderClimb = nil
 end
 
 ---------------------------------------------------------------------------
@@ -670,6 +680,7 @@ AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for id in pairs(spawned) do despawn(id) end
     if climbingLadder then
+        TriggerServerEvent('opslabs-towers:ladder:release', climbingLadder)
         local ped = PlayerPedId()
         ClearPedTasks(ped)
         SetEntityCollision(ped, true, true)
