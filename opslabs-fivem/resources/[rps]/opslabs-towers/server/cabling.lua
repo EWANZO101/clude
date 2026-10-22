@@ -219,6 +219,16 @@ for _, e in ipairs(CC.Equipment or {}) do
     end
 end
 
+-- pole-mounted kit (Config: pole = true): the client only pre-checks for room before showing "Mount:", so two
+-- players can both pass that check and fit kit on top of each other at the same spot — rejected here too
+POLE_KIT = {}
+for _, e in ipairs(CC.Equipment or {}) do
+    if e.pole then
+        POLE_KIT[e.model] = true
+        for _, sz in ipairs(e.sizes or {}) do POLE_KIT[sz.model] = true end
+    end
+end
+
 local function num(v) v = tonumber(v); return v and v == v and math.abs(v) < 100000 and v or nil end
 
 local function cleanPoints(points)
@@ -733,6 +743,13 @@ lib.callback.register('opslabs-towers:fixture:save', function(src, d)
             { f.x, f.y, f.z, f.heading, f.data and json.encode(f.data) or nil, id })
     else
         if not equipmentAllowed(d.model) then return { error = 'unknown equipment' } end
+        if POLE_KIT[d.model] then
+            for _, f in pairs(Cabling.fixtures) do
+                if POLE_KIT[f.model] and math.abs(f.x - x) < 0.35 and math.abs(f.y - y) < 0.35 and math.abs(f.z - z) < 0.5 then
+                    return { error = 'No room — something is already fitted here' }
+                end
+            end
+        end
         -- items mode (opslabs-phone Config.Work.Mode = 'items'): placing kit uses its inventory item
         if GetResourceState('opslabs-phone') == 'started' then
             local okc, allowed, why = pcall(function() return exports['opslabs-phone']:WorkTakeForModel(src, d.model) end)

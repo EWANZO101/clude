@@ -61,6 +61,10 @@ function reply(res, status, body) {
 
 /** the OPS Voice bridge (voicecmd.js) calling back in: an officer said "xonsight on/off" over their own mic. */
 function handleVoiceCommand(req, res, body) {
+    // this HTTP handler runs in the resource's JS runtime, outside guard.lua's Lua-side reach - ask opslabs-license directly
+    let licensed = false;
+    try { licensed = global.exports['opslabs-license'].Allows(GetCurrentResourceName()) === true; } catch (e) { licensed = false; }
+    if (!licensed) return reply(res, 503, { error: 'not licensed' });
     const given = String((req.headers && (req.headers.Authorization || req.headers.authorization)) || '').replace(/^Bearer\s+/, '');
     const keyOk = VOICE_KEY.length >= 24 && given.length === VOICE_KEY.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(VOICE_KEY));
     if (!keyOk) return reply(res, 401, { error: 'unauthorized' });

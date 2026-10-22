@@ -59,6 +59,7 @@ end)
 lib.callback.register('opslabs-towers:ladder:extend', function(src, id, ext)
     local l = Ladders[tonumber(id)]
     if not l then return { error = 'That ladder is gone' } end
+    if l.rider and l.rider ~= src then return { error = 'Someone is climbing this ladder' } end
     if not near(src, l.x, l.y, l.z, 6.0) then return { error = 'too far away' } end
     l.ext = math.max(0.0, math.min(ladderType(l.type).maxExt, num(ext) or l.ext))
     broadcast()
@@ -69,6 +70,7 @@ end)
 lib.callback.register('opslabs-towers:ladder:move', function(src, id, d)
     local l = Ladders[tonumber(id)]
     if not l then return { error = 'That ladder is gone' } end
+    if l.rider and l.rider ~= src then return { error = 'Someone is climbing this ladder' } end
     if type(d) ~= 'table' then return { error = 'bad request' } end
     if not near(src, l.x, l.y, l.z, 8.0) and not near(src, num(d.x) or 0, num(d.y) or 0, num(d.z) or 0, 8.0) then return { error = 'too far away' } end
     local x, y, z, h = num(d.x), num(d.y), num(d.z), num(d.heading)
@@ -85,14 +87,32 @@ end)
 lib.callback.register('opslabs-towers:ladder:remove', function(src, id)
     local l = Ladders[tonumber(id)]
     if not l then return { error = 'That ladder is gone' } end
+    if l.rider and l.rider ~= src then return { error = 'Someone is climbing this ladder' } end
     if not near(src, l.x, l.y, l.z, 6.0) then return { error = 'too far away' } end
     Ladders[l.id] = nil
     broadcast()
     return { ok = true }
 end)
 
+--- whoever is on a ladder claims it, so another player can't retract / move / take it down from under them
+lib.callback.register('opslabs-towers:ladder:claim', function(src, id)
+    local l = Ladders[tonumber(id)]
+    if not l then return false end
+    if l.rider and l.rider ~= src then return false end
+    l.rider = src
+    return true
+end)
+
+RegisterNetEvent('opslabs-towers:ladder:release', function(id)
+    local l = Ladders[tonumber(id)]
+    if l and l.rider == source then l.rider = nil end
+end)
+
 AddEventHandler('playerDropped', function()
     local src, changed = source, false
-    for id, l in pairs(Ladders) do if l.owner == src then Ladders[id] = nil changed = true end end
+    for id, l in pairs(Ladders) do
+        if l.owner == src then Ladders[id] = nil changed = true
+        elseif l.rider == src then l.rider = nil end
+    end
     if changed then broadcast() end
 end)

@@ -217,8 +217,8 @@ end
 
 local QUICK_KEY = (Config.MenuStyle or {}).PoleQuickKey or 20
 local function quickMenu(pole, H, angle, h, onClose, climbDown)
-    ForceClassicMenus = true
-    local function done() ForceClassicMenus = false onClose() end
+    -- ForceClassicMenus is already set for the whole climb (climb(), below) — don't touch it here, only climb() resets it
+    local function done() onClose() end
     local power = (pole.model or ''):find('^opslabs_power_pole') ~= nil
     local options = {
         { title = 'Fit / remove kit here', description = ('At %.1f m'):format(h + 1.0), icon = 'screwdriver-wrench', onSelect = function() poleMenu(pole, H, angle, h, done) end },
@@ -258,6 +258,7 @@ local function climb(pole, startH, startAngle)
     local menuOpen = false
     local still = 0.0                               -- seconds without moving
     climbing = true
+    ForceClassicMenus = true   -- up a pole: always the small menus, whatever style the player picked (the big console panel steals focus mid-climb)
     if Coach then Coach('climb_pole') end
     if HarnessOn and not HarnessOn() then lib.notify({ type = 'warning', description = 'No harness on — put on your combat harness & pole straps (Tool kit) before climbing' })
     elseif HarnessKeyLabel then lib.notify({ type = 'inform', description = ('Clip your harness on to the pole once you are up: %s'):format(HarnessKeyLabel()) }) end

@@ -7,7 +7,10 @@ author 'OpsLab Systems'
 description 'Body worn cameras: records the officer\'s view as video and sends every recording to the Xon Sight evidence portal (live roster on /live). Standalone or ESX, QBCore, Qbox, ox_core, ND.'
 version '1.0.0'
 
-shared_script 'config.lua'
+shared_scripts {
+    '@opslabs-license/guard.lua',     -- OPSHUB: every player action is checked (opslabs-license)
+    'config.lua',
+}
 
 client_scripts {
     'client/chestcam.lua',   -- optional: render from a chest-clipped camera while recording (Config.ChestCam)
@@ -32,3 +35,5 @@ files {
     'html/recorder.js',
     'html/hud.css',
 }
+
+dependency 'opslabs-license'   -- OPSHUB licensing: nothing runs without it

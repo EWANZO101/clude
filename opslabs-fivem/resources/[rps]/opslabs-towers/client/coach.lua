@@ -75,6 +75,30 @@ local TRACKS = {
         },
     },
     {
+        id = 'underground', title = 'Underground fibre run', icon = 'road', color = '#5e5ce6',
+        sub = 'Dig a chamber, lay duct, pull fibre through, bring it up to a pole or cabinet',
+        steps = {
+            { title = 'Dig an underground chamber',
+              how = { '/towers → Buildings & sites → Underground chambers & tunnels', 'Underground chamber — its access hatch opens with [E]' },
+              done = placed('^opslabs_ug_chamber') },
+            { title = 'Climb down and lay the duct run',
+              how = { 'At the open hatch press [F] to climb down', 'Face an open end (or a wall, to branch off) and lay tunnel sections to the next chamber' },
+              done = placed('^opslabs_ug_tunnel') },
+            { title = 'Bring it up with a riser',
+              how = { 'In a chamber or at a tunnel end, fit a riser pipe', 'Goose-neck riser to come up a pole, flush riser to come up inside a cabinet' },
+              done = placed('^opslabs_ug_riser') },
+            { title = 'Fit an underground joint',
+              how = { 'In the chamber, fit a U-CBT (underground joint)', 'This is where the duct fibre splices onward' },
+              done = placed('^opslabs_ucbt') },
+            { title = 'Pull fibre through the duct',
+              how = { 'Pull cable from a drum at one chamber (/towers → OPS Openline → Pull cable)', 'Run it through the tunnel and finish on the U-CBT or the riser' },
+              done = function(e, d) return fibreTo('^opslabs_ucbt')(e, d) or fibreTo('^opslabs_ug_riser')(e, d) end },
+            { title = 'Carry on above ground',
+              how = { 'At the top of the riser, fit a CBT the same as an overhead run', 'Press F7 → Switch guide → “Fibre to a house” to finish at the CSP and ONT' },
+              done = placed('^opslabs_cbt') },
+        },
+    },
+    {
         id = 'basics', title = 'Pole & ladder basics', icon = 'person-arrow-up-from-line', color = '#0a84ff',
         sub = 'Ladder, climbing, fitting kit, cutting and re-fixing cable',
         steps = {
@@ -172,6 +196,12 @@ local function advance(to)
 end
 
 -- menus ---------------------------------------------------------------------------------------------
+--- up a pole or ladder: force the small menu (the big console panel steals focus mid-climb) and pause climbing
+--- movement while the guide is open, the same way faults.lua and harness.lua already do around their own menus
+local function onClimb() return PoleClimb ~= nil or LadderClimb ~= nil end
+local function climbMenuOpen() if onClimb() then ForceClassicMenus = true ClimbPaused = true end end
+local function climbMenuClosed() ClimbPaused = false end
+
 local function chooser()
     local options = {}
     for _, t in ipairs(TRACKS) do
@@ -181,7 +211,8 @@ local function chooser()
     options[#options + 1] = { title = 'Not now', icon = 'xmark', onSelect = function() end }
     options[#options + 1] = { title = 'Don’t offer this again', description = 'F7 still opens it whenever you want', icon = 'bell-slash',
         onSelect = function() SetResourceKvpInt(KVP_NOASK, 1) lib.notify({ description = 'OK — press F7 any time for the pole work guide' }) end }
-    lib.registerContext({ id = 'coach_choose', root = true, title = 'Pole work guide — what are you doing?', options = options })
+    climbMenuOpen()
+    lib.registerContext({ id = 'coach_choose', root = true, title = 'Pole work guide — what are you doing?', options = options, onExit = climbMenuClosed })
     lib.showContext('coach_choose')
 end
 
@@ -203,7 +234,8 @@ local function guideMenu()
         onSelect = function() state.hidden = not state.hidden save() push() end }
     options[#options + 1] = { title = 'Switch guide', icon = 'repeat', onSelect = chooser }
     options[#options + 1] = { title = 'Stop the guide', icon = 'xmark', iconColor = '#ff453a', onSelect = stop }
-    lib.registerContext({ id = 'coach_menu', root = true, title = ('%s · step %d of %d'):format(t.title, math.min(state.step, #t.steps), #t.steps), options = options })
+    climbMenuOpen()
+    lib.registerContext({ id = 'coach_menu', root = true, title = ('%s · step %d of %d'):format(t.title, math.min(state.step, #t.steps), #t.steps), options = options, onExit = climbMenuClosed })
     lib.showContext('coach_menu')
 end
 
@@ -219,7 +251,7 @@ function Coach(event, data)
     data = data or {}
     if not state then
         if not offered and OFFER_ON[event] and GetResourceKvpInt(KVP_NOASK) ~= 1
-            and (event ~= 'fixture' or (data.model or ''):find('pole')) then
+            and (event ~= 'fixture' or (data.model or ''):find('pole') or (data.model or ''):find('^opslabs_ug_')) then
             offered = true
             SendNUIMessage({ action = 'coachOffer', key = 'F7' })
         end
