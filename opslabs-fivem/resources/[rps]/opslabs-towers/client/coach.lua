@@ -3,6 +3,7 @@
 -- Progress is kept per player (KVP), so it carries on after a reconnect.
 
 local CC = Config.Cabling
+local CF = Config.Faults or {}
 local KVP_STATE, KVP_NOASK = 'opslabs_coach_state', 'opslabs_coach_noask'
 
 local function fixtureModel(id)
@@ -123,6 +124,41 @@ local TRACKS = {
         },
     },
     {
+        id = 'grid', title = 'Build the power grid — from scratch', icon = 'industry', color = '#ff9f0a',
+        sub = 'Generation → transmission → substation → feeders → pole transformers',
+        steps = {
+            { title = 'Build a power station (or a wind turbine)',
+              how = { '/towers → San Andreas Power & Light → Generation', 'Gas power station (4 × 120 MW) or wind turbine (3 MW)' },
+              done = placed('^opslabs_grid_station'), alt = placed('^opslabs_grid_wind') },
+            { title = 'Put up a transmission pylon',
+              how = { 'Generation → Transmission → 400 kV lattice pylon', 'Walk a line of them out towards where the substation will go' },
+              done = placed('^opslabs_grid_pylon') },
+            { title = 'Run 400 kV transmission conductor',
+              how = { 'Run power cable → pick 400 kV / transmission', 'From the station’s gantry, over the pylons, into the substation' },
+              done = function(e, d) return e == 'run' and d.kind == 'power' and d.color == 'transmission' end },
+            { title = 'Build a substation',
+              how = { 'Substations → Primary substation 400/11 kV', 'Or an empty/fully-fitted substation building, or an RTU telemetry pole on any building' },
+              done = placed('^opslabs_grid_substation'),
+              alt = function(e, d) return placed('^opslabs_grid_subbuilding')(e, d) or placed('^opslabs_grid_subshell')(e, d) or placed('^opslabs_grid_rtu')(e, d) end },
+            { title = 'Fit out the substation plant',
+              how = { 'Substation plant category, placed inside', 'Required to energise it: transformer, 400 kV GIS incomer, 11 kV switchgear, busbars, protection relay, earth bar, 110 V DC battery & charger',
+                      'Metering panel, control desk (SCADA) and HV cable sealing ends are optional extras' },
+              done = placed('^opslabs_sub_') },
+            { title = 'Run 11 kV (HV) conductor out of the substation',
+              how = { 'Run power cable → pick 11 kV / HV', 'Out of the substation yard, pole to pole' },
+              done = function(e, d) return e == 'run' and d.kind == 'power' and d.color == 'hv' end },
+            { title = 'Fit a pole transformer where homes need supply',
+              how = { '[G] on the pole → “Mount: Pole-mounted transformer”' },
+              done = placed('^opslabs_power_transformer') },
+            { title = 'Split the feeder with a recloser',
+              how = { '[G] on a pole along the feeder → “Mount: Pole-mounted auto-recloser (PMAR)”', 'A fault past it only cuts customers past it, not the whole feeder' },
+              done = placed('^opslabs_power_recloser') },
+            { title = 'Finish the pole: cut-outs and safety',
+              how = { 'Press F7 → Switch guide → “Power line” to finish the fuses and safety signage', 'LV / service drops to houses carry on from Mains' },
+              done = placed('^opslabs_power_cutouts') },
+        },
+    },
+    {
         id = 'power', title = 'Power line', icon = 'bolt', color = '#ffd60a',
         sub = 'San Andreas Power & Light: pole, transformer, cut-outs, cable, safety',
         steps = {
@@ -144,6 +180,33 @@ local TRACKS = {
             { title = 'Make it safe',
               how = { 'Fit a Danger of Death sign or an anti-climbing device', '[G] on the pole → Safety items' },
               done = function(e, d) return placed('^opslabs_power_danger_sign')(e, d) or placed('^opslabs_power_anticlimb')(e, d) end },
+        },
+    },
+    {
+        id = 'fault_fix', title = 'Fix a network fault', icon = 'bolt-lightning', color = '#ff9500',
+        sub = 'Find a reported fault, diagnose it and carry out the repair',
+        steps = {
+            { title = 'Go to an open fault and diagnose it',
+              how = { 'A red marker flashes over every open fault nearby', ('Press [%s] at it — or /cable → Network faults → Repair it'):format(CF.RepairKey or 'U'), 'The diagnosis explains what’s wrong and why' },
+              done = function(e) return e == 'fault_diagnose' end },
+            { title = 'Follow the fix checklist and repair it',
+              how = { 'Tick off each listed step as you do it, and have the tools listed', 'At height: clip your harness on first', 'Then pick “Start repair”' },
+              done = function(e) return e == 'fault_repair' end },
+        },
+    },
+    {
+        id = 'power_fix', title = 'Fix a power problem', icon = 'bolt', color = '#ffd60a',
+        sub = 'Trace a power fault back to the station, fix what you can, confirm it’s back',
+        steps = {
+            { title = 'Test the supply with the power fault finder',
+              how = { '/powercheck at the dead kit — or Tool kit → Electrical tools → Power fault finder', 'It traces the supply back to the power station and lists every cause' },
+              done = function(e) return e == 'power_test' end },
+            { title = 'Fix what you can',
+              how = { 'Power repair tool fixes everything wrong at that kit and its supply in one go', 'Or work through the fault finder’s results with the restoration kit — upstream causes first', 'Some causes need building work before they can be fixed' },
+              done = function(e) return e == 'power_fixed' end, alt = function(e) return e == 'grid_repair' end },
+            { title = 'Confirm the supply is back',
+              how = { 'Test again with the power fault finder', 'POWERED with no causes left means you’re done' },
+              done = function(e, d) return e == 'power_test' and d and d.powered == true end },
         },
     },
 }
@@ -277,12 +340,20 @@ local EVENTS = {
     ['opslabs-towers:cable:loose']      = function() return 'loose' end,
     ['opslabs-towers:ladder:place']     = function() return 'ladder' end,
     ['opslabs-towers:isp:provision']    = function() return 'provision' end,
+    ['opslabs-towers:faults:diagnose']  = function(r) if r.ok then return 'fault_diagnose', r.fault or {} end end,
+    ['opslabs-towers:faults:repair']    = function(r) if r.ok then return 'fault_repair', {} end end,
+    ['opslabs-towers:powerdiag:test']   = function(r) if not r.error then return 'power_test', r end end,
+    ['opslabs-towers:powerdiag:fix']    = function(r) if not r.error then return 'power_fixed', r end end,
+    ['opslabs-towers:grid:repair']      = function(r) if r.ok then return 'grid_repair', r end end,
 }
 local await = lib.callback.await
 lib.callback.await = function(name, delay, ...)
     local r = await(name, delay, ...)
     local map = EVENTS[name]
-    if map and type(r) == 'table' and r.ok then
+    -- success here is ".ok = true" for most of these callbacks, but opslabs-towers:powerdiag:test/fix
+    -- signal it by the absence of ".error" instead and never set .ok at all — r.ok ~= false still
+    -- excludes every real failure (they all set .ok = false or .error, never neither)
+    if map and type(r) == 'table' and r.ok ~= false and not r.error then
         local args = { ... }
         local ok, ev, data = pcall(map, r, args)
         if ok and ev then CreateThread(function() Wait(300) Coach(ev, data) end) end

@@ -124,19 +124,21 @@ local function checkStock(coId, sku)
     else BizResolve(key) end
 end
 
-function BizOnCompleted(j, c, cust, a)
+function BizOnCompleted(j, c, cust, a, _, skipParts)
     local t = Ops.types[j.type] or {}
-    for sku, qty in pairs(t.parts or {}) do
-        local s = stockRow(c.id, sku)
-        if s then
-            MySQL.update.await('UPDATE ops_stock SET qty = qty - ? WHERE id = ?', { qty, s.id })
-            MySQL.insert.await('INSERT INTO ops_stock_moves (company_id, sku, qty, reason, ref, actor, at) VALUES (?, ?, ?, ?, ?, ?, ?)', { c.id, sku, -qty, 'job', j.ref, Ops.nameOf(a), now() })
-            checkStock(c.id, sku)
-            -- kit (not cable / consumables) becomes the customer's asset, with a serial and a warranty
-            if cust and s.unit == 'each' and tonumber(s.cost) >= 20 then
-                for _ = 1, math.min(qty, 10) do
-                    MySQL.insert.await([[INSERT INTO ops_assets (company_id, customer_id, sku, name, serial, location, job_id, installed_at, warranty_until)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)]], { c.id, cust.id, sku, s.name, serial(sku), j.location, j.id, now(), now() + (B.warrantyDays or 30) * DAY })
+    if not skipParts then
+        for sku, qty in pairs(t.parts or {}) do
+            local s = stockRow(c.id, sku)
+            if s then
+                MySQL.update.await('UPDATE ops_stock SET qty = qty - ? WHERE id = ?', { qty, s.id })
+                MySQL.insert.await('INSERT INTO ops_stock_moves (company_id, sku, qty, reason, ref, actor, at) VALUES (?, ?, ?, ?, ?, ?, ?)', { c.id, sku, -qty, 'job', j.ref, Ops.nameOf(a), now() })
+                checkStock(c.id, sku)
+                -- kit (not cable / consumables) becomes the customer's asset, with a serial and a warranty
+                if cust and s.unit == 'each' and tonumber(s.cost) >= 20 then
+                    for _ = 1, math.min(qty, 10) do
+                        MySQL.insert.await([[INSERT INTO ops_assets (company_id, customer_id, sku, name, serial, location, job_id, installed_at, warranty_until)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)]], { c.id, cust.id, sku, s.name, serial(sku), j.location, j.id, now(), now() + (B.warrantyDays or 30) * DAY })
+                    end
                 end
             end
         end

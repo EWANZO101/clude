@@ -4097,6 +4097,11 @@
     "code": "web_mail",
     "price": 60,
     "desc": "We set up email on your domain"
+   },
+   {
+    "code": "dom_dns",
+    "price": 40,
+    "desc": "We make the DNS change you need"
    }
   ],
   "companySites": {

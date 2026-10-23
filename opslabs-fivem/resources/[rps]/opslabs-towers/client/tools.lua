@@ -976,6 +976,10 @@ local POWER = {
     { 'Heavy socket set & spanners', 'Torque transformer and cross-arm bolts', 'wrench', sockets },
     { 'MEWP / cherry picker controls', 'Set up a cherry picker and ride the basket up to 14 m', 'truck-pickup', function() CreateThread(mewp) end },
 }
+if PTC.Enabled == false then         -- server/powerdiag.lua never registers the callbacks these call when the system is off
+    local drop = { ['Power fault finder'] = true, ['Power repair tool'] = true, ['Power restoration kit'] = true }
+    for i = #POWER, 1, -1 do if drop[POWER[i][1]] then table.remove(POWER, i) end end
+end
 
 local function kitMenu(id, title, list, color)
     local options = {}

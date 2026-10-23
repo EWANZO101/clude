@@ -830,7 +830,10 @@ function GridWhy(txId)
         return out
     end
     -- walk the route from the transformer's pole to the station: everything that stops power on the way
-    local n = start
+    -- (prev[] points backwards from found towards start, so the walk must start at found and follow
+    -- .from back to start — starting at start hits its sentinel prev[start]=false on the first step
+    -- and stops immediately, skipping every real node along the route)
+    local n = found
     local function check(node)
         local g = T.gateOfNode[node]
         if g and not gateClosed(g) then
@@ -847,7 +850,7 @@ function GridWhy(txId)
         end
     end
     local guard = 0
-    while n and n ~= found and guard < 5000 do
+    while n and n ~= start and guard < 5000 do
         guard = guard + 1
         check(n)
         local p = prev[n]
@@ -1259,6 +1262,11 @@ function GridAction(d, by)
     elseif a == 'dispatch' then
         for _, e in ipairs(S.events) do
             if e.id == d.id and e.status == 'active' then
+                -- only events with a real-world spot and a crew job behind them (fire, sub tx, pole crew call-outs)
+                -- can actually be dispatched to; everything else (trips, reclosers, shed, storms) is a protection/
+                -- control-room alarm with no single on-site fix, so sending a crew there sets a nil-coordinate
+                -- waypoint and no repair marker ever appears (GlobalState.gridJobs only lists e.crew + e.x events)
+                if not (e.crew and e.x) then return nil, 'Not something a crew can be sent to — work it from the breaker / recloser / substation itself' end
                 e.dispatched = now()
                 for _, pid in ipairs(GetPlayers()) do
                     local src = tonumber(pid)

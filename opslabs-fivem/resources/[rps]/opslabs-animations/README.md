@@ -3,9 +3,11 @@
 More lifelike movement for the OPS Network (`opslabs-towers`).
 
 **Climbing (ladders & poles):** your limbs follow the distance you climb, and you step on with a step-on clip when you start
-from the ground. Holding on, the hand you last reached up with stays up, and you shift your grip now and then. Working on a pole
-(menus, repairs) puts your hands forward with your legs holding on. If your game build has no ladder climb clips, a reach-up
-pose (rocking in time with your steps) is used instead.
+from the ground. Holding on, you hold with the left hand up; every so often (`Config.Climb.IdleShift`) you regrip — a brief
+burst of the real climb cycle playing forward, rather than a frozen pose (the base game has no mirrored right-hand hold pose
+to swap to, so this uses genuine climbing movement instead of faking one). Working on a pole (menus, repairs) puts your hands
+forward with your legs holding on. If your game build has no ladder climb clips, a reach-up pose (rocking in time with your
+steps) is used instead.
 
 **Moving around:** a tool-belt walk while wearing the harness; arms out while carrying a ladder; cable in hand while pulling cable.
 

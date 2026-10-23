@@ -520,16 +520,28 @@ lib.callback.register('opslabs-pos:charge', function(src, terminalId, basket, ta
     local result = total > 0 and collect(target, method, total, s.name, lines) or true
     if result ~= true then return { error = result } end
 
-    -- hand over the goods (refund if that fails)
+    -- hand over the goods (refund if that fails); stock is taken atomically so two concurrent
+    -- sales can't both succeed on the last unit, and anything already taken is given back on failure
     local given = {}
+    local function unwind()
+        for _, g in ipairs(given) do
+            FW.RemoveItem(target, g.item, g.qty)
+            MySQL.update.await('UPDATE opslabs_pos_products SET stock = stock + ? WHERE id = ?', { g.qty, g.id })
+        end
+        FW.AddMoney(target, total, method == 'card' and CP.CardBank or CP.CashBank, 'Refund · ' .. s.name)
+    end
     for _, ln in ipairs(lines) do
+        local took = MySQL.update.await('UPDATE opslabs_pos_products SET stock = stock - ? WHERE id = ? AND stock >= ?', { ln.qty, ln.id, ln.qty })
+        if took ~= 1 then
+            unwind()
+            return { error = ('Only some stock of %s is left — the customer was refunded'):format(ln.label) }
+        end
         if not FW.AddItem(target, ln.item, ln.qty) then
-            for _, g in ipairs(given) do FW.RemoveItem(target, g.item, g.qty) end
-            FW.AddMoney(target, total, method == 'card' and CP.CardBank or CP.CashBank, 'Refund · ' .. s.name)
+            MySQL.update.await('UPDATE opslabs_pos_products SET stock = stock + ? WHERE id = ?', { ln.qty, ln.id })
+            unwind()
             return { error = 'Could not hand over ' .. ln.label .. ' — the customer was refunded' }
         end
         given[#given + 1] = ln
-        MySQL.update.await('UPDATE opslabs_pos_products SET stock = stock - ? WHERE id = ?', { ln.qty, ln.id })
     end
 
     -- the money: card → society less the processor fee; cash → the drawer

@@ -15,7 +15,7 @@ local API = (GetConvar('ops_api_url', 'https://opsphone-store.opslabsystems.clou
 local state = {
     token = '', source = 'none',          -- convar | devapp | none
     connected = false, dbReady = false, server = nil, hub = nil,
-    lastError = nil, lastSeen = 0, pairing = nil, warned = false,
+    lastError = nil, lastSeen = 0, pairing = nil, warnedText = nil, fails = 0,
 }
 
 local function log(msg, ...)
@@ -100,14 +100,17 @@ local function connect()
     })
     if status == 200 and data.ok then
         local first = not state.connected
-        state.connected, state.server, state.hub, state.lastError = true, data.server, data.hub, nil
+        state.connected, state.server, state.hub, state.lastError, state.fails = true, data.server, data.hub, nil, 0
         state.dbReady = data.db and data.db.ready or false
         state.lastSeen = os.time()
         if first then log('connected to ^2%s^7 (server #%s)%s', data.server.name, data.server.id, state.dbReady and '' or ' — database still being set up') end
-        if data.warning and not state.warned then state.warned = true log('^3%s^7', data.warning) end
+        -- compare against the warning text itself, not a seen-once flag: a later, different warning
+        -- (e.g. disk quota after the db-setup notice) would otherwise never get logged
+        if data.warning and data.warning ~= state.warnedText then state.warnedText = data.warning log('^3%s^7', data.warning)
+        elseif not data.warning then state.warnedText = nil end
         return true
     end
-    state.connected = false
+    state.connected, state.fails = false, state.fails + 1
     state.lastError = (data and data.error) or ('HTTP ' .. tostring(status))
     if status == 401 or status == 403 then
         log('^1the OPS Hub refused this server (%s)^7 — check ops_server_token, or pair again from the Dev App', state.lastError)
@@ -125,7 +128,10 @@ CreateThread(function()
     while true do
         if not state.connected or not state.dbReady then
             connect()
-            Wait(state.connected and 10000 or 15000)
+            -- back off up to 5 min on repeated failures (a revoked token or a sustained outage shouldn't
+            -- hammer the Hub and spam the console every 15 s forever); resets to the fast 15 s retry as
+            -- soon as a connect() call succeeds (state.fails is reset to 0 there)
+            Wait(state.connected and 10000 or math.min(15000 * 2 ^ math.min(state.fails - 1, 5), 300000))
         else
             local status, data = httpAwait('POST', '/api/v1/heartbeat', { players = #GetPlayers() })
             if status == 200 and data.ok then
