@@ -758,6 +758,16 @@ lib.callback.register('opslabs-towers:fixture:save', function(src, d)
         local data = cleanData(d.model, d.data)
         id = MySQL.insert.await('INSERT INTO opslabs_towers_fixtures (model, x, y, z, heading, data, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
             { d.model, x, y, z, num(d.heading) or 0.0, data and json.encode(data) or nil, GetPlayerName(src) })
+        -- re-check after the insert: a concurrent placement at the same spot could have landed (and already
+        -- registered in Cabling.fixtures) while this request was awaiting its own insert
+        if POLE_KIT[d.model] then
+            for fid, f in pairs(Cabling.fixtures) do
+                if fid ~= id and POLE_KIT[f.model] and math.abs(f.x - x) < 0.35 and math.abs(f.y - y) < 0.35 and math.abs(f.z - z) < 0.5 then
+                    MySQL.update.await('DELETE FROM opslabs_towers_fixtures WHERE id = ?', { id })
+                    return { error = 'No room — something is already fitted here' }
+                end
+            end
+        end
         Cabling.fixtures[id] = { id = id, model = d.model, x = x, y = y, z = z, heading = num(d.heading) or 0.0, data = data, created_by = GetPlayerName(src) }
     end
     changed()

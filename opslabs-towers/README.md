@@ -142,7 +142,10 @@ pole kit in a session it offers itself (“Press F7”). Pick a guide and a card
 how to do it; every time you finish a step it ticks it off and shows the next one.
 - **Fibre to a house** — pole → climb → CBT → feed the CBT → house pole / anchor → CSP → ULW drop drum → drop to the CSP → ONT → patch → provision → check the lights (12 steps)
 - **Pole & ladder basics** — ladder → climb → step onto the pole → fit kit → cut a cable → deal with the loose end
+- **Build the power grid — from scratch** — power station / wind turbine → transmission pylon → 400 kV conductor → substation → fit out its plant → 11 kV feeder → pole transformer → recloser → finish the pole (9 steps)
 - **Power line** — power pole → climb → transformer → cut-outs → power cable → safety sign / anti-climb
+- **Fix a network fault** — go to an open fault (red marker, or `/cable` → Network faults) → diagnose it → work through its fix checklist and repair it
+- **Fix a power problem** — test the supply with the power fault finder (`/powercheck`) → fix what you can (power repair tool or the restoration kit) → confirm the supply's back
 - F7 menu: see all steps, jump to any step, skip, hide the card (keeps tracking), switch or stop. “Don’t offer this again” turns the pop-up off.
 - Progress is saved per player, so it carries on after a reconnect. The key can be rebound in Settings → Key Bindings → FiveM.
 

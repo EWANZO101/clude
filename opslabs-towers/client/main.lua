@@ -836,8 +836,10 @@ SectionMenu = function(id)
     elseif id == 'tools' then
         add(head('You & your van', 'user-gear'))
         add({ title = 'Tool kit', description = 'Fibre & telecom (ONT tester & repair kit, splicer, OTDR…) · copper · electrical (power fault finder & restoration kit, voltage detector, earths, MEWP…)', icon = 'toolbox', iconColor = BLUE, arrow = true, onSelect = function() if ToolKitMenu then ToolKitMenu() end end })
-        add({ title = 'Power repair tool', description = 'At broken power kit, a house or a street light: repairs it and its supply straight away (/powerrepair)', icon = 'screwdriver-wrench', iconColor = '#ffd60a', onSelect = function() if PowerRepairTool then PowerRepairTool() end end })
-        add({ title = 'Power fault finder', description = 'At anything electrical: traces the supply back to the power station, says why there’s no power and can fix it (/powercheck)', icon = 'bolt', iconColor = '#ffd60a', onSelect = function() if PowerFaultFinder then PowerFaultFinder() end end })
+        if (Config.PowerTools or {}).Enabled ~= false then
+            add({ title = 'Power repair tool', description = 'At broken power kit, a house or a street light: repairs it and its supply straight away (/powerrepair)', icon = 'screwdriver-wrench', iconColor = '#ffd60a', onSelect = function() if PowerRepairTool then PowerRepairTool() end end })
+            add({ title = 'Power fault finder', description = 'At anything electrical: traces the supply back to the power station, says why there’s no power and can fix it (/powercheck)', icon = 'bolt', iconColor = '#ffd60a', onSelect = function() if PowerFaultFinder then PowerFaultFinder() end end })
+        end
         add({ title = 'Place a ladder', description = 'Telescopic 0.9 → 3.2 m, extension 6.9 m or 13 m · carry it, lean it, climb it (/' .. (Config.Cabling.LadderCommand or 'ladder') .. ')', icon = 'stairs', iconColor = BLUE, onSelect = function() if PlaceLadder then PlaceLadder() end end })
         add({ title = 'OPS Network van', description = 'Branded van with beacons (K) and stores at the back · use again to send it back (/' .. ((Config.Van or {}).Command or 'opsvan') .. ')', icon = 'truck', iconColor = BLUE, onSelect = function() if SpawnOpsVan then SpawnOpsVan() end end })
         add({ title = 'Uniform', description = 'OPS Network uniform & hard hat · admins can restyle it (/uniform)', icon = 'user-tie', iconColor = BLUE, arrow = true, onSelect = function() if UniformMenu then UniformMenu() end end })
@@ -857,7 +859,7 @@ SectionMenu = function(id)
             lib.showContext('towers_remove')
         end })
     elseif id == 'guides' then
-        add({ title = 'Pole work guide — step by step', description = 'Fibre to a house · pole & ladder basics · power line — ticks off each step as you do it (F7)', icon = 'list-check', iconColor = GREEN,
+        add({ title = 'Pole work guide — step by step', description = 'Fibre to a house · pole & ladder basics · building the power grid from scratch · power line · fixing network and power faults — ticks off each step as you do it (F7)', icon = 'list-check', iconColor = GREEN,
             onSelect = function() if PoleGuideMenu then PoleGuideMenu() end end })
         add({ title = 'How it works — animated guide', description = 'Every system explained with animated slides (/guide)', icon = 'circle-play', iconColor = '#8e7dff', onSelect = function()
             if GetResourceState('opslabs-guide') == 'started' then ExecuteCommand('guide')

@@ -2,6 +2,9 @@ Config = {}
 
 -- Who can place and edit towers in game (/towers). ESX groups, or the ace
 -- permission "opslabs.towers" (add_ace group.admin opslabs.towers allow).
+-- ------------------------------------------------------------------------------
+-- ACCESS & CORE — who can use /towers, enforcement, tick rate
+-- ------------------------------------------------------------------------------
 Config.AdminGroups = { 'admin', 'superadmin' }
 -- players who can always use /towers (FiveM license identifiers)
 Config.AdminLicenses = {
@@ -16,6 +19,9 @@ Config.Enforce = true
 -- how often each player's signal is worked out (ms)
 Config.TickMs = 1500
 
+-- ------------------------------------------------------------------------------
+-- MOBILE NETWORK & WI-FI — cell towers and Wi-Fi access points
+-- ------------------------------------------------------------------------------
 Config.Cell = {
     DefaultRange = 1500,   -- metres
     MinRange = 100, MaxRange = 6000,
@@ -79,11 +85,17 @@ Config.Wifi = {
 -- CAT6 cabling (/cable): pull cable from a 305 m box along floors, walls and
 -- ceilings, run it through trunking, then terminate it into routers / APs.
 -- OPS Hub: the staff website every service links back to (/towers → each company → Open in OPS Hub)
+-- ------------------------------------------------------------------------------
+-- OPS HUB — the staff website every service links back to
+-- ------------------------------------------------------------------------------
 Config.Hub = {
     Url = 'https://opsphone-store.opslabsystems.cloud/admin/',
     Pages = { mobile = 'towers', openline = 'internet', streamfibre = 'internet', sapl = 'power', solar = 'power', fuel = 'fuel', grid = 'grid', track = 'track', secure = 'cctv', data = 'datacentre', gunshots = 'gunshots', faults = 'internet' },
 }
 
+-- ------------------------------------------------------------------------------
+-- CABLING — pull / run / terminate cable (the base every other system builds on)
+-- ------------------------------------------------------------------------------
 Config.Cabling = {
     Command = 'cable',
     Jobs = {},                  -- jobs that may lay cable besides tower admins, e.g. { 'electrician' }
@@ -438,6 +450,9 @@ Config.Cabling = {
 -- consumer units. Sockets, lights and EV chargers near a live consumer unit are fed "through the walls"; plug-in kit
 -- plugs into the nearest socket / extension / reel / generator outlet in reach (a flex lead is drawn to it).
 -- Positions are in the model's own frame (x right, y back, z up; fronts face -Y): o = outlets { x, y, z, nx, ny, nz }.
+-- ------------------------------------------------------------------------------
+-- ELECTRICITY IN BUILDINGS (LV) — sockets, lights, EV chargers, generators
+-- ------------------------------------------------------------------------------
 Config.Mains = {
     Enabled = true,
     Tick = 3,                     -- seconds between recomputes (load, meters, batteries)
@@ -505,6 +520,9 @@ Config.Mains = {
 -- Engineer console: every menu of this resource (/towers, tool kits, nearby kit, fuel, CCTV, grid, ladders, van …)
 -- in one full-screen panel with sections, search and keyboard control. false = the classic ox_lib list menus.
 -- Live (OPS Hub → Settings or here), no restart.
+-- ------------------------------------------------------------------------------
+-- ENGINEER UI — menu style, third-eye targeting
+-- ------------------------------------------------------------------------------
 Config.Console = {
     Enabled = true,
     Title = 'Engineer console',
@@ -527,6 +545,9 @@ Config.Target = { Enabled = true, Distance = 2.5 }
 -- lights, and per district a telephone exchange with fibre on telecom poles, a customer house on broadband, a fuel
 -- station, CCTV, a cell mast and gunshot sensors. An admin's game surveys the ground (they're hidden for a few minutes).
 -- Everything is ordinary kit (created_by 'OPS City') that you control and repair like anything else; Remove takes it away.
+-- ------------------------------------------------------------------------------
+-- WORLD BUILD & ADMIN TOOLS — city-wide auto-build, mass delete, GTA street-furniture cleanup
+-- ------------------------------------------------------------------------------
 Config.City = {
     Enabled = true,
     Station = { name = 'Palmer-Taylor Power Station', x = 2740.0, y = 1540.0, units = 3 },
@@ -567,7 +588,8 @@ Config.WorldCleanup = {
         Poles = { 'prop_telegraph_01a', 'prop_telegraph_01b', 'prop_telegraph_01c', 'prop_telegraph_01d', 'prop_telegraph_01e', 'prop_telegraph_01f', 'prop_telegraph_01g',
             'prop_telegraph_02a', 'prop_telegraph_02b', 'prop_telegraph_03', 'prop_telegraph_04a', 'prop_telegraph_04b', 'prop_telegraph_05a', 'prop_telegraph_05b',
             'prop_telegraph_05c', 'prop_telegraph_06a', 'prop_telegraph_06b', 'prop_telegraph_06c', 'prop_telegwall_01a', 'prop_telegwall_02a', 'prop_telegwall_03a',
-            'prop_telegwall_03b', 'prop_telegwall_04a', 'prop_pylon_01', 'prop_pylon_02', 'prop_pylon_03', 'prop_pylon_04' },
+            'prop_telegwall_03b', 'prop_telegwall_04a', 'prop_pylon_01', 'prop_pylon_02', 'prop_pylon_03', 'prop_pylon_04',
+            'prop_snow_telegraph_01a', 'prop_snow_telegraph_02a', 'prop_snow_telegraph_03' },      -- snow-weather / snow-belt variants
         TrafficLights = { 'prop_traffic_01a', 'prop_traffic_01b', 'prop_traffic_01d', 'prop_traffic_02a', 'prop_traffic_02b', 'prop_traffic_03a', 'prop_traffic_03b',
             'prop_traffic_lightset_01', 'prop_traffic_rail_1a', 'prop_traffic_rail_1c', 'prop_traffic_rail_2', 'prop_traffic_rail_3' },
     },
@@ -580,6 +602,9 @@ Config.WorldCleanup = {
 -- power; the restoration kit fixes every cause it can (switches, plugs, generators, pole fuses / earths, failed
 -- transformers, line faults, tripped / shed / locked-out breakers, substations, generation, equipment faults) and says
 -- what still has to be built. Grid crews (Config.Grid.CrewJobs) and cabling engineers only.
+-- ------------------------------------------------------------------------------
+-- SAN ANDREAS POWER & LIGHT — FIELD TOOLS — fault finder, restoration kit, line tool
+-- ------------------------------------------------------------------------------
 Config.PowerTools = {
     Enabled = true,
     Range = 4.0,              -- metres: the kit you're standing at
@@ -612,6 +637,9 @@ Config.PowerLine = {
     },
 }
 
+-- ------------------------------------------------------------------------------
+-- NETWORK POWER (LV) — PoE budgets, cell site backup batteries, city blackout
+-- ------------------------------------------------------------------------------
 Config.Power = {
     -- every GTA building (and GTA's own street lamps) has no power: the city is dark at night. Vehicle lights are NOT affected.
     -- Only what you build and hook up to the grid gives light (built buildings, street lights fed from a live transformer, lamps).
@@ -626,6 +654,9 @@ Config.Power = {
 }
 
 -- OPS Fuel: real fuel. Vehicles burn it and only fill up at stations built in game (GTA's own pumps do nothing).
+-- ------------------------------------------------------------------------------
+-- OPS FUEL — stations, pumps, tankers
+-- ------------------------------------------------------------------------------
 Config.Fuel = {
     Enabled = true,
     Products = {
@@ -666,6 +697,9 @@ Config.Fuel = {
 -- Site: centre of the street; h: which way "ahead" points (the street runs across it). Needs ~620 × 290 m.
 -- ClearPlanes: planes (vehicle class 16) inside the showcase area are deleted — AI and parked ones, and (if
 -- ClearPlayerPlanes) ones players fly in low. Parked-plane generators in the area are switched off.
+-- ------------------------------------------------------------------------------
+-- SHOWCASE — the LSIA demo build
+-- ------------------------------------------------------------------------------
 Config.Showcase = {
     Site = { x = -1560.0, y = -2850.0, z = 13.94, h = 60.0 },
     AutoBuild = true,
@@ -676,6 +710,9 @@ Config.Showcase = {
 
 -- OPS Track: GPS trackers fitted inside vehicles. They report over OPS Mobile (no signal = no live position, the
 -- unit stores it and sends it when it gets signal back). Owners (owned_vehicles) use /track; staff use /towers → OPS Track.
+-- ------------------------------------------------------------------------------
+-- OPS TRACK — vehicle GPS trackers
+-- ------------------------------------------------------------------------------
 Config.Track = {
     Enabled = true,
     Jobs = {},                    -- who can install / remove trackers (empty = anyone who can build kit)
@@ -693,6 +730,9 @@ Config.Track = {
 -- provisioned, IP addresses are assigned, the contract starts and the first bill is taken. Monthly bills every
 -- BillingDays; unpaid past GraceDays → suspended until paid. Lines are monitored; several dropping together near
 -- each other open an outage (emergency job + customers told). All public IP ranges are documentation ranges (fictional).
+-- ------------------------------------------------------------------------------
+-- INTERNET SERVICE — customer lines, billing, packages
+-- ------------------------------------------------------------------------------
 Config.OpsIsp = {
     Enabled = true,
     BillingDays = 7, GraceDays = 3,               -- real days
@@ -725,6 +765,9 @@ Config.OpsIsp = {
 --   wifi    : a recorder within SiteRadius and a powered Wi-Fi router / AP within WifiRange (the cube also needs a socket)
 -- Recorders need a live socket within 3 m. Monitors, video walls and PTZ keyboards show the nearest recorder's cameras.
 -- Remote viewing (phone app): the system's remote viewing is on and its NVR is cabled to an online gateway router.
+-- ------------------------------------------------------------------------------
+-- OPS SECURE CCTV — cameras, recorders, relays
+-- ------------------------------------------------------------------------------
 Config.Cctv = {
     RelayCulling = 600.0,         -- /cctvrelay: how far (m) round its ped a relay is sent players and cars (OneSync culling)
     RelayMoveBeyond = 450.0,      -- cameras further than this from where the relay stands: its hidden ped goes there too
@@ -766,6 +809,9 @@ Config.Cctv = {
 -- TempShutdown. Compute servers have a role: 'cloud' hosts OPS Cloud VMs (placed and live-migrated automatically),
 -- 'opsweb' / 'dns' / 'mail' run those OPS services — once any server has that role, the service is only up while
 -- one of them is. Faults (disk, PSU, fan, dead) and hall problems raise OPS Data jobs.
+-- ------------------------------------------------------------------------------
+-- OPS DATA CENTRES & OPS CLOUD
+-- ------------------------------------------------------------------------------
 Config.DataCentre = {
     Enabled = true,
     Rack = 'opslabs_dc_rack', Ups = 'opslabs_dc_ups', Generators = { opslabs_generator = true, opslabs_mains_generator = true },
@@ -797,6 +843,9 @@ Config.DataCentre = {
 -- Every client reports its own gunfire; each sensor that's online (OPS Mobile signal where it's fitted, no fault)
 -- and in earshot hears it. 1 sensor = rough area, 2 = closer, 3+ = triangulated to a few metres. Shots close
 -- together in time and place are one incident. Police get a map alert + phone notification; OPS Hub shows them all.
+-- ------------------------------------------------------------------------------
+-- GUNSHOT DETECTION — OPS Sentinel sensors
+-- ------------------------------------------------------------------------------
 Config.Gunshot = {
     Enabled = true,
     Model = 'opslabs_gunshot_sensor',
@@ -822,6 +871,9 @@ Config.Gunshot = {
 -- Load comes from the homes behind every pole transformer (TransformerKW × time of day) plus real in-game load.
 -- Protection is automatic: faults trip the nearest breaker / recloser upstream (reclosers try again), overloads trip,
 -- under-frequency sheds feeders. Faults need a crew at the real spot ([E] at the yellow marker).
+-- ------------------------------------------------------------------------------
+-- POWER GRID — generation, transmission, substations, feeders, protection
+-- ------------------------------------------------------------------------------
 Config.Grid = {
     Enabled = true,
     Tick = 2,                       -- seconds between solves
@@ -865,6 +917,9 @@ Config.Grid = {
 -- within Config.Mains.AutoWireRadius, or by mains cable): daytime it runs off the panels within PanelReach (unless a
 -- DC isolator near it is off), and a home battery within BatteryReach stores the surplus and keeps the house on at
 -- night or in a power cut. Daylight follows the game clock.
+-- ------------------------------------------------------------------------------
+-- SOLAR PV — panels, inverters, home batteries
+-- ------------------------------------------------------------------------------
 Config.Solar = {
     Inverter = 'opslabs_solar_inverter',
     Battery = 'opslabs_solar_battery',
@@ -880,6 +935,9 @@ Config.Solar = {
 
 -- Laptops: OPS OS (opslabs-phone) on a desk, online over Ethernet only. Run CAT6 from a router / switch / AP
 -- that has an uplink (or straight from an ONT with an active service) into the laptop's port.
+-- ------------------------------------------------------------------------------
+-- FIBRE / INTERNET PLANT — ISP headends & joints, laptops
+-- ------------------------------------------------------------------------------
 Config.Laptop = {
     Models = { 'opslabs_laptop' },
     UseDistance = 1.3,          -- metres from the laptop for [E] Use laptop
@@ -927,6 +985,9 @@ Config.Isp = {
 -- Things stream in up to Distance metres in front of the camera (a ViewAngle-wide cone) and only
 -- Behind metres all round, nearest first. Margin keeps spawned things a little longer so nothing
 -- flickers at the edge. Editable live from the Ops-Phone dev app (Render distance).
+-- ------------------------------------------------------------------------------
+-- RENDER DISTANCE — streaming range for network & power kit
+-- ------------------------------------------------------------------------------
 Config.Render = {
     Distance = 400.0,
     Behind = 80.0,
@@ -936,6 +997,9 @@ Config.Render = {
 
 -- Safety harness (fall arrest): put it on, then clip on to the pole once you're up it. Its own key
 -- (default J, rebindable) opens the harness menu — G stays the pole equipment menu.
+-- ------------------------------------------------------------------------------
+-- CLIMBING SAFETY — fall-arrest harness
+-- ------------------------------------------------------------------------------
 Config.Harness = {
     Key = 'J',
     ClipSeconds = 2.5,            -- strapping the pole strap round the pole
@@ -950,6 +1014,9 @@ Config.Harness = {
 -- override them in game (saved in opslabs_towers_meta). at_height = repaired up the pole.
 -- Engineers find faults on /admin/internet (website) and in the Ops-Networks phone app, go to the
 -- spot and repair them: press the repair key (default U) next to the fault, or G on the pole.
+-- ------------------------------------------------------------------------------
+-- NETWORK FAULTS — random fault engine & repair content
+-- ------------------------------------------------------------------------------
 Config.Faults = {
     Enabled = true,
     TickMinutes = 5,              -- how often the fault engine rolls the dice
@@ -1040,6 +1107,9 @@ Config.Faults = {
 -- Copper phone lines: a socket has dial tone when copper runs punched down at both ends connect it, through
 -- the kit below, to an MDF in an exchange with power (rectifier / batteries / generator within Isp.ExchangeRadius).
 -- Engineers test with the tool kit (OPS Openline → Copper phone line tools): butt set, tone & probe, line tester…
+-- ------------------------------------------------------------------------------
+-- COPPER PHONE LINES
+-- ------------------------------------------------------------------------------
 Config.PhoneLine = {
     Exchange = { 'opslabs_mdf' },                                      -- dial tone comes from here
     NeedsPower = true,                                                 -- the exchange needs its power plant
@@ -1052,6 +1122,9 @@ Config.PhoneLine = {
 
 -- Street works safety kit (Network cabling → Road safety equipment). Signs have editable text
 -- (drawn live on the sign face); traffic lights work in pairs (A / B) on a shared cycle.
+-- ------------------------------------------------------------------------------
+-- WORLD CONTENT — street works kit, lighting, walk-in buildings, the OPS van, underground, anti-climb zones, uniform
+-- ------------------------------------------------------------------------------
 Config.Roadworks = {
     Items = {
         { label = 'Traffic cone', model = 'opslabs_rw_cone', sizes = {

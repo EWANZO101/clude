@@ -148,14 +148,13 @@ function BizOnCompleted(j, c, cust, a, src)
         for sku, qty in pairs(consumables(Ops.types[j.type])) do
             if src then FW.RemoveItem(src, itemName(sku), qty) end
         end
-        -- register assets etc. without taking stock a second time
+        -- register assets etc. without taking stock a second time (skipParts=true — don't mutate the
+        -- shared Ops.types[j.type] table, two engineers completing the same job type at once would race on it)
         local t = Ops.types[j.type]
-        local saved = t and t.parts
-        if t then t.parts = nil end
-        local ok, err = pcall(baseCompleted, j, c, cust, a)
-        if t then t.parts = saved end
-        if saved and cust then
-            for sku, qty in pairs(saved) do
+        local parts = t and t.parts
+        local ok, err = pcall(baseCompleted, j, c, cust, a, src, true)
+        if parts and cust then
+            for sku, qty in pairs(parts) do
                 local s = MySQL.single.await('SELECT * FROM ops_stock WHERE company_id = ? AND sku = ?', { c.id, sku })
                 if s and s.unit == 'each' and tonumber(s.cost) >= 20 then
                     for _ = 1, math.min(qty, 10) do

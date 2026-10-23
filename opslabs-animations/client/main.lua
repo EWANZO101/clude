@@ -40,7 +40,8 @@ local function ready() return ladderOk() or has(FB.dict, FB.clip) end
 ---------------------------------------------------------------------------
 -- climbing (driven by opslabs-towers)
 ---------------------------------------------------------------------------
-local climb                 -- { kind, k, pos, hand, lastMove, mountUntil, clip }
+local climb                 -- { kind, pos, lastMove, mountUntil, regripUntil, clip }
+local REGRIP_MS = 450        -- how long a regrip flourish plays before settling back into the hold
 
 local function play(ped, dict, clip, flag, blend)
     if climb.clip ~= dict .. '/' .. clip or not IsEntityPlayingAnim(ped, dict, clip, 3) then
@@ -49,15 +50,21 @@ local function play(ped, dict, clip, flag, blend)
     end
 end
 
-local function hold(ped, clip)
-    if ladderOk() then play(ped, LADDER, has(LADDER, clip) and clip or 'base_left_hand_up', 1, 3.0)
+local function hold(ped)
+    if ladderOk() then play(ped, LADDER, 'base_left_hand_up', 1, 3.0)
     else play(ped, FB.dict, FB.clip, 1, 3.0) end
 end
 
 local function workLayer(ped, on)
     if on and loaded[WORK_DICT] and ladderOk() then
         if not IsEntityPlayingAnim(ped, WORK_DICT, WORK_CLIP, 3) then TaskPlayAnim(ped, WORK_DICT, WORK_CLIP, 3.0, 3.0, -1, 49, 0, false, false, false) end
-    elseif IsEntityPlayingAnim(ped, WORK_DICT, WORK_CLIP, 3) and FB.dict ~= WORK_DICT then
+    -- don't stop it if it's actually the fallback's own base climbing pose (same dict+clip, no ladder
+    -- cycle in this build) — but the default config has Fallback.dict/clip equal to WORK_DICT/WORK_CLIP,
+    -- so that's only true while !ladderOk(); checking the config strings alone (the old `FB.dict ~=
+    -- WORK_DICT` guard) was true/false the same way regardless of ladderOk(), so with the default config
+    -- it also silently blocked stopping the real "hands forward" work overlay once ladderOk() — leaving
+    -- an engineer stuck hands-forward after finishing work on a pole
+    elseif IsEntityPlayingAnim(ped, WORK_DICT, WORK_CLIP, 3) and not (not ladderOk() and FB.dict == WORK_DICT and FB.clip == WORK_CLIP) then
         StopAnimTask(ped, WORK_DICT, WORK_CLIP, 2.0)
     end
 end
@@ -71,7 +78,7 @@ end
 
 exports('Begin', function(kind, h)
     if not ready() then return false end
-    climb = { kind = kind == 'pole' and 'pole' or 'ladder', pos = tonumber(h) or 0.0, hand = 'left', lastMove = GetGameTimer() }
+    climb = { kind = kind == 'pole' and 'pole' or 'ladder', pos = tonumber(h) or 0.0, lastMove = GetGameTimer() }
     if C.MountClip ~= false and climb.pos < 0.3 and has(LADDER, MOUNT_CLIP) then climb.mountUntil = GetGameTimer() + 850 end
     return true
 end)
@@ -95,11 +102,12 @@ exports('Drive', function(kind, pos, cycle)
     local frac = (pos % cycle) / cycle
     SetEntityAnimSpeed(ped, LADDER, 'climb_up', 0.0)
     SetEntityAnimCurrentTime(ped, LADDER, 'climb_up', frac)
-    climb.hand = frac < 0.5 and 'left' or 'right'          -- the hand that reached up last
     return true
 end)
 
---- still: hold on (the last hand up stays up), shift grip now and then; 'work' adds hands-forward on top
+--- still: hold on; every so often play a brief real regrip motion instead of staying frozen (the base game
+--- has no mirrored right-hand hold pose, so this reuses the climb cycle itself rather than faking one);
+--- 'work' adds hands-forward on top
 exports('Pose', function(kind, state)
     if not climb or not ready() then return false end
     local ped = PlayerPedId()
@@ -110,10 +118,21 @@ exports('Pose', function(kind, state)
         return true
     end
     local now = GetGameTimer()
-    if state == 'hold' and C.IdleShift and now - climb.lastMove > C.IdleShift * 1000 then
-        climb.hand, climb.lastMove = climb.hand == 'left' and 'right' or 'left', now
+    if state == 'hold' then
+        if climb.regripUntil and now < climb.regripUntil then
+            play(ped, LADDER, 'climb_up', 1, 6.0)          -- mid-flourish: let the cycle run forward naturally
+            workLayer(ped, state == 'work')
+            return true
+        end
+        climb.regripUntil = nil
+        if C.Regrip ~= false and C.IdleShift and ladderOk() and now - climb.lastMove > C.IdleShift * 1000 then
+            climb.lastMove, climb.regripUntil = now, now + REGRIP_MS
+            play(ped, LADDER, 'climb_up', 1, 6.0)
+            workLayer(ped, state == 'work')
+            return true
+        end
     end
-    hold(ped, C.HandSwap ~= false and ('base_%s_hand_up'):format(climb.hand) or 'base_left_hand_up')
+    hold(ped)
     workLayer(ped, state == 'work')
     return true
 end)
@@ -166,7 +185,8 @@ CreateThread(function()
     while true do
         local ped = PlayerPedId()
         local onFoot = not climb and not IsPedInAnyVehicle(ped, false) and not IsPedSwimming(ped) and not IsPedRagdoll(ped)
-        setWalk(ped, (onFoot and harnessWorn() and M.HarnessWalk and IsPedMale(ped)) and M.HarnessWalk or nil)
+        local hw = type(M.HarnessWalk) == 'table' and (IsPedMale(ped) and M.HarnessWalk.male or M.HarnessWalk.female) or M.HarnessWalk
+        setWalk(ped, (onFoot and harnessWorn() and hw) or nil)
         setCarry(ped, onFoot and (carrying == 'ladder' and M.CarryLadder or carrying == 'cable' and M.PullCable) or nil)
         Wait(250)
     end
@@ -184,8 +204,7 @@ RegisterCommand('opsanim', function()
             tostring(DoesAnimDictExist(dict)), tostring(HasAnimDictLoaded(dict)), GetAnimDuration(dict, clip)))
     end
     check('Climb cycle', LADDER, 'climb_up')
-    check('Hold (left hand)', LADDER, 'base_left_hand_up')
-    check('Hold (right hand)', LADDER, 'base_right_hand_up')
+    check('Hold', LADDER, 'base_left_hand_up')
     check('Step on', LADDER, MOUNT_CLIP)
     check('Working on the pole', WORK_DICT, WORK_CLIP)
     check('Fallback reach-up', FB.dict, FB.clip)
