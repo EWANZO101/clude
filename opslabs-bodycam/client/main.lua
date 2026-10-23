@@ -28,6 +28,38 @@ RegisterNetEvent('opslabs-bodycam:reply', function(id, result)
     if p then pending[id] = nil p:resolve(result) end
 end)
 
+-- call sign on first load ---------------------------------------------------------------------------------------------
+-- playerSpawned fires on every spawn (deaths included), so this is guarded to ask once a session; the server
+-- decides whether to actually prompt (right job, no call sign yet) - this just drives the on-screen keyboard.
+
+local askedCallsign = false
+AddEventHandler('playerSpawned', function()
+    if askedCallsign then return end
+    askedCallsign = true
+    CreateThread(function()
+        Wait(3000) -- let the framework finish loading job / metadata before asking the server
+        local r = request('checkCallsignPrompt')
+        if not r or not r.prompt then return end
+        AddTextEntry('OPSBC_CALLSIGN', ('Set your %s call sign (e.g. 1-ADAM-12) — Esc to skip'):format(r.jobLabel or 'unit'))
+        DisplayOnscreenKeyboard(1, 'OPSBC_CALLSIGN', '', '', '', '', '', 24)
+        local text
+        while true do
+            Wait(0)
+            local status = UpdateOnscreenKeyboard()
+            if status == 1 then text = GetOnscreenKeyboardResult() break
+            elseif status == 2 or status == 3 then break end
+        end
+        if text and text:match('%S') then
+            local res = request('setCallsign', { callsign = text })
+            if res and res.ok then
+                BeginTextCommandThefeedPost('STRING')
+                AddTextComponentSubstringPlayerName(('Call sign set: %s'):format(res.callsign))
+                EndTextCommandThefeedPostTicker(false, true)
+            end
+        end
+    end)
+end)
+
 -- state -------------------------------------------------------------------------------------------------------------
 
 local function state()

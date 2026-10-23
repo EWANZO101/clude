@@ -842,31 +842,116 @@ function ToolDrillPole(heightAbove)
 end
 
 ---------------------------------------------------------------------------
--- MEWP (cherry picker): set up in front of you, ride the basket up to 14 m
+-- MEWP (cherry picker): set up in front of you, ride the basket up to 100 m (the tallest
+-- pylon, opslabs_grid_pylon, is 36 m — this leaves plenty of headroom above it and anything else)
 ---------------------------------------------------------------------------
+local MEWP_MAX_H = 100.0
+local MEWP_SPEED = 4.0        -- m/s — fast enough that 100 m doesn't take forever to ride up
+local MEWP_DRIVE_SPEED = 4.5  -- m/s driving the whole rig at ground level; derated when the basket's up, like a real MEWP
+local MEWP_BASKET_DROP = 0.55 -- the basket hangs this far below the arm, so the arm clears its floor instead of poking through it
 local mewpActive = false
+-- the rig stays parked where you left it when you step out, so you can walk off, do something
+-- else and climb back in. It only goes away when you pack it up from the tools menu.
+local mewpRig = nil           -- { base, basket, masts, booms, p, bz, heading, h, ang, reach }
+
+local function mewpPackUp()
+    if not mewpRig then return false end
+    for _, e in ipairs(mewpRig.masts) do if DoesEntityExist(e) then DeleteEntity(e) end end
+    for _, e in ipairs(mewpRig.booms) do if DoesEntityExist(e) then DeleteEntity(e) end end
+    if DoesEntityExist(mewpRig.basket) then DeleteEntity(mewpRig.basket) end
+    if DoesEntityExist(mewpRig.base) then DeleteEntity(mewpRig.base) end
+    mewpRig = nil
+    return true
+end
+MewpParked = function() return mewpRig ~= nil end
+MewpPackUp = mewpPackUp
+
+-- flashing amber beacons on the base, like any road-going MEWP, for as long as it's parked up
+CreateThread(function()
+    while true do
+        if mewpRig then
+            local pos = GetEntityCoords(PlayerPedId())
+            local b = mewpRig
+            if #(pos - vector3(b.p.x, b.p.y, b.bz)) < 90.0 then
+                if (GetGameTimer() % 900) < 450 then
+                    local a = math.rad(b.heading)
+                    local rx, ry = math.cos(a), math.sin(a)
+                    for _, s in ipairs({ 1.0, -1.0 }) do
+                        local lx, ly, lz = b.p.x + rx * s, b.p.y + ry * s, b.bz + 1.35
+                        DrawLightWithRange(lx, ly, lz, 255, 160, 20, 5.0, 2.5)
+                        DrawMarker(28, lx, ly, lz, 0, 0, 0, 0, 0, 0, 0.09, 0.09, 0.09, 255, 170, 30, 220, false, false, 2, false, nil, nil, false)
+                    end
+                end
+                Wait(0)
+            else
+                Wait(500)
+            end
+        else
+            Wait(1000)
+        end
+    end
+end)
+
+-- G from the basket: pole kit and wall kit as before, plus every company's equipment — a MEWP is
+-- how you reach the high stuff for power, CCTV, solar and the rest, not just the network drops
+function MewpEquipMenu(onClose)
+    local ped = PlayerPedId()
+    local feet = GetEntityCoords(ped) - vector3(0.0, 0.0, 1.0)
+    local pl = nearestPole and nearestPole(2.2)
+    local options = {}
+    if pl and PoleEquipMenu then
+        options[#options + 1] = { title = 'Pole equipment', description = 'Fit / work the kit on the pole you\'re alongside', icon = 'tower-observation', iconColor = '#0a84ff', arrow = true,
+            onSelect = function() PoleEquipMenu(pl, math.atan(feet.y - pl.y, feet.x - pl.x), feet.z - pl.z, onClose) end }
+    end
+    if LadderWallEquipment then
+        options[#options + 1] = { title = 'Wall & high-level kit', description = 'Entry bushings, anchors, CSPs, ceiling & eaves kit at this height', icon = 'house-chimney', iconColor = '#0a84ff', arrow = true,
+            onSelect = function() LadderWallEquipment(onClose) end }
+    end
+    for _, n in ipairs((Config.Cabling.Networks) or {}) do
+        options[#options + 1] = { title = n.label, description = n.sub, icon = n.icon or 'boxes-stacked', iconColor = n.color, arrow = true,
+            onSelect = function() if TowersSectionMenu then TowersSectionMenu(n.id) else lib.notify({ type = 'error', description = 'Equipment menu unavailable' }) end onClose() end }
+    end
+    lib.registerContext({ id = 'mewp_equip', root = true, title = 'From the basket', options = options, onExit = onClose })
+    lib.showContext('mewp_equip')
+end
+
 local function mewp()
     if mewpActive then return end
     local ped = PlayerPedId()
     local function load(m) local h = joaat(m) if not IsModelInCdimage(h) then return nil end lib.requestModel(h, 5000) return h end
     if not load('opslabs_mewp_base') then return lib.notify({ type = 'error', description = 'Restart opslabs-props for the MEWP' }) end
     load('opslabs_mewp_mast') load('opslabs_mewp_basket')
-    local heading = GetEntityHeading(ped)
+    local here = GetEntityCoords(ped)
+    -- climb back into the one you already have out, if you're near it; otherwise set a new one up
+    if mewpRig and #(here - vector3(mewpRig.p.x, mewpRig.p.y, mewpRig.bz)) > 12.0 then
+        return lib.notify({ type = 'error', description = 'Your cherry picker is parked somewhere else — walk to it, or pack it up from the tools menu first' })
+    end
+    local reuse = mewpRig
+    local heading = reuse and reuse.heading or GetEntityHeading(ped)
     local hr = math.rad(heading)
-    local p = GetEntityCoords(ped) + vector3(-math.sin(hr) * 2.2, math.cos(hr) * 2.2, 0.0)
-    local ok, gz = GetGroundZFor_3dCoord(p.x, p.y, p.z + 1.0, false)
-    local bz = ok and gz or (p.z - 1.0)
+    local p = reuse and reuse.p or (here + vector3(-math.sin(hr) * 2.2, math.cos(hr) * 2.2, 0.0))
+    local bz
+    if reuse then bz = reuse.bz
+    else
+        local ok, gz = GetGroundZFor_3dCoord(p.x, p.y, p.z + 1.0, false)
+        bz = ok and gz or (p.z - 1.0)
+    end
     local function obj(m, x, y, z, h) local e = CreateObjectNoOffset(joaat(m), x, y, z, false, false, false) SetEntityHeading(e, h or heading) FreezeEntityPosition(e, true) return e end
-    local base = obj('opslabs_mewp_base', p.x, p.y, bz)
-    local basket = obj('opslabs_mewp_basket', p.x, p.y, bz + 1.1)
+    local base = reuse and reuse.base or obj('opslabs_mewp_base', p.x, p.y, bz)
+    local basket = reuse and reuse.basket or obj('opslabs_mewp_basket', p.x, p.y, bz + 1.1)
     SetEntityCollision(basket, false, false)
-    local masts, booms = {}, {}
+    local masts, booms = reuse and reuse.masts or {}, reuse and reuse.booms or {}
     mewpActive = true
+    mewpRig = { base = base, basket = basket, masts = masts, booms = booms, p = p, bz = bz, heading = heading }
     FreezeEntityPosition(ped, true)
     SetEntityCollision(ped, false, false)
-    local h, ang, reach = 0.0, heading, 1.2
+    local h, ang, reach = 0.0, reuse and reuse.ang or heading, reuse and reuse.reach or 1.2
     local menuOpen = false
-    local sf = PlaceHud.buttons({ { 'Up / down', { 172, 173 } }, { 'Slew', { 174, 175 } }, { 'Reach', { 32, 33 } }, { 'Equipment', 47 }, { 'Cut cable', 26 }, { 'Lower & get out', 177 } })
+    -- the same four arrow binds do double duty: Operate mode lifts/slews, Drive mode steers the
+    -- rig around — Space flips between them so there's no separate "driving" key scheme to learn
+    local driveMode = false
+    local lastGroundCheck = 0
+    local sf = PlaceHud.buttons({ { 'Switch drive / operate', 22 }, { 'Up/down · drive fwd/back', { 172, 173 } }, { 'Slew · drive left/right', { 174, 175 } }, { 'Reach', { 32, 33 } }, { 'Equipment', 47 }, { 'Cut cable', 26 }, { 'Lower & get out', 177 } })
     local last = GetGameTimer()
     local leaving = false
     while true do
@@ -876,26 +961,46 @@ local function mewp()
         last = now
         for _, c in ipairs({ 22, 23, 24, 25, 26, 30, 31, 32, 33, 34, 35, 44, 47, 140, 141, 142, 172, 173, 174, 175, 177 }) do DisableControlAction(0, c, true) end
         if not menuOpen then
-            if leaving then h = math.max(0.0, h - 1.4 * dt) if h <= 0.0 then break end
+            if leaving then h = math.max(0.0, h - MEWP_SPEED * dt) if h <= 0.0 then break end
             else
-                if IsDisabledControlPressed(0, 172) then h = math.min(14.0, h + 1.2 * dt) end
-                if IsDisabledControlPressed(0, 173) then h = math.max(0.0, h - 1.2 * dt) end
-                if IsDisabledControlPressed(0, 174) then ang = ang + 35.0 * dt end
-                if IsDisabledControlPressed(0, 175) then ang = ang - 35.0 * dt end
+                if IsDisabledControlJustPressed(0, 22) then driveMode = not driveMode end
+                if driveMode then
+                    -- same arrow keys as Operate mode, now steering the whole rig instead.
+                    -- GetGroundZFor_3dCoord is an expensive native — re-probing it every single
+                    -- frame while driving is exactly what was making this feel slow and glitchy,
+                    -- so it's throttled to a few times a second; the ground doesn't change fast
+                    -- enough for that lag to be visible.
+                    local dx = (IsDisabledControlPressed(0, 175) and 1 or 0) - (IsDisabledControlPressed(0, 174) and 1 or 0)
+                    local dy = (IsDisabledControlPressed(0, 172) and 1 or 0) - (IsDisabledControlPressed(0, 173) and 1 or 0)
+                    if dx ~= 0 or dy ~= 0 then
+                        local dspeed = MEWP_DRIVE_SPEED * (h > 2.0 and 0.35 or 1.0) * dt
+                        local rx, ry = math.cos(hr), math.sin(hr)
+                        local fx2, fy2 = -math.sin(hr), math.cos(hr)
+                        local nx, ny = p.x + (rx * dx + fx2 * dy) * dspeed, p.y + (ry * dx + fy2 * dy) * dspeed
+                        p = vector3(nx, ny, p.z)
+                        if now - lastGroundCheck > 120 then
+                            lastGroundCheck = now
+                            local okg, gzg = GetGroundZFor_3dCoord(nx, ny, p.z + 2.0, false)
+                            if okg then bz = gzg end
+                        end
+                    end
+                else
+                    if IsDisabledControlPressed(0, 172) then h = math.min(MEWP_MAX_H, h + MEWP_SPEED * dt) end
+                    if IsDisabledControlPressed(0, 173) then h = math.max(0.0, h - MEWP_SPEED * dt) end
+                    if IsDisabledControlPressed(0, 174) then ang = ang + 35.0 * dt end
+                    if IsDisabledControlPressed(0, 175) then ang = ang - 35.0 * dt end
+                end
                 if IsDisabledControlPressed(0, 32) then reach = math.min(4.0, reach + 0.8 * dt) end
                 if IsDisabledControlPressed(0, 33) then reach = math.max(0.6, reach - 0.8 * dt) end
                 if IsDisabledControlJustPressed(0, 177) then leaving = true end
                 if IsDisabledControlJustPressed(0, 26) and CableCutAtHand then menuOpen = true CreateThread(function() CableCutAtHand() menuOpen = false end) end
                 if IsDisabledControlJustPressed(0, 47) then
                     menuOpen = true
-                    local feet = GetEntityCoords(ped) - vector3(0.0, 0.0, 1.0)
-                    local pl = nearestPole(2.2)
-                    if pl and PoleEquipMenu then PoleEquipMenu(pl, math.atan(feet.y - pl.y, feet.x - pl.x), feet.z - pl.z, function() menuOpen = false end)
-                    elseif LadderWallEquipment then LadderWallEquipment(function() menuOpen = false end)
-                    else menuOpen = false end
+                    MewpEquipMenu(function() menuOpen = false end)
                 end
             end
         end
+        SetEntityCoordsNoOffset(base, p.x, p.y, bz, false, false, false)
         -- mast up to the boom, boom out to the basket
         local top = bz + 1.05 + h
         local nm = math.max(0, math.ceil(h))
@@ -913,20 +1018,154 @@ local function mewp()
             SetEntityRotation(b, -90.0, 0.0, ang, 2, false)
         end
         local bx, by = p.x + dir.x * reach, p.y + dir.y * reach
-        SetEntityCoordsNoOffset(basket, bx, by, top - 0.06, false, false, false)
+        local floorZ = top - MEWP_BASKET_DROP
+        SetEntityCoordsNoOffset(basket, bx, by, floorZ, false, false, false)
         SetEntityHeading(basket, ang)
-        SetEntityCoordsNoOffset(ped, bx, by, top + 1.0, false, false, false)
+        SetEntityCoordsNoOffset(ped, bx, by, floorZ + 0.03, false, false, false)
         SetEntityHeading(ped, ang)
-        PlaceHud.draw(sf, 'MEWP · cherry picker', leaving and 'Lowering…' or ('Basket %.1f m · reach %.1f m'):format(h + 1.05, reach), { 255, 190, 0 })
+        PlaceHud.draw(sf, 'MEWP · cherry picker', leaving and 'Lowering…'
+            or (driveMode and 'DRIVING — arrows steer the rig · Space to operate the basket' or ('Basket %.1f m · reach %.1f m · Space to drive'):format(h + 1.05 - MEWP_BASKET_DROP, reach)), { 255, 190, 0 })
     end
     PlaceHud.release(sf)
-    for _, e in ipairs(masts) do DeleteEntity(e) end
-    for _, e in ipairs(booms) do DeleteEntity(e) end
-    DeleteEntity(basket) DeleteEntity(base)
+    -- stepping out leaves the rig standing (stowed, ambers flashing) — pack it up from the tools
+    -- menu when you're actually finished with it
+    mewpRig = { base = base, basket = basket, masts = masts, booms = booms, p = p, bz = bz, heading = heading, ang = ang, reach = reach }
     SetEntityCollision(ped, true, true)
     FreezeEntityPosition(ped, false)
     SetEntityCoords(ped, p.x + math.sin(hr) * 1.6, p.y - math.cos(hr) * 1.6, bz + 0.1, false, false, false, false)
     mewpActive = false
+    lib.notify({ type = 'inform', description = 'Out of the basket — the cherry picker is parked here. Tools → pack it up when you\'re done with it.' })
+end
+
+---------------------------------------------------------------------------
+-- Utility truck: a REAL, drivable GTA vehicle with its own baked crane/bucket
+-- rig (Rockstar ship this exact model — gameName UTILTRUC, aim camera literally
+-- called CHERRYPICKER_AIM_CAMERA — for ambient utility-crew scenes; it just has
+-- no player-facing controls by default). Driving it is the game's own vehicle
+-- physics — no custom WASD/teleport code, so none of the MEWP's slowness or
+-- jank applies. The bucket is moved by scrubbing its own animation, same
+-- technique published FiveM utility-truck mods use, not a modelled prop rig.
+-- NOTE: built from documented vehicle data, not verified in-game here — if the
+-- model/anim/bone names don't match on this build, report back and it's a
+-- one-line fix per name, not a redesign.
+---------------------------------------------------------------------------
+local UTILTRUCK_MODEL = 'utillitruck'
+local UTILTRUCK_ANIMS = {
+    { dict = 'va_utillitruck', anim = 'crane' },               -- [1] raise / lower
+    { dict = 'v_boomtruck', anim = 'rotate_crane_base' },      -- [2] slew left / right
+}
+local UTILTRUCK_COLLISION = {
+    { model = 'prop_crate_06a', bone = 'bucket', pos = vector3(0.0, -0.36, -0.86), rot = vector3(0.0, 0.0, 90.0) },
+    { model = 'prop_skate_rail', bone = 'arm_1', pos = vector3(0.0, 3.0, 0.06), rot = vector3(0.0, 0.0, 0.0) },
+    { model = 'prop_skate_rail', bone = 'arm_2', pos = vector3(0.0, -3.4, 0.1), rot = vector3(0.0, 0.0, 0.0) },
+}
+local craneActive = false
+
+local function spawnUtilTruck()
+    local h = joaat(UTILTRUCK_MODEL)
+    if not IsModelInCdimage(h) then
+        return lib.notify({ type = 'error', description = 'Utility truck model not available on this server' })
+    end
+    lib.requestModel(h, 8000)
+    local ped = PlayerPedId()
+    local c, hd = GetEntityCoords(ped), GetEntityHeading(ped)
+    local hr = math.rad(hd)
+    local sx, sy = c.x - math.sin(hr) * 4.0, c.y + math.cos(hr) * 4.0
+    local ok, gz = GetGroundZFor_3dCoord(sx, sy, c.z + 1.0, false)
+    local veh = CreateVehicle(h, sx, sy, ok and gz or c.z, hd, true, false)
+    SetModelAsNoLongerNeeded(h)
+    SetVehicleOnGroundProperly(veh)
+    SetVehicleFuelLevel(veh, 100.0)
+    TaskWarpPedIntoVehicle(ped, veh, -1)
+
+    -- TaskWarpPedIntoVehicle doesn't seat the ped the same tick it's called,
+    -- so confirm it actually landed before telling the player it worked.
+    for _ = 1, 20 do
+        if GetVehiclePedIsIn(ped, false) == veh then break end
+        Wait(50)
+    end
+    if GetVehiclePedIsIn(ped, false) ~= veh then
+        print(('[opslabs-towers] spawnUtilTruck: ped never registered in spawned veh %s'):format(veh))
+        return lib.notify({ type = 'error', description = "Spawned the utility truck but couldn't seat you — try again" })
+    end
+
+    lib.notify({ type = 'success', description = 'Utility truck — drive it normally. Park up, then Tools → Operate the bucket.' })
+end
+
+local function loadCraneAnims()
+    for _, m in ipairs(UTILTRUCK_ANIMS) do lib.requestAnimDict(m.dict) end
+end
+
+local function attachCraneCollision(veh)
+    local objs = {}
+    for _, c in ipairs(UTILTRUCK_COLLISION) do
+        local bone = GetEntityBoneIndexByName(veh, c.bone)
+        if bone and bone ~= -1 then
+            local h = joaat(c.model)
+            lib.requestModel(h, 5000)
+            local o = CreateObjectNoOffset(h, 0.0, 0.0, 0.0, true, false, false)
+            SetModelAsNoLongerNeeded(h)
+            SetEntityVisible(o, false, false)
+            AttachEntityToEntity(o, veh, bone, c.pos.x, c.pos.y, c.pos.z, c.rot.x, c.rot.y, c.rot.z, true, true, true, true, 2, true)
+            objs[#objs + 1] = o
+        end
+    end
+    return objs
+end
+
+function UtilTruckOperate()
+    local ped = PlayerPedId()
+    local veh
+
+    -- Same seat-registration lag as spawnUtilTruck: give it a grace window
+    -- instead of a single instant check, in case this fires right after
+    -- getting in (either the spawn warp, or a normal door-entry animation).
+    for _ = 1, 20 do
+        veh = GetVehiclePedIsIn(ped, false)
+        if veh ~= 0 then break end
+        Wait(50)
+    end
+
+    if veh == 0 or GetEntityModel(veh) ~= joaat(UTILTRUCK_MODEL) then
+        print(('[opslabs-towers] UtilTruckOperate: expected model %s, got veh=%s model=%s'):format(
+            joaat(UTILTRUCK_MODEL), veh, veh ~= 0 and GetEntityModel(veh) or 'n/a'))
+        return lib.notify({ type = 'error', description = 'Get in the utility truck first' })
+    end
+    if GetEntitySpeed(veh) > 0.5 then
+        return lib.notify({ type = 'error', description = 'Park it and come to a full stop first' })
+    end
+    if craneActive then return end
+    craneActive = true
+    loadCraneAnims()
+    local colObjs = attachCraneCollision(veh)
+    local mode, animTime = 1, { 0.0, 0.0 }
+    local sf = PlaceHud.buttons({ { 'Raise / lower', { 172, 173 } }, { 'Slew', { 174, 175 } }, { 'Stop operating', 177 } })
+    while craneActive and DoesEntityExist(veh) and IsPedInVehicle(ped, veh, false) do
+        Wait(0)
+        for _, c in ipairs({ 172, 173, 174, 175, 177 }) do DisableControlAction(0, c, true) end
+        local dir = 0
+        if IsDisabledControlPressed(0, 172) then mode, dir = 1, 1
+        elseif IsDisabledControlPressed(0, 173) then mode, dir = 1, -1
+        elseif IsDisabledControlPressed(0, 174) then mode, dir = 2, 1
+        elseif IsDisabledControlPressed(0, 175) then mode, dir = 2, -1 end
+        local m = UTILTRUCK_ANIMS[mode]
+        if dir ~= 0 then
+            if not IsEntityPlayingAnim(veh, m.dict, m.anim, 3) then
+                PlayEntityAnim(veh, m.anim, m.dict, 8.0, false, true, false, 0.0, 0)
+                Wait(0)
+                SetEntityAnimCurrentTime(veh, m.dict, m.anim, animTime[mode])
+            end
+            SetEntityAnimSpeed(veh, m.dict, m.anim, 0.12 * dir)
+            animTime[mode] = GetEntityAnimCurrentTime(veh, m.dict, m.anim)
+        elseif IsEntityPlayingAnim(veh, m.dict, m.anim, 3) then
+            SetEntityAnimSpeed(veh, m.dict, m.anim, 0.0)
+        end
+        PlaceHud.draw(sf, 'Utility truck · bucket', 'Hold to move · Stop operating to drive off', { 255, 190, 0 })
+        if IsDisabledControlJustPressed(0, 177) then break end
+    end
+    PlaceHud.release(sf)
+    craneActive = false
+    for _, o in ipairs(colObjs) do if DoesEntityExist(o) then DeleteEntity(o) end end
 end
 
 ---------------------------------------------------------------------------
@@ -974,7 +1213,14 @@ local POWER = {
     { 'Thermal imaging camera', 'Spot hot transformers and loose connections', 'temperature-high', thermal },
     { 'Cable spiking gun', 'Prove an underground cable dead before cutting', 'crosshairs', spike },
     { 'Heavy socket set & spanners', 'Torque transformer and cross-arm bolts', 'wrench', sockets },
-    { 'MEWP / cherry picker controls', 'Set up a cherry picker and ride the basket up to 14 m', 'truck-pickup', function() CreateThread(mewp) end },
+    { 'MEWP / cherry picker controls', 'Set it up, or climb back into the one you left parked · basket up to 100 m', 'truck-pickup', function() CreateThread(mewp) end },
+    { 'Pack up the cherry picker', 'Takes away the rig you left parked (ambers off)', 'truck-ramp-box', function()
+        if mewpActive then return lib.notify({ type = 'error', description = 'Get out of the basket first' }) end
+        if mewpPackUp() then lib.notify({ type = 'success', description = 'Cherry picker packed up' })
+        else lib.notify({ type = 'inform', description = 'You haven’t got one set up' }) end
+    end },
+    { 'Utility truck (real drivable bucket truck)', 'Spawns a real utility truck — drive it with normal vehicle controls, no teleport rig', 'truck-pickup', spawnUtilTruck },
+    { 'Operate the bucket (utility truck)', 'Parked in the utility truck · ↑↓ raise/lower · ←→ slew · Stop to drive off again', 'arrow-up-from-bracket', function() UtilTruckOperate() end },
 }
 if PTC.Enabled == false then         -- server/powerdiag.lua never registers the callbacks these call when the system is off
     local drop = { ['Power fault finder'] = true, ['Power repair tool'] = true, ['Power restoration kit'] = true }
@@ -1013,4 +1259,8 @@ RegisterCommand('toolkit', function()
     ToolKitMenu()
 end, false)
 
-AddEventHandler('onResourceStop', function(res) if res == GetCurrentResourceName() and thermalOn then SetSeethrough(false) end end)
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    if thermalOn then SetSeethrough(false) end
+    mewpPackUp()
+end)

@@ -3,9 +3,13 @@
 -- GET /towers · POST /towers · PATCH /towers/:id · DELETE /towers/:id · GET /live
 -- GET /isp · POST /isp/:id/provision { provider, plan, customer } · POST /isp/:id/status { status = active|suspended|cease }
 -- POST /poles/:id/status { status = auto|planned|building|maintenance }
+-- POST /poles/:id/autolink { actor } — one-click link an isolated pole back to the nearest substation (server/routes.lua)
 -- GET /faults?status=active|all · POST /faults/:id/ack { actor } · /faults/:id/close { actor, note } · /faults/:id/note { actor, text }
 -- GET /grid · POST /grid/action { action, id, unit, level, audience, area, text, proc, step, actor }
 -- GET /gunshots?status=active|all · POST /gunshots/:id/ack|close|reopen { actor, note }
+-- GET /routes?status=planned|dispatched · POST /routes { network, name, points, actor } · GET/PATCH/DELETE /routes/:id
+-- POST /routes/:id/dispatch { method = 'job'|'text', number, actor } — pole route planner (server/routes.lua)
+-- POST /routes/:id/autobuild { actor } — build the planned route right now (needs a tower admin online to survey the ground)
 
 local KEY = GetConvar('opslabs_towers_api_key', '') ~= '' and GetConvar('opslabs_towers_api_key', '') or GetConvar('opslabs_phone_api_key', '')
 local numbers = {}  -- identifier -> phone number (cache)
@@ -122,6 +126,47 @@ SetHttpHandler(function(req, res)
             local ok, err = GridAction(data, data.actor or 'website')
             if not ok then return reply(res, 400, { error = err or 'Failed' }) end
             return reply(res, 200, { data = { ok = true } })
+        end
+        -- pole route planner (server/routes.lua): plan a sequence of pole spots, save it, send it out
+        if path == '/api/routes' and req.method == 'GET' then
+            if not RoutesList then return reply(res, 404, { error = 'Route planner is off' }) end
+            return reply(res, 200, { data = RoutesList(query:match('status=(%a+)')) })
+        end
+        if path == '/api/routes' and req.method == 'POST' then
+            if not RouteSave then return reply(res, 404, { error = 'Route planner is off' }) end
+            local r, err = RouteSave(nil, data, data.actor or 'website')
+            if not r then return reply(res, 400, { error = err }) end
+            return reply(res, 200, { data = r })
+        end
+        local routeId, routeAction = path:match('^/api/routes/(%d+)/?(%a*)$')
+        if routeId and routeAction == '' and req.method == 'GET' then
+            if not RouteGet then return reply(res, 404, { error = 'Route planner is off' }) end
+            local r = RouteGet(routeId)
+            if not r then return reply(res, 404, { error = 'Not found' }) end
+            return reply(res, 200, { data = r })
+        end
+        if routeId and routeAction == '' and req.method == 'PATCH' then
+            if not RouteSave then return reply(res, 404, { error = 'Route planner is off' }) end
+            local r, err = RouteSave(routeId, data, data.actor or 'website')
+            if not r then return reply(res, 400, { error = err }) end
+            return reply(res, 200, { data = r })
+        end
+        if routeId and routeAction == '' and req.method == 'DELETE' then
+            if not RouteDelete then return reply(res, 404, { error = 'Route planner is off' }) end
+            if not RouteDelete(routeId) then return reply(res, 400, { error = 'Not found, or already dispatched' }) end
+            return reply(res, 200, { data = { ok = true } })
+        end
+        if routeId and routeAction == 'dispatch' and req.method == 'POST' then
+            if not RouteDispatch then return reply(res, 404, { error = 'Route planner is off' }) end
+            local r, err = RouteDispatch(routeId, data, data.actor or 'website')
+            if not r then return reply(res, 400, { error = err }) end
+            return reply(res, 200, { data = r })
+        end
+        if routeId and routeAction == 'autobuild' and req.method == 'POST' then
+            if not RouteAutoBuild then return reply(res, 404, { error = 'Route planner is off' }) end
+            local r, err = RouteAutoBuild(routeId, data.actor or 'website')
+            if not r then return reply(res, 400, { error = err }) end
+            return reply(res, 200, { data = r })
         end
         -- OPS Secure CCTV live (server/cctvlive.lua). ?viewer=<character identifier> = an OPS Hub customer: only the
         -- cameras they own / are shared / their organisation's, with remote viewing on and internet at the recorder
@@ -251,6 +296,14 @@ SetHttpHandler(function(req, res)
             local ok, err = IspSetPoleStatus(poleId, data.status)
             if not ok then return reply(res, 400, { error = err }) end
             return reply(res, 200, { data = { ok = true } })
+        end
+        -- one-click "link this isolated pole back to the nearest substation" (server/routes.lua)
+        local linkPoleId = tonumber(path:match('^/api/poles/(%d+)/autolink$'))
+        if linkPoleId and req.method == 'POST' then
+            if not RouteAutoLink then return reply(res, 404, { error = 'Route planner is off' }) end
+            local r, err = RouteAutoLink(linkPoleId, data.actor or 'website')
+            if not r then return reply(res, 400, { error = err }) end
+            return reply(res, 200, { data = r })
         end
         local ontId, action = path:match('^/api/isp/(%d+)/(%a+)$')
         if ontId and req.method == 'POST' then

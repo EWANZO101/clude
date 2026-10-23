@@ -166,6 +166,19 @@ check = function(v, x, y, z, snap, who)
             if (t.installed_at or 0) >= (snap.at or 0) and (not who or t.installed_by == who) then n = n + 1 end
         end
         return { ok = n >= 1, have = n, need = 1, label = 'Tracker fitted (by you)' }
+    elseif kind == 'pole_route' then
+        -- planned route (server/routes.lua): a pole must go up within r of every point. v.points always comes
+        -- from the dispatching route (never the catalog's own empty placeholder) — see needsExternalData() in
+        -- opslabs-phone/server/platform.lua, which stops this job type being created any other way.
+        local pts = v.points or {}
+        local pat = v.network == 'power' and '^opslabs_power_pole_%d+m$' or '^opslabs_pole_%d+m$'
+        local done = 0
+        for _, pt in ipairs(pts) do
+            for id, f in pairs(Cabling.fixtures) do
+                if id > (snap.fixture or 0) and f.model and f.model:find(pat) and d2(f, pt.x, pt.y) <= r then done = done + 1 break end
+            end
+        end
+        return { ok = #pts > 0 and done >= #pts, have = done, need = #pts, label = 'Poles placed along the planned route' }
     end
     return { ok = false, have = 0, need = 1, label = 'Unknown check ' .. tostring(kind) }
 end

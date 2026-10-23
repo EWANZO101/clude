@@ -380,20 +380,25 @@ end
 --- Inside a building: ceiling lights and the high-level kit (fibre entry box, junction box).
 local BUILDING_HALF = { opslabs_grid_subbuilding = { 9.0, 5.0 }, opslabs_grid_subshell = { 9.0, 5.0 }, opslabs_house_customer = { 6.0, 4.5 }, opslabs_depot = { 11.0, 7.0 }, opslabs_exchange_building = { 8.0, 5.0 } }
 
-local function indoors()
-    local ped = PlayerPedId()
-    if GetInteriorFromEntity(ped) ~= 0 then return true end
-    local p = GetEntityCoords(ped)
+-- which walk-in building (if any) a point sits inside — its own fixture record (with .id, so the
+-- caller can look up its spawned entity via CablingEntities('f' .. id)), or nil if it's not inside one
+BuildingFixtureAt = function(pos)
+    pos = pos or GetEntityCoords(PlayerPedId())
     for _, f in pairs(CablingFixtures and CablingFixtures() or {}) do
         local h = BUILDING_HALF[f.model]
         if h then
             local a = math.rad(-(f.heading or 0.0))
-            local dx, dy = p.x - f.x, p.y - f.y
+            local dx, dy = pos.x - f.x, pos.y - f.y
             local lx, ly = dx * math.cos(a) - dy * math.sin(a), dx * math.sin(a) + dy * math.cos(a)
-            if math.abs(lx) < h[1] - 0.15 and math.abs(ly) < h[2] - 0.15 and p.z > f.z - 0.5 and p.z < f.z + 4.5 then return true end
+            if math.abs(lx) < h[1] - 0.15 and math.abs(ly) < h[2] - 0.15 and pos.z > f.z - 0.5 and pos.z < f.z + 4.5 then return f end
         end
     end
-    return false
+end
+
+local function indoors()
+    local ped = PlayerPedId()
+    if GetInteriorFromEntity(ped) ~= 0 then return true end
+    return BuildingFixtureAt(GetEntityCoords(ped)) ~= nil
 end
 
 local function byModel(model)
@@ -403,14 +408,29 @@ local function byModel(model)
     end
 end
 
+local function text3d(x, y, z, txt, r, g, b)
+    SetDrawOrigin(x, y, z, 0)
+    SetTextScale(0.34, 0.34)
+    SetTextFont(4)
+    SetTextCentre(true)
+    SetTextColour(r or 255, g or 255, b or 255, 255)
+    SetTextOutline()
+    BeginTextCommandDisplayText('STRING')
+    AddTextComponentSubstringPlayerName(txt)
+    EndTextCommandDisplayText(0.0, 0.0)
+    ClearDrawOrigin()
+end
+
 function LadderWallEquipment(onClose, wallDir)
     local inside = indoors()
+    local markerThread = false
+    local function finish() markerThread = false onClose() end
     local options = {
         { title = inside and 'Indoors · ceiling & high level' or 'Outside wall · at the eaves', icon = inside and 'house' or 'house-chimney', iconColor = '#636366', readOnly = true },
     }
     if ToolDrill and not inside then
         options[#options + 1] = { title = 'Cordless drill · drill an entry hole here', description = 'Through the wall in front of you, then fit the entry bushing', icon = 'screwdriver-wrench', iconColor = '#0a84ff',
-            onSelect = function() ToolDrill({ dir = wallDir or vector3(-math.sin(math.rad(GetEntityHeading(PlayerPedId()))), math.cos(math.rad(GetEntityHeading(PlayerPedId()))), 0.0) }) onClose() end }
+            onSelect = function() ToolDrill({ dir = wallDir or vector3(-math.sin(math.rad(GetEntityHeading(PlayerPedId()))), math.cos(math.rad(GetEntityHeading(PlayerPedId()))), 0.0) }) finish() end }
     end
     local LK = CC.LadderKit or {}
     for _, model in ipairs((inside and LK.inside or LK.outside) or {}) do
@@ -423,26 +443,53 @@ function LadderWallEquipment(onClose, wallDir)
                     if r and r.ok then lib.notify({ type = 'success', description = e.label .. ' fitted' })
                     else lib.notify({ type = 'error', description = (r and r.error == 'not allowed') and 'Only network engineers can fit equipment' or (r and r.error) or 'Failed' }) end
                 end
-                onClose()
+                finish()
             end }
         end
     end
-    -- what's already fitted within reach
+    -- what's already fitted within reach — closest first and numbered, so a cluster of the
+    -- same kit on one wall can still be told apart instead of guessing which "Remove: X" is which
     local here = GetEntityCoords(PlayerPedId())
+    local nearby = {}
     for _, f in pairs(CablingFixtures and CablingFixtures() or {}) do
         for _, m in ipairs((inside and LK.inside or LK.outside) or {}) do
-            if f.model == m and #(here - vector3(f.x, f.y, f.z)) < 1.8 then
-                local e = byModel(m)
-                options[#options + 1] = { title = 'Remove: ' .. (e and e.label or m), icon = 'trash', iconColor = '#ff5a5f', onSelect = function()
-                    if lib.progressBar({ duration = 3000, label = 'Taking it off the wall', canCancel = true, disable = { move = true, combat = true } }) then
-                        if not lib.callback.await('opslabs-towers:fixture:delete', false, f.id) then lib.notify({ type = 'error', description = 'Only network engineers can remove equipment' }) end
-                    end
-                    onClose()
-                end }
+            if f.model == m then
+                local d = #(here - vector3(f.x, f.y, f.z))
+                if d < 1.8 then nearby[#nearby + 1] = { f = f, e = byModel(m), d = d } end
             end
         end
     end
-    lib.registerContext({ id = 'ladder_equipment', root = true, title = 'Up the ladder', options = options, onExit = onClose })
+    table.sort(nearby, function(a, b) return a.d < b.d end)
+    local labelCount, seen = {}, {}
+    for _, n in ipairs(nearby) do
+        local label = n.e and n.e.label or n.f.model
+        labelCount[label] = (labelCount[label] or 0) + 1
+    end
+    for i, n in ipairs(nearby) do
+        local f, label = n.f, (n.e and n.e.label or n.f.model)
+        seen[label] = (seen[label] or 0) + 1
+        local tag = labelCount[label] > 1 and (' #' .. seen[label]) or ''
+        options[#options + 1] = { title = ('#%d · Remove: %s%s'):format(i, label, tag), description = ('%.1f m away'):format(n.d), icon = 'trash', iconColor = '#ff5a5f', onSelect = function()
+            if lib.progressBar({ duration = 3000, label = 'Taking it off the wall', canCancel = true, disable = { move = true, combat = true } }) then
+                if not lib.callback.await('opslabs-towers:fixture:delete', false, f.id) then lib.notify({ type = 'error', description = 'Only network engineers can remove equipment' }) end
+            end
+            finish()
+        end }
+    end
+    -- a small floating number over each fitted item while the menu's open, matching the list above
+    if #nearby > 0 then
+        markerThread = true
+        CreateThread(function()
+            while markerThread do
+                Wait(0)
+                for i, n in ipairs(nearby) do
+                    DrawMarker(28, n.f.x, n.f.y, n.f.z, 0, 0, 0, 0, 0, 0, 0.06, 0.06, 0.06, 255, 69, 58, 200, false, false, 2, false, nil, nil, false)
+                    text3d(n.f.x, n.f.y, n.f.z + 0.14, tostring(i), 255, 255, 255)
+                end
+            end
+        end)
+    end
+    lib.registerContext({ id = 'ladder_equipment', root = true, title = 'Up the ladder', options = options, onExit = finish })
     lib.showContext('ladder_equipment')
 end
 

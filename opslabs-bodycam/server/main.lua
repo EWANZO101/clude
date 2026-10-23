@@ -194,6 +194,28 @@ handlers.canUse = function(src)
     return { allowed = ok, reason = why, state = clientState(src) }
 end
 
+-- first-spawn call sign prompt: whichever jobs are configured for a camera (Config.Access.Jobs —
+-- police / fire / ems or whatever a server names them), independent of Config.Access.Mode, so this
+-- still offers a call sign even on an 'item' or 'everyone' server. Never prompts someone who already
+-- has one (framework metadata, or set here before).
+handlers.checkCallsignPrompt = function(src)
+    local p = Bridge.Player(src)
+    local jobs = (Config.Access or {}).Jobs or {}
+    if not p.job or not jobs[p.job] then return { prompt = false } end
+    if p.callsign and p.callsign:match('%S') then return { prompt = false } end
+    return { prompt = true, jobLabel = p.jobLabel or p.job }
+end
+
+handlers.setCallsign = function(src, d)
+    local p = Bridge.Player(src)
+    local jobs = (Config.Access or {}).Jobs or {}
+    if not p.job or not jobs[p.job] then return { ok = false } end
+    local callsign = tostring(type(d) == 'table' and d.callsign or ''):gsub('[%c]', ''):gsub('^%s+', ''):gsub('%s+$', ''):sub(1, 24)
+    if callsign == '' then return { ok = false } end
+    Player(src).state:set('callsign', callsign, true)
+    return { ok = true, callsign = callsign }
+end
+
 handlers.start = function(src, d) return startSession(src, type(d) == 'table' and d.trigger or 'manual') end
 
 handlers.stop = function(src, d)

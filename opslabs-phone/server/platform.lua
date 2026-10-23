@@ -262,12 +262,15 @@ local function notifyCompany(coId, perm, notif, except)
     end
 end
 
--- these job types are only ever checked against a specific customer domain (server/web.lua WebVerify,
--- server/cloud.lua); only the dedicated OPS Web / OPS Domains / OPS Cloud order flows pick one and set
--- verify.domain_id, so a job of this kind created any other way can never pass its own completion check.
-local function needsDomain(t)
+-- these job types can only be created correctly by a specific flow that supplies extra data the generic
+-- dispatch paths don't have: web_* types need a customer's domain_id (server/web.lua WebVerify, server/cloud.lua
+-- — only OPS Web / OPS Domains / OPS Cloud's own order flows pick one); pole_route needs the planned route's
+-- point list (only server/routes.lua's RouteDispatch, in opslabs-towers, supplies it). Created any other way,
+-- a job of this kind either can never pass its own completion check (web_*, points absent -> domain_id nil) or
+-- — worse — trivially always passes it (pole_route with an empty points array: 0 >= 0 needed).
+local function needsExternalData(t)
     local k = t and t.verify and t.verify.kind
-    return type(k) == 'string' and k:find('^web_') ~= nil
+    return type(k) == 'string' and (k:find('^web_') ~= nil or k == 'pole_route')
 end
 
 local function createJob(c, t, place, opts)
@@ -475,6 +478,9 @@ On('opsAccept', function(src, _, d, a)
         { a.id, nameOf(a), now(), json.encode({ snap = snap }), j.id, a.id })
     if n ~= 1 then return { error = 'Someone else has taken that job' } end
     audit(nameOf(a), j.company_id, 'job.accept', j.ref)
+    -- a generic "you just accepted a job" broadcast any resource can react to (e.g. opslabs-towers' pole route
+    -- guide, which only needs type/verify to know whether this is one of its own job kinds)
+    TriggerClientEvent('ops:jobAccepted', src, { id = j.id, ref = j.ref, type = j.type, title = j.title, x = j.x, y = j.y, z = j.z, verify = decode(j.verify, {}) })
     if j.customer_id then
         local cust = MySQL.single.await('SELECT identifier FROM ops_customers WHERE id = ?', { j.customer_id })
         local cs = cust and cust.identifier and GetSourceByIdentifier(cust.identifier)
@@ -483,12 +489,13 @@ On('opsAccept', function(src, _, d, a)
     return { ok = true, x = j.x, y = j.y }
 end)
 
-On('opsRelease', function(_, _, d, a)
+On('opsRelease', function(src, _, d, a)
     local j = getJob(d.id)
     if not j then return { error = 'Job not found' } end
     if j.assigned_to ~= a.id and not can(a, j.company_id, 'jobs.dispatch') then return { denied = true } end
     MySQL.update.await("UPDATE ops_jobs SET status = 'open', assigned_to = NULL, assigned_name = NULL, accepted_at = NULL, progress = NULL WHERE id = ?", { j.id })
     audit(nameOf(a), j.company_id, 'job.release', j.ref)
+    if j.assigned_to == a.id then TriggerClientEvent('ops:jobReleased', src, { id = j.id, type = j.type }) end
     return { ok = true }
 end)
 
@@ -594,7 +601,7 @@ On('opsDispatch', function(src, _, d, a)
     if not c or not can(a, c.id, 'jobs.dispatch') then return { denied = true } end
     local t = TYPES[d.type]
     if not t or t.company ~= c.code then return { error = 'Pick a job type' } end
-    if needsDomain(t) then return { error = 'This job is tied to a customer domain — order it from OPS Web / OPS Domains / OPS Cloud instead' } end
+    if needsExternalData(t) then return { error = 'This job is tied to a customer domain — order it from OPS Web / OPS Domains / OPS Cloud instead' } end
     local p = playerPos(src)
     local place = { name = Clean(d.location or 'Dispatcher location', 160), x = p.x, y = p.y, z = p.z }
     local id, ref = createJob(c, t, place, { by = nameOf(a), emergency = d.emergency == true, price = tonumber(d.price) })
@@ -610,7 +617,7 @@ Register('opsServices', function(src, phone)
     local out = {}
     for _, t in ipairs(CAT.jobTypes or {}) do
         local c = CO[t.company]
-        if c and coOn(c) and typeOn(t) and t.price and t.price > 0 and not needsDomain(t) then out[#out + 1] = { code = t.code, company = c.code, companyName = c.name, color = c.color, icon = c.icon, title = t.title, desc = t.desc, price = t.price } end
+        if c and coOn(c) and typeOn(t) and t.price and t.price > 0 and not needsExternalData(t) then out[#out + 1] = { code = t.code, company = c.code, companyName = c.name, color = c.color, icon = c.icon, title = t.title, desc = t.desc, price = t.price } end
     end
     local cust = MySQL.single.await('SELECT id FROM ops_customers WHERE identifier = ?', { phone.identifier })
     local mine = cust and MySQL.query.await(JOB_SELECT .. "WHERE j.customer_id = ? ORDER BY j.id DESC LIMIT 15", { cust.id }) or {}
@@ -625,7 +632,7 @@ Register('opsRequest', function(src, phone, d)
     local t = TYPES[d.type]
     local c = t and CO[t.company]
     if not c then return { error = 'Pick a service' } end
-    if needsDomain(t) then return { error = 'Order this from OPS Web, OPS Domains or OPS Cloud so you can pick which domain it’s for' } end
+    if needsExternalData(t) then return { error = 'Order this from OPS Web, OPS Domains or OPS Cloud so you can pick which domain it’s for' } end
     local open = MySQL.scalar.await([[SELECT COUNT(*) FROM ops_jobs j JOIN ops_customers cu ON cu.id = j.customer_id
         WHERE cu.identifier = ? AND j.status IN ('open','assigned','in_progress')]], { phone.identifier }) or 0
     if open >= 3 then return { error = 'You already have 3 open requests' } end
