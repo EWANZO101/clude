@@ -229,15 +229,23 @@ local function fixtureLabel(id)
     for _, e in ipairs(CC.Equipment) do if e.model == f.model then return (e.label:gsub(' %(.*%)', '')) end end
     return f.model
 end
-local function nearestFixtureFor(kind, pos, maxDist)
-    local best, bd = nil, maxDist
+-- every connectable fixture within reach, nearest first (plural: lets a caller offer a choice
+-- instead of silently always grabbing the closest one, which is the wrong one often enough
+-- when equipment is mounted in a cluster)
+local function nearestFixturesFor(kind, pos, maxDist)
+    local out = {}
     for id, f in pairs(data.fixtures) do
         if connectable(kind, f.model) then
             local d = #(pos - vector3(f.x, f.y, f.z + 0.1))
-            if d < bd then best, bd = id, d end
+            if d < maxDist then out[#out + 1] = { id = id, d = d } end
         end
     end
-    return best
+    table.sort(out, function(a, b) return a.d < b.d end)
+    return out
+end
+local function nearestFixtureFor(kind, pos, maxDist)
+    local list = nearestFixturesFor(kind, pos, maxDist)
+    return list[1] and list[1].id
 end
 local function endName(r, which)
     local t, f = r[which .. '_tower'], r[which .. '_fixture']
@@ -613,8 +621,18 @@ end
 local function aim(ignore, dist)
     local camPos, camRot = GetGameplayCamCoord(), GetGameplayCamRot(2)
     local to = camPos + rotToDir(camRot) * (dist or 12.0)
+    -- standing inside one of our own walk-in buildings, the probe used to stop on the building's
+    -- own collision well short of the real wall ("invisible wall" when wiring/placing kit indoors).
+    -- Its collision isn't needed for the instant this synchronous probe takes, so blip it off.
+    local buildingEnt
+    if BuildingFixtureAt and CablingEntities then
+        local bf = BuildingFixtureAt(camPos)
+        local e = bf and CablingEntities('f' .. bf.id)
+        if e and DoesEntityExist(e) then buildingEnt = e SetEntityCollision(e, false, true) end
+    end
     local ray = StartExpensiveSynchronousShapeTestLosProbe(camPos.x, camPos.y, camPos.z, to.x, to.y, to.z, 1 + 16, ignore or PlayerPedId(), 4)
     local _, hit, at, normal, ent = GetShapeTestResult(ray)
+    if buildingEnt then SetEntityCollision(buildingEnt, true, true) end
     if hit ~= 1 then return nil end
     return at, normal, ent
 end
@@ -741,6 +759,19 @@ local function layRun(kind, color, box, opts)
     local result, endTower, endFixture
     local ghost, ghostAt, ghostT = {}, nil, 0
     local slack, slackAt, slackT = {}, nil, 0
+    -- when more than one connectable fixture is in reach, which one the player's cycled to,
+    -- plus the entity currently outlined so it can be un-outlined when the target changes
+    local fixCycle, fixCandIds, fixOutlineId = 0, {}, nil
+    local function setFixOutline(id)
+        local key = id and ('f' .. id) or nil
+        if fixOutlineId == key then return end
+        for _, e in ipairs(fixOutlineId and spawned[fixOutlineId] or {}) do if DoesEntityExist(e) then SetEntityDrawOutline(e, false) end end
+        if key then
+            SetEntityDrawOutlineColor(10, 132, 255, 255)
+            for _, e in ipairs(spawned[key] or {}) do if DoesEntityExist(e) then SetEntityDrawOutline(e, true) end end
+        end
+        fixOutlineId = key
+    end
     local fcol = FIBRE_R[color] and color or 'black'
     local slackPrefix = kind == 'fibre' and ('opslabs_fibre_%s_'):format(fcol) or 'opslabs_cat6_seg_'
     local slackJoint = kind == 'fibre' and ('opslabs_fibre_%s_joint'):format(fcol) or 'opslabs_cat6_joint'
@@ -786,7 +817,7 @@ local function layRun(kind, color, box, opts)
             end
         end
         local at, normal, ent = aim(nil, 40.0)
-        local target, tgtTower, tgtFixture
+        local target, tgtTower, tgtFixture, fixCandCount
         local straight, poleHint
         -- a pole near the crosshair: clamp to it on the side the cable comes from (the ring head near the top)
         local pole, pz = pickPole()
@@ -823,9 +854,35 @@ local function layRun(kind, color, box, opts)
                         if sp and sp[1] == ent and connectable(kind, f.model) then tgtFixture = id break end
                     end
                 end
-                -- pole kit has no collision: aiming within ~40 cm of it counts too
-                tgtFixture = tgtFixture or nearestFixtureFor(kind, at, 0.45)
+                -- pole kit has no collision: aiming within ~40 cm of it counts too. When more than
+                -- one sits in reach (a crowded wall) let the player cycle instead of silently always
+                -- grabbing the nearest — which is the wrong one often enough to matter.
+                if not tgtFixture then
+                    local cands = nearestFixturesFor(kind, at, 0.45)
+                    local sig = {}
+                    for _, c in ipairs(cands) do sig[#sig + 1] = c.id end
+                    table.sort(sig)
+                    local changed = #sig ~= #fixCandIds
+                    if not changed then for i, v in ipairs(sig) do if v ~= fixCandIds[i] then changed = true break end end end
+                    if changed then fixCycle, fixCandIds = 0, sig end
+                    if #cands > 0 then
+                        if #cands > 1 then
+                            if IsDisabledControlJustPressed(0, 175) then fixCycle = (fixCycle + 1) % #cands end
+                            if IsDisabledControlJustPressed(0, 174) then fixCycle = (fixCycle - 1) % #cands end
+                        end
+                        fixCycle = fixCycle % #cands
+                        tgtFixture = cands[fixCycle + 1].id
+                        fixCandCount = #cands
+                        for _, c in ipairs(cands) do
+                            if c.id ~= tgtFixture then
+                                local f = data.fixtures[c.id]
+                                DrawMarker(28, f.x, f.y, f.z + 0.12, 0, 0, 0, 0, 0, 0, 0.05, 0.05, 0.05, 255, 255, 255, 120, false, false, 2, false, nil, nil, false)
+                            end
+                        end
+                    end
+                end
             end
+            setFixOutline(plugs and not tgtTower and tgtFixture or nil)
             if plugs and not poleHint then
                 local snap = snapToTrunking(at)
                 if snap then target = { x = snap.pos.x, y = snap.pos.y, z = snap.pos.z, nx = snap.n.x, ny = snap.n.y, nz = snap.n.z, t = snap.run } end
@@ -865,8 +922,9 @@ local function layRun(kind, color, box, opts)
                 end
                 if #ghost == 0 then DrawLine(l.x, l.y, l.z, tp.x, tp.y, tp.z, 255, 255, 255, 200) end
             end
-        elseif #ghost > 0 then
-            clearGhost() ghostAt = nil
+        else
+            if #ghost > 0 then clearGhost() ghostAt = nil end
+            setFixOutline(nil)
         end
         -- the loose cable you're pulling: it drops from the last fixed point to the ground,
         -- trails along the floor to your feet and up to your hand
@@ -902,7 +960,8 @@ local function layRun(kind, color, box, opts)
         end
         local extra = (target and #pts > 0) and seglen(pts[#pts], target) or 0.0
         local over = boxed and length + extra > maxLen
-        local hint = (tgtTower or tgtFixture) and plugs and ('Enter to connect to ' .. (towerName(tgtTower) or fixtureLabel(tgtFixture) or 'this device'))
+        local hint = (tgtTower or tgtFixture) and plugs and ('Enter to connect to ' .. (towerName(tgtTower) or fixtureLabel(tgtFixture) or 'this device')
+                .. (fixCandCount and fixCandCount > 1 and ('   ·   ' .. fixCandCount .. ' here, ←/→ to pick') or ''))
             or (plugs and target and target.t and 'Inside trunking')
             or poleHint
             or (straight == 'plumb' and 'straight up / down') or (straight == 'level' and 'level')
@@ -958,6 +1017,7 @@ local function layRun(kind, color, box, opts)
     if boxed then TriggerEvent('opslabs:carry', 'cable', false) end
     clearGhost()
     clearSlack()
+    setFixOutline(nil)
     for _, list in pairs(preview) do for _, e in ipairs(list) do if DoesEntityExist(e) then DeleteEntity(e) end end end
     return result, endTower, endFixture, dropped
 end

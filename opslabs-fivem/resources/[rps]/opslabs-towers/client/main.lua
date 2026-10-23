@@ -243,6 +243,16 @@ function PlacementMode(kind, model, range, startHeading, title, opts)
         if e.building and e.model == model then reach = math.max(reach, 90.0) end
         if e.reach and e.model == model then reach = math.max(reach, e.reach) end
     end
+    -- placing kit deep inside one of our own walk-in buildings (house/depot/exchange/substation)
+    -- used to hit an "invisible wall" — the aim probe stopping on the building's own collision
+    -- well short of the real interior wall. Its collision isn't needed while you're already
+    -- standing inside it, so switch it off for the duration of placement and put it back after.
+    local buildingEnt
+    if BuildingFixtureAt and CablingEntities then
+        local bf = BuildingFixtureAt(GetEntityCoords(PlayerPedId()))
+        local e = bf and CablingEntities('f' .. bf.id)
+        if e and DoesEntityExist(e) then buildingEnt = e SetEntityCollision(e, false, true) end
+    end
     local hash = model and model ~= '' and joaat(model) or nil
     if hash and not IsModelInCdimage(hash) then hash = nil end
     local ghost
@@ -303,6 +313,7 @@ function PlacementMode(kind, model, range, startHeading, title, opts)
     end
     PlaceHud.release(sf)
     if ghost and DoesEntityExist(ghost) then DeleteEntity(ghost) end
+    if buildingEnt and DoesEntityExist(buildingEnt) then SetEntityCollision(buildingEnt, true, true) end
     return result
 end
 
@@ -928,3 +939,6 @@ RegisterCommand(Config.Command, function()
     end
     MainMenu(false)
 end, false)
+
+-- so kit can be fitted from height: the cherry picker's equipment menu opens any company's section
+TowersSectionMenu = function(id) SectionMenu(id) end

@@ -800,7 +800,8 @@ function GridWhy(txId)
     for _, x in ipairs(T.transformers) do if x.f.id == txId then tx = x end end
     if not tx then return out end
     if not tx.pole then
-        out[#out + 1] = { code = 'tx_off_pole', text = 'The transformer isn’t fitted on a power pole', fix = 'Move it onto a pole (within ' .. (CG.TransformerOnPole or 1.2) .. ' m)' }
+        out[#out + 1] = { code = 'tx_off_pole', text = 'The transformer isn’t fitted on a power pole',
+            fix = ('Move it onto a power pole — pick it up and place it again within %.1f m of the pole (sideways)'):format(CG.TransformerOnPole or 1.2) }
         return out
     end
     if S.txFail[txId] then out[#out + 1] = { code = 'tx_failed', text = ('Pole transformer #%d has failed'):format(txId), fix = 'Fit a new transformer', fixable = true, id = txId } end
@@ -826,7 +827,13 @@ function GridWhy(txId)
         for k in pairs(prev) do if k:match('^B%d+H$') then feeder = true end end
         out[#out + 1] = { code = 'no_route', text = feeder and ('Pole #%d reaches a substation, but the substation has no 400 kV line back to a power station'):format(tx.pole)
             or ('Pole #%d isn’t on an 11 kV feeder — no HV conductor connects it back to a substation'):format(tx.pole),
-            fix = feeder and 'Run 400 kV transmission (pylons) from a power station to the substation' or 'String 11 kV (HV) conductor pole to pole back to a substation' }
+            fix = feeder
+                and 'Run 400 kV transmission conductor from a power station to the substation: /towers → San Andreas Power & Light → Generation → build a power station (if there isn’t one yet), '
+                    .. 'then Transmission → place a line of 400 kV lattice pylons from the station towards the substation, then Run power cable → pick 400 kV / transmission and follow the pylons in, finishing on the substation.'
+                or 'You don’t need one continuous cable all the way to the substation — build a chain of short spans, pole to pole, each one just reaching the next: '
+                    .. '/towers → San Andreas Power & Light → Power equipment → Power poles, placed at normal spacing between here and a substation (reuse any that already exist); '
+                    .. 'then Run power cable → pick 11 kV / HV and lay a separate short span between each adjacent pair — the game links them into one feeder automatically wherever the ends land close together. '
+                    .. 'No single run needs to cover more than the gap to the next pole. Or stand at this pole with the Line Tool (/linetool) and use “Run the right conductor from here” to start the next span from here.' }
         return out
     end
     -- walk the route from the transformer's pole to the station: everything that stops power on the way
@@ -846,7 +853,8 @@ function GridWhy(txId)
         end
         if T.noWay[rid or -1] then
             local sf = subOf(T.noWay[rid])
-            out[#out + 1] = { code = 'no_way', text = ('%s has no free 11 kV feeder breaker for run #%d'):format(nameOf('sub', sf), rid), fix = 'Fit another 11 kV switchgear lineup in the substation' }
+            out[#out + 1] = { code = 'no_way', text = ('%s has no free 11 kV feeder breaker for run #%d'):format(nameOf('sub', sf), rid),
+                fix = 'Fit another 11 kV switchgear lineup in the substation: /towers → San Andreas Power & Light → Substation plant → 11 kV switchgear, placed within 16 m of the substation building or RTU pole — each lineup adds 4 feeder breakers.' }
         end
     end
     local guard = 0
@@ -863,7 +871,8 @@ function GridWhy(txId)
         if sid and not subHealthy(sid) then
             local st, sf = S.subs[sid] or {}, subOf(sid)
             if sf and sf.spec and not sf.spec.ok then
-                out[#out + 1] = { code = 'sub_kit', text = ('%s is missing plant: %s'):format(nameOf('sub', sf), table.concat(sf.spec.missing or {}, ', ')), fix = 'Fit the missing plant in the substation' }
+                out[#out + 1] = { code = 'sub_kit', text = ('%s is missing plant: %s'):format(nameOf('sub', sf), table.concat(sf.spec.missing or {}, ', ')),
+                    fix = ('Fit the missing plant listed above, within 16 m of the substation building or RTU pole: /towers → San Andreas Power & Light → Substation plant.') }
             end
             if st.fire then out[#out + 1] = { code = 'sub_fire', id = sid, text = nameOf('sub', sf) .. ' is on fire / fire-damaged', fix = 'Put it out and repair it', fixable = true } end
             if st.maint then out[#out + 1] = { code = 'sub_maint', id = sid, text = nameOf('sub', sf) .. ' is out for maintenance', fix = 'Return it to service', fixable = true } end

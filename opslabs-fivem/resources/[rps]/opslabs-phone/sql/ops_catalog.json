@@ -2131,6 +2131,22 @@
    "cert": "fibre_splice"
   },
   {
+   "code": "pole_route_fibre",
+   "company": "fibre",
+   "title": "Pole route — build out",
+   "desc": "Build telecom poles along the planned route — control room has sent the exact spots on your GPS.",
+   "wage": 90,
+   "price": 0,
+   "auto": false,
+   "verify": {
+    "kind": "pole_route",
+    "points": [],
+    "network": "fibre",
+    "radius": 15
+   },
+   "warranty": false
+  },
+  {
    "code": "comms_line",
    "company": "comms",
    "title": "Telephone line installation",
@@ -2312,6 +2328,22 @@
    },
    "warranty": false,
    "cert": "electrical"
+  },
+  {
+   "code": "pole_route_power",
+   "company": "sapl",
+   "title": "Pole route — build out",
+   "desc": "Build power poles along the planned route and fit kit — control room has sent the exact spots on your GPS.",
+   "wage": 90,
+   "price": 0,
+   "auto": false,
+   "verify": {
+    "kind": "pole_route",
+    "points": [],
+    "network": "power",
+    "radius": 15
+   },
+   "warranty": false
   },
   {
    "code": "solar_install",

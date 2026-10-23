@@ -138,6 +138,12 @@ Config.Cabling = {
         -- telescopic: 10 sections of 0.32 m, nested to 0.9 m closed, end to end at 3.2 m (opslabs-props/source/build_ladder_tele.py)
         { id = 'l3', label = 'Telescopic ladder · 0.9 m → 3.2 m', base = 'opslabs_ladder_tele_base', fly = 'opslabs_ladder_tele_sec', top = 0.905, maxExt = 2.295,
           tele = { n = 10, len = 0.32 } },
+        -- SAPL insulated telescopic ladder (fibreglass rails — reuses the same telescopic sections, just more of them): 63
+        -- sections of 0.32 m, nested to 0.9 m closed, end to end at ~20.2 m. maxExt is tuned so sections sit exactly
+        -- tele.len apart at full extension (zero visual gap) — the formula is maxExt = tele.len * n - top; going much
+        -- taller than this starts needing an impractical number of entities per ladder for no visual gain.
+        { id = 'l20i', label = 'SAPL insulated ladder (fibreglass) · 0.9 m → 20 m', base = 'opslabs_ladder_tele_base', fly = 'opslabs_ladder_tele_sec',
+          top = 0.905, maxExt = 19.255, tele = { n = 63, len = 0.32 }, insulated = true },
     },
     LadderMaxPerPlayer = 2,
     ClimbAnimFlip = true,      -- climbers face the pole; set false if they ever end up with their back to it
@@ -571,6 +577,19 @@ Config.City = {
 }
 
 Config.Danger = { Enabled = true, SessionMinutes = 15, MaxFails = 5, LockMinutes = 10 }
+
+-- ------------------------------------------------------------------------------
+-- POLE ROUTE PLANNER — plan a chain of pole spots (OPS Hub / in-game tablet → Routes), send it out
+-- ------------------------------------------------------------------------------
+-- Dispatch it as an open OPS Work job, text it straight to an online engineer, or — if AutoBuild is on — have the
+-- server build it right there: poles + cable between them, server/routes.lua's RouteAutoBuild. The server can't
+-- see the ground (no collision/terrain data outside a running game), so building it needs a tower admin online
+-- in game at that moment: their character is briefly hidden while it surveys each point's ground height, the
+-- same technique Config.City's network builder already uses. AutoBuild = false hides that option entirely —
+-- only job / text dispatch are offered, and a route always needs an engineer to build it by hand.
+Config.Routes = {
+    AutoBuild = true,
+}
 
 -- World cleanup: hide GTA's own street furniture so only what you build stands in the world. Only the GTA models
 -- listed here are hidden — OPS kit (opslabs_*) never is. Change it here, on OPS Hub → Settings (World cleanup) or in the
