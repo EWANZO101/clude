@@ -390,7 +390,10 @@ BuildingFixtureAt = function(pos)
             local a = math.rad(-(f.heading or 0.0))
             local dx, dy = pos.x - f.x, pos.y - f.y
             local lx, ly = dx * math.cos(a) - dy * math.sin(a), dx * math.sin(a) + dy * math.cos(a)
-            if math.abs(lx) < h[1] - 0.15 and math.abs(ly) < h[2] - 0.15 and pos.z > f.z - 0.5 and pos.z < f.z + 4.5 then return f end
+            -- generous on purpose: a false "yes, you're inside" just means the collision toggle in
+            -- PlacementMode/aim() fires one instant too many, which is invisible; a false "no" is the
+            -- original bug back again (can't place/aim anything near a wall or a tall interior)
+            if math.abs(lx) < h[1] + 0.3 and math.abs(ly) < h[2] + 0.3 and pos.z > f.z - 1.0 and pos.z < f.z + 8.0 then return f end
         end
     end
 end

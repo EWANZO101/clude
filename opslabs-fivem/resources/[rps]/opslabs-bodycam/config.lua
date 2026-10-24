@@ -41,7 +41,7 @@ Config.Auto = {
 -- while already recording at full quality) and picks back up the moment it stops.
 Config.PreRoll = {
     Enabled = true,
-    Seconds = 30,               -- how far back an auto trigger reaches
+    Seconds = 180,              -- how far back an auto trigger reaches (3 minutes)
     Width = 320, Height = 180,  -- intentionally tiny - this runs the whole time an officer is on duty
     Fps = 8,
     Bitrate = 200000,           -- ~200 kbps - a fraction of Config.Video.Bitrate
