@@ -250,8 +250,11 @@ function PlacementMode(kind, model, range, startHeading, title, opts)
     local buildingEnt
     if BuildingFixtureAt and CablingEntities then
         local bf = BuildingFixtureAt(GetEntityCoords(PlayerPedId()))
-        local e = bf and CablingEntities('f' .. bf.id)
-        if e and DoesEntityExist(e) then buildingEnt = e SetEntityCollision(e, false, true) end
+        local list = bf and CablingEntities('f' .. bf.id)   -- a LIST of entities (fixture + any extras), not one
+        if type(list) == 'table' then
+            buildingEnt = list
+            for _, e in ipairs(list) do if DoesEntityExist(e) then SetEntityCollision(e, false, true) end end
+        end
     end
     local hash = model and model ~= '' and joaat(model) or nil
     if hash and not IsModelInCdimage(hash) then hash = nil end
@@ -313,7 +316,7 @@ function PlacementMode(kind, model, range, startHeading, title, opts)
     end
     PlaceHud.release(sf)
     if ghost and DoesEntityExist(ghost) then DeleteEntity(ghost) end
-    if buildingEnt and DoesEntityExist(buildingEnt) then SetEntityCollision(buildingEnt, true, true) end
+    if buildingEnt then for _, e in ipairs(buildingEnt) do if DoesEntityExist(e) then SetEntityCollision(e, true, true) end end end
     return result
 end
 
@@ -909,6 +912,7 @@ MainMenu = function(field)
         end
     end
     add({ title = 'Network faults', description = FaultSummary and FaultSummary() or 'Open faults on every network · go there and repair them', icon = 'triangle-exclamation', iconColor = '#ff453a', arrow = true, onSelect = function() if FaultsMenu then FaultsMenu() end end })
+    add({ title = 'Fibre trace tool', description = 'Stand at a fixture (ONT, cabinet, joint, DP…) and trace the cable path to whatever fault is taking it down (K)', icon = 'route', iconColor = '#ffd60a', onSelect = function() if TraceMenu then TraceMenu() end end })
     add(head('On site', 'helmet-safety'))
     add({ title = 'OPS Hub', description = 'The staff website for every service · lines, towers, internet, power & solar, gunshot detection', icon = 'arrow-up-right-from-square', iconColor = '#0a84ff', onSelect = function() OpenHub() end })
     add({ title = 'Buildings & sites', description = 'Walk-in house, depot & exchange · underground · fencing & gates · office & IT', icon = 'city', iconColor = '#5e5ce6', arrow = true, onSelect = function() SectionMenu('buildings') end })

@@ -627,12 +627,15 @@ local function aim(ignore, dist)
     local buildingEnt
     if BuildingFixtureAt and CablingEntities then
         local bf = BuildingFixtureAt(camPos)
-        local e = bf and CablingEntities('f' .. bf.id)
-        if e and DoesEntityExist(e) then buildingEnt = e SetEntityCollision(e, false, true) end
+        local list = bf and CablingEntities('f' .. bf.id)   -- a LIST of entities (fixture + any extras), not one
+        if type(list) == 'table' then
+            buildingEnt = list
+            for _, e in ipairs(list) do if DoesEntityExist(e) then SetEntityCollision(e, false, true) end end
+        end
     end
     local ray = StartExpensiveSynchronousShapeTestLosProbe(camPos.x, camPos.y, camPos.z, to.x, to.y, to.z, 1 + 16, ignore or PlayerPedId(), 4)
     local _, hit, at, normal, ent = GetShapeTestResult(ray)
-    if buildingEnt then SetEntityCollision(buildingEnt, true, true) end
+    if buildingEnt then for _, e in ipairs(buildingEnt) do if DoesEntityExist(e) then SetEntityCollision(e, true, true) end end end
     if hit ~= 1 then return nil end
     return at, normal, ent
 end
@@ -1921,7 +1924,9 @@ local function layTrunking()
     menuBack()
 end
 
-local EquipmentMenu, equipLabelFor
+local EquipmentMenu
+-- global on purpose: client/tools.lua, client/roadworks.lua and client/equiplabels.lua all call this
+-- across files to turn a model name into its friendly equipment label
 
 local function isBuilding(model)
     for _, e in ipairs(CC.Equipment) do if e.building and e.model == model then return true end end

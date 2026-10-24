@@ -528,6 +528,102 @@ function FaultsOnPole(poleId)
     return ids
 end
 
+---------------------------------------------------------------------------
+-- fibre trace tool: walk the real cable path from a fixture to whatever fault is taking it down
+---------------------------------------------------------------------------
+
+--- adjacency over every laid fibre run — not gated on splice state, since tracing needs the physical
+--- cable path even through a joint that isn't finished/lit yet; `skipRunId` drops one run from the graph
+--- entirely (the run that's actually broken, so the walk can't route straight through it to the far side)
+local function fibreAdjacency(skipRunId)
+    local adj = {}
+    local function link(a, b, run)
+        if not a or not b then return end
+        adj[a] = adj[a] or {}
+        adj[b] = adj[b] or {}
+        table.insert(adj[a], { to = b, run = run })
+        table.insert(adj[b], { to = a, run = run })
+    end
+    for id, r in pairs(Cabling.runs) do
+        if r.kind == 'fibre' and r.start_fixture and r.end_fixture and id ~= skipRunId then
+            link(r.start_fixture, r.end_fixture, r)
+        end
+    end
+    return adj
+end
+
+--- shortest hop path (BFS) between two fixtures over the fibre graph; nil if there's no cable between them
+local function fixturePath(fromId, toId, skipRunId)
+    if fromId == toId then return { fromId } end
+    local adj = fibreAdjacency(skipRunId)
+    local prev, seen, queue = {}, { [fromId] = true }, { fromId }
+    while #queue > 0 do
+        local id = table.remove(queue, 1)
+        for _, e in ipairs(adj[id] or {}) do
+            if not seen[e.to] then
+                seen[e.to] = true
+                prev[e.to] = id
+                if e.to == toId then
+                    local path, cur = {}, toId
+                    while cur do path[#path + 1] = cur cur = prev[cur] end
+                    for i = 1, math.floor(#path / 2) do path[i], path[#path - i + 1] = path[#path - i + 1], path[i] end
+                    return path
+                end
+                queue[#queue + 1] = e.to
+            end
+        end
+    end
+    return nil
+end
+
+--- from `fixtureId`, the ordered stops (fixture by fixture) to the nearest open fault on the network —
+--- by cable hops where there's fibre to walk, otherwise by straight-line distance (a pole/mast fault with
+--- no fibre path) — ending at the fault's own spot. Used by the trace tool (client/trace.lua) so an
+--- engineer can stand at ANY piece of kit (not just the exact fixture a fault is on) and follow the real
+--- cable route to a break instead of being teleported there by a marker.
+function TraceFault(fixtureId)
+    local start = Cabling.fixtures[fixtureId]
+    local byHops, hops, hopsPath
+    local byDist, dist
+    for _, f in pairs(Faults) do
+        if ACTIVE[f.status] then
+            local path
+            if f.asset.kind == 'fixture' then
+                path = fixturePath(fixtureId, f.asset.id)
+            elseif f.asset.kind == 'run' then
+                local r = Cabling.runs[f.asset.id]
+                if r then
+                    path = (r.start_fixture and fixturePath(fixtureId, r.start_fixture, r.id))
+                        or (r.end_fixture and fixturePath(fixtureId, r.end_fixture, r.id))
+                end
+            end
+            if path and (not hops or #path < hops) then byHops, hops, hopsPath = f, #path, path end
+            if start then
+                local d = #(vector3(start.x, start.y, start.z) - vector3(f.x, f.y, f.z))
+                if not dist or d < dist then byDist, dist = f, d end
+            end
+        end
+    end
+    -- prefer a fault reachable over actual laid fibre; fall back to plain distance for fault types with
+    -- no cable to walk (a leaning pole, a mast power fault) or when the network graph doesn't connect
+    local f, path = byHops, hopsPath
+    if not f then f = byDist end
+    if not f then return { ok = true, clear = true } end
+    local stops = {}
+    local function fixtureStop(fid)
+        local ff = Cabling.fixtures[fid]
+        if ff then stops[#stops + 1] = { x = ff.x, y = ff.y, z = ff.z, label = eqLabel(ff.model) .. ' #' .. fid } end
+    end
+    if path then for i = 2, #path do fixtureStop(path[i]) end end
+    -- always finish at the fault's own spot, even when the fixture walk above found nothing — the trace
+    -- never comes back with zero stops
+    local last = stops[#stops]
+    if not last or #(vector3(last.x, last.y, last.z) - vector3(f.x, f.y, f.z)) > 1.0 then
+        stops[#stops + 1] = { x = f.x, y = f.y, z = f.z, label = f.label }
+    end
+    return { ok = true, fault_id = f.id, label = f.label, severity = f.severity, stops = stops }
+end
+
 function TriggerFault(typeId, actor)
     if not CF.Types[typeId] then return nil, 'Unknown fault type' end
     local pl = livePoles()
@@ -647,4 +743,20 @@ lib.callback.register('opslabs-towers:faults:repair', function(src, id)
     finish(f, 'fixed', src, GetPlayerName(src), 'Repaired on site')
     print(('[opslabs-towers] %s repaired fault #%d (%s)'):format(GetPlayerName(src), f.id, f.type))
     return { ok = true }
+end)
+
+lib.callback.register('opslabs-towers:faults:trace', function(src, fixtureId)
+    if not CanCable(src) then return { error = 'Only network engineers can work on faults' } end
+    fixtureId = tonumber(fixtureId)
+    local f = fixtureId and Cabling.fixtures[fixtureId]
+    if not f then return { error = 'Not found' } end
+    local ped = GetPlayerPed(src)
+    if #(GetEntityCoords(ped) - vector3(f.x, f.y, f.z)) > 5.0 then return { error = 'Get to the kit first' } end
+    -- never let the client hang on this: if anything in the trace walk throws, still answer it
+    local ok, result = pcall(TraceFault, fixtureId)
+    if not ok then
+        print(('^1[opslabs-towers] faults:trace error: %s^7'):format(tostring(result)))
+        return { error = 'Trace failed — check the server console' }
+    end
+    return result
 end)
