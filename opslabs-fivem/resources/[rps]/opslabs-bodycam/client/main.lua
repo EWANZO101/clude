@@ -128,6 +128,65 @@ CreateThread(function()
     end
 end)
 
+-- live video (MediaMTX WHIP) ------------------------------------------------------------------------------------
+-- Entirely separate from recording above: no evidence item, no upload, just a real-time feed to Xon Sight /live.
+-- Started from the MDT laptop (opslabs-mdt calls exports('StartLive') directly - both run client-side on the
+-- same player, no server round trip needed between the two resources) or Config.LiveStream.Command.
+
+local live, liveKind, liveBusy = false, nil, false
+
+local function liveState() return { active = live, kind = liveKind } end
+local function liveChanged() TriggerEvent('opslabs-bodycam:liveState', liveState()) end
+
+local LIVE_REASONS = { not_configured = 'Live video is not set up on this server', portal_unreachable = 'The evidence portal is unreachable' }
+
+local function startLive(opts)
+    if live or liveBusy then return live end
+    liveBusy = true
+    local kind = (type(opts) == 'table' and opts.kind) or (Config.LiveStream or {}).Kind or 'dashcam'
+    local r = request('liveStart', { kind = kind })
+    liveBusy = false
+    if not r or not r.ok then
+        Config.Notify((r and LIVE_REASONS[r.reason]) or 'Could not start live video', 'error')
+        liveChanged()
+        return false
+    end
+    live, liveKind = true, kind
+    SendNUIMessage({ action = 'liveStart', whip = r.whip, token = r.token, config = Config.LiveStream })
+    Config.Notify('Live video started', 'success')
+    liveChanged()
+    return true
+end
+
+local function stopLive(reason)
+    if not live then return false end
+    live, liveKind = false, nil
+    SendNUIMessage({ action = 'liveStop' })
+    CreateThread(function() request('liveStop') end)
+    Config.Notify(reason and reason ~= 'manual' and ('Live video stopped: ' .. tostring(reason)) or 'Live video stopped', 'inform')
+    liveChanged()
+    return true
+end
+
+RegisterNetEvent('opslabs-bodycam:remoteStopLive', function(reason) stopLive(reason or 'external') end)
+
+RegisterNUICallback('liveState', function(d, cb)
+    cb(true)
+    if d and d.state == 'error' and live then
+        Config.Notify('Live video connection failed' .. (d.error and (': ' .. tostring(d.error)) or ''), 'error')
+        stopLive('connection failed')
+    end
+end)
+
+if Config.LiveStream and Config.LiveStream.Command and Config.LiveStream.Command ~= '' then
+    RegisterCommand(Config.LiveStream.Command, function() if live then stopLive('manual') else startLive() end end, false)
+end
+
+exports('StartLive', function(opts) return startLive(opts) end)
+exports('StopLive', function(reason) return stopLive(reason or 'manual') end)
+exports('IsLive', function() return live end)
+exports('GetLiveState', liveState)
+
 local function toggle() if recording then return stop('manual') end return start('manual') end
 
 RegisterCommand(Config.Command or 'bodycam', function() toggle() end, false)
@@ -215,11 +274,13 @@ end
 CreateThread(function()
     local lastReport = 0
     while true do
-        -- the overlay (local only - no network) also needs to stay fresh while the pre-roll buffer is running,
-        -- not just during a real recording, so its footage carries real location/heading too, not a blank/stale
-        -- one from whenever recording last stopped. The /live position report to the server stays recording-only:
-        -- pre-rolling isn't a session, there's nothing for the Live page to show yet.
-        if recording or preRollWanted then
+        -- the overlay (local only - no network) also needs to stay fresh while the pre-roll buffer or a live
+        -- broadcast is running, not just during a real recording, so its footage carries real location/heading
+        -- too, not a blank/stale one from whenever recording last stopped. The /live position report to the
+        -- server stays recording-only: pre-rolling and live-streaming aren't a recording session, there's
+        -- nothing for the Live page's position marker to show from them (a live broadcast shows the actual
+        -- picture there instead - see xonsight/api.py list_live_streams).
+        if recording or preRollWanted or live then
             local ped = PlayerPedId()
             local pos = GetEntityCoords(ped)
             street = streetHere(pos)
@@ -345,5 +406,7 @@ exports('GetRecent', function() return request('recent') or {} end)
 exports('GetLive', function() return request('live') or {} end)
 
 AddEventHandler('onResourceStop', function(r)
-    if r == RES and recording then recording = false end
+    if r ~= RES then return end
+    if recording then recording = false end
+    if live then live = false end
 end)

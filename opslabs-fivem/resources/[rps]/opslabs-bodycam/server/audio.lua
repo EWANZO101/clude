@@ -27,9 +27,27 @@ local function call(op, body, wait, timeoutMs)
     return Citizen.Await(p)
 end
 
+-- re-warned every 10 minutes rather than only once ever - if pma-voice simply isn't the active voice resource at
+-- all, every recording keeps hitting this and an admin who missed the first log line deserves another chance to
+-- notice, not silence for the rest of the server's uptime
+local lastChannelWarn = 0
+
 function Audio.Start(id, src)
     local channel = Player(src).state.assignedChannel
-    if not channel then return end
+    if not channel then
+        -- the bridge listens by joining a numbered Mumble channel - that numbering only exists because
+        -- pma-voice assigns it (Player(src).state.assignedChannel, set by pma-voice itself). Any voice setup
+        -- that doesn't go through FXServer's Mumble server at all (SaltyChat/TeamSpeak, GameVox) can never be
+        -- bridged this way; pma-voice simply not being the active voice resource (or not having assigned this
+        -- player a channel yet) looks the same from here, so this stays a warning, not a hard error.
+        if Audio.Enabled() and os.time() - lastChannelWarn > 600 then
+            lastChannelWarn = os.time()
+            print('^3[opslabs-bodycam] no pma-voice channel for this player - recordings will have no voice audio. '
+                .. 'OPS Voice needs pma-voice (or another script that sets state.assignedChannel the same way); '
+                .. 'it cannot reach SaltyChat or GameVox, which never route audio through FXServer\'s Mumble server.^7')
+        end
+        return
+    end
     local vc = ServerConfig.VoiceCommand or {}
     local voicePhrases = nil
     if vc.Enabled ~= false then voicePhrases = { on = vc.OnPhrases or {}, off = vc.OffPhrases or {} } end

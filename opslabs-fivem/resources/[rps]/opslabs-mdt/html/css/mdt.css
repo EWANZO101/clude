@@ -1,0 +1,101 @@
+* { box-sizing: border-box; }
+:root {
+  --bg: #0a0e14; --panel: #111823; --panel2: #151e2b; --line: #223042; --text: #e3eaf3; --mute: #8193a8;
+  --ok: #2ecc71; --warn: #f5a524; --bad: #ff4d5e; --info: #3d9bff;
+}
+html, body { height: 100%; background: transparent; margin: 0; font: 14px/1.4 Inter, system-ui, sans-serif; color: var(--text); }
+#app { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; }
+#app.show { display: flex; }
+
+/* a windowed panel, not a full-screen takeover - the camera already moves to look at the physical laptop in
+   the world (client/main.lua), so covering the whole screen would just hide that view instead of showing it */
+#frame {
+  width: min(1180px, 90vw); height: min(740px, 86vh); background: var(--bg); border-radius: 10px;
+  box-shadow: 0 30px 90px rgba(0,0,0,.55); display: flex; flex-direction: column; overflow: hidden;
+}
+#screen { flex: 1; min-height: 0; background: var(--bg); display: flex; flex-direction: column; }
+
+/* ---------------- boot / link ---------------- */
+.boot { flex: 1; display: grid; place-items: center; }
+.boot-box { width: min(420px, 86vw); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 28px; text-align: center; }
+.boot-box .brand { font-size: 13px; font-weight: 800; letter-spacing: .12em; color: var(--info); text-transform: uppercase; margin-bottom: 4px; }
+.boot-box h1 { margin: 0 0 6px; font-size: 20px; }
+.boot-box p { color: var(--mute); margin: 0 0 18px; font-size: 13px; }
+.boot-box .denied { color: var(--bad); font-weight: 700; }
+
+/* ---------------- shell ---------------- */
+#shell { display: none; flex: 1; min-height: 0; grid-template-columns: 210px 1fr; }
+#shell.show { display: grid; }
+#topbar {
+  grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+#topbar .title { font-weight: 800; letter-spacing: .08em; font-size: 12px; color: var(--info); text-transform: uppercase; }
+#topbar .who { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--mute); }
+#topbar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+#topbar .dot.on { background: var(--ok); }
+#topbar button.link-btn { background: transparent; border: 1px solid var(--line); color: var(--mute); border-radius: 7px; padding: 4px 9px; font: 600 11.5px Inter; cursor: pointer; }
+#topbar button.link-btn:hover { color: var(--text); border-color: var(--info); }
+#topbar button.link-btn.dashcam-btn.live { color: var(--bad); border-color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
+#topbar button.link-btn.dashcam-btn:disabled { opacity: .6; cursor: default; }
+
+#nav { grid-row: 2; background: var(--panel); border-right: 1px solid var(--line); padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+#nav button {
+  all: unset; display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 9px; cursor: pointer;
+  color: var(--mute); font-size: 13px; font-weight: 600;
+}
+#nav button:hover { background: var(--panel2); color: var(--text); }
+#nav button.on { background: var(--panel2); color: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+#nav .sp { flex: 1; }
+
+#view { grid-row: 2; overflow-y: auto; padding: 18px 22px; }
+#view h2 { margin: 0 0 14px; font-size: 16px; }
+
+/* ---------------- building blocks ---------------- */
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.card h3 { margin: 0 0 10px; font-size: 12.5px; color: var(--mute); text-transform: uppercase; letter-spacing: .06em; }
+
+input, select, textarea {
+  background: var(--panel2); border: 1px solid var(--line); color: var(--text); border-radius: 8px;
+  padding: 8px 10px; font: inherit; width: 100%;
+}
+textarea { resize: vertical; min-height: 64px; }
+label.field { display: block; margin-bottom: 10px; }
+label.field > span { display: block; font-size: 11.5px; color: var(--mute); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
+.check { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+.check input { width: auto; }
+
+.btn { border: 1px solid var(--line); background: var(--panel2); color: var(--text); font: 700 12.5px Inter; padding: 8px 14px; border-radius: 9px; cursor: pointer; }
+.btn:hover { border-color: var(--info); }
+.btn.go { background: var(--ok); border-color: var(--ok); color: #06240f; }
+.btn.bad { background: var(--bad); border-color: var(--bad); color: #2a0608; }
+.btn.ghost { background: transparent; }
+.btn:disabled { opacity: .5; cursor: default; }
+
+.empty { color: var(--mute); font-size: 12.5px; padding: 16px 0; text-align: center; }
+.list { display: flex; flex-direction: column; gap: 8px; }
+.item { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.item .hd { display: flex; align-items: center; gap: 8px; }
+.item .hd b { font-size: 13.5px; }
+.item .d { color: var(--mute); font-size: 11.5px; margin-top: 2px; }
+.pill { font: 700 10px Inter; text-transform: uppercase; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; color: #fff; }
+.pill.ok { background: color-mix(in srgb, var(--ok) 30%, transparent); color: var(--ok); }
+.pill.warn { background: color-mix(in srgb, var(--warn) 30%, transparent); color: var(--warn); }
+.pill.bad { background: color-mix(in srgb, var(--bad) 30%, transparent); color: var(--bad); }
+.pill.info { background: color-mix(in srgb, var(--info) 30%, transparent); color: var(--info); }
+
+.kv { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; font-size: 12.5px; }
+.kv b { color: var(--mute); font-weight: 600; }
+
+.violation-row { display: grid; grid-template-columns: 2fr 90px 90px 90px 28px; gap: 6px; margin-bottom: 6px; align-items: center; }
+.violation-row button { background: transparent; border: none; color: var(--bad); cursor: pointer; font-size: 16px; }
+
+#toasts { position: fixed; right: 18px; bottom: 18px; display: grid; gap: 8px; z-index: 60; }
+.toast { background: #141d2a; border: 1px solid var(--line); border-left: 3px solid var(--c, var(--ok)); color: var(--text); border-radius: 10px; padding: 10px 14px; font-size: 13px; box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }

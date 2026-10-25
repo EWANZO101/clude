@@ -184,6 +184,15 @@ Register('clearRecents', function(_, phone)
     return true
 end)
 
+--- the phone's OPS Voice audio link dropped mid-call (html/js/apps/phone.js: HubAudio.lost) - a freshly issued
+--- token to reconnect with, for whichever Hub call is still actually live for this player right now
+Register('voipRefresh', function(src)
+    local id = inCall[src]
+    local call = id and calls[id]
+    if not call or not call.hub or call.ended or not Voip then return { error = 'no_call' } end
+    return { voip = Voip.Playback(call.hub.bridgeId) }
+end)
+
 -- opslabs-towers: losing signal drops the call (calls to emergency services aren't phone calls here)
 AddEventHandler('opslabs-towers:changed', function(src, cov)
     if not cov or (cov.cell or 0) > 0 then return end

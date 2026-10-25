@@ -27,6 +27,11 @@ lib.callback.register('opslabs-towers:showcase:survey', function(points)
         Wait(300)
         for _, i in ipairs(c.list) do
             local p = points[i]
+            -- GetGroundZFor_3dCoord can hand back the PREVIOUS point's result if queried again for a new
+            -- (x, y) within the same game tick - this yield is what makes every point actually get its own
+            -- answer instead of silently inheriting the last point's height (which is how a route built across
+            -- a slope or over a tunnel/bunker's collision ends up with poles planted underground).
+            Wait(0)
             local z
             for _ = 1, 25 do
                 RequestCollisionAtCoord(p.x, p.y, start.z)

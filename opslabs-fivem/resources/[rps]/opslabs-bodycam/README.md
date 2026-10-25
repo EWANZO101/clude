@@ -106,6 +106,19 @@ speaker with ffmpeg (`/opt/opsvoip-bridge/bin/ffmpeg`, static) and writes video 
 silent one is deleted (`ServerConfig.Audio.KeepSilentCopy`). If the bridge is down or a mux fails, the silent video
 goes to Xon Sight as before. Bridge tests: `cd /opt/opsvoip-bridge && node --test test/*.test.js`.
 
+**Voice plugin compatibility:** the bridge works by joining a numbered Mumble channel, and that numbering only
+exists because **pma-voice** assigns it (`Player(src).state.assignedChannel`, set by pma-voice itself — see its
+`server/main.lua`). That's the only voice resource this server runs, and the only one confirmed to work.
+- **pma-voice** — works (what's deployed here). Radio/submix overlay scripts built on top of pma-voice don't change
+  this — they don't touch channel assignment, so audio capture keeps working underneath them.
+- **FXServer's built-in native Mumble voice (no pma-voice)** — not supported: nothing assigns numbered channels
+  without pma-voice (or an equivalent script setting `state.assignedChannel` the same way), so `Audio.Start` silently
+  has no channel to join and the recording stays silent (as of this fix, logged once instead of silent).
+- **SaltyChat, GameVox** — cannot be bridged this way at all, regardless of configuration: both route player audio
+  entirely outside FXServer's Mumble server (TeamSpeak and GameVox's own client respectively), so there's no Mumble
+  channel for a listening bot to join in the first place. This isn't a missing integration to add — there's no
+  audio path to tap into from here.
+
 ## The vest and the camera you can see
 
 Models in **opslabs-props** (`opslabs_vest_black`, `opslabs_bodycam`, `opslabs_bodycam_on`), built by

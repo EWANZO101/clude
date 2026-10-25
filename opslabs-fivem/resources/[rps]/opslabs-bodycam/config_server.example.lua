@@ -31,6 +31,16 @@ ServerConfig.Storage = {
     MaxSegmentMB = 64,           -- larger uploads are refused
 }
 
+-- Live video (MediaMTX WHIP publish, Config.LiveStream client-side). WhipUrlFormat is where the NUI
+-- POSTs its SDP offer, with %s standing in for the per-session path Xon Sight hands back from
+-- /api/xonsight/live/start - e.g. 'https://media.example.com:8889/%s/whip'. Off by default: nothing
+-- breaks without a MediaMTX deployment, the dashcam toggle just tells the officer live video isn't set
+-- up on this server.
+ServerConfig.LiveStream = {
+    Enabled = false,
+    WhipUrlFormat = '',
+}
+
 -- Log recordings in MySQL (oxmysql, table created by itself) and retry evidence the portal didn't take.
 -- Without oxmysql it still works; failed sends are then only retried until the next restart.
 ServerConfig.Database = true

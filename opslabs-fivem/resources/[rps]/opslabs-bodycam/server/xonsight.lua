@@ -100,6 +100,35 @@ end
 
 function XonSight.Configured() return cfg.Url and cfg.Url ~= '' end
 
+-- live video (MediaMTX WHIP) ---------------------------------------------------------------------------------------
+--
+--   POST /api/xonsight/live/start       { recorderId, kind, name, job } -> { ok, path, token }
+--   POST /api/xonsight/live/heartbeat   { recorderId } -> { ok }
+--   POST /api/xonsight/live/stop        { recorderId } -> { ok }
+-- Extension endpoints (not Xon Sight's documented contract) - see server/main.lua's liveStart/liveStop
+-- handlers, which call these. `token` is the WHIP publish credential MediaMTX's external auth webhook
+-- checks (xonsight/webhooks.py mediamtx_auth) - never logged, never sent anywhere but the NUI.
+
+--- cb(ok, path, token)
+function XonSight.StartLive(recorderId, kind, name, job, cb)
+    post('/api/xonsight/live/start', { recorderId = recorderId, kind = kind, name = name, job = job }, function(status, text)
+        local ok, data = pcall(json.decode, text or '')
+        if status >= 200 and status < 300 and ok and type(data) == 'table' and data.ok then
+            return cb(true, data.path, data.token)
+        end
+        if status == 401 then print('^3[opslabs-bodycam] Xon Sight refused live/start (401): check the key in config_server.lua^7') end
+        cb(false)
+    end)
+end
+
+function XonSight.LiveHeartbeat(recorderId)
+    post('/api/xonsight/live/heartbeat', { recorderId = recorderId }, function() end)
+end
+
+function XonSight.StopLive(recorderId)
+    post('/api/xonsight/live/stop', { recorderId = recorderId }, function() end)
+end
+
 -- remote feature flags (GET /api/xonsight/features) ------------------------------------------------------------
 --
 -- Polled, not checked live: the phone (opslabs-phone) asks every player's config every few seconds, far too

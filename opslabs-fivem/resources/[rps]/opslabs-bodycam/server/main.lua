@@ -16,6 +16,8 @@ local byId = {}          -- session id → session (kept a while after stop, for
 local uploads = {}       -- upload id → upload in progress
 local recent = {}        -- identifier → recordings, newest first (without a database)
 local retryQueue = {}    -- recordings Xon Sight didn't take (without a database)
+local liveStreams = {}   -- src → live video (MediaMTX WHIP) session - entirely separate from sessions above:
+                         -- no recording, no evidence item, just a real-time feed. See handlers.liveStart/liveStop.
 local useDb = false
 local publicBase = ''
 local roster           -- forward-declared: startSession/stopSession push an immediate sync, defined further down
@@ -62,12 +64,19 @@ end
 
 -- sessions --------------------------------------------------------------------------------------------------------
 
+local lastSessionTs = {}   -- src → last id timestamp issued, so a same-second stop/restart never reuses an id
+
 local function startSession(src, trigger)
     if sessions[src] then return { ok = true, session = clientState(src) } end
     local ok, why = Bridge.CanUse(src)
     if not ok then return { ok = false, reason = why } end
     local p = Bridge.Player(src)
     local now = os.time()
+    -- a fast manual stop/restart within the same second would otherwise mint the same 'bc-<src>-<ts>' id twice;
+    -- the bridge (recorder.js) treats a repeated id as *resuming* the old, not-yet-torn-down recorder entry,
+    -- bleeding its buffered audio into the new recording. Ids stay strictly increasing per src to prevent that.
+    now = math.max(now, (lastSessionTs[src] or 0) + 1)
+    lastSessionTs[src] = now
     local s = {
         id = ('bc-%d-%d'):format(src, now), src = src, startedAt = now, trigger = trigger or 'manual', note = '',
         player = p, officer = officerLabel(p), serial = serialFor(p.license), frame = nil, street = nil, parts = 0,
@@ -232,6 +241,48 @@ end
 
 handlers.live = function() return roster() end
 
+-- live video (MediaMTX WHIP) -----------------------------------------------------------------------------------
+--
+-- Uses the same access gate as recorded bodycam (Config.Access) - this is the same camera, just a different
+-- destination for the picture - and Bridge.Player's identifier as the recorder id, not a per-session id like
+-- `sessions` above: a live broadcast isn't a recording, it has nothing to resume or append to, and a stable id
+-- lets Xon Sight's /live/start upsert the same row if an officer's client reconnects mid-broadcast.
+
+local function liveStartAwait(recorderId, kind, name, job)
+    local p = promise.new()
+    XonSight.StartLive(recorderId, kind, name, job, function(ok, path, token) p:resolve({ ok = ok, path = path, token = token }) end)
+    return Citizen.Await(p)
+end
+
+handlers.liveStart = function(src, d)
+    local lsc = ServerConfig.LiveStream or {}
+    if lsc.Enabled ~= true or not lsc.WhipUrlFormat or lsc.WhipUrlFormat == '' then
+        return { ok = false, reason = 'not_configured' }
+    end
+    if liveStreams[src] then
+        return { ok = true, whip = lsc.WhipUrlFormat:format(liveStreams[src].path), token = liveStreams[src].token }
+    end
+    local ok, why = Bridge.CanUse(src)
+    if not ok then return { ok = false, reason = why } end
+    if not XonSight.Configured() then return { ok = false, reason = 'not_configured' } end
+    local p = Bridge.Player(src)
+    local kind = (type(d) == 'table' and d.kind) or (Config.LiveStream or {}).Kind or 'dashcam'
+    local r = liveStartAwait(p.identifier, kind, officerLabel(p), jobText(p))
+    if not r.ok then return { ok = false, reason = 'portal_unreachable' } end
+    liveStreams[src] = { recorderId = p.identifier, path = r.path, token = r.token, kind = kind }
+    print(('[opslabs-bodycam] %s started a live %s broadcast (%s)'):format(officerLabel(p), kind, r.path))
+    return { ok = true, whip = lsc.WhipUrlFormat:format(r.path), token = r.token }
+end
+
+handlers.liveStop = function(src)
+    local s = liveStreams[src]
+    if not s then return { ok = true } end
+    liveStreams[src] = nil
+    XonSight.StopLive(s.recorderId)
+    print(('[opslabs-bodycam] live broadcast stopped (%s)'):format(s.path))
+    return { ok = true }
+end
+
 handlers.recent = function(src)
     local p = Bridge.Player(src)
     if useDb then
@@ -312,6 +363,8 @@ AddEventHandler('playerDropped', function()
     local src = source
     stopSession(src, 'left the server')
     for id, u in pairs(uploads) do if u.src == src then uploads[id] = nil end end
+    local live = liveStreams[src]
+    if live then liveStreams[src] = nil XonSight.StopLive(live.recorderId) end
 end)
 
 -- other scripts: start someone's camera (taser, panic button, pursuit…) — TriggerEvent('opslabs-bodycam:trigger', src, 'panic')
@@ -321,6 +374,9 @@ end)
 
 exports('CanUse', function(src) return (Bridge.CanUse(src)) end)
 exports('IsRecording', function(src) return sessions[src] ~= nil end)
+--- is `id` the session currently live for `src`? (server/storage.js's voice-command handler: a stale/delayed
+--- "off", or a src FiveM has since recycled onto someone else, must never match a different, newer session)
+exports('IsLiveSession', function(src, id) local s = sessions[tonumber(src)] return s ~= nil and s.id == id end)
 exports('StartRecording', function(src, reason)
     if sessions[src] or not Bridge.CanUse(src) then return false end
     TriggerClientEvent('opslabs-bodycam:remoteStart', src, reason or 'external')
@@ -390,6 +446,24 @@ CreateThread(function()
     end
 end)
 
+-- live video heartbeats → Xon Sight (keeps a /live/start registration from going stale) + drop anyone no
+-- longer issued a camera, same gate as the recording thread below
+CreateThread(function()
+    Wait(5000)
+    while true do
+        for src, s in pairs(liveStreams) do
+            if GetPlayerName(src) and Bridge.CanUse(src) then
+                XonSight.LiveHeartbeat(s.recorderId)
+            else
+                liveStreams[src] = nil
+                XonSight.StopLive(s.recorderId)
+                if GetPlayerName(src) then TriggerClientEvent('opslabs-bodycam:remoteStopLive', src, 'no longer issued a bodycam') end
+            end
+        end
+        Wait(math.max(2, (Config.LiveStream or {}).HeartbeatSeconds or 5) * 1000)
+    end
+end)
+
 -- going off duty / losing the job or item stops the camera; stalled uploads are dropped
 CreateThread(function()
     while true do
@@ -424,6 +498,11 @@ end)
 
 AddEventHandler('onResourceStop', function(r)
     if r ~= RES then return end
+    -- tell the OPS Voice bridge too, or its listening bot (and any voice-command STT stream) for every session
+    -- live right now is leaked forever - nothing else ever sends it a matching /ctl/rec/stop once this table is gone
+    for _, s in pairs(sessions) do Audio.Stop(s.id) end
     sessions = {}
     XonSight.SyncRoster({})
+    for _, s in pairs(liveStreams) do XonSight.StopLive(s.recorderId) end
+    liveStreams = {}
 end)
