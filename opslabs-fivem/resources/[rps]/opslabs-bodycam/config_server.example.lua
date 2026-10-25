@@ -4,6 +4,10 @@ ServerConfig = {}
 ServerConfig.XonSight = {
     Url = 'https://xonsight.opslabsystems.cloud',     -- the evidence portal, no trailing slash
     Key = '',                    -- X-XonSight-Key: the same value as XONSIGHT_WEBHOOK_KEY in the portal's .env
+    -- Multi-server portals only: the per-community API token from the portal's /admin/communities page
+    -- (shown once when the community is created). Set this instead of Key and everything this resource
+    -- sends lands in that community's own database. Leave blank for a single-tenant portal (Key above).
+    Token = '',
     LiveSync = true,             -- keep /live up to date with who is recording
     SyncSeconds = 5,
     -- Evidence ids must be unique on the portal. They start here, so they never meet the ids another source

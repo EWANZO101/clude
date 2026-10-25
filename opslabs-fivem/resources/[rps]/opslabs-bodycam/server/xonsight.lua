@@ -7,20 +7,29 @@
 --   POST /api/xonsight/alerts            { recorderId, recorderName, type, message }
 --                                        emergency trigger banner on the portal's Live page - see AlertTriggers
 --                                        below; extension endpoint, not guaranteed on every Xon Sight deployment
--- All three carry the X-XonSight-Key header (XONSIGHT_WEBHOOK_KEY in the portal's .env).
+-- All three carry either X-XonSight-Token (cfg.Token: a per-community token from the portal's
+-- /admin/communities page - multi-server portals only, routes everything this resource sends into that
+-- community's own database) or, if that's blank, the original X-XonSight-Key (XONSIGHT_WEBHOOK_KEY in the
+-- portal's .env - the single-tenant/legacy path). Token always wins when both are set.
 
 XonSight = {}
 
 local cfg = ServerConfig.XonSight or {}
 
+local function authHeader()
+    if cfg.Token and cfg.Token ~= '' then
+        return { ['X-XonSight-Token'] = cfg.Token }
+    end
+    return { ['X-XonSight-Key'] = cfg.Key or '' }
+end
+
 local function post(path, body, cb)
     if not cfg.Url or cfg.Url == '' then return cb and cb(0, 'no_url') end
+    local headers = authHeader()
+    headers['Content-Type'] = 'application/json'
     PerformHttpRequest(cfg.Url .. path, function(status, text)
         if cb then cb(status or 0, text) end
-    end, 'POST', json.encode(body), {
-        ['Content-Type'] = 'application/json',
-        ['X-XonSight-Key'] = cfg.Key or '',
-    })
+    end, 'POST', json.encode(body), headers)
 end
 
 local function iso(t) return os.date('!%Y-%m-%dT%H:%M:%SZ', t) end
@@ -30,7 +39,7 @@ local function get(path, cb)
     PerformHttpRequest(cfg.Url .. path, function(status, text)
         local ok, data = pcall(json.decode, text or '')
         cb(status or 0, (ok and type(data) == 'table') and data or nil)
-    end, 'GET', '', { ['X-XonSight-Key'] = cfg.Key or '' })
+    end, 'GET', '', authHeader())
 end
 
 --- send one recording; cb(ok, status)
@@ -49,7 +58,7 @@ function XonSight.SendEvidence(rec, cb)
         local ok = status >= 200 and status < 300
         if not ok then
             print(('^3[opslabs-bodycam] Xon Sight did not take evidence #%s (HTTP %s%s)^7'):format(rec.evidenceId, status,
-                status == 401 and ': the key in config_server.lua does not match XONSIGHT_WEBHOOK_KEY' or ''))
+                status == 401 and ': the key/token in config_server.lua does not match the portal' or ''))
         end
         if cb then cb(ok, status) end
     end)
@@ -74,7 +83,7 @@ function XonSight.SendAlert(recorderId, recorderName, trigger)
         type = mapped.type,
         message = mapped.message,
     }, function(status)
-        if status == 401 then print('^3[opslabs-bodycam] Xon Sight refused the alert (401): check the key in config_server.lua^7') end
+        if status == 401 then print('^3[opslabs-bodycam] Xon Sight refused the alert (401): check the key/token in config_server.lua^7') end
     end)
 end
 
@@ -93,7 +102,7 @@ function XonSight.SyncRoster(recorders)
     post('/api/xonsight/recorders/sync', { recorders = recorders, syncedAt = now }, function(status)
         if status < 200 or status >= 300 then
             lastSent = nil      -- try again next round
-            if status == 401 then print('^3[opslabs-bodycam] Xon Sight refused the live roster (401): check the key in config_server.lua^7') end
+            if status == 401 then print('^3[opslabs-bodycam] Xon Sight refused the live roster (401): check the key/token in config_server.lua^7') end
         end
     end)
 end
@@ -116,7 +125,7 @@ function XonSight.StartLive(recorderId, kind, name, job, cb)
         if status >= 200 and status < 300 and ok and type(data) == 'table' and data.ok then
             return cb(true, data.path, data.token)
         end
-        if status == 401 then print('^3[opslabs-bodycam] Xon Sight refused live/start (401): check the key in config_server.lua^7') end
+        if status == 401 then print('^3[opslabs-bodycam] Xon Sight refused live/start (401): check the key/token in config_server.lua^7') end
         cb(false)
     end)
 end
@@ -144,7 +153,7 @@ local function pollFeatures()
         if status >= 200 and status < 300 and data and data.phoneAppEnabled ~= nil then
             phoneAppEnabled = data.phoneAppEnabled == true
         elseif status == 401 then
-            print('^3[opslabs-bodycam] Xon Sight refused the feature check (401): check the key in config_server.lua^7')
+            print('^3[opslabs-bodycam] Xon Sight refused the feature check (401): check the key/token in config_server.lua^7')
         end
     end)
 end

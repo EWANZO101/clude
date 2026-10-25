@@ -35,6 +35,8 @@ server roster ──POST /api/xonsight/recorders/sync──▶ Xon Sight /live  
    after your framework and (optional) `oxmysql`.
 2. Copy `config_server.example.lua` to `config_server.lua` (kept out of git) and set:
    - `XonSight.Url` / `XonSight.Key`: the portal and its `XONSIGHT_WEBHOOK_KEY` (header `X-XonSight-Key`)
+   - `XonSight.Token`: multi-server portals only - a per-community token from the portal's `/admin/communities`
+     page, used instead of `Key` (header `X-XonSight-Token`) to land everything in that community's own database
    - `Storage.Dir` / `Storage.PublicUrl`: where the videos are written and their public https address
 3. The videos are written to `<resource>/media` (FXServer only lets a resource write inside resource folders).
    **Publish that folder with a web server from disk — never through FXServer** (sending video from a resource
