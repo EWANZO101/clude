@@ -50,7 +50,8 @@ exports('DeleteVideo', (name) => {
 });
 
 const VOICE_KEY = GetConvar('opsvoip_key', '');     // same shared secret audio.lua already trusts, just the other direction
-const REC_ID = /^bc-(\d+)-\d+$/;
+const REC_ID = /^bc-(\d+)-(\d+)$/;
+const VOICE_COMMAND_MAX_AGE = 30;   // seconds - how stale a voice command can be before we refuse to act on it
 
 function reply(res, status, body) {
     try {
@@ -73,9 +74,24 @@ function handleVoiceCommand(req, res, body) {
     const m = REC_ID.exec(String(data.recordingId || ''));
     if (!m) return reply(res, 400, { error: 'bad recordingId' });
     const src = Number(m[1]);
+    const ts = Number(m[2]);
     if (!GetPlayerName(src)) return reply(res, 404, { error: 'player not connected' });
     const cmd = data.command === 'on' ? 'remoteStart' : data.command === 'off' ? 'remoteStop' : null;
     if (!cmd) return reply(res, 400, { error: 'command must be on or off' });
+
+    if (cmd === 'remoteStop') {
+        // "off" must only stop the exact session this recordingId was handed out for (set in Audio.Start,
+        // server/audio.lua) - never a different, newer session that happens to be live for the same src now,
+        // e.g. after FiveM recycles a disconnected officer's id onto someone else.
+        let live = false;
+        try { live = global.exports[GetCurrentResourceName()].IsLiveSession(src, data.recordingId) === true; } catch (e) { live = false; }
+        if (!live) return reply(res, 409, { error: 'not the live session' });
+    } else {
+        // "on" has no session yet to check against - refuse anything old enough that the src could since
+        // have been recycled onto a different, unconsenting player (STT/network lag on the bridge's end).
+        if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > VOICE_COMMAND_MAX_AGE) return reply(res, 409, { error: 'stale command' });
+    }
+
     TriggerClientEvent(`opslabs-bodycam:${cmd}`, src, 'voice command');
     reply(res, 200, { ok: true });
 }

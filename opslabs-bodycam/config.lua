@@ -130,6 +130,19 @@ Config.Vest = {
 -- How often the officer's position is sent to the Xon Sight /live page while recording.
 Config.Live = { ReportSeconds = 3 }
 
+-- Live video to the Xon Sight /live page (MediaMTX WHIP publish from the NUI - html/recorder.js's Live
+-- module), separate from the recorded-evidence pipeline above: no chunked upload, no Xon Sight evidence
+-- item, just a real-time feed a logged-in viewer can watch while it's happening. Video only - no game
+-- audio reaches the NUI, same limitation as the recorded bodycam. Started/stopped from the MDT laptop
+-- (opslabs-mdt) via exports('StartLive')/('StopLive') below, or manually with Config.LiveStream.Command.
+Config.LiveStream = {
+    Command = 'dashcam',       -- '' = no chat command, MDT/other scripts only
+    Kind = 'dashcam',          -- sent to Xon Sight as the stream's `kind` (also accepts 'bodycam')
+    Width = 1280, Height = 720, Fps = 24,
+    OverlayTitle = 'OPS DASH CAM',
+    HeartbeatSeconds = 5,      -- how often the server tells Xon Sight this broadcast is still alive
+}
+
 -- Video upload to the server after each part (latent events, so gameplay traffic isn't held up).
 Config.Upload = {
     ChunkKB = 512,

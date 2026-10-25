@@ -81,7 +81,7 @@ function rpcFetch(key, name, data) {
 }
 
 /** Calls a server callback registered with Register() in server/*.lua */
-const NEUTRAL_RPCS = new Set(['spotifyApi', 'tidalApi', 'oauthStatus', 'oauthStart']);
+const NEUTRAL_RPCS = new Set(['spotifyApi', 'tidalApi', 'oauthStatus', 'oauthStart', 'voipRefresh']);
 
 function rpc(name, data = {}) {
     if (NEUTRAL_RPCS.has(name)) return nui('rpc', { name, data });

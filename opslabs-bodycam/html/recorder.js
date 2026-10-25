@@ -293,6 +293,144 @@ const Preroll = {
     },
 };
 
+/* ------------------------------------------------------------------ live video (MediaMTX WHIP publish)
+ *
+ * Entirely separate from View/Preroll above: its own capture pipe (buildCapture(), same technique), own draw
+ * loop, own small overlay - no MediaRecorder, no chunked upload, no Xon Sight evidence item. The picture goes
+ * straight out over WebRTC to MediaMTX via WHIP (a plain SDP offer/answer POST - no library needed, every
+ * evergreen browser's RTCPeerConnection does this natively). Kept fully independent of View's state so a live
+ * broadcast and a real evidence recording can run at the same time without fighting over canvas size/fps.
+ */
+const Live = {
+    pipe: null, pc: null, drawId: null, cfg: null, active: false, resource: null,
+
+    ensure() {
+        if (this.pipe) return true;
+        this.pipe = buildCapture();
+        return !!this.pipe;
+    },
+
+    frame() {
+        const p = this.pipe, w = p.out.width, h = p.out.height;
+        const gl = p.gl;
+        const g = (window.innerWidth || 16) / (window.innerHeight || 9), a = w / h;
+        gl.viewport(0, 0, w, h);
+        const crop = a < g ? [(1 - a / g) / 2, 0, a / g, 1] : [0, (1 - g / a) / 2, 1, g / a];
+        gl.uniform4fv(p.u.uCrop, crop);
+        gl.uniform2f(p.u.uStep, 0.25 * crop[2] / w, 0.25 * crop[3] / h);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        p.ctx.drawImage(p.glCanvas, 0, 0);
+        this.overlay(p.ctx, w, h);
+    },
+
+    /** one lean band top and bottom - not the full evidence watermark (no REC dot, no PART/unit/event fields
+     * that don't apply here), kept deliberately separate from View.overlay so recording and live video never
+     * share (and fight over) the same OverlayTitle/config. */
+    overlay(x, w, h) {
+        const Y = '#ff3b30';
+        const fs = Math.max(13, Math.round(h / 34));
+        const pad = Math.round(fs * 0.55);
+        x.font = `bold ${fs}px Consolas, "Lucida Console", "DejaVu Sans Mono", "Courier New", monospace`;
+        x.textBaseline = 'middle';
+        x.lineJoin = 'round';
+        x.lineWidth = Math.max(2, fs / 4.5);
+        x.strokeStyle = 'rgba(0,0,0,.9)';
+
+        const topH = pad * 2 + fs * 1.3;
+        x.fillStyle = 'rgba(0,0,0,.62)';
+        x.fillRect(0, 0, w, topH);
+        const y = pad + fs * 0.65;
+        x.fillStyle = '#ff3b30';
+        x.beginPath(); x.arc(pad + fs * 0.4, y, fs * 0.36, 0, Math.PI * 2); x.fill();
+        const d = new Date();
+        const p2 = (n) => String(n).padStart(2, '0');
+        const stamp = `${d.getUTCFullYear()}-${p2(d.getUTCMonth() + 1)}-${p2(d.getUTCDate())} ${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}:${p2(d.getUTCSeconds())} UTC`;
+        x.textAlign = 'left';
+        x.strokeText(`LIVE  ${stamp}`, pad + fs * 1.0, y);
+        x.fillStyle = Y; x.fillText(`LIVE  ${stamp}`, pad + fs * 1.0, y);
+        const title = (this.cfg && this.cfg.OverlayTitle) || 'LIVE';
+        x.textAlign = 'right';
+        x.strokeStyle = 'rgba(0,0,0,.9)'; x.strokeText(title, w - pad, y);
+        x.fillStyle = Y; x.fillText(title, w - pad, y);
+
+        if (S.street) {
+            const botH = pad * 2 + fs * 1.1;
+            x.fillStyle = 'rgba(0,0,0,.62)';
+            x.fillRect(0, h - botH, w, botH);
+            const yb = h - pad - fs * 0.5;
+            const loc = String(S.street).toUpperCase();
+            x.textAlign = 'left';
+            x.strokeStyle = 'rgba(0,0,0,.9)'; x.strokeText(loc, pad, yb);
+            x.fillStyle = Y; x.fillText(loc, pad, yb);
+        }
+    },
+
+    async start(cfg) {
+        if (this.active) return;
+        if (!this.ensure() || !this.pipe.out.captureStream || typeof RTCPeerConnection === 'undefined') {
+            post('liveState', { state: 'error', error: 'no capture/WebRTC in this game client' });
+            return;
+        }
+        this.cfg = cfg || {};
+        this.active = true;
+        const w = this.cfg.Width || 1280, h = this.cfg.Height || 720, fps = this.cfg.Fps || 24;
+        for (const c of [this.pipe.glCanvas, this.pipe.out]) { c.width = w; c.height = h; }
+        this.drawId = setInterval(() => this.frame(), Math.round(1000 / fps));
+        const stream = this.pipe.out.captureStream(fps);
+        this.pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+        for (const track of stream.getVideoTracks()) this.pc.addTrack(track, stream);
+        this.pc.onconnectionstatechange = () => {
+            const st = this.pc && this.pc.connectionState;
+            if (this.active && (st === 'failed' || st === 'disconnected' || st === 'closed')) post('liveState', { state: 'error', error: st });
+        };
+        try {
+            const offer = await this.pc.createOffer();
+            await this.pc.setLocalDescription(offer);
+            // non-trickle: wait for every ICE candidate so the offer is complete in one shot (simpler than
+            // trickling candidates over separate PATCH requests, at the cost of a short delay here)
+            await new Promise((resolve) => {
+                if (this.pc.iceGatheringState === 'complete') return resolve();
+                const check = () => {
+                    if (this.pc.iceGatheringState === 'complete') { this.pc.removeEventListener('icegatheringstatechange', check); resolve(); }
+                };
+                this.pc.addEventListener('icegatheringstatechange', check);
+                setTimeout(resolve, 4000);    // don't hang forever on a flaky network - send what we have
+            });
+            // the token rides the query string, not an Authorization header - verified live against MediaMTX's
+            // authHTTPAddress webhook (every protocol forwards `query` reliably; a Bearer header's mapping
+            // wasn't checked, so this sticks to the path that's actually confirmed to work)
+            const sep = this.cfg.whip.includes('?') ? '&' : '?';
+            const res = await fetch(`${this.cfg.whip}${sep}token=${encodeURIComponent(this.cfg.token || '')}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/sdp' },
+                body: this.pc.localDescription.sdp,
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            this.resource = res.headers.get('Location');
+            const answer = await res.text();
+            await this.pc.setRemoteDescription({ type: 'answer', sdp: answer });
+        } catch (e) {
+            const err = String((e && e.message) || e);
+            this.teardown();
+            post('liveState', { state: 'error', error: err });
+        }
+    },
+
+    teardown() {
+        this.active = false;
+        if (this.drawId) { clearInterval(this.drawId); this.drawId = null; }
+        if (this.pc) { try { this.pc.close(); } catch (_) { /* already closed */ } this.pc = null; }
+    },
+
+    async stop() {
+        if (!this.active && !this.pc) return;
+        const resource = this.resource;
+        this.resource = null;
+        this.teardown();
+        if (resource) { try { await fetch(resource, { method: 'DELETE' }); } catch (_) { /* MediaMTX will time it out anyway */ } }
+    },
+};
+
 /* ------------------------------------------------------------------ webm duration (so the portal's player can seek) */
 
 const Webm = {
@@ -580,6 +718,8 @@ window.addEventListener('message', (e) => {
     else if (m.action === 'note' && S.session) S.session.note = m.note || '';
     else if (m.action === 'micTest') micTest();
     else if (m.action === 'preroll') { if (m.enabled) Preroll.start(m.config); else Preroll.stop(); }
+    else if (m.action === 'liveStart') Live.start(Object.assign({}, m.config, { whip: m.whip, token: m.token }));
+    else if (m.action === 'liveStop') Live.stop();
 });
 
 if (IN_GAME) post('ready').then((c) => { if (c) Object.assign(cfg, c); Hud.update(); }).catch(() => {});

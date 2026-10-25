@@ -7,12 +7,14 @@
 /* OPS Voice: the OPS Hub caller's voice (server/voip.lua, the OPS Voice bridge). Your own voice goes the usual pma-voice
    way and the bridge picks it up; the Hub end plays only here, like an earpiece. Opus frames, decoded with WebCodecs. */
 const HubAudio = {
-    ws: null, ctx: null, dec: null, at: 0, ts: 0,
+    ws: null, ctx: null, dec: null, at: 0, ts: 0, callId: null, retried: false,
 
-    start(v) {
+    start(v, callId) {
         this.stop();
         if (!v || !v.url || !v.token) return;
         if (typeof AudioDecoder === 'undefined') { console.warn('[opslabs-phone] OPS Voice: no WebCodecs in this game build'); return; }
+        this.callId = callId;
+        this.retried = false;
         this.ctx = new AudioContext({ sampleRate: 48000 });
         this.gain = this.ctx.createGain();
         this.gain.gain.value = v.volume != null ? v.volume : 1;
@@ -28,8 +30,23 @@ const HubAudio = {
             this.ts += 20000;
             this.dec.decode(new EncodedAudioChunk({ type: 'key', timestamp: this.ts, data: e.data }));
         };
-        ws.onclose = () => { if (this.ws === ws) this.ws = null; };
+        ws.onerror = () => console.warn('[opslabs-phone] OPS Voice: audio connection error');
+        // `this.ws === ws` is only still true here for an UNEXPECTED close: stop() always nulls `this.ws` itself
+        // before the socket's own close event can fire, so an intentional stop never reaches lost().
+        ws.onclose = () => { if (this.ws === ws) { this.ws = null; this.lost(); } };
         this.ws = ws;
+    },
+
+    /** the audio link dropped mid-call (bridge restart, network blip, or a cached token too old for a fresh
+        reconnect) - try once with a newly issued token before telling the player it's gone for good, rather
+        than leaving the call looking "active" with nobody able to hear anything and no indication why */
+    async lost() {
+        if (!Call.cur || Call.cur.id !== this.callId || Call.cur.status === 'ended') return;
+        if (this.retried) { UI.toast('Call audio lost', 'fa-solid fa-phone-slash'); return; }
+        this.retried = true;
+        const r = await rpc('voipRefresh', {}).catch(() => null);
+        if (r && r.voip && Call.cur && Call.cur.id === this.callId && Call.cur.status !== 'ended') this.start(r.voip, this.callId);
+        else UI.toast('Call audio lost', 'fa-solid fa-phone-slash');
     },
 
     /** schedules a decoded frame back to back, with ~60 ms of slack against network jitter */
@@ -327,7 +344,7 @@ const Call = {
             }
         });
         Phone.on('incomingCall', (d) => this.incoming(d));
-        Phone.on('callAccepted', (d) => { this.accepted(); if (d && d.voip) HubAudio.start(d.voip); });
+        Phone.on('callAccepted', (d) => { this.accepted(); if (d && d.voip) HubAudio.start(d.voip, d.id); });
         Phone.on('callEnded', (d) => this.ended(d));
         Phone.on('open', () => {
             if (this.cur && this.cur.status === 'ringing' && this.cur.dir === 'in') this.show();

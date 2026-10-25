@@ -43,9 +43,27 @@ function Voip.Incoming(call, phone)
     end)
 end
 
+-- re-warned every 10 minutes rather than only once ever - if pma-voice simply isn't the active voice resource at
+-- all (SaltyChat, GameVox, or none), every Hub call for every player keeps hitting this and an admin who missed
+-- the first log line deserves another chance to notice, not silence for the rest of the server's uptime
+local lastChannelWarn = 0
+local function channelFor(src)
+    local ch = Player(src).state.assignedChannel
+    if not ch and os.time() - lastChannelWarn > 600 then
+        lastChannelWarn = os.time()
+        -- same Mumble-channel bridging opslabs-bodycam uses: needs pma-voice (or an equivalent that sets
+        -- state.assignedChannel). SaltyChat and GameVox route audio outside FXServer's Mumble server entirely,
+        -- so a Hub call answered while either is the active voice system will ring with no audio either way.
+        print('^3[opslabs-phone] no pma-voice channel for this player - OPS Voice calls will have no audio. '
+            .. 'OPS Voice needs pma-voice (or another script that sets state.assignedChannel the same way); '
+            .. 'it cannot reach SaltyChat or GameVox, which never route audio through FXServer\'s Mumble server.^7')
+    end
+    return ch
+end
+
 --- the player answered a call from the Hub: the bridge joins their voice channel
 function Voip.Answered(bridgeId, src)
-    bridge('answered', { id = bridgeId, serverId = src, channel = Player(src).state.assignedChannel })
+    bridge('answered', { id = bridgeId, serverId = src, channel = channelFor(src) })
 end
 
 function Voip.Ended(bridgeId, status)
@@ -77,7 +95,10 @@ route('GET', '/voip/players', function()
         list[#list + 1] = { id = id, name = GetPlayerName(id) }
     end
     for id, at in pairs(joining) do
-        if os.time() - at > 600 then joining[id] = nil
+        -- generous on purpose: the bridge's Guard kicks any Mumble connection not on this list (once
+        -- GUARD_MODE=enforce), so a slow load screen (big asset downloads, many resources restarting) must
+        -- never age out before the player actually appears in GetPlayers()
+        if os.time() - at > 1800 then joining[id] = nil
         elseif not seen[id] then list[#list + 1] = { id = id, name = GetPlayerName(id), joining = true } end
     end
     return list
@@ -96,7 +117,7 @@ end)
 route('POST', '/voip/calls/(%d+)/answer', function(p, _, body)
     local src = HubCalls.Answer(p[1], tostring(body.bridgeId or ''))
     if not src then apiError(409, 'not ringing') end
-    return { serverId = src, channel = Player(src).state.assignedChannel }
+    return { serverId = src, channel = channelFor(src) }
 end)
 
 route('POST', '/voip/calls/(%d+)/end', function(p, _, body)

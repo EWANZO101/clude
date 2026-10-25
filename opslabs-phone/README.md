@@ -10,7 +10,10 @@
 3. Requirements: `oxmysql` and `ox_lib`. A framework is optional: the phone detects ESX Legacy, QBCore, Qbox, ox_core,
    ND Core or vRP 1 and its inventory, and runs standalone if there's none. The server console shows what it found
    (`[opslabs-phone] Framework: …`). To force one, or to add your own framework, see [bridge/README.md](bridge/README.md).
-   Optional: `pma-voice` (call audio).
+   Optional: `pma-voice` (call audio). OPS Voice (`server/voip.lua` — Hub softphone calls heard in-game) specifically
+   needs pma-voice: it joins the caller's numbered Mumble channel (`Player(src).state.assignedChannel`, set by
+   pma-voice itself), which only pma-voice assigns on this server. SaltyChat and GameVox can't be bridged this way
+   at all — both route audio outside FXServer's Mumble server entirely, so there's no channel for OPS Voice to join.
 4. Start the server. The tables are created automatically, so there's no SQL to import.
 
 Open the phone with **F1** (rebindable) or `/phone`, or use any phone item. You need one of the items listed in `Config.Items`, and the item decides the frame colour.
