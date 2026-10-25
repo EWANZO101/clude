@@ -28,7 +28,7 @@ end)
 RegisterNetEvent('opslabs-bodycam:vestCommand', function(wantOn)
     local src = source
     if wantOn and V.CommandNeedsAccess ~= false then
-        local ok = Bridge.CanUse(src)
+        local ok = Bridge.Eligible(src)
         if not ok and not (V.Item and V.Item ~= '' and Bridge.HasItem(src, V.Item)) then
             return TriggerClientEvent('opslabs-bodycam:notify', src, 'Only officers issued a bodycam can put the vest on', 'error')
         end

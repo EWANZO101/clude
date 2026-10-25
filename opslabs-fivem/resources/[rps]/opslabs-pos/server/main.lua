@@ -371,8 +371,17 @@ lib.callback.register('opslabs-pos:product', function(src, storeId, action, d)
         if p.stock > 0 then FW.AddItem(src, p.item, p.stock) end
         MySQL.update.await('DELETE FROM opslabs_pos_products WHERE id = ?', { p.id })
     elseif action == 'take' then
-        local qty = math.min(p.stock, math.max(0, math.floor(tonumber(d.qty) or 0)))
-        if qty > 0 and FW.AddItem(src, p.item, qty) then MySQL.update.await('UPDATE opslabs_pos_products SET stock = stock - ? WHERE id = ?', { qty, p.id }) end
+        -- stock is taken atomically (like opslabs-pos:charge) so two bosses pulling stock at once can't both
+        -- succeed past what's actually left
+        local qty = math.max(0, math.floor(tonumber(d.qty) or 0))
+        if qty > 0 then
+            local took = MySQL.update.await('UPDATE opslabs_pos_products SET stock = stock - ? WHERE id = ? AND stock >= ?', { qty, p.id, qty })
+            if took ~= 1 then return { error = 'Only some stock of ' .. p.label .. ' is left' } end
+            if not FW.AddItem(src, p.item, qty) then
+                MySQL.update.await('UPDATE opslabs_pos_products SET stock = stock + ? WHERE id = ?', { qty, p.id })
+                return { error = 'Could not hand over ' .. p.label }
+            end
+        end
     end
     return { ok = true, products = products(s.id) }
 end)
