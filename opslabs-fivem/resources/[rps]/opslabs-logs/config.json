@@ -1,0 +1,10 @@
+{
+  "_comment": "Read by server/logtail.js (the JS/Node half — it can't read config.lua, that's Lua-only syntax). See config.lua for the Lua-side settings (admin ACE, Discord webhook URL) and README.md for what each of these does.",
+
+  "logFile": "",
+  "extraLogFiles": [],
+  "journalUnit": "fivem.service",
+  "dedupeWindowMs": 60000,
+  "capacity": 2000,
+  "discordMinLevel": "warn"
+}

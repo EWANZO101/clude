@@ -5,7 +5,7 @@ lua54 'yes'
 name 'opslabs-license'
 author 'OpsLab Systems'
 description 'OPSHUB licensing: activates this server, verifies its signed license and runs only the OPS modules it is entitled to'
-version '1.0.0'
+version '1.2.0'
 
 shared_script 'config.lua'
 

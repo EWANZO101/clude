@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>OPS Logs</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0f1115; color: #d7dbe0; font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; }
+  header { display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: #171a21; border-bottom: 1px solid #262b35; position: sticky; top: 0; z-index: 2; flex-wrap: wrap; }
+  header h1 { font-size: 14px; margin: 0; color: #fff; font-family: ui-sans-serif, system-ui; }
+  header input, header select { background: #0f1115; border: 1px solid #333a47; color: #d7dbe0; border-radius: 5px; padding: 5px 8px; font: inherit; }
+  header input[type=text] { width: 220px; }
+  .status { margin-left: auto; color: #6c7585; font-size: 11px; }
+  #tags { display: flex; gap: 6px; padding: 8px 14px; flex-wrap: wrap; background: #12151b; border-bottom: 1px solid #1d212a; }
+  .tagchip { border: 1px solid #333a47; border-radius: 999px; padding: 2px 10px; font-size: 11px; cursor: pointer; color: #9aa3b2; user-select: none; white-space: nowrap; }
+  .tagchip.active { background: #2b3550; border-color: #4a5a8a; color: #cfe0ff; }
+  .tagchip b { color: #ff6464; margin-left: 4px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 5px 10px; border-bottom: 1px solid #1a1d24; vertical-align: top; }
+  td.time { color: #5c6577; white-space: nowrap; width: 76px; }
+  td.tag { white-space: nowrap; width: 180px; color: #8fb3ff; font-weight: 600; }
+  td.text { word-break: break-word; }
+  td.count { color: #6c7585; text-align: right; width: 50px; white-space: nowrap; }
+  tr.level-error td.text, tr.level-error td.tag { color: #ff8585; }
+  tr.level-warn td.text, tr.level-warn td.tag { color: #e8c468; }
+  tr.group-start { border-top: 2px solid #242938; }
+  tr:hover { background: #171b24; }
+  .empty { padding: 30px; text-align: center; color: #5c6577; }
+</style>
+</head>
+<body>
+<header>
+  <h1>OPS Logs</h1>
+  <input id="q" type="text" placeholder="search text or tag…">
+  <select id="level">
+    <option value="">all levels</option>
+    <option value="error">error</option>
+    <option value="warn">warn</option>
+    <option value="info">info</option>
+  </select>
+  <span class="status" id="status">loading…</span>
+</header>
+<div id="tags"></div>
+<table id="rows"><tbody></tbody></table>
+<div class="empty" id="empty" style="display:none">Nothing matching that yet.</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const key = params.get('key') || '';
+let activeTag = '';
+
+function api(path) {
+  const u = new URL(path, location.href);
+  u.searchParams.set('key', key);
+  return fetch(u).then(r => r.json());
+}
+
+function fmtTime(ms) {
+  const d = new Date(ms);
+  return d.toTimeString().slice(0, 8);
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+}
+
+async function refresh() {
+  const q = document.getElementById('q').value.trim();
+  const level = document.getElementById('level').value;
+  const [recentRes, statsRes] = await Promise.all([
+    api(`/api/recent?limit=300${q ? '&q=' + encodeURIComponent(q) : ''}${level ? '&level=' + level : ''}${activeTag ? '&tag=' + encodeURIComponent(activeTag) : ''}`),
+    api('/api/stats'),
+  ]);
+  renderTags(statsRes.data || []);
+  renderRows(recentRes.data || []);
+  document.getElementById('status').textContent = 'updated ' + new Date().toTimeString().slice(0, 8);
+}
+
+function renderTags(stats) {
+  const el = document.getElementById('tags');
+  el.innerHTML = '';
+  const all = document.createElement('div');
+  all.className = 'tagchip' + (activeTag === '' ? ' active' : '');
+  all.textContent = 'all';
+  all.onclick = () => { activeTag = ''; refresh(); };
+  el.appendChild(all);
+  for (const s of stats) {
+    const chip = document.createElement('div');
+    chip.className = 'tagchip' + (activeTag === s.tag ? ' active' : '');
+    chip.innerHTML = esc(s.tag) + (s.errors ? `<b>${s.errors}</b>` : '');
+    chip.onclick = () => { activeTag = (activeTag === s.tag ? '' : s.tag); refresh(); };
+    el.appendChild(chip);
+  }
+}
+
+function renderRows(rows) {
+  const tbody = document.querySelector('#rows tbody');
+  tbody.innerHTML = '';
+  document.getElementById('empty').style.display = rows.length ? 'none' : 'block';
+  let prevTag = null;
+  for (const e of rows) {
+    const tr = document.createElement('tr');
+    tr.className = 'level-' + e.level + (e.tag !== prevTag ? ' group-start' : '');
+    prevTag = e.tag;
+    tr.innerHTML = `<td class="time">${fmtTime(e.lastAt)}</td><td class="tag">${esc(e.tag || '(server)')}</td>` +
+      `<td class="text">${esc(e.lastText)}</td><td class="count">${e.count > 1 ? '×' + e.count : ''}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+document.getElementById('q').addEventListener('input', () => { clearTimeout(window._t); window._t = setTimeout(refresh, 250); });
+document.getElementById('level').addEventListener('change', refresh);
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>

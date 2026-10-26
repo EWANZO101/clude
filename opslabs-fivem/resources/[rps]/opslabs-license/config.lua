@@ -25,6 +25,14 @@ Config.Protected = { ['opslabs-license'] = true, ['opslabs-phone'] = true, ['rps
 -- who may enter / change the key in game: this ACE (add_ace group.admin opshub.license allow), or anyone with 'command'
 Config.AdminAce = 'opshub.license'
 
+-- A resource-kind module your license is entitled to still starts switched OFF until it's turned on at
+-- https://opsphone-store.opslabsystems.cloud/license/<your license>/scripts - this is a local, offline
+-- alternative to that (e.g. you don't want to touch the portal every time, or OPSHUB is briefly unreachable):
+-- list module codes here to force them on from this server regardless of the portal toggle. It can only turn
+-- ON a module your license already covers - it can never grant one you aren't licensed for.
+--   Config.ForceEnabled = { towers = true, phone = true }
+Config.ForceEnabled = {}
+
 -- the key OPSHUB signs licenses with. A license is only believed when its signature checks out against this, so a copied
 -- or edited installation can't give itself modules. Don't change it.
 Config.PublicKey = [[

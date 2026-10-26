@@ -21,14 +21,34 @@ The **only** place an OPS installation keeps its license. Every other OPS resour
 3. Every `Config.CheckEvery` seconds the server checks in and gets a fresh certificate, so modules switched on/off,
    suspensions and revocations on OPSHUB apply within ~10 minutes. If OPSHUB can't be reached the cached certificate
    keeps working until it runs out (OPSHUB grants 72 h).
-4. **Resource modules** (opslabs-towers, -props, -pos, -guide, -animations, -connect) are started / stopped to match
-   the license (`Config.Enforce`). **OPS Phone** is never stopped: it shows the license screen when unlicensed and
-   gates each app's calls by its module (opslabs-phone/server/license.lua).
+4. **Resource modules** (opslabs-towers, -props, -pos, -guide, -animations, -connect, -bodycam) are started / stopped
+   to match the license (`Config.Enforce`) *and* whether they're switched on (below). **OPS Phone** is never stopped:
+   it shows the license screen when unlicensed and gates each app's calls by its module (opslabs-phone/server/license.lua).
+
+## Enabled / disabled — separate from the license
+Being entitled to a resource module only means the license *may* run it — it still starts switched **off**
+on every server until someone turns it on, either at the customer portal's `/license/<id>/scripts` tab (or
+the admin portal's matching section on a license's page), or locally per-server regardless of the portal in
+`Config.ForceEnabled` here (e.g. `Config.ForceEnabled = { towers = true }`) — that can only switch ON a
+module the license already covers, never grant one it doesn't. This is why the certificate carries two
+separate lists: `modules` (entitled - unaffected, still what feature-level gates like `HasModule()` use) and
+`enabled` (entitled **and** switched on - what actually starts/stops a whole resource).
 
 ## Managing licenses
 - Admin portal: `/license/admin` on OPS Hub (licenses, keys, Allow All, per-module entitlements, expiry, instance and
   IP limits, customers, modules, logs, suspicious attempts, API tokens).
 - Client portal: `/license` (customers see their keys, status, expiry, instances and modules).
+
+## Auto-updates (`tools/ops-update-companion.py`)
+A resource module's files can update themselves: an admin publishes a new version at
+`/license/admin/modules/<code>/releases` (version, release notes, a .zip of that resource's own files), and
+`tools/ops-update-companion.py` — a separate process run alongside FXServer, same reasoning as
+`opslabs-bodycam/tools/upload-companion.py` (no unzip native and no proven-safe way to pull a multi-MB
+binary HTTP response in-process) — polls for it, verifies the signed manifest plus a sha256 of the
+download, and swaps the resource's files on disk. It then drops a `.opshub-update-pending` marker in the
+resource's own folder; this resource's own check-in loop (above) notices it and does the actual
+`StopResource`/`StartResource`. `--rollback <code>` swaps the previous local copy back. See the script's own
+`--help`/docstring for the systemd unit to keep it running.
 
 Note: Lua resources can always be edited by whoever runs the server. The signed certificate stops a copied or tampered
 installation from *granting itself* modules through the license; protecting the code itself needs Cfx asset escrow.
