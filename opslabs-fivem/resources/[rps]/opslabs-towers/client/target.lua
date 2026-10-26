@@ -1,6 +1,11 @@
--- Third eye at the bottom of every pole (Config.Target): placed poles and GTA's own telegraph poles get target
--- options — climb, kit at the base, the Line Tool, live pole data, fault finder, recloser control, fault repair and
--- ladders. Works with tgiann-target or ox_target (same API). With neither running, the old [E] prompts stay.
+-- Third eye (Config.Target): hold the target key (ALT, by default) and look at OPS kit to interact with it,
+-- the same way you'd look at a ped or vehicle - as well as placing/installing kit from /towers, which this
+-- never touches. Works with tgiann-target or ox_target (same API, picked automatically); with neither running,
+-- every system's old [E]/[G]/[H] prompts stay exactly as they were.
+--   This file: the bottom of every pole - climb, kit at the base, the Line Tool, live pole data, fault finder,
+--   recloser control, fault repair and ladders - plus the generic TargetAddModel / TargetAddLocalEntity
+--   helpers every other target-aware file (doors.lua, access.lua, …) calls instead of touching tgiann-target /
+--   ox_target directly.
 
 local CT = Config.Target or {}
 local CC = Config.Cabling or {}
@@ -14,6 +19,40 @@ end
 
 --- is the third eye doing the bottom of poles? (poles.lua / grid.lua hide their [E] prompts then)
 function TargetOn() return CT.Enabled ~= false and api() ~= nil end
+
+---------------------------------------------------------------------------
+-- generic helpers for other client files (doors.lua, cctv.lua, access.lua, …): one place that knows which
+-- target resource is running and how to talk to it, so the rest of the codebase just calls these four and
+-- TargetOn() above, the same way it already calls PoleEquipMenu / ShowPoleData / etc. Every call is wrapped in
+-- pcall - a target resource stopping mid-session (onClientResourceStart/Stop already clears our own
+-- registrations below) must never take a caller's thread down with it.
+---------------------------------------------------------------------------
+function TargetAddModel(models, options)
+    local t = api()
+    if not t then return false end
+    pcall(function() t:addModel(models, options) end)
+    return true
+end
+
+function TargetRemoveModel(models, options)
+    local t = api()
+    if t then pcall(function() t:removeModel(models, options) end) end
+end
+
+--- a specific (locally-spawned, not networked) entity - a door/gate leaf, a camera that doesn't warrant a
+--- whole-model registration, etc. ox_target / tgiann-target self-clean once the entity no longer exists, but
+--- callers should still pair this with TargetRemoveLocalEntity when they delete the entity themselves.
+function TargetAddLocalEntity(entity, options)
+    local t = api()
+    if not t or not entity or entity == 0 then return false end
+    pcall(function() t:addLocalEntity(entity, options) end)
+    return true
+end
+
+function TargetRemoveLocalEntity(entity)
+    local t = api()
+    if t and entity and entity ~= 0 then pcall(function() t:removeLocalEntity(entity) end) end
+end
 
 local function fixtures() return CablingFixtures and CablingFixtures() or {} end
 local function isPowerPole(m) return m and m:find('^opslabs_power_pole') ~= nil end

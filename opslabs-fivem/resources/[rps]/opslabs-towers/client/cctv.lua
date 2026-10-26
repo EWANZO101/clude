@@ -34,7 +34,9 @@ function CctvWatch(rid, remote, startCam)
     local pan, tilt, fov = 0.0, -12.0, 60.0
     local function apply()
         local c = cams[idx]
-        pan, tilt = 0.0, c.ptz and -15.0 or -12.0
+        -- cameras placed/moved with an explicit tilt (Move / aim & place) use that as their base view;
+        -- older ones with no tilt set (pitch 0) keep the same slightly-downward default they always had
+        pan, tilt = 0.0, (c.pitch and c.pitch ~= 0) and c.pitch or (c.ptz and -15.0 or -12.0)
         fov = math.max(25.0, math.min(100.0, (c.fov or 90) * 0.8))
         SetCamCoord(cam, c.x, c.y, c.z)
         SetFocusPosAndVel(c.x, c.y, c.z, 0.0, 0.0, 0.0)

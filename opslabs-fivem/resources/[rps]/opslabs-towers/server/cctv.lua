@@ -250,7 +250,7 @@ local function camView(id)
     local l = def.lens or { 0, -0.2, 0.06 }
     local lx, ly = l[1] * math.cos(h) - l[2] * math.sin(h), l[1] * math.sin(h) + l[2] * math.cos(h)
     return { id = id, name = c.name or ((def.label or 'Camera'):gsub(' %(.*%)', '') .. ' #' .. id), model = f.model, kind = def.kind,
-        x = f.x + lx, y = f.y + ly, z = f.z + l[3], heading = f.heading or 0, fov = def.fov or 90, ptz = def.ptz or false, thermal = def.thermal or false,
+        x = f.x + lx, y = f.y + ly, z = f.z + l[3], heading = f.heading or 0, pitch = f.pitch or 0, fov = def.fov or 90, ptz = def.ptz or false, thermal = def.thermal or false,
         anpr = def.anpr or false, ir = (def.ir and nightVisionOn(id)) or false, irCapable = def.ir or false,
         nv = c.nv == nil and 'auto' or ((c.nv == 1 or c.nv == true) and 'on' or 'off'), location = c.location, online = st.online or false, status = st.status, statusText = STATUS[st.status] or st.status, via = st.via, rec = st.rec }
 end

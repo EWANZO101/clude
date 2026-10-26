@@ -31,6 +31,7 @@ local function obj(model, x, y, z, heading)
     FreezeEntityPosition(e, true)
     SetEntityCollision(e, false, false)
     SetModelAsNoLongerNeeded(hash)
+    FixInteriorRoom(e, x, y, z)
     return e
 end
 

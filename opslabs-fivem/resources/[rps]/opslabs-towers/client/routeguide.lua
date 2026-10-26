@@ -60,14 +60,18 @@ CreateThread(function()
     end
 end)
 
-RegisterCommand('routeguide', function()
+--- /towers → Pole route guide: same status/stop dialog as the /routeguide command, reachable from the menu
+function RouteGuideStatus()
     if not active then return lib.notify({ type = 'error', description = 'No pole route assigned right now' }) end
     local done = 0
     for _, d in ipairs(active.done) do if d then done = done + 1 end end
     local r = lib.alertDialog({ header = active.label, content = ('%d of %d points done.'):format(done, #active.points), centered = true,
         cancel = true, labels = { confirm = 'OK', cancel = active.jobType and 'OK (leave the job in OPS Work to stop)' or 'Stop tracking it' } })
     if r == 'cancel' and not active.jobType then stopRoute() lib.notify({ description = 'Stopped tracking the route' }) end
-end, false)
+end
+function RouteGuideActive() return active ~= nil end
+
+RegisterCommand('routeguide', RouteGuideStatus, false)
 
 -- marker + GPS at the current target point
 CreateThread(function()

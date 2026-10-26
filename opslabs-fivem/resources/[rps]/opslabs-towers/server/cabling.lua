@@ -72,6 +72,10 @@ MySQL.ready(function()
     local hasData = MySQL.scalar.await([[SELECT COUNT(*) FROM information_schema.COLUMNS
         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'opslabs_towers_fixtures' AND COLUMN_NAME = 'data']])
     if (tonumber(hasData) or 0) == 0 then MySQL.query.await('ALTER TABLE opslabs_towers_fixtures ADD COLUMN `data` TEXT DEFAULT NULL') end
+    -- camera-type kit can be tilted when placed (Move / aim & place) — everything else stays heading-only (pitch 0)
+    local hasPitch = MySQL.scalar.await([[SELECT COUNT(*) FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'opslabs_towers_fixtures' AND COLUMN_NAME = 'pitch']])
+    if (tonumber(hasPitch) or 0) == 0 then MySQL.query.await('ALTER TABLE opslabs_towers_fixtures ADD COLUMN `pitch` FLOAT NOT NULL DEFAULT 0 AFTER `heading`') end
     for _, f in ipairs(MySQL.query.await('SELECT * FROM opslabs_towers_fixtures') or {}) do
         f.data = f.data and json.decode(f.data) or nil
         Cabling.fixtures[f.id] = f
@@ -412,6 +416,54 @@ lib.callback.register('opslabs-towers:cable:saveRun', function(src, d)
     return { ok = true, run = Cabling.runs[id] }
 end)
 
+--- OPS Secure "Wire a camera to CAT6 → Quick-connect": a straight patch lead between a camera and its
+--- recorder, terminated at BOTH ends immediately — the one-tap version of pull + cut-from-box + terminate-
+--- both-ends above, for when you don't need it hand-routed around anything. Still costs real cable from a
+--- box you're standing next to, same as a normal pull — it's a shortcut for the walking and aiming, not a
+--- way to get free cable. Longer runs auto-subdivide into points under cleanPoints' 60 m-per-segment limit.
+lib.callback.register('opslabs-towers:cable:quickWire', function(src, camId, nvrId)
+    if not canCable(src) then return { error = 'not allowed' } end
+    camId, nvrId = tonumber(camId), tonumber(nvrId)
+    local cam, nvr = Cabling.fixtures[camId], Cabling.fixtures[nvrId]
+    if not cam or not nvr then return { error = 'Not found' } end
+    local CV = Config.Cctv or {}
+    local camDef, nvrDef = (CV.Cameras or {})[cam.model], (CV.Recorders or {})[nvr.model]
+    if not camDef or not nvrDef then return { error = 'Not a camera/recorder pair' } end
+    if (camDef.kind == 'ip' and nvrDef.kind ~= 'nvr') or (camDef.kind == 'analog' and nvrDef.kind ~= 'dvr') then
+        return { error = 'Wrong recorder type for this camera' }
+    end
+    local rawPts = {}
+    local dx, dy, dz = nvr.x - cam.x, nvr.y - cam.y, nvr.z - cam.z
+    local straight = math.sqrt(dx * dx + dy * dy + dz * dz)
+    local n = math.max(1, math.ceil(straight / 40.0))
+    for i = 0, n do
+        local t = i / n
+        rawPts[#rawPts + 1] = { x = cam.x + dx * t, y = cam.y + dy * t, z = cam.z + dz * t, nz = 1.0 }
+    end
+    local points, length = cleanPoints(rawPts)
+    if not points then return { error = length } end
+    if length > (CC.MaxRunLength or 90) + 0.5 then return { error = ('too far apart — max %dm'):format(CC.MaxRunLength or 90) } end
+    local ped = GetPlayerPed(src)
+    if ped == 0 then return { error = 'Failed' } end
+    local ppos = GetEntityCoords(ped)
+    local box
+    for _, b in pairs(Cabling.boxes) do
+        if (b.kind or 'cat6') == 'cat6' and (b.remaining or 0) >= length and #(ppos - vector3(b.x, b.y, b.z)) <= (CC.PullDistance or 3.0) then
+            box = b break
+        end
+    end
+    if not box then return { error = ('Stand within %.0fm of a CAT6 box with at least %.0fm of cable left'):format(CC.PullDistance or 3.0, length) } end
+    box.remaining = math.max(0, box.remaining - length)
+    MySQL.update.await('UPDATE opslabs_towers_cable_boxes SET remaining = ? WHERE id = ?', { box.remaining, box.id })
+    local id = MySQL.insert.await('INSERT INTO opslabs_towers_cables (kind, color, points, length, start_fixture, end_fixture, start_term, end_term, created_by) VALUES (?, ?, ?, ?, ?, ?, 1, 1, ?)',
+        { 'cable', 'black', json.encode(points), length, camId, nvrId, GetPlayerName(src) })
+    Cabling.runs[id] = { id = id, kind = 'cable', color = 'black', points = points, length = length,
+        start_fixture = camId, end_fixture = nvrId, start_term = true, end_term = true, created_by = GetPlayerName(src) }
+    print(('[opslabs-towers] %s quick-wired camera #%d to recorder #%d (%.1fm)'):format(GetPlayerName(src), camId, nvrId, length))
+    changed()
+    return { ok = true, length = length }
+end)
+
 --- cut the cable from its box: the box end becomes the first laid point (to terminate at the router)
 lib.callback.register('opslabs-towers:cable:cut', function(src, id)
     if not canCable(src) then return { error = 'not allowed' } end
@@ -736,11 +788,11 @@ lib.callback.register('opslabs-towers:fixture:save', function(src, d)
     if id then
         local f = Cabling.fixtures[id]
         if not f then return { error = 'not found' } end
-        f.x, f.y, f.z, f.heading = x, y, z, num(d.heading) or f.heading
+        f.x, f.y, f.z, f.heading, f.pitch = x, y, z, num(d.heading) or f.heading, num(d.pitch) or f.pitch or 0.0
         -- sockets, meters, laptops... keep their own state (switches, readings, battery) when moved
         if d.data ~= nil and not (MainsOwnsData and MainsOwnsData(f.model)) then f.data = cleanData(f.model, d.data) end
-        MySQL.update.await('UPDATE opslabs_towers_fixtures SET x = ?, y = ?, z = ?, heading = ?, data = ? WHERE id = ?',
-            { f.x, f.y, f.z, f.heading, f.data and json.encode(f.data) or nil, id })
+        MySQL.update.await('UPDATE opslabs_towers_fixtures SET x = ?, y = ?, z = ?, heading = ?, pitch = ?, data = ? WHERE id = ?',
+            { f.x, f.y, f.z, f.heading, f.pitch, f.data and json.encode(f.data) or nil, id })
     else
         if not equipmentAllowed(d.model) then return { error = 'unknown equipment' } end
         if POLE_KIT[d.model] then
@@ -756,8 +808,8 @@ lib.callback.register('opslabs-towers:fixture:save', function(src, d)
             if okc and allowed == false then return { error = why or 'You need the item for that' } end
         end
         local data = cleanData(d.model, d.data)
-        id = MySQL.insert.await('INSERT INTO opslabs_towers_fixtures (model, x, y, z, heading, data, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            { d.model, x, y, z, num(d.heading) or 0.0, data and json.encode(data) or nil, GetPlayerName(src) })
+        id = MySQL.insert.await('INSERT INTO opslabs_towers_fixtures (model, x, y, z, heading, pitch, data, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            { d.model, x, y, z, num(d.heading) or 0.0, num(d.pitch) or 0.0, data and json.encode(data) or nil, GetPlayerName(src) })
         -- re-check after the insert: a concurrent placement at the same spot could have landed (and already
         -- registered in Cabling.fixtures) while this request was awaiting its own insert
         if POLE_KIT[d.model] then
@@ -768,7 +820,7 @@ lib.callback.register('opslabs-towers:fixture:save', function(src, d)
                 end
             end
         end
-        Cabling.fixtures[id] = { id = id, model = d.model, x = x, y = y, z = z, heading = num(d.heading) or 0.0, data = data, created_by = GetPlayerName(src) }
+        Cabling.fixtures[id] = { id = id, model = d.model, x = x, y = y, z = z, heading = num(d.heading) or 0.0, pitch = num(d.pitch) or 0.0, data = data, created_by = GetPlayerName(src) }
     end
     changed()
     return { ok = true, fixture = Cabling.fixtures[id] }

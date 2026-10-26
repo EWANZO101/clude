@@ -493,6 +493,22 @@ function DespawnKey(key)
     spawned[key] = nil
 end
 
+-- Indoor kit (ONTs, cat6/fibre boxes, consumer units, meters...) is spawned from up to
+-- Render.Distance away, long before the MLO interior around it has streamed in. The game
+-- assigns an object's room only once, at creation, so it's stuck "outside" (room 0) forever —
+-- fine while you're outside, but the engine's own portal culling then hides it the moment you
+-- actually walk into the room, well before we'd ever despawn it ourselves. Once the interior
+-- finishes streaming we re-resolve and force the room so it stays visible once you're inside.
+function FixInteriorRoom(e, x, y, z)
+    local interior = GetInteriorAtCoords(x, y, z)
+    if interior == 0 then return end
+    PinInteriorInMemory(interior)
+    CreateThread(function()
+        while DoesEntityExist(e) and not IsInteriorReady(interior) do Wait(250) end
+        if DoesEntityExist(e) then ForceRoomForEntity(e, interior, GetKeyForEntityInRoom(e)) end
+    end)
+end
+
 local function nearRun(r, pos, dist)
     if r._c then return #(pos - r._c) - r._r < dist end
     for _, p in ipairs(r.points or {}) do
@@ -569,11 +585,14 @@ CreateThread(function()
                     local h = model(v.model)
                     if h then
                         local e = CreateObjectNoOffset(h, v.x, v.y, v.z, false, false, false)
-                        SetEntityHeading(e, v.heading or 0.0)
+                        -- most kit is heading-only; camera-type equipment can also be tilted (Move / aim & place)
+                        if v.pitch and v.pitch ~= 0 then SetEntityRotation(e, v.pitch, 0.0, v.heading or 0.0, 2, true)
+                        else SetEntityHeading(e, v.heading or 0.0) end
                         SetEntityCoordsNoOffset(e, v.x, v.y, v.z, false, false, false)
                         FreezeEntityPosition(e, true)
                         list[1] = e
                         poleBands(v, list)
+                        FixInteriorRoom(e, v.x, v.y, v.z)
                     end
                 elseif key:sub(1, 1) == 'b' then
                     local bt = boxType(v)
@@ -583,6 +602,7 @@ CreateThread(function()
                         SetEntityHeading(e, v.heading or 0.0)
                         FreezeEntityPosition(e, true)
                         list[1] = e
+                        FixInteriorRoom(e, v.x, v.y, v.z)
                         local hr = bt.reel and model(bt.reel)
                         if hr then
                             local r = CreateObjectNoOffset(hr, v.x, v.y, v.z + REEL_AXLE, false, false, false)
@@ -591,6 +611,7 @@ CreateThread(function()
                             FreezeEntityPosition(r, true)
                             SetEntityCollision(r, false, false)
                             list[2] = r
+                            FixInteriorRoom(r, v.x, v.y, v.z + REEL_AXLE)
                         end
                     end
                 else
@@ -1890,6 +1911,107 @@ local function pullCable()
     RunMenu(res.run)
 end
 
+---------------------------------------------------------------------------
+-- OPS Secure: "Wire a camera to CAT6" — lists nearby IP/analogue cameras, which already have a terminated CAT6
+-- run on them and which don't, and for the unwired ones points you at the nearest box with spare cable so you're
+-- not hunting for one. The actual pull-and-route-and-terminate work is still the real tool (Pull CAT6 from the
+-- nearest box, above) — cameras are already a valid thing to aim at and terminate onto; what's missing without
+-- this is knowing, at a glance, which cameras still need doing and where the cable for them actually is.
+---------------------------------------------------------------------------
+
+local function nearestCat6BoxTo(pos, maxDist)
+    local best, bd = nil, maxDist or 1e9
+    for _, b in pairs(data.boxes) do
+        if (b.kind or 'cat6') == 'cat6' and (b.remaining or 0) >= 1 then
+            local d = #(pos - vector3(b.x, b.y, b.z))
+            if d < bd then best, bd = b, d end
+        end
+    end
+    return best, bd
+end
+
+--- a live CAT6 run actually terminated on this fixture (not just routed up to it and left bare)
+local function cameraCabled(fid)
+    for _, r in pairs(data.runs) do
+        if r.kind == 'cable' then
+            if r.start_fixture == fid and r.start_term then return true end
+            if r.end_fixture == fid and r.end_term then return true end
+        end
+    end
+    return false
+end
+
+--- one-tap wiring: pick a nearby matching recorder and the server lays a straight, fully-terminated patch
+--- lead between the camera and it (consumes real cable from a box you're standing next to)
+local function quickWireCamera(camId, camLabel, back)
+    local f = data.fixtures[camId]
+    if not f then return end
+    local CAM = (Config.Cctv or {}).Cameras or {}
+    local REC = (Config.Cctv or {}).Recorders or {}
+    local def = CAM[f.model]
+    local wantKind = def.kind == 'ip' and 'nvr' or def.kind == 'analog' and 'dvr' or nil
+    local opts = {}
+    for id, r in pairs(data.fixtures) do
+        local rdef = REC[r.model]
+        if rdef and rdef.kind == wantKind then
+            local d = #(vector3(f.x, f.y, f.z) - vector3(r.x, r.y, r.z))
+            if d <= (CC.MaxRunLength or 90) then opts[#opts + 1] = { value = tostring(id), label = ('%s (%d m)'):format(fixtureLabel(id) or rdef.label or 'Recorder', math.floor(d)), d = d } end
+        end
+    end
+    if #opts == 0 then lib.notify({ type = 'error', description = ('No matching recorder within %d m'):format(CC.MaxRunLength or 90) }) return back() end
+    table.sort(opts, function(a, b) return a.d < b.d end)
+    local v = lib.inputDialog('Quick-connect ' .. camLabel, { { type = 'select', label = 'Connect to', options = opts, required = true } })
+    if not v then return back() end
+    local r = lib.callback.await('opslabs-towers:cable:quickWire', false, camId, tonumber(v[1]))
+    if r and r.ok then lib.notify({ type = 'success', description = ('Wired · %.0f m of CAT6 used'):format(r.length) })
+    else lib.notify({ type = 'error', description = (r and r.error) or 'Failed' }) end
+    Wait(250)
+    back()
+end
+
+local function cameraWiringMenu()
+    local pos = GetEntityCoords(PlayerPedId())
+    local CAM = (Config.Cctv or {}).Cameras or {}
+    local list = {}
+    for id, f in pairs(data.fixtures) do
+        local def = CAM[f.model]
+        if def and (def.kind == 'ip' or def.kind == 'analog') then   -- wireless cameras / doorbells don't take CAT6
+            local d = #(pos - vector3(f.x, f.y, f.z))
+            if d <= 150.0 then list[#list + 1] = { id = id, f = f, d = d, cabled = cameraCabled(id), label = fixtureLabel(id) or (def.label or 'Camera') } end
+        end
+    end
+    local options = {}
+    if #list == 0 then
+        options[1] = { title = 'No IP or analogue cameras within 150 m', readOnly = true }
+    else
+        table.sort(list, function(a, b) if a.cabled ~= b.cabled then return not a.cabled end return a.d < b.d end)
+        for _, n in ipairs(list) do
+            if n.cabled then
+                options[#options + 1] = { title = n.label, description = ('%d m away · already cabled'):format(math.floor(n.d)), icon = 'ethernet', iconColor = '#30d158', readOnly = true }
+            else
+                local box, bd = nearestCat6BoxTo(vector3(n.f.x, n.f.y, n.f.z), 400.0)
+                options[#options + 1] = { title = n.label,
+                    description = box and ('%d m away · not cabled yet · nearest CAT6 box with spare cable is %d m from it'):format(math.floor(n.d), math.floor(bd))
+                        or ('%d m away · not cabled yet · no CAT6 box with spare cable within 400 m'):format(math.floor(n.d)),
+                    icon = 'ethernet', iconColor = '#ff9f0a', arrow = true,
+                    onSelect = function()
+                        lib.registerContext({ id = 'cam_wire_one', title = n.label, menu = 'cam_wire', options = {
+                            { title = 'Quick-connect', description = 'Pick its recorder — a straight patch lead is laid and terminated at both ends right away. Costs cable from a box you\'re standing next to.',
+                                icon = 'bolt', iconColor = '#30d158', onSelect = function() quickWireCamera(n.id, n.label, function() cameraWiringMenu() end) end },
+                            box and { title = 'Locate the nearest box', description = 'Waypoint there, then pull and route it by hand (OPS Secure → Pull CAT6 from the nearest box)', icon = 'location-dot', onSelect = function()
+                                SetNewWaypoint(box.x, box.y)
+                                lib.notify({ type = 'inform', duration = 8000, description = ('Waypoint set. Pull cable from it, then aim at %s to terminate.'):format(n.label) })
+                            end } or { title = 'No CAT6 box with spare cable within 400 m', readOnly = true },
+                        } })
+                        lib.showContext('cam_wire_one')
+                    end }
+            end
+        end
+    end
+    lib.registerContext({ id = 'cam_wire', title = 'Wire a camera to CAT6', options = options })
+    lib.showContext('cam_wire')
+end
+
 local function placeBox()
     local opts = { { value = 'cat6', label = ('CAT6 · %d m'):format(CC.BoxLength) } }
     for _, c in ipairs(CC.FibreColors) do
@@ -2039,8 +2161,15 @@ local function fixtureMenu(f)
             icon = 'database', iconColor = '#30d158', readOnly = true }
     end
     options[#options + 1] = { title = 'Move (aim & place)', description = building and 'Pick it up and put it down somewhere else (aim up to 90 m away)' or nil, icon = 'up-down-left-right', iconColor = '#0a84ff', onSelect = function()
-        local spot = PlacementMode('fixture', f.model, 1.0, f.heading, 'Moving ' .. label)
-        if spot then lib.callback.await('opslabs-towers:fixture:save', false, { id = f.id, x = spot.x, y = spot.y, z = spot.z, heading = spot.heading }) Wait(250) end
+        -- camera-type kit (Config.Cabling.Equipment[*].tilt) can also be aimed up/down while moving it
+        local canTilt = false
+        for _, e in ipairs(CC.Equipment) do
+            local matches = e.model == f.model
+            if not matches then for _, sz in ipairs(e.sizes or {}) do if sz.model == f.model then matches = true break end end end
+            if matches then canTilt = e.tilt break end
+        end
+        local spot = PlacementMode('fixture', f.model, 1.0, f.heading, 'Moving ' .. label, { tilt = canTilt, startPitch = f.pitch })
+        if spot then lib.callback.await('opslabs-towers:fixture:save', false, { id = f.id, x = spot.x, y = spot.y, z = spot.z, heading = spot.heading, pitch = spot.pitch }) Wait(250) end
         fixtureMenu(f)
     end }
     options[#options + 1] = { title = 'Fine-tune position', description = 'Slide, raise / lower and turn it a little at a time · Shift for fine', icon = 'arrows-up-down-left-right', iconColor = '#0a84ff', onSelect = function()
@@ -2095,9 +2224,9 @@ end
 local function placeEquipment(e, back)
     local modelName = EquipmentSize(e)
     if not modelName then return back() end
-    local spot = PlacementMode('fixture', modelName, 1.0, nil, 'Placing ' .. equipLabelFor(modelName))
+    local spot = PlacementMode('fixture', modelName, 1.0, nil, 'Placing ' .. equipLabelFor(modelName), { tilt = e.tilt })
     if spot then
-        local r = lib.callback.await('opslabs-towers:fixture:save', false, { model = modelName, x = spot.x, y = spot.y, z = spot.z, heading = spot.heading })
+        local r = lib.callback.await('opslabs-towers:fixture:save', false, { model = modelName, x = spot.x, y = spot.y, z = spot.z, heading = spot.heading, pitch = spot.pitch })
         if r and r.ok then lib.notify({ type = 'success', description = equipLabelFor(modelName) .. ' placed' }) Wait(250)
         else lib.notify({ type = 'error', description = (r and r.error) or 'Failed' }) end
     end
@@ -2553,6 +2682,7 @@ local function wrap(fn) return function(back) ReturnMenu = back fn() end end
 local function wrapMode(fn) return function(back) fn() if back then back() end end end
 CableActions.placeBox = wrap(placeBox)
 CableActions.pull = wrap(pullCable)
+CableActions.wireCamera = wrap(cameraWiringMenu)
 CableActions.trunking = wrap(layTrunking)
 CableActions.power = wrap(RunPowerCable)
 CableActions.powerOverhead = function(back) ReturnMenu = back RunPowerCable(CC.PowerOverhead) end

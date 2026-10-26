@@ -66,6 +66,10 @@ CreateThread(function()
                     FreezeEntityPosition(ent, true)
                     SetModelAsNoLongerNeeded(hash)
                     props[id] = ent
+                    do
+                        local at = GetEntityCoords(ent)
+                        FixInteriorRoom(ent, at.x, at.y, at.z)
+                    end
                     -- ground kit that goes with a mast (lattice mast → cabin, gantry, fenced compound), same origin
                     local extras = {}
                     for _, m in ipairs(((Config.Cell or {}).Extras or {})[t.model or ''] or {}) do
@@ -77,6 +81,7 @@ CreateThread(function()
                             SetEntityHeading(x, GetEntityHeading(ent))
                             FreezeEntityPosition(x, true)
                             SetModelAsNoLongerNeeded(eh)
+                            FixInteriorRoom(x, at.x, at.y, at.z)
                             extras[#extras + 1] = x
                         end
                     end
@@ -270,10 +275,12 @@ function PlacementMode(kind, model, range, startHeading, title, opts)
     end
     local heading = startHeading or GetEntityHeading(PlayerPedId())
     local lift = 0.0
+    local tilt = opts and opts.tilt
+    local pitch = tilt and (opts.startPitch or 0.0) or 0.0
     local result
-    local sf = PlaceHud.buttons({
-        { 'Place', { 24, 191 } }, { 'Cancel', { 25, 177 } }, { 'Rotate', { 44, 38 } }, { 'Raise / lower', { 172, 173 } }, { 'Fine', 21 },
-    })
+    local buttons = { { 'Place', { 24, 191 } }, { 'Cancel', { 25, 177 } }, { 'Rotate', { 44, 38 } }, { 'Raise / lower', { 172, 173 } }, { 'Fine', 21 } }
+    if tilt then buttons[#buttons + 1] = { 'Tilt', { 174, 175 } } end
+    local sf = PlaceHud.buttons(buttons)
     title = title or PLACE_TITLES[kind] or 'Placing'
     while true do
         Wait(0)
@@ -294,10 +301,15 @@ function PlacementMode(kind, model, range, startHeading, title, opts)
         if IsDisabledControlPressed(0, 38) then heading = heading - step * 0.6 end
         if IsDisabledControlPressed(0, 172) then lift = lift + (fine and 0.004 or 0.02) end
         if IsDisabledControlPressed(0, 173) then lift = lift - (fine and 0.004 or 0.02) end
+        if tilt then
+            -- same tilt range as the CCTV viewer itself (client/cctv.lua): mostly down, a little up
+            if IsDisabledControlPressed(0, 174) then pitch = math.max(-80.0, pitch - step * 0.6) end
+            if IsDisabledControlPressed(0, 175) then pitch = math.min(10.0, pitch + step * 0.6) end
+        end
         local pos = vector3(at.x, at.y, at.z + lift)
         if ghost then
             SetEntityCoordsNoOffset(ghost, pos.x, pos.y, pos.z, false, false, false)
-            SetEntityHeading(ghost, heading)
+            if tilt then SetEntityRotation(ghost, pitch, 0.0, heading, 2, true) else SetEntityHeading(ghost, heading) end
         end
         -- target + live range preview
         DrawMarker(28, pos.x, pos.y, pos.z, 0, 0, 0, 0, 0, 0, 0.08, 0.08, 0.08, 255, 255, 255, 220, false, false, 2, false, nil, nil, false)
@@ -307,9 +319,10 @@ function PlacementMode(kind, model, range, startHeading, title, opts)
             DrawMarker(1, pos.x, pos.y, pos.z - 1.0, 0, 0, 0, 0, 0, 0, math.min(range, 300) * 2.0, math.min(range, 300) * 2.0, 2.0, 60, 140, 255, 60, false, false, 2, false, nil, nil, false)
         end
         local extra = opts and opts.onFrame and opts.onFrame(pos, heading % 360)
-        PlaceHud.draw(sf, title, ('Heading %d°   ·   Height %+.2f m%s%s'):format(math.floor(heading % 360), lift, fine and '   ·   fine' or '', extra and ('   ·   ' .. extra) or ''))
+        PlaceHud.draw(sf, title, ('Heading %d°   ·   Height %+.2f m%s%s%s'):format(math.floor(heading % 360), lift,
+            tilt and ('   ·   Tilt %+.1f°'):format(pitch) or '', fine and '   ·   fine' or '', extra and ('   ·   ' .. extra) or ''))
         if IsDisabledControlJustPressed(0, 24) or IsDisabledControlJustPressed(0, 191) then
-            result = { x = pos.x, y = pos.y, z = pos.z, heading = heading % 360 }
+            result = { x = pos.x, y = pos.y, z = pos.z, heading = heading % 360, pitch = tilt and pitch or nil }
             break
         end
         if IsDisabledControlJustPressed(0, 25) or IsDisabledControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 200) then break end
@@ -638,6 +651,16 @@ end
 --- a section heading inside a menu (not selectable)
 local function head(title, icon) return { title = title, icon = icon or 'minus', iconColor = '#636366', readOnly = true } end
 
+--- every company's menu ends with the same way in to Tools (tool kit, ladder, van, uniform, nearby kit &
+--- cable, move / cut / remove) - shared across every trade, not company-specific, so this links to the one
+--- SectionMenu('tools') rather than duplicating it. The point is just not having to back all the way out to
+--- the main menu and back in again to grab a ladder or cut a cable while you're working a job.
+local function addToolsLink(add)
+    add(head('Your tools', 'screwdriver-wrench'))
+    add({ title = 'Tools', description = 'Tool kit · ladder · van · uniform · nearby kit & cable · move, cut, remove',
+        icon = 'screwdriver-wrench', iconColor = '#8e8e93', arrow = true, onSelect = function() SectionMenu('tools') end })
+end
+
 --- ONTs within 150 m → their internet service (provision, change plan, suspend / resume, cease)
 local function ontServiceList(back)
     local pos = GetEntityCoords(PlayerPedId())
@@ -701,6 +724,7 @@ SectionMenu = function(id)
         cats(add, net, { { 'Public safety', 'OPS Sentinel gunshot sensors — on poles or walls, alert police over LTE', 'shield-halved' } })
         add(hubLink('openline', 'Internet service, ONTs, poles & faults'))
         add(hubLink('gunshots', 'Gunshot detection: live incidents & sensor status'))
+        addToolsLink(add)
     elseif id == 'usfiber' then
         -- OPS America Fiber (US FTTH): OPS America Fiber · Outside Plant · Network Ops share this menu
         add(head('Central office · OPS America Network Ops', 'building'))
@@ -723,12 +747,14 @@ SectionMenu = function(id)
         cats(add, net, { { 'Customer premises', 'NID / drop box · drop clamp · feed-through · ONT · splice tray', 'house-signal' } })
         add({ title = 'Internet service (activation)', description = 'Nearby ONTs · register, provision an OPS America Fiber plan, suspend, cease', icon = 'globe', iconColor = GREEN, arrow = true, onSelect = function() ontServiceList(back) end })
         add(hubLink('openline', 'Internet service, ONTs, poles & faults'))
+        addToolsLink(add)
     elseif id == 'streamfibre' then
         add({ title = 'StreamFibre equipment', description = 'Alt-net CBT, provider tags, shared (PIA) brackets', icon = 'boxes-stacked', iconColor = net.color, arrow = true, onSelect = function() A.equipment(net) end })
         add({ title = 'Place a fibre drum', description = 'Black / yellow fibre, spine feed or ULW drop', icon = 'box-open', iconColor = net.color, onSelect = function() A.placeBox(back) end })
         add({ title = 'Pull fibre from the nearest drum', description = 'Shares the poles with OPS Openline', icon = 'ethernet', iconColor = net.color, onSelect = function() A.pull(back) end })
         add({ title = 'Cable you put down', description = 'Loose ends lying nearby · waypoint to one, press E there to pick it up', icon = 'hand', iconColor = net.color, arrow = true, onSelect = function() if LooseEndsMenu then LooseEndsMenu() end end })
         add(hubLink('streamfibre', 'Internet service & faults'))
+        addToolsLink(add)
     elseif id == 'sapl' then
         add(head('Bulk grid · generation & substations', 'industry'))
         cats(add, net, {
@@ -763,6 +789,7 @@ SectionMenu = function(id)
             { 'Temporary power', 'Portable generator, cable reel, extension lead', 'gas-pump' },
         })
         add(hubLink('sapl', 'Power: meters, load and solar'))
+        addToolsLink(add)
     elseif id == 'solar' then
         add(head('Install', 'solar-panel'))
         cats(add, net, {
@@ -774,6 +801,7 @@ SectionMenu = function(id)
         add(head('How it works', 'circle-info'))
         add({ title = 'Panels → DC isolator → inverter → consumer unit', description = 'Daytime the panels power the house (and charge the battery); after dark or in a power cut the battery takes over. [E] on the inverter shows output and charge.', icon = 'circle-info', readOnly = true })
         add(hubLink('solar', 'Solar output and batteries'))
+        addToolsLink(add)
     elseif id == 'secure' then
         add(head('Design & install', 'video'))
         cats(add, net, {
@@ -781,12 +809,25 @@ SectionMenu = function(id)
             { 'Specialist cameras', 'PTZ speed dome, ANPR / LPR, thermal, analogue (DVR)', 'binoculars' },
             { 'Wireless & doorbells', 'Wi-Fi indoor camera, video doorbell', 'wifi' },
             { 'Recorders & viewing', 'NVR (PoE), DVR, monitors, video wall, PTZ keyboard', 'server' },
-            { 'Access & signage', 'Access-control reader, CCTV warning sign', 'id-card' },
+            { 'Access & signage', '"CCTV in operation" sign', 'sign-hanging' },
         })
+        add({ title = 'Place a cable box', description = 'CAT6, 305 m — wires cameras, readers and recorders', icon = 'box-open', iconColor = BLUE, onSelect = function() A.placeBox(back) end })
         add({ title = 'Pull CAT6 from the nearest box', description = 'Camera → NVR (or PoE switch). Crimp both ends onto the kit.', icon = 'ethernet', iconColor = BLUE, onSelect = function() A.pull(back) end })
+        add({ title = 'Wire a camera to CAT6', description = 'Which cameras nearby still need cabling, and where the nearest spare box is', icon = 'ethernet', iconColor = ORANGE, arrow = true, onSelect = function() if A.wireCamera then A.wireCamera(back) end end })
+        add(head('Live on OPS Hub', 'satellite-dish'))
+        add({ title = CctvRelaying and CctvRelaying() and 'Stop CCTV relay' or 'Start CCTV relay', description = 'Show OPS Hub viewers whatever camera they pick, live on your screen (/cctvrelay or BACKSPACE to stop)',
+            icon = 'satellite-dish', iconColor = CctvRelaying and CctvRelaying() and RED or GREEN, onSelect = function() if ToggleCctvRelay then ToggleCctvRelay() end SectionMenu('secure') end })
         add(head('How it works', 'circle-info'))
         add({ title = 'Camera → CAT6 → NVR (PoE) → monitor · router for remote viewing', description = 'NVR needs a socket within 3 m. [E] at the NVR: set up, watch, events, ANPR. Customers watch remotely in OPS Secure View on the phone.', icon = 'circle-info', readOnly = true })
         add(hubLink('secure', 'All CCTV systems, cameras, events and ANPR'))
+        addToolsLink(add)
+    elseif id == 'access' then
+        add(head('Install', 'key'))
+        cats(add, net, { { 'Hubs & readers', 'Placing one makes it an OPS Access hub', 'id-card' } })
+        add(head('How it works', 'circle-info'))
+        add({ title = '[E] taps a hub · [G] opens its menu', description = 'Link nearby doors (any building door or gate) to a hub, then set which companies\' staff tap straight in, or issue individual cards to anyone else. Arm it and an unauthorised tap — or someone lingering by a linked door — raises an alarm.', icon = 'circle-info', readOnly = true })
+        add(hubLink('grid', 'OPS Access gates & security — open doors remotely, arm/disarm, alarms, 911 alert'))
+        addToolsLink(add)
     elseif id == 'track' then
         add(head('In the vehicle you’re sitting in', 'car'))
         add({ title = 'Install a tracker', description = 'Mini (plug-and-play) or Pro (hard-wired, antennas, backup battery, inputs, immobiliser) · step by step under the dash', icon = 'screwdriver-wrench', iconColor = net.color, onSelect = function() if TrackInstall then TrackInstall() end end })
@@ -798,6 +839,7 @@ SectionMenu = function(id)
         add(head('Fitting bay', 'warehouse'))
         cats(add, net, { { 'Fitting bay', 'Bay sign, installer tool case, units, antennas, batteries, looms on the bench', 'warehouse' } })
         add(hubLink('track', 'Live map of every tracked vehicle, alerts'))
+        addToolsLink(add)
     elseif id == 'fuel' then
         add(head('Build a station', 'gas-pump'))
         cats(add, net, {
@@ -813,6 +855,7 @@ SectionMenu = function(id)
         add(head('How it works', 'circle-info'))
         add({ title = 'Tanker → fill point → tank → pipe → dispenser → nozzle → vehicle', description = 'Every tank needs a fill pipe and a vent pipe. Dispensers and the gauge need power from the grid. Vehicles only fill up at stations built here.', icon = 'circle-info', readOnly = true })
         add(hubLink('fuel', 'Fuel stations: stock, alarms, sales and prices'))
+        addToolsLink(add)
     elseif id == 'buildings' then
         local sites = Config.Cabling.Sites or { id = 'sites', label = 'Buildings & sites' }
         local pos = GetEntityCoords(PlayerPedId())
@@ -880,7 +923,7 @@ SectionMenu = function(id)
             else lib.notify({ type = 'error', description = 'The guide isn’t running — start opslabs-guide on the server' }) end
         end })
     end
-    local titles = { secure = 'OPS Secure · CCTV & security', track = 'OPS Track · vehicle trackers', fuel = 'OPS Fuel · fuel stations', solar = 'San Andreas Solar · solar PV', buildings = 'Buildings & sites', openline = 'OPS Openline · fibre & copper', usfiber = 'OPS America Fiber · US FTTH', streamfibre = 'StreamFibre · alt-net fibre', sapl = 'San Andreas Power & Light · electricity', tools = 'Tools', guides = 'Guides' }
+    local titles = { secure = 'OPS Secure · CCTV & security', access = 'OPS Access · door hubs & readers', track = 'OPS Track · vehicle trackers', fuel = 'OPS Fuel · fuel stations', solar = 'San Andreas Solar · solar PV', buildings = 'Buildings & sites', openline = 'OPS Openline · fibre & copper', usfiber = 'OPS America Fiber · US FTTH', streamfibre = 'StreamFibre · alt-net fibre', sapl = 'San Andreas Power & Light · electricity', tools = 'Tools', guides = 'Guides' }
     lib.registerContext({ id = 'towers_sec_' .. id, title = titles[id] or id, options = options })
     lib.showContext('towers_sec_' .. id)
 end
@@ -913,10 +956,17 @@ MainMenu = function(field)
     end
     add({ title = 'Network faults', description = FaultSummary and FaultSummary() or 'Open faults on every network · go there and repair them', icon = 'triangle-exclamation', iconColor = '#ff453a', arrow = true, onSelect = function() if FaultsMenu then FaultsMenu() end end })
     add({ title = 'Fibre trace tool', description = 'Stand at a fixture (ONT, cabinet, joint, DP…) and trace the cable path to whatever fault is taking it down (K)', icon = 'route', iconColor = '#ffd60a', onSelect = function() if TraceMenu then TraceMenu() end end })
+    add({ title = 'Pole route guide', description = RouteGuideActive and RouteGuideActive() and 'A route is assigned - see your progress (/routeguide)' or 'See progress on a pole route you were assigned or texted (/routeguide)',
+        icon = 'map-location-dot', iconColor = '#ffd60a', onSelect = function() if RouteGuideStatus then RouteGuideStatus() end end })
     add(head('On site', 'helmet-safety'))
+    add({ title = 'Equipment labels & pole look-at', description = 'Automatic, not a menu: floating names appear over nearby OPS kit on their own, and looking straight at a pole offers climb / kit / repair / Line Tool directly - no need to come back here for either', icon = 'eye', iconColor = GREY, readOnly = true })
     add({ title = 'OPS Hub', description = 'The staff website for every service · lines, towers, internet, power & solar, gunshot detection', icon = 'arrow-up-right-from-square', iconColor = '#0a84ff', onSelect = function() OpenHub() end })
     add({ title = 'Buildings & sites', description = 'Walk-in house, depot & exchange · underground · fencing & gates · office & IT', icon = 'city', iconColor = '#5e5ce6', arrow = true, onSelect = function() SectionMenu('buildings') end })
     add({ title = 'Road safety', description = 'Cones, barriers, works signs, traffic lights, cordon tape', icon = 'triangle-exclamation', iconColor = ORANGE, arrow = true, onSelect = function() SectionMenu('roadworks') end })
+    add({ title = 'Building materials', description = 'Roads, concrete, fences, gates, street lighting, barriers & landscaping — dressing kit for custom maps & MLOs (opslabs-citykit)', icon = 'road', iconColor = '#ff9500', arrow = true, onSelect = function()
+        if GetResourceState('opslabs-citykit') ~= 'started' then return lib.notify({ type = 'error', description = 'opslabs-citykit isn’t running' }) end
+        exports['opslabs-citykit']:OpenCatalog()
+    end })
     add({ title = 'Tools', description = 'Tool kit · ladders · van · uniform · nearby kit & cable · move, cut, remove', icon = 'screwdriver-wrench', iconColor = GREY, arrow = true, onSelect = function() SectionMenu('tools') end })
     add({ title = 'Guides', description = 'Step-by-step pole work coach (F7) · animated how-it-works guide', icon = 'circle-question', iconColor = '#8e7dff', arrow = true, onSelect = function() SectionMenu('guides') end })
     add(head('Settings', 'gear'))
@@ -929,6 +979,10 @@ MainMenu = function(field)
             SetTimeout(150, function() MainMenu() end)
         end })
     if adminCache == nil then adminCache = lib.callback.await('opslabs-towers:isAdmin', false) == true end
+    if adminCache and CityPreview then
+        add({ title = 'City preview', description = 'Survey right where you stand for a new district (substation, exchange, house, fuel station, mast + pole lines) - nothing is built, just shown for 90 s (/opscitypreview)',
+            icon = 'city', iconColor = '#5e5ce6', onSelect = function() CityPreview() end })
+    end
     if adminCache and OpenDangerZone then
         add({ title = 'Danger zone', description = 'Mass delete parts of the power network or anything else · needs the danger zone username & password', icon = 'radiation', iconColor = '#ff453a',
             onSelect = function() OpenDangerZone() end })
