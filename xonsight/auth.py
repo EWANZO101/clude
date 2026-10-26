@@ -1,7 +1,7 @@
 from datetime import datetime
 from urllib.parse import urlparse
 
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, g, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from .audit import log_audit
@@ -58,7 +58,11 @@ def signup():
     if current_user.is_authenticated:
         return redirect(url_for("views.dashboard"))
 
-    settings = Settings.get()
+    # g.tenant here is only ever host-based (subdomain/custom domain) - there's no logged-in user yet for
+    # tenant_resolve.py's other fallback to apply to, which is exactly right: an officer joining a specific
+    # community's own existing account is only meaningful from that community's own URL.
+    community_id = g.tenant.id if g.tenant else None
+    settings = Settings.get(community_id=community_id)
     error = None
     pending = False
 
@@ -80,7 +84,12 @@ def signup():
             error = "That username is taken."
 
         if error is None:
-            user = User(username=username, role="officer", is_active_account=(settings.signup_mode != "approval"))
+            user = User(
+                username=username,
+                role="officer",
+                is_active_account=(settings.signup_mode != "approval"),
+                community_id=community_id,
+            )
             user.set_password(password)
             db.session.add(user)
             db.session.commit()

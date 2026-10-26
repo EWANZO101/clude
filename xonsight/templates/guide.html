@@ -102,6 +102,7 @@
       <nav class="toc hidden lg:block text-sm sticky top-20 self-start space-y-0.5 max-h-[calc(100vh-6rem)] overflow-y-auto pb-10">
         <a href="#overview" class="font-medium">Overview</a>
         <a href="#architecture" class="font-medium">Architecture</a>
+        <a href="#multi-server" class="font-medium">Multiple servers</a>
         <div class="group-label">Components</div>
         <div class="sub">
           <a href="#ops-phone">01 &middot; OPS Phone</a>
@@ -129,6 +130,9 @@
             <span class="rounded-full border border-border px-2.5 py-1">Flask + FiveM</span>
             <span class="rounded-full border border-border px-2.5 py-1">Self-hosted</span>
           </div>
+          <a href="{{ url_for('site.install') }}" class="inline-flex items-center gap-2 mt-6 px-4 py-2.5 rounded-xl bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 text-sm font-medium">
+            {{ icon("flag", "h-3.5 w-3.5") }} Just want it installed? Quick start &rarr;
+          </a>
         </div>
 
         <section id="overview" class="max-w-3xl scroll-mt-24 mb-16">
@@ -173,6 +177,62 @@
           </p>
         </section>
 
+        <section id="multi-server" class="max-w-3xl scroll-mt-24 mb-20">
+          <h2 class="text-xs font-semibold text-slate-500 mb-3">Multiple servers, one portal</h2>
+          <p class="text-sm text-slate-400 leading-relaxed mb-6">
+            One Xon Sight deployment can host more than one FiveM server, each in its own dedicated MySQL
+            database - nobody's evidence, live roster, or alerts end up in anyone else's. Each of these
+            <strong class="text-slate-200 font-medium">communities</strong> gets its own API token; point your
+            bodycam script at that token instead of the shared webhook key and everything it sends lands in that
+            community's own database from then on.
+          </p>
+          <div class="stepper space-y-7 mb-6">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="text-sm font-medium text-white">Bring your own server onto Xon Sight</div>
+              <p class="text-sm text-slate-400 mt-1 leading-relaxed">
+                <a href="{{ url_for('community_signup.new_community') }}" class="text-accent hover:underline">Get started</a>
+                to sign up yourself - name your community and you're the first admin - or ask an existing
+                deployment's operator to create one for you from <code>Admin &rarr; Communities</code>. Either way,
+                Xon Sight provisions a fresh MySQL database and user for it on the spot and shows its API token
+                once (it's only ever masked after that).
+              </p>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="text-sm font-medium text-white">The token goes in the bodycam script's config</div>
+              <p class="text-sm text-slate-400 mt-1 leading-relaxed">
+                <code>xonsight-lbphone</code> / <code>xonsight-livesync</code>: <code>config.lua</code> &rarr;
+                <code>Config.CommunityToken</code>. <code>opslabs-bodycam</code>: <code>config_server.lua</code>
+                &rarr; <code>ServerConfig.XonSight.Token</code> (support for sending it as
+                <code>X-XonSight-Token</code> is still on opslabs-bodycam's side to ship - use the shared webhook
+                key there for now). Set it instead of (not alongside) the existing shared key field - whichever
+                resources that server runs will send <code>X-XonSight-Token</code> from then on, and the portal
+                routes every evidence upload, live-roster sync, and alert from that token into the matching
+                community's database automatically.
+              </p>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="text-sm font-medium text-white">Their staff browse it with a normal portal login</div>
+              <p class="text-sm text-slate-400 mt-1 leading-relaxed">
+                A self-signed-up community's admin lands on <code>/integration</code> after creating it - the
+                token, setup steps, and a regenerate button all live there, reachable again any time from the
+                account menu.
+              </p>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Scope today: only Dashboard/Evidence/Live are tenant-aware. Cases, the Assistant, the public
+            Community tip line, Analytics, and Admin itself still run against this portal's own original
+            database regardless of which community you're on - a deliberate, incremental rollout rather than a
+            half-migrated everything-at-once. A self-signed-up community's admin sees their own tenant data as
+            soon as they're logged in, on this same primary URL - dedicated subdomains
+            (<code>&lt;slug&gt;.{{ tenant_base_domain }}</code>) work too once the operator points a wildcard DNS
+            record here, but aren't required to get started.
+          </p>
+        </section>
+
         <div class="max-w-3xl mb-6">
           <h2 class="text-xs font-semibold text-slate-500">Components</h2>
         </div>
@@ -201,6 +261,9 @@
             <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Pushes the live roster on start/stop, not just on a timer - a new recorder shows up on <code>/live</code> within ~1s</span></li>
             <li class="flex gap-2 text-sm text-slate-400"><span class="text-accent2 shrink-0 mt-0.5">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Optional chest-mounted camera mode for a true body-worn-camera angle instead of free-look</span></li>
           </ul>
+          <a href="{{ url_for('site.bodycam_slides') }}" class="inline-flex items-center gap-2 text-sm text-accent hover:underline ml-7 mt-4">
+            {{ icon("chart", "h-3.5 w-3.5") }} Slide deck: how recording, the evidence pipeline and performance on low-end PCs all work
+          </a>
         </section>
 
         <section id="portal" class="max-w-4xl scroll-mt-24 mb-14">
@@ -342,7 +405,7 @@
                   <li class="flex gap-2 text-sm text-slate-500"><span class="shrink-0 mt-0.5 text-slate-600">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Python 3.10+ and the packages in <code>requirements.txt</code> (Flask, SQLAlchemy, Flask-Login, Flask-Limiter, Flask-WTF, PyMySQL, gunicorn)</span></li>
                   <li class="flex gap-2 text-sm text-slate-500"><span class="shrink-0 mt-0.5 text-slate-600">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>A database - SQLite works with zero setup (default if <code>DATABASE_URL</code> is blank); MySQL only for multi-tenancy</span></li>
                   <li class="flex gap-2 text-sm text-slate-500"><span class="shrink-0 mt-0.5 text-slate-600">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>A reverse proxy (nginx or similar) with TLS - session cookies are hardcoded <code>Secure</code>, so logins silently won't work over plain HTTP</span></li>
-                  <li class="flex gap-2 text-sm text-slate-500"><span class="shrink-0 mt-0.5 text-slate-600">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span><code>SECRET_KEY</code> and <code>XONSIGHT_WEBHOOK_KEY</code> set in <code>.env</code> at minimum - see <code>.env.example</code> for the full list</span></li>
+                  <li class="flex gap-2 text-sm text-slate-500"><span class="shrink-0 mt-0.5 text-slate-600">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span><code>SECRET_KEY</code> and the <code>MYSQL_PROVISIONER_*</code> vars set in <code>.env</code> at minimum - every FiveM resource authenticates with a per-community API token, so at least one community must be creatable; see <code>.env.example</code> for the full list</span></li>
                   <li class="flex gap-2 text-sm text-slate-500"><span class="shrink-0 mt-0.5 text-slate-600">{{ icon("check-circle", "h-3.5 w-3.5") }}</span><span>Optional: <code>ANTHROPIC_API_KEY</code> (Assistant), hCaptcha keys (Community form), a Discord webhook URL (notifications)</span></li>
                 </ul>
               </div>
@@ -379,7 +442,9 @@
           </div>
           <p class="text-sm text-slate-400 leading-relaxed mt-8 pt-6 border-t border-border">
             Each resource ships with its own <code>README.md</code> and <code>config.lua</code> covering exactly
-            what to edit (mainly the portal's URL and the webhook key). See the
+            what to edit (mainly the portal's URL, and either the shared webhook key or a
+            <a href="#multi-server" class="text-accent hover:underline">per-community token</a> if this portal
+            hosts more than one server). See the
             <a href="{{ url_for('site.api_docs') }}" class="text-accent hover:underline">API reference</a> for the
             wire format if you're writing your own bridge instead of using the ones above.
           </p>

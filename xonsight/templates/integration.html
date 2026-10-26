@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf_field, page_header %}
+{% block title %}Integration · Xon Sight{% endblock %}
+{% block content %}
+<style>
+  /* Scoped to this page - base.html carries no shared stepper/progress styling
+     (guide.html's .idx/.stepper classes live in its own standalone <head>). */
+  .int-glow { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; border-radius: inherit; }
+  .int-glow::before {
+    content: ""; position: absolute; inset: -40%;
+    background: radial-gradient(420px 220px at 15% 20%, rgba(236,72,153,0.16), transparent 60%),
+                radial-gradient(420px 240px at 85% 80%, rgba(20,184,166,0.14), transparent 60%);
+  }
+
+  /* Horizontal overview stepper (Database -> Token -> Connected) */
+  .hstep-row { display: flex; align-items: center; }
+  .hstep { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; flex: none; width: 6.5rem; }
+  .hstep-dot { width: 2.5rem; height: 2.5rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; flex: none; border: 1px solid #26262b; }
+  .hstep-dot.done { background: rgba(20,184,166,0.15); border-color: rgba(20,184,166,0.5); color: #5eead4; }
+  .hstep-dot.active { background: rgba(236,72,153,0.15); border-color: rgba(236,72,153,0.5); color: #f9a8d4; animation: hstepPulse 1.8s ease-in-out infinite; }
+  .hstep-dot.pending { background: #19191d; color: #52525b; }
+  .hstep-label { font-size: 12px; font-weight: 600; text-align: center; white-space: nowrap; }
+  .hstep-dot.done ~ .hstep-label, .hstep-label.done-label { color: #cbd5e1; }
+  .hstep-line { flex: 1 1 auto; height: 2px; background: #26262b; margin: 0 -0.25rem; position: relative; top: -1.1rem; min-width: 1.5rem; }
+  .hstep-line.done { background: linear-gradient(90deg, #14b8a6, #14b8a6); }
+  @keyframes hstepPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(236,72,153,0.35); } 50% { box-shadow: 0 0 0 6px rgba(236,72,153,0); } }
+
+  /* In-game setup steps (vertical) */
+  .int-stepper { position: relative; }
+  .int-stepper::before { content: ""; position: absolute; left: 1.25rem; top: 0.25rem; bottom: 0.25rem; width: 1px; background: #26262b; }
+  .int-step { position: relative; padding-left: 3.5rem; }
+  .int-step-num {
+    position: absolute; left: 0; top: 0; width: 2.5rem; height: 2.5rem; border-radius: 9999px;
+    border: 1px solid #26262b; background: #19191d; display: flex; align-items: center; justify-content: center;
+    z-index: 1; color: #f472b6; font-weight: 700; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .int-copy-btn { transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
+  .int-copy-btn.copied { background: rgba(20,184,166,0.15) !important; color: #5eead4 !important; border-color: rgba(20,184,166,0.4) !important; }
+
+  .int-check { position: relative; }
+  .int-check:not(:last-child)::after {
+    content: ""; position: absolute; left: 0.9rem; top: 2.25rem; bottom: -0.1rem; width: 1px; background: #26262b;
+  }
+  .int-check-dot {
+    width: 1.75rem; height: 1.75rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; position: relative; z-index: 1;
+  }
+
+  /* Wizard tabs (Install -> Modules -> License -> server.cfg -> Go live) */
+  .wiz-tab { font-size: 12.5px; font-weight: 600; padding: 0.5rem 0.9rem; border-radius: 0.65rem; color: #71717a; white-space: nowrap; }
+  .wiz-tab.on { background: rgba(236,72,153,0.12); color: #f9a8d4; }
+  .wiz-tab:not(.on):hover { color: #cbd5e1; background: rgba(255,255,255,0.04); }
+  .wiz-pane { display: none; }
+  .wiz-pane.on { display: block; }
+  .wiz-mod-row { display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.6rem 0; border-bottom: 1px solid #1f1f23; }
+  .wiz-mod-row:last-child { border-bottom: none; }
+  .wiz-mod-row input[type=checkbox] { margin-top: 0.2rem; accent-color: #ec4899; }
+</style>
+
+{% set total_steps = 3 %}
+{% set done_steps = 3 if connected else 2 %}
+{{ page_header(community.name, "Bring " ~ community.name ~ "'s bodycam resource online - everything it posts (evidence, live roster, alerts) lands in its own dedicated database, never anyone else's.", eyebrow="Setup wizard") }}
+
+{% if just_created %}
+<div class="relative overflow-hidden rounded-2xl border border-accent2/30 bg-panel p-6 mb-6">
+  <div class="int-glow"></div>
+  <div class="relative z-10 flex items-start gap-4">
+    <div class="h-11 w-11 rounded-full bg-accent2/15 text-accent2 flex items-center justify-center shrink-0">{{ icon("check-circle", "h-5 w-5") }}</div>
+    <div>
+      <div class="text-base text-white font-semibold">{{ community.name }} is live</div>
+      <p class="text-sm text-slate-400 leading-relaxed mt-1 max-w-2xl">
+        Your dedicated database and admin account were just provisioned. Two steps left: copy your API token into
+        your bodycam resource's config, then restart it - the status below updates itself the moment it checks in.
+      </p>
+    </div>
+  </div>
+</div>
+{% elif connected %}
+<div class="relative overflow-hidden rounded-2xl border border-accent2/30 bg-panel p-6 mb-6">
+  <div class="int-glow"></div>
+  <div class="relative z-10 flex items-start gap-4 flex-wrap">
+    <div class="h-11 w-11 rounded-full bg-accent2/15 text-accent2 flex items-center justify-center shrink-0">{{ icon("check-circle", "h-5 w-5") }}</div>
+    <div class="flex-1 min-w-[220px]">
+      <div class="text-base text-white font-semibold">Connected and receiving data</div>
+      <p class="text-sm text-slate-400 leading-relaxed mt-1 max-w-2xl">
+        {{ recorder_count }} active recorder{{ '' if recorder_count == 1 else 's' }} right now &middot;
+        {{ evidence_count }} evidence item{{ '' if evidence_count == 1 else 's' }} received so far.
+      </p>
+    </div>
+    <a href="{{ url_for('views.dashboard') }}" class="shrink-0 self-center px-4 py-2 rounded-xl bg-gradient-to-r from-accent to-accent2 text-sm font-semibold text-white hover:opacity-90">
+      Open dashboard
+    </a>
+  </div>
+</div>
+{% else %}
+<div class="relative overflow-hidden rounded-2xl border border-accent/30 bg-panel p-6 mb-6">
+  <div class="int-glow"></div>
+  <div class="relative z-10 flex items-start gap-4">
+    <div class="h-11 w-11 rounded-full bg-accent/15 text-accent flex items-center justify-center shrink-0">{{ icon("flag", "h-5 w-5") }}</div>
+    <div>
+      <div class="text-base text-white font-semibold">Almost there - one step left</div>
+      <p class="text-sm text-slate-400 leading-relaxed mt-1 max-w-2xl">
+        Your database and API token are ready. Paste the token into your bodycam resource and restart it -
+        this page updates itself automatically within a few seconds of your first sync.
+      </p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="border border-border bg-panel rounded-2xl p-6 mb-6">
+  <div class="hstep-row">
+    <div class="hstep">
+      <div class="hstep-dot done">{{ icon("check-circle", "h-5 w-5") }}</div>
+      <div class="hstep-label done-label">Database</div>
+    </div>
+    <div class="hstep-line done"></div>
+    <div class="hstep">
+      <div class="hstep-dot done">{{ icon("check-circle", "h-5 w-5") }}</div>
+      <div class="hstep-label done-label">Token</div>
+    </div>
+    <div class="hstep-line {{ 'done' if connected else '' }}"></div>
+    <div class="hstep">
+      {% if connected %}
+      <div class="hstep-dot done">{{ icon("check-circle", "h-5 w-5") }}</div>
+      <div class="hstep-label done-label">Connected</div>
+      {% else %}
+      <div class="hstep-dot active">
+        <svg viewBox="0 0 24 24" class="h-4 w-4 animate-spin" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="9" stroke-dasharray="40" stroke-dashoffset="15" /></svg>
+      </div>
+      <div class="hstep-label" style="color:#8b8b93">Connected</div>
+      {% endif %}
+    </div>
+    <div class="flex-1"></div>
+    <span class="text-xs font-medium text-slate-400 shrink-0" id="progress-label">{{ 'All set' if connected else (done_steps|string) ~ ' of ' ~ total_steps|string ~ ' done' }}</span>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+  <div class="lg:col-span-3 space-y-6">
+    <div class="border border-border bg-panel rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold text-white flex items-center gap-2.5">
+          <span class="h-8 w-8 rounded-full bg-accent/15 text-accent flex items-center justify-center shrink-0">{{ icon("key", "h-4 w-4") }}</span>
+          Everything your bodycam needs
+        </h2>
+        {% if can_manage %}
+        <form method="post" action="{{ url_for('community_signup.regenerate_token') }}" onsubmit="return confirm('Rotate the token? The old one stops working immediately.');">
+          {{ csrf_field() }}
+          <button type="submit" class="text-xs font-medium text-slate-500 hover:text-slate-300 flex items-center gap-1">
+            {{ icon("key", "h-3 w-3") }} Regenerate token
+          </button>
+        </form>
+        {% endif %}
+      </div>
+      {% if can_manage %}
+      <p class="text-xs text-slate-500 leading-relaxed mb-3">
+        Paste this whole block into <code class="text-accent">opslabs-bodycam/config_server.lua</code>'s
+        <code class="text-accent">ServerConfig.XonSight</code> block on your FiveM server. That's it - one
+        file, one paste, done. The bundled tablet, LB Phone app and live sync modules all read this same
+        connection automatically - no need to repeat it.
+      </p>
+      <div class="flex items-stretch gap-2">
+        <pre id="config-snippet" class="flex-1 min-w-0 bg-base border border-border rounded-xl px-3.5 py-3 text-sm text-slate-200 overflow-x-auto font-mono"><code><span class="text-slate-500">Url</span> = <span class="text-accent2">'{{ request.url_root.rstrip('/') }}'</span>,
+<span class="text-slate-500">Token</span> = <span class="text-accent2">'{{ community.api_token }}'</span>,</code></pre>
+        <button type="button" onclick="copySnippet(this)" class="int-copy-btn shrink-0 px-3.5 rounded-xl bg-white/5 text-slate-300 border border-border hover:bg-white/10 flex items-center gap-1.5 text-xs font-medium self-start">
+          {{ icon("copy", "h-3.5 w-3.5") }} <span>Copy</span>
+        </button>
+      </div>
+      <p class="text-xs text-slate-500 leading-relaxed mt-3">
+        Leave <code class="text-accent">Key</code> (the other field in that block) blank - the token above replaces it.
+        Rotating the token invalidates the old one immediately; update the file and restart the resource at the same
+        time or it'll start failing with 401s. Leave <code class="text-accent">Storage.PublicUrl</code> blank too -
+        videos upload straight to this portal automatically, no web server of your own to set up.
+      </p>
+      {% else %}
+      <p class="text-sm text-slate-500">Only a community admin can view or rotate this token.</p>
+      {% endif %}
+    </div>
+
+    <div class="border border-border bg-panel rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <h2 class="text-sm font-semibold text-white flex items-center gap-2.5">
+          <span class="h-8 w-8 rounded-full bg-accent2/15 text-accent2 flex items-center justify-center shrink-0">{{ icon("flag", "h-4 w-4") }}</span>
+          Set it up in-game
+        </h2>
+        <div class="flex items-center gap-1 bg-base border border-border rounded-xl p-1" id="wiz-tabs">
+          <button type="button" class="wiz-tab on" data-pane="install">1. Install</button>
+          <button type="button" class="wiz-tab" data-pane="modules">2. Modules</button>
+          <button type="button" class="wiz-tab" data-pane="license">3. License</button>
+          <button type="button" class="wiz-tab" data-pane="cfg">4. server.cfg</button>
+          <button type="button" class="wiz-tab" data-pane="golive">5. Go live</button>
+        </div>
+      </div>
+
+      <div class="wiz-pane on" data-pane="install">
+        <div class="int-stepper space-y-7">
+          <div class="int-step">
+            <div class="int-step-num">1</div>
+            <div class="text-sm font-medium text-white">Download <code class="text-accent">opslabs-bodycam</code> + the OPS Hub resources bundle</div>
+            <p class="text-sm text-slate-400 mt-1 leading-relaxed">
+              From your license portal's downloads: the <b>OPS Hub resources</b> bundle is every other OPS
+              script in one zip - it already includes <code class="text-accent">opslabs-license</code>, no
+              separate download needed. <code class="text-accent">opslabs-bodycam</code> (the Xon Sight
+              module) downloads on its own next to it. Drop both into your FiveM server's
+              <code class="text-accent">resources/</code> directory. See the
+              <a href="{{ url_for('site.install') }}" class="text-accent hover:underline font-medium">quick install guide</a> for the full picture.
+            </p>
+          </div>
+          <div class="int-step">
+            <div class="int-step-num">2</div>
+            <div class="text-sm font-medium text-white">Paste the block above into <code class="text-accent">opslabs-bodycam/config_server.lua</code></div>
+            <p class="text-sm text-slate-400 mt-1 leading-relaxed">
+              Into its <code class="text-accent">ServerConfig.XonSight</code> table - that's the whole connection, URL and token.
+              Next tab picks which bundled modules (tablet, phone app) you actually want turned on.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="wiz-pane" data-pane="modules">
+        <p class="text-xs text-slate-500 leading-relaxed mb-4">
+          Tablet and LB Phone are on by default - tick only the phone app that matches what your server actually runs
+          (the others just never find their export and stay dormant either way). This replaces
+          <code class="text-accent">ServerConfig.Modules</code> in <code class="text-accent">config_server.lua</code> - leave everything else in that file as-is.
+        </p>
+        <div class="divide-y divide-[#1f1f23] mb-4">
+          <label class="wiz-mod-row"><input type="checkbox" data-mod="Tablet" checked>
+            <span><span class="block text-sm text-white font-medium">In-game tablet</span><span class="block text-xs text-slate-500">Stock prop + NUI, opens the portal in-hand (F6).</span></span>
+          </label>
+          <label class="wiz-mod-row"><input type="checkbox" data-mod="LbPhone" checked>
+            <span><span class="block text-sm text-white font-medium">LB Phone app</span><span class="block text-xs text-slate-500">Also covers Sky Phone's lb-phone compatibility alias.</span></span>
+          </label>
+          <label class="wiz-mod-row"><input type="checkbox" data-mod="GksPhone">
+            <span><span class="block text-sm text-white font-medium">GKSPHONE V2 app</span><span class="block text-xs text-slate-500">Only if that's the phone resource you run instead.</span></span>
+          </label>
+          <label class="wiz-mod-row"><input type="checkbox" data-mod="Movement">
+            <span><span class="block text-sm text-white font-medium">17Movement app</span><span class="block text-xs text-slate-500">Also covers Sky Phone's 17mov_Phone alias. Dashboard viewer only - in-app capture isn't wired up yet.</span></span>
+          </label>
+          <label class="wiz-mod-row"><input type="checkbox" data-mod="LiveSync">
+            <span><span class="block text-sm text-white font-medium">Live sync from a separate XonSight resource</span><span class="block text-xs text-slate-500">Only if you run that older standalone resource instead of this bodycam's own live sync - running both overwrites the roster each sync.</span></span>
+          </label>
+        </div>
+        <div class="flex items-stretch gap-2">
+          <pre id="modules-snippet" class="flex-1 min-w-0 bg-base border border-border rounded-xl px-3.5 py-3 text-xs text-slate-200 overflow-x-auto font-mono leading-relaxed"></pre>
+          <button type="button" onclick="copyWizSnippet('modules-snippet', this)" class="int-copy-btn shrink-0 px-3.5 rounded-xl bg-white/5 text-slate-300 border border-border hover:bg-white/10 flex items-center gap-1.5 text-xs font-medium self-start">
+            {{ icon("copy", "h-3.5 w-3.5") }} <span>Copy</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="wiz-pane" data-pane="license">
+        <p class="text-xs text-slate-500 leading-relaxed mb-4">
+          A separate key from your OPSHUB license - this is what unlocks the bodycam module itself, independent of
+          the Xon Sight token above. Enter it below just to generate the line for the next tab, or go
+          <a href="https://opsphone-store.opslabsystems.cloud/license" target="_blank" rel="noopener" class="text-accent hover:underline font-medium">manage/buy a license <span aria-hidden="true">&#8599;</span></a>.
+        </p>
+        <input id="wiz-license-key" type="text" placeholder="OPSHUB-XXXX-XXXX-XXXX-XXXX"
+          class="w-full bg-base border border-border rounded-lg px-3 py-2 text-sm font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-accent/60 mb-3">
+        <p class="text-xs text-slate-600 leading-relaxed mb-4">
+          Either paste the line below into <code class="text-accent">server.cfg</code> (next tab does this for you), set
+          <code class="text-accent">Config.LicenseKey</code> directly in <code class="text-accent">opslabs-license/config.lua</code>,
+          or leave it blank and enter it once on the OPS Phone's license screen in-game.
+        </p>
+        <div class="flex items-stretch gap-2">
+          <pre id="license-snippet" class="flex-1 min-w-0 bg-base border border-border rounded-xl px-3.5 py-3 text-xs text-slate-200 overflow-x-auto font-mono"></pre>
+          <button type="button" onclick="copyWizSnippet('license-snippet', this)" class="int-copy-btn shrink-0 px-3.5 rounded-xl bg-white/5 text-slate-300 border border-border hover:bg-white/10 flex items-center gap-1.5 text-xs font-medium self-start">
+            {{ icon("copy", "h-3.5 w-3.5") }} <span>Copy</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="wiz-pane" data-pane="cfg">
+        <p class="text-xs text-slate-500 leading-relaxed mb-4">
+          Everything to add to <code class="text-accent">server.cfg</code>, in order - license client first so the
+          bodycam finds it already running.
+        </p>
+        <div class="flex items-stretch gap-2">
+          <pre id="cfg-snippet" class="flex-1 min-w-0 bg-base border border-border rounded-xl px-3.5 py-3 text-xs text-slate-200 overflow-x-auto font-mono leading-relaxed"></pre>
+          <button type="button" onclick="copyWizSnippet('cfg-snippet', this)" class="int-copy-btn shrink-0 px-3.5 rounded-xl bg-white/5 text-slate-300 border border-border hover:bg-white/10 flex items-center gap-1.5 text-xs font-medium self-start">
+            {{ icon("copy", "h-3.5 w-3.5") }} <span>Copy</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="wiz-pane" data-pane="golive">
+        <div class="int-stepper space-y-7">
+          <div class="int-step">
+            <div class="int-step-num">1</div>
+            <div class="text-sm font-medium text-white">Restart the resource (or the whole server)</div>
+            <p class="text-sm text-slate-400 mt-1 leading-relaxed">
+              Once the config, modules and server.cfg lines above are all in place, restart <code class="text-accent">opslabs-license</code>
+              then <code class="text-accent">opslabs-bodycam</code> - or just reboot the server if that's easier.
+            </p>
+          </div>
+          <div class="int-step">
+            <div class="int-step-num">2</div>
+            <div class="text-sm font-medium text-white">Watch the Status panel</div>
+            <p class="text-sm text-slate-400 mt-1 leading-relaxed">
+              It updates on its own within a few seconds of your first sync - no need to refresh this page. Have an
+              officer start a recording to confirm evidence actually lands on the Dashboard too.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lg:col-span-2 space-y-6">
+    <div id="setup-checklist" class="border border-border bg-panel rounded-2xl p-6">
+      <h2 class="text-sm font-semibold text-white mb-5 flex items-center gap-2.5">
+        <span class="h-8 w-8 rounded-full bg-accent/15 text-accent flex items-center justify-center shrink-0">{{ icon("check-circle", "h-4 w-4") }}</span>
+        Status
+      </h2>
+      <div class="space-y-5">
+        <div class="int-check flex items-start gap-3" data-check="database">
+          <span class="int-check-dot check-dot bg-accent2/15 text-accent2">{{ icon("check-circle", "h-3.5 w-3.5") }}</span>
+          <span class="text-sm text-slate-300 pt-0.5">Database &amp; admin account created</span>
+        </div>
+        <div class="int-check flex items-start gap-3" data-check="token">
+          <span class="int-check-dot check-dot bg-accent2/15 text-accent2">{{ icon("check-circle", "h-3.5 w-3.5") }}</span>
+          <span class="text-sm text-slate-300 pt-0.5">API token issued</span>
+        </div>
+        <div class="int-check flex items-start gap-3" data-check="connected">
+          {% if connected %}
+          <span class="int-check-dot check-dot bg-accent2/15 text-accent2">{{ icon("check-circle", "h-3.5 w-3.5") }}</span>
+          <span class="text-sm pt-0.5">
+            <span class="block text-slate-300">Bodycam resource connected</span>
+            <span class="block text-xs text-accent2 mt-0.5" data-detail="connected">{% if recorder_count %}{{ recorder_count }} active recorder{{ '' if recorder_count == 1 else 's' }}{% elif evidence_count %}{{ evidence_count }} evidence item{{ '' if evidence_count == 1 else 's' }} received{% else %}Connected{% endif %}</span>
+          </span>
+          {% else %}
+          <span class="int-check-dot check-dot bg-white/10 text-slate-500">
+            <svg viewBox="0 0 24 24" class="h-3 w-3 animate-spin" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="9" stroke-dasharray="40" stroke-dashoffset="15" /></svg>
+          </span>
+          <span class="text-sm pt-0.5">
+            <span class="block text-slate-400">Bodycam resource connected</span>
+            <span class="block text-xs text-slate-600 mt-0.5" data-detail="connected">Waiting for a sync from your server&hellip;</span>
+          </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="border border-border bg-panel rounded-2xl p-6 space-y-5">
+      <div>
+        <h2 class="text-sm font-semibold text-white mb-3 flex items-center gap-2.5">
+          <span class="h-8 w-8 rounded-full bg-accent/15 text-accent flex items-center justify-center shrink-0">{{ icon("database", "h-4 w-4") }}</span>
+          Community
+        </h2>
+        <div class="text-xs text-slate-500 space-y-2">
+          <div class="flex items-center justify-between"><span>Slug</span><code class="text-accent">{{ community.slug }}</code></div>
+          <div class="flex items-center justify-between"><span>Status</span><span class="font-medium {{ 'text-accent2' if community.status == 'active' else 'text-slate-400' }}">{{ community.status }}</span></div>
+          <div class="flex items-center justify-between"><span>Created</span><span>{{ community.created_at.strftime("%Y-%m-%d") }}</span></div>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-border">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Domain</h3>
+        </div>
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs text-slate-500">Subdomain</span>
+          <code class="text-xs text-accent bg-accent/5 px-2 py-1 rounded-md">{{ community.slug }}{{ ("." ~ tenant_base_domain) if tenant_base_domain else "" }}</code>
+        </div>
+        {% if can_manage %}
+        <form method="post" class="space-y-2">
+          {{ csrf_field() }}
+          <div class="flex gap-2">
+            <input name="custom_domain" type="text" value="{{ community.custom_domain or '' }}" placeholder="evidence.yourdomain.com"
+              class="flex-1 min-w-0 bg-base border border-border rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60">
+            <button type="submit" class="shrink-0 text-xs font-medium px-3 py-2 rounded-lg bg-white/5 text-slate-300 border border-border hover:bg-white/10">Save</button>
+          </div>
+          {% if domain_error %}
+          <p class="text-xs text-red-300">{{ domain_error }}</p>
+          {% endif %}
+        </form>
+        {% endif %}
+        <p class="text-xs text-slate-600 leading-relaxed mt-2.5">
+          CNAME your domain to <code class="text-accent">{{ request.host }}</code>. Both the subdomain and a custom
+          domain need the operator to finish routing/TLS before they work from outside - logged-in staff already
+          see this community's own data on this URL either way.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function copySnippet(btn) {
+  const text = document.getElementById("config-snippet").textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const label = btn.querySelector("span");
+    const prev = label.textContent;
+    btn.classList.add("copied");
+    label.textContent = "Copied";
+    setTimeout(() => { btn.classList.remove("copied"); label.textContent = prev; }, 1500);
+  });
+}
+
+function copyWizSnippet(id, btn) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const label = btn.querySelector("span");
+    const prev = label.textContent;
+    btn.classList.add("copied");
+    label.textContent = "Copied";
+    setTimeout(() => { btn.classList.remove("copied"); label.textContent = prev; }, 1500);
+  });
+}
+
+(function () {
+  // --- Tabs ---
+  const tabs = document.querySelectorAll("#wiz-tabs .wiz-tab");
+  const panes = document.querySelectorAll(".wiz-pane");
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => t.classList.toggle("on", t === tab));
+      panes.forEach((p) => p.classList.toggle("on", p.dataset.pane === tab.dataset.pane));
+    });
+  });
+
+  // --- Modules snippet ---
+  const MODULE_DESCRIPTIONS = {
+    Tablet: "In-game tablet (stock prop + NUI) that opens the portal.",
+    LbPhone: "Xon Sight as an installable LB Phone app (also covers Sky Phone's lb-phone alias).",
+    GksPhone: "Same app, registered with GKSPHONE V2 instead.",
+    Movement: "Same app, registered with 17Movement's phone instead (also covers Sky Phone's 17mov_Phone alias).",
+    LiveSync: "Pushes a separate XonSight resource's active recorders to this portal's /live page.",
+  };
+  const modChecks = document.querySelectorAll('[data-mod]');
+  function renderModules() {
+    const lines = ["ServerConfig.Modules = {"];
+    modChecks.forEach((cb) => {
+      const name = cb.dataset.mod;
+      lines.push(`    -- ${MODULE_DESCRIPTIONS[name]}`);
+      lines.push(`    ${name} = { Enabled = ${cb.checked ? "true" : "false"} },`);
+    });
+    lines.push("}");
+    document.getElementById("modules-snippet").textContent = lines.join("\n");
+    renderCfg();
+  }
+  modChecks.forEach((cb) => cb.addEventListener("change", renderModules));
+
+  // --- License snippet ---
+  const licenseInput = document.getElementById("wiz-license-key");
+  function currentLicenseLine() {
+    const key = licenseInput.value.trim();
+    return key ? `set opshub_license "${key}"` : "-- no key yet, enter it on the OPS Phone's license screen in-game instead";
+  }
+  function renderLicense() {
+    document.getElementById("license-snippet").textContent = currentLicenseLine();
+    renderCfg();
+  }
+  licenseInput.addEventListener("input", renderLicense);
+
+  // --- server.cfg snippet ---
+  function renderCfg() {
+    const licenseLine = licenseInput.value.trim() ? currentLicenseLine() : null;
+    const lines = [];
+    if (licenseLine) lines.push(licenseLine, "");
+    lines.push("ensure opslabs-license", "ensure opslabs-bodycam");
+    document.getElementById("cfg-snippet").textContent = lines.join("\n");
+  }
+
+  renderModules();
+  renderLicense();
+})();
+
+(function () {
+  const root = document.getElementById("setup-checklist");
+  if (!root) return;
+
+  function markDone(key, detail) {
+    const row = root.querySelector(`[data-check="${key}"]`);
+    if (!row) return;
+    const dot = row.querySelector(".check-dot");
+    dot.className = "int-check-dot check-dot bg-accent2/15 text-accent2";
+    dot.innerHTML = {{ icon("check-circle", "h-3.5 w-3.5")|tojson }};
+    const label = row.querySelector("span.text-slate-400, span.text-slate-300");
+    if (label) { label.classList.remove("text-slate-400"); label.classList.add("text-slate-300"); }
+    const detailEl = row.querySelector("[data-detail]");
+    if (detailEl && detail) {
+      detailEl.textContent = detail;
+      detailEl.classList.remove("text-slate-600");
+      detailEl.classList.add("text-accent2");
+    }
+
+    // horizontal overview stepper
+    const hdot = document.querySelector(".hstep:last-child .hstep-dot");
+    const hline = document.querySelector(".hstep-line:last-of-type");
+    const hlabel = document.querySelector(".hstep:last-child .hstep-label");
+    if (hdot) { hdot.className = "hstep-dot done"; hdot.innerHTML = {{ icon("check-circle", "h-5 w-5")|tojson }}; }
+    if (hline) hline.classList.add("done");
+    if (hlabel) { hlabel.classList.add("done-label"); hlabel.style.color = ""; hlabel.textContent = "Connected"; }
+
+    const label2 = document.getElementById("progress-label");
+    if (label2) label2.textContent = "All set";
+  }
+
+  async function poll() {
+    let data;
+    try {
+      data = await fetch("{{ url_for('community_signup.integration_status') }}").then((r) => r.json());
+    } catch (err) {
+      return;
+    }
+    if (data.connected) {
+      const bits = [];
+      if (data.activeRecorders) bits.push(`${data.activeRecorders} active recorder${data.activeRecorders === 1 ? "" : "s"}`);
+      if (data.evidenceCount) bits.push(`${data.evidenceCount} evidence item${data.evidenceCount === 1 ? "" : "s"}`);
+      markDone("connected", bits.length ? bits.join(" · ") : "Connected");
+      clearInterval(timer);
+    }
+  }
+
+  {% if not connected %}
+  poll();
+  const timer = setInterval(poll, 4000);
+  {% endif %}
+})();
+</script>
+{% endblock %}

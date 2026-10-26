@@ -2,7 +2,15 @@
 {% from "_macros.html" import icon, csrf_field, page_header %}
 {% block title %}Users · Xon Sight{% endblock %}
 {% block content %}
-{{ page_header("Users", "Approve pending signups, promote/demote roles, or disable an account.", eyebrow="Admin · Users") }}
+{{ page_header("Users", "Approve pending signups, promote/demote roles, reset a password, or disable an account.", eyebrow="Admin · Users") }}
+
+{% if reset_password_value %}
+<div class="max-w-xl border border-accent2/30 bg-accent2/5 rounded-2xl p-5 mb-6">
+  <div class="text-sm text-accent2 font-medium mb-1.5 flex items-center gap-1.5">{{ icon("check-circle", "h-4 w-4") }} Password reset</div>
+  <p class="text-xs text-slate-400 mb-2.5 leading-relaxed">New password for the account below - shown once, copy it now:</p>
+  <code class="block bg-base rounded-xl px-3 py-2.5 text-sm text-slate-200 break-all">{{ reset_password_value }}</code>
+</div>
+{% endif %}
 
 <div class="border border-border bg-panel rounded-2xl overflow-hidden">
   <table class="w-full text-sm">
@@ -59,6 +67,11 @@
                 <option value="supervisor" {{ "selected" if user.role == "supervisor" }}>Supervisor</option>
                 <option value="admin" {{ "selected" if user.role == "admin" }}>Admin</option>
               </select>
+            </form>
+            <form action="{{ url_for('admin.reset_password', user_id=user.id) }}" method="post"
+              onsubmit="return confirm('Reset {{ user.username }}\'s password? A new one is generated and shown once - give it to them.');">
+              {{ csrf_field() }}
+              <button type="submit" class="rounded-lg px-2.5 py-1 border border-border hover:border-accent/50 hover:text-accent">Reset password</button>
             </form>
           </div>
           {% else %}

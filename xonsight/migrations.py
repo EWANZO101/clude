@@ -7,6 +7,10 @@ from .extensions import db
 # alters existing ones - so new columns need an explicit ALTER TABLE against
 # whatever database is already deployed.
 _NEW_COLUMNS = {
+    "users": [
+        # Self-serve community signup (community_signup.py) - null for every pre-existing account.
+        ("community_id", "INTEGER"),
+    ],
     "evidence": [
         ("device_serial", "VARCHAR(128) NOT NULL DEFAULT ''"),
         ("transcript", "TEXT NOT NULL DEFAULT ''"),
@@ -17,12 +21,19 @@ _NEW_COLUMNS = {
     ],
     "community_requests": [
         ("is_general", "BOOLEAN NOT NULL DEFAULT 0"),
+        # Per-community /report tip line (community.py's report_general) - null for the original
+        # single-tenant site's own general request, seeded once already.
+        ("community_id", "INTEGER"),
     ],
     "settings": [
         ("discord_webhook_url", "VARCHAR(512) NOT NULL DEFAULT ''"),
         ("discord_notify_evidence", "BOOLEAN NOT NULL DEFAULT 1"),
         ("discord_notify_alerts", "BOOLEAN NOT NULL DEFAULT 1"),
         ("discord_notify_bolos", "BOOLEAN NOT NULL DEFAULT 1"),
+        # Per-community settings (admin.py's settings()) - null for the existing control-plane row, which
+        # keeps behaving exactly as it always has. No UNIQUE constraint on a retrofitted column (SQLite
+        # ALTER TABLE can't add one) - Settings.get()'s filter-then-create is the actual guard.
+        ("community_id", "INTEGER"),
     ],
     "communities": [
         # Premium add-on: the in-game phone's Bodycam app ("My footage" / "Live" tabs). Off by default - a

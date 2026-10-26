@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Install · Xon Sight</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: { base: '#0a0a0c', panel: '#141417', panel2: '#19191d', border: '#26262b', accent: '#ec4899', accent2: '#14b8a6' },
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0a0a0c;
+      background-image: radial-gradient(900px 500px at 15% -10%, rgba(236,72,153,0.06), transparent 60%), radial-gradient(900px 500px at 110% 10%, rgba(20,184,166,0.05), transparent 60%);
+      min-height: 100vh;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; }
+    .stepper { position: relative; }
+    .stepper::before { content: ""; position: absolute; left: 1.1rem; top: 0.25rem; bottom: 0.25rem; width: 1px; background: #26262b; }
+    .step { position: relative; padding-left: 3.25rem; }
+    .step-num {
+      position: absolute; left: 0; top: 0; width: 2.25rem; height: 2.25rem; border-radius: 50%;
+      border: 1px solid #26262b; background: #19191d; display: flex; align-items: center; justify-content: center;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; font-weight: 700; color: #ec4899;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-base text-slate-200 font-sans">
+  {% from "_macros.html" import brand_mark, icon %}
+  <header class="sticky top-0 z-30 backdrop-blur bg-base/85 border-b border-border">
+    <div class="px-6 py-4 flex items-center justify-between max-w-3xl mx-auto">
+      <a href="{{ url_for('site.welcome') }}" class="inline-flex items-center gap-2.5">{{ brand_mark() }}</a>
+      <div class="flex items-center gap-2 text-sm">
+        <a href="{{ url_for('site.guide') }}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">Full guide</a>
+        <a href="{{ url_for('auth.login') }}" class="px-3 py-1.5 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20">Staff login</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-6 pt-10 pb-24">
+    <span class="inline-block text-xs font-medium text-accent bg-accent/10 border border-accent/30 rounded-full px-3 py-1 mb-4">Quick start</span>
+    <h1 class="text-3xl sm:text-4xl font-semibold text-white tracking-tight leading-tight">Get the bodycam running</h1>
+    <p class="text-sm text-slate-400 mt-3 leading-relaxed max-w-xl">
+      Two resources, one config file. If you want the full tour instead - architecture, every
+      page, self-hosting - see the <a href="{{ url_for('site.guide') }}" class="text-accent hover:underline">full guide</a>.
+    </p>
+
+    <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-12 mb-4">1. Grab the resources</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+      <div class="rounded-xl border border-accent/30 bg-accent/5 p-4">
+        <div class="text-sm font-medium text-white mb-1">The bodycam</div>
+        <p class="text-xs text-slate-500 leading-relaxed">Records the officer's view, uploads it here. Start with this one.</p>
+        <code class="block mt-2 text-accent text-xs">opslabs-bodycam</code>
+      </div>
+      <div class="rounded-xl border border-border bg-panel p-4">
+        <div class="text-sm font-medium text-white mb-1">License client</div>
+        <p class="text-xs text-slate-500 leading-relaxed">Required alongside it - activates your license key.</p>
+        <code class="block mt-2 text-accent text-xs">opslabs-license</code>
+      </div>
+    </div>
+    <p class="text-xs text-slate-500 mb-12">
+      The in-hand tablet, LB Phone app and live-roster sync are optional modules built into
+      <code class="text-accent">opslabs-bodycam</code> itself (<code class="text-accent">config_server.lua</code> →
+      <code class="text-accent">ServerConfig.Modules</code>) - nothing extra to install, turn any of them off there if you don't want them.
+    </p>
+
+    <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">2. Install it</h2>
+    <div class="stepper space-y-7 mb-12">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="text-sm font-medium text-white">Download &amp; drop it in</div>
+        <p class="text-sm text-slate-400 mt-1 leading-relaxed">Get it from your license portal, unzip <code class="text-accent">opslabs-bodycam</code> and <code class="text-accent">opslabs-license</code> into your FiveM server's <code class="text-accent">resources/</code> folder.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="text-sm font-medium text-white">Paste your setup block into <code class="text-accent">opslabs-bodycam/config_server.lua</code></div>
+        <p class="text-sm text-slate-400 mt-1 leading-relaxed">
+          Copy it from your
+          <a href="{{ url_for('community_signup.integration') }}" class="text-accent hover:underline">integration page</a>
+          into its <code class="text-accent">ServerConfig.XonSight</code> block, replacing the two example lines. That's the whole connection - URL and token, done.
+        </p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="text-sm font-medium text-white">Set up the license</div>
+        <p class="text-sm text-slate-400 mt-1 leading-relaxed">In <code class="text-accent">opslabs-license/config.lua</code>, set your license key (or enter it once on the OPS Phone's license screen in-game).</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="text-sm font-medium text-white">Add it to <code class="text-accent">server.cfg</code></div>
+        <p class="text-sm text-slate-400 mt-1 leading-relaxed"><code class="text-accent">ensure opslabs-license</code> then <code class="text-accent">ensure opslabs-bodycam</code>, then restart the resource.</p>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-border bg-panel p-5 flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <div class="text-sm font-medium text-white">That's it</div>
+        <p class="text-xs text-slate-500 mt-0.5">Your first recording should show up on the Dashboard within a few seconds.</p>
+      </div>
+      <a href="{{ url_for('site.guide') }}" class="shrink-0 px-4 py-2 rounded-xl bg-white/5 text-slate-200 border border-border hover:bg-white/10 text-sm font-medium">Read the full guide</a>
+    </div>
+  </main>
+</body>
+</html>

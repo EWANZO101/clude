@@ -1,9 +1,13 @@
 import math
+import os
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 
-from flask import Blueprint, abort, current_app, g, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, g, redirect, render_template, request, send_from_directory, url_for
 from flask_login import current_user
 
+from .live_tokens import verify_viewer_token
+from .media_storage import FILENAME_RE, media_dir_for_slug, signed_media_url
 from .models import ActiveRecorder, Case, CommunityRequest, Evidence, User
 
 views_bp = Blueprint("views", __name__)
@@ -24,6 +28,11 @@ _CONTROL_PLANE_ONLY = {
 
 @views_bp.before_request
 def require_login():
+    if request.endpoint == "views.media_file":
+        # Checks its own auth (a signed token, or a session) - see media_file() below. A blanket
+        # redirect-to-login here would be it anyway, since a bare <video src="..."> can never follow
+        # an interactive login redirect.
+        return
     if not current_user.is_authenticated:
         return redirect(url_for("auth.login", next=request.path))
     if g.tenant is not None and request.endpoint in _CONTROL_PLANE_ONLY:
@@ -66,6 +75,43 @@ def dashboard():
     )
 
 
+@views_bp.route("/media/<filename>")
+def media_file(filename):
+    """Serves evidence video uploaded through the portal-hosting path (see webhooks.py's
+    /api/xonsight/media/upload and media_storage.py) - the alternative to self-hosting
+    opslabs-bodycam's media/ folder yourself.
+
+    Two ways in, checked in this order:
+      1. A signed ?slug=...&xs_token=... pair (media_storage.signed_media_url, computed fresh on
+         every evidence page render) - works regardless of login state or which host/subdomain the
+         request came in on. Required for this to work at all across a community's own subdomain or
+         custom domain: a bare <video> tag can't do an interactive login, and even a logged-in
+         session's cookie may not carry over to a different host than the one evidence.video_url
+         happens to be built from.
+      2. Falling back to the ordinary logged-in session + g.tenant (same-host convenience - e.g.
+         pasting this URL directly into a browser you're already logged into).
+    One community can never reach another's files by guessing a filename either way - the token is
+    bound to the exact (slug, filename) pair, and the session fallback only ever resolves to the
+    viewer's own tenant.
+    """
+    if not FILENAME_RE.match(filename):
+        abort(404)
+
+    token = request.args.get("xs_token")
+    requested_slug = request.args.get("slug") or ""
+    if token and verify_viewer_token(f"media:{requested_slug}:{filename}", token):
+        slug = requested_slug or None
+    elif current_user.is_authenticated:
+        slug = g.tenant.slug if g.tenant else None
+    else:
+        abort(401)
+
+    directory = media_dir_for_slug(slug, create=False)
+    if not os.path.isfile(os.path.join(directory, filename)):
+        abort(404)
+    return send_from_directory(directory, filename, mimetype="video/webm")
+
+
 @views_bp.route("/evidence")
 def evidence_list():
     q = request.args.get("q", "").strip()
@@ -87,7 +133,10 @@ def evidence_list():
         pagination = query.order_by(Evidence.id.desc()).paginate(
             page=page, per_page=12, error_out=False
         )
-    return render_template("evidence_list.html", pagination=pagination, q=q)
+    today = datetime.utcnow().date()
+    return render_template(
+        "evidence_list.html", pagination=pagination, q=q, today=today, yesterday=today - timedelta(days=1),
+    )
 
 
 @views_bp.route("/evidence/<int:evidence_id>")
@@ -98,10 +147,13 @@ def evidence_detail(evidence_id):
         item = Evidence.query.get(evidence_id)
     if item is None:
         abort(404)
+    item_json = item.to_dict()
+    item_json["videoUrl"] = signed_media_url(item_json["videoUrl"])
     return render_template(
         "evidence_detail.html",
         item=item,
-        item_json=item.to_dict(),
+        item_json=item_json,
+        display_video_url=signed_media_url(item.video_url),
         agency_name=current_app.config.get("AGENCY_NAME", "Unconfigured Agency"),
         ai_configured=bool(current_app.config.get("ANTHROPIC_API_KEY")),
     )

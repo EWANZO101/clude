@@ -1,5 +1,13 @@
 # Xon Sight Evidence Portal
 
+## What's new (2026-10-26, latest: token-only webhook auth)
+
+The legacy shared-secret path (`X-XonSight-Key` / `XONSIGHT_WEBHOOK_KEY`) is gone. Every webhook request -
+from `opslabs-bodycam` or anything else - now authenticates with `X-XonSight-Token` only, resolving to a
+community created at `/get-started` (token copied from `/integration`). A missing or unrecognized token is
+a hard 401; there is no unauthenticated or shared-secret fallback. This also means a working deployment now
+requires at least one community to exist (`MYSQL_PROVISIONER_*` configured in `.env`) - see `.env.example`.
+
 ## What's new (2026-10-19, latest: multi-tenancy foundations)
 
 The beginning of real multi-tenancy - "a community" with its own isolated data, reachable by its own token:
@@ -223,7 +231,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# edit .env: set SECRET_KEY and XONSIGHT_WEBHOOK_KEY
+# edit .env: set SECRET_KEY and the MYSQL_PROVISIONER_* vars (needed to create a community/token - see below)
 ```
 
 Run it:
@@ -240,21 +248,19 @@ you want HTTPS in front of it regardless.
 
 ## Wiring up Xon Sight
 
-In `resources/XonSight/config.lua` on your FiveM server:
+All webhook auth is a per-community API token now (`X-XonSight-Token`) - sign up a community at
+`/get-started`, then copy both the portal URL and the token straight from `/integration`.
+`opslabs-bodycam` (`fivem-resource/opslabs-bodycam/config_server.lua`) takes exactly those two values in
+its `ServerConfig.XonSight` block; the older standalone `XonSight` resource predates token auth and no
+longer works against this API (its `Config.Evidence.webhookApiKey` field has nothing left to match -
+use opslabs-bodycam instead).
 
-```lua
-Config.Evidence = {
-    webhookUrl = "https://your-site.example.com/api/xonsight/evidence",
-    webhookApiKey = "the-same-value-as-XONSIGHT_WEBHOOK_KEY-in-.env",
-}
-```
-
-Restart the resource. Test independently of the game with:
+Test independently of the game with:
 
 ```bash
 curl -X POST http://localhost:5000/api/xonsight/evidence \
   -H "Content-Type: application/json" \
-  -H "X-XonSight-Key: your-shared-secret" \
+  -H "X-XonSight-Token: your-community-token" \
   -d '{
     "id": 1,
     "submitterIdentifier": "TESTID123",
@@ -277,7 +283,7 @@ integration example) every few seconds and forwards the result here:
 ```bash
 curl -X POST http://localhost:5000/api/xonsight/recorders/sync \
   -H "Content-Type: application/json" \
-  -H "X-XonSight-Key: your-shared-secret" \
+  -H "X-XonSight-Token: your-community-token" \
   -d '{
     "recorders": [
       {"id": "1", "name": "Officer Doe", "job": "police", "startedAt": "2026-09-16T02:10:00Z"}
@@ -297,12 +303,12 @@ Sight ships these:
 ```bash
 # Emergency trigger banner on /live
 curl -X POST http://localhost:5010/api/xonsight/alerts \
-  -H "Content-Type: application/json" -H "X-XonSight-Key: your-shared-secret" \
+  -H "Content-Type: application/json" -H "X-XonSight-Token: your-community-token" \
   -d '{"recorderId": "1", "recorderName": "Officer Doe", "type": "weapon_drawn", "message": "Drew sidearm"}'
 
 # External feed pins on /live (Axon Fusus analog) - full snapshot each call
 curl -X POST http://localhost:5010/api/xonsight/external-feeds/sync \
-  -H "Content-Type: application/json" -H "X-XonSight-Key: your-shared-secret" \
+  -H "Content-Type: application/json" -H "X-XonSight-Token: your-community-token" \
   -d '{"feeds": [{"id": "cam-1", "label": "Vinewood Blvd Cam", "kind": "camera", "status": "online", "position": {"x": 215.0, "y": -800.0}}]}'
 ```
 
@@ -330,10 +336,8 @@ needs an explicit "Publish" click.
 
 ## Notes / gotchas
 
-- **`X-XonSight-Key` is optional**, matching Xon Sight's own design: if
-  you leave `XONSIGHT_WEBHOOK_KEY` blank in `.env`, both webhook endpoints
-  accept requests with no header check at all. Set it for anything
-  internet-facing.
+- **`X-XonSight-Token` is required on every webhook endpoint** - there is no unauthenticated or
+  shared-secret fallback. Create a community (`/get-started`) and copy its token from `/integration`.
 - **No retries.** Xon Sight's webhook is fire-and-forget; if this site is
   down when a player submits evidence, that submission never reaches it
   (it's still safe in Xon Sight's own `axonsight_evidence` table on the

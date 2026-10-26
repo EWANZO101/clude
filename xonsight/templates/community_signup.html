@@ -1,0 +1,81 @@
+{% extends "guest_base.html" %}
+{% block title %}Get started · Xon Sight{% endblock %}
+{% block content %}
+<div class="w-full max-w-md">
+  <div class="rounded-2xl border border-border bg-panel p-7 shadow-xl shadow-black/20">
+    <span class="inline-block text-xs font-medium text-accent bg-accent/10 border border-accent/30 rounded-full px-3 py-1 mb-4">New community</span>
+    <h1 class="text-xl font-bold text-white mb-1.5">Bring your server onto Xon Sight</h1>
+    <p class="text-sm text-slate-400 mb-7 leading-relaxed">
+      Your own dedicated database and an admin account - separate from every other community on this deployment.
+      You'll get an API token on the next page to paste into your bodycam resource's config.
+    </p>
+
+    {% if not mysql_enabled %}
+    <p class="text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2.5 text-sm mb-5">
+      Community signup isn't available on this deployment yet - ask the operator to finish setting it up.
+    </p>
+    {% endif %}
+
+    {% if error %}
+    <p class="text-red-300 bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2 text-sm mb-5">{{ error }}</p>
+    {% endif %}
+
+    <form method="post" class="space-y-5">
+      {% from "_macros.html" import csrf_field %}{{ csrf_field() }}
+      <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+
+      <div>
+        <label class="card-label block mb-1.5">Server / community name</label>
+        <input name="name" type="text" required placeholder="e.g. Maple County RP" autofocus {{ "disabled" if not mysql_enabled }}
+          class="w-full bg-base border border-border rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40 disabled:opacity-50">
+      </div>
+      <div>
+        <label class="card-label block mb-1.5">Slug <span class="text-slate-600">(optional - derived from the name otherwise)</span></label>
+        <input name="slug" type="text" placeholder="maple_county" pattern="[a-z0-9_]{3,32}" {{ "disabled" if not mysql_enabled }}
+          class="w-full bg-base border border-border rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40 disabled:opacity-50">
+      </div>
+      <hr class="border-border">
+      <div>
+        <label class="card-label block mb-1.5">Your admin username</label>
+        <input name="username" type="text" required minlength="3" {{ "disabled" if not mysql_enabled }}
+          class="w-full bg-base border border-border rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40 disabled:opacity-50">
+      </div>
+      <div>
+        <label class="card-label block mb-1.5">Password</label>
+        <input name="password" type="password" required minlength="8" {{ "disabled" if not mysql_enabled }}
+          class="w-full bg-base border border-border rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40 disabled:opacity-50">
+      </div>
+      <div>
+        <label class="card-label block mb-1.5">Confirm password</label>
+        <input name="confirm" type="password" required minlength="8" {{ "disabled" if not mysql_enabled }}
+          class="w-full bg-base border border-border rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40 disabled:opacity-50">
+      </div>
+
+      {% if hcaptcha_site_key %}
+      <div class="h-captcha" data-sitekey="{{ hcaptcha_site_key }}"></div>
+      {% else %}
+      <div>
+        <label class="block text-xs text-slate-400 mb-1.5">Quick check: what is {{ captcha_a }} + {{ captcha_b }}?</label>
+        <input name="captcha_answer" type="text" inputmode="numeric" autocomplete="off" required {{ "disabled" if not mysql_enabled }}
+          class="w-full sm:w-48 bg-base border border-border rounded-lg px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 disabled:opacity-50">
+      </div>
+      {% endif %}
+
+      <button type="submit" {{ "disabled" if not mysql_enabled }}
+        class="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent to-accent2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">
+        Create my community
+      </button>
+    </form>
+
+    <p class="text-sm text-slate-500 mt-6 text-center">
+      Joining a community that's already on Xon Sight? <a href="{{ url_for('auth.signup') }}" class="text-accent hover:underline font-medium">Sign up there instead</a>
+      &middot; <a href="{{ url_for('auth.login') }}" class="text-accent hover:underline font-medium">Log in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if hcaptcha_site_key %}
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+{% endif %}
+{% endblock %}

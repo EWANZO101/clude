@@ -12,7 +12,21 @@
 {{ page_header("Evidence", pagination.total ~ " item" ~ ("" if pagination.total == 1 else "s") ~ " total", eyebrow="Evidence library", actions=search_form) }}
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% set ns = namespace(last_date=None) %}
   {% for item in pagination.items %}
+    {% set item_date = item.created_at.date() %}
+    {% if item_date != ns.last_date %}
+      {% set ns.last_date = item_date %}
+      <div class="col-span-full flex items-center gap-3 {{ 'mt-2' if not loop.first else '' }}">
+        <span class="text-xs font-semibold tracking-wide text-slate-300 uppercase">
+          {% if item_date == today %}Today
+          {% elif item_date == yesterday %}Yesterday
+          {% else %}{{ item_date.strftime("%A, %B ") }}{{ item_date.day }}{{ item_date.strftime(", %Y") }}
+          {% endif %}
+        </span>
+        <span class="h-px flex-1 bg-border"></span>
+      </div>
+    {% endif %}
     {% include "_evidence_card.html" %}
   {% else %}
     <div class="col-span-full">{{ empty_state("No evidence found for that search." if q else "No evidence submitted yet.", "search" if q else "evidence") }}</div>

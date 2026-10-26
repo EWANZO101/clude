@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPS Bodycam · How it works</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #15181c; --panel: #1f242b; --panel-border: #2b3138; --accent: #ffd60a; --red: #ff3b30;
+    --green: #30d158; --text: #f2f3f5; --muted: #9aa3ad; --dim: #565d66;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: Arial, Helvetica, sans-serif; height: 100%; overflow: hidden; }
+  h1, h2, h3 { font-family: 'Space Grotesk', Arial, sans-serif; margin: 0; }
+  p, li { margin: 0; }
+  ul { padding-left: 1.2em; }
+  .deck { position: relative; width: 100vw; height: 100vh; }
+  .slide {
+    position: absolute; inset: 0; display: none; flex-direction: column; justify-content: space-between;
+    padding: clamp(28px, 6vw, 128px) clamp(28px, 6vw, 128px) clamp(56px, 9vw, 160px);
+    gap: clamp(24px, 3vw, 56px); overflow-y: auto;
+  }
+  .slide.active { display: flex; }
+  .eyebrow { font-size: clamp(14px, 1.6vw, 26px); font-weight: 700; letter-spacing: 2px; color: var(--accent); margin: 0 0 16px; }
+  .title { font-size: clamp(34px, 5.5vw, 76px); font-weight: 700; line-height: 1.1; }
+  .lede { font-size: clamp(18px, 2.4vw, 34px); color: var(--muted); line-height: 1.4; max-width: 1400px; margin-top: 20px; }
+  .row { display: flex; gap: clamp(16px, 2vw, 32px); flex-wrap: wrap; }
+  .card { flex: 1 1 260px; display: flex; flex-direction: column; gap: 14px; background: var(--panel); padding: clamp(22px, 2.5vw, 44px); border-radius: 20px; border: 1px solid var(--panel-border); }
+  .card h3 { font-size: clamp(20px, 2vw, 34px); font-weight: 700; }
+  .card p, .para { font-size: clamp(15px, 1.7vw, 26px); color: var(--muted); line-height: 1.5; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; }
+  .arrow { font-size: clamp(28px, 3.5vw, 56px); color: var(--accent); font-weight: 700; flex: 0 0 auto; }
+  table { font-size: clamp(14px, 1.7vw, 28px); border-collapse: collapse; background: var(--panel); border-radius: 20px; overflow: hidden; width: 100%; }
+  th { text-align: left; padding: clamp(10px, 1.4vw, 22px) clamp(14px, 2vw, 32px); color: var(--muted); font-weight: 700; background: #262c34; }
+  td { padding: clamp(10px, 1.2vw, 20px) clamp(14px, 2vw, 32px); border-top: 1px solid var(--panel-border); }
+  .footer { font-size: clamp(12px, 1.3vw, 24px); color: var(--dim); }
+  .stat { display: flex; flex-direction: column; gap: 10px; background: #1a1600; padding: clamp(22px, 2.5vw, 44px); border-radius: 20px; flex: 1 1 260px; }
+  .stat .big { font-size: clamp(36px, 6vw, 96px); font-weight: 700; color: #fff; line-height: 1; }
+  .nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px clamp(16px, 4vw, 48px); background: linear-gradient(180deg, transparent, rgba(0,0,0,0.55)); z-index: 10; }
+  .nav button { background: var(--panel); border: 1px solid var(--panel-border); color: var(--text); font-size: 16px; padding: 10px 18px; border-radius: 10px; cursor: pointer; }
+  .nav button:hover { border-color: var(--accent); color: var(--accent); }
+  .nav button:disabled { opacity: 0.35; cursor: default; }
+  .dots { display: flex; gap: 8px; }
+  .dots span { width: 9px; height: 9px; border-radius: 50%; background: #3a4149; cursor: pointer; }
+  .dots span.on { background: var(--accent); }
+  .count { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .table-wrap { width: 100%; overflow-x: auto; border-radius: 20px; }
+  .table-wrap table { min-width: 760px; }
+  .yes { color: var(--green); font-weight: 700; }
+  .no { color: var(--red); font-weight: 700; }
+  .partial { color: var(--muted); }
+  .source-row { font-size: clamp(11px, 1.1vw, 18px); color: var(--dim); }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <section class="slide active" style="background:#15181c;justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="dot" style="background:#ff3b30"></div>
+      <p style="font-size:clamp(14px,1.6vw,28px);color:#ff3b30;font-weight:700;letter-spacing:2px">REC</p>
+      <p style="font-size:clamp(14px,1.6vw,28px);color:var(--muted);letter-spacing:2px">LIVE SYSTEM OVERVIEW</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <h1 style="font-size:clamp(44px,9vw,160px);color:var(--accent);line-height:1">OPS Bodycam</h1>
+      <p class="lede">How it records, where the footage goes, and why it barely costs a low-end PC anything</p>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <p class="footer">opslabs-bodycam · Xon Sight evidence portal · OPS Voice</p>
+      <p class="footer">F10 · /bodycam · OPS Phone</p>
+    </div>
+  </section>
+
+  <section class="slide" style="background:#15181c">
+    <div>
+      <p class="eyebrow">WHAT IT IS</p>
+      <h2 class="title">A body-worn camera that actually behaves like one</h2>
+      <p class="lede">Every officer issued a camera can record their own view as real video, in-game — not a screenshot, not a third-party capture tool. Every finished recording lands in an evidence portal automatically.</p>
+    </div>
+    <div class="row">
+      <div class="card"><div class="dot" style="background:var(--accent);width:40px;height:40px;border-radius:10px"></div><h3>Records what they see</h3><p>The officer's own screen — including the game's HUD and minimap, not the phone or menus.</p></div>
+      <div class="card"><div class="dot" style="background:var(--red);width:40px;height:40px;border-radius:10px"></div><h3>Goes to Xon Sight</h3><p>The evidence portal only ever receives a link to the video, never the file itself.</p></div>
+      <div class="card"><div class="dot" style="background:var(--green);width:40px;height:40px;border-radius:10px"></div><h3>Runs anywhere</h3><p>ESX, QBCore, Qbox, ox_core, ND, or completely standalone — it finds what's running.</p></div>
+    </div>
+    <p class="footer">opslabs-bodycam</p>
+  </section>
+
+  <section class="slide" style="background:#15181c">
+    <h2 class="title">Starting a recording</h2>
+    <div class="row">
+      <div class="card"><h3 style="color:var(--accent)">Manual</h3><p style="color:#c7ccd1">Press <b>F10</b> (rebindable), type <b>/bodycam</b>, or use the <b>OPS Phone → Bodycam</b> app — start, stop, add a note, see your own footage and who else is live.</p></div>
+      <div class="card"><h3 style="color:var(--red)">Automatic</h3><p style="color:#c7ccd1">Starts itself on <b>shots fired</b>, a <b>weapon drawn</b>, or <b>lights &amp; siren above 68 mph</b>. It never stops itself — only going off duty, or the officer, does that.</p></div>
+    </div>
+    <table>
+      <tr><th>Trigger</th><th>Fires on</th></tr>
+      <tr><td>Weapon drawn</td><td style="color:#c7ccd1">Gun or taser leaves the holster — not just aiming</td></tr>
+      <tr><td>Shots fired</td><td style="color:#c7ccd1">Any weapon discharged, taser included</td></tr>
+      <tr><td>Lights &amp; siren</td><td style="color:#c7ccd1">Driving at speed with them on — a parked car with lights flashing doesn't count</td></tr>
+    </table>
+    <p class="para">While recording, the visible camera on the vest shows its red LEDs — everyone nearby can see it's live. A beep marks start and stop, and a double beep every 2 minutes, like the real thing.</p>
+    <p class="footer">opslabs-bodycam · starting a recording</p>
+  </section>
+
+  <section class="slide" style="background:#15181c">
+    <div>
+      <p class="eyebrow">HOW IT WORKS</p>
+      <h2 class="title">Recording is a browser trick, not a screen capture</h2>
+    </div>
+    <div class="row" style="align-items:center">
+      <div class="card"><h3>Game view</h3><p>Whatever the officer sees — HUD included</p></div>
+      <div class="arrow">→</div>
+      <div class="card"><h3>NUI canvas</h3><p>WebGL frame + burned-in overlay: time, officer, serial, street</p></div>
+      <div class="arrow">→</div>
+      <div class="card"><h3>MediaRecorder</h3><p>Encodes straight to webm, right in the browser</p></div>
+      <div class="arrow">→</div>
+      <div class="card" style="background:#262c17;border-color:#4a431a"><h3 style="color:var(--accent)">Xon Sight</h3><p style="color:#e4cf7a">Gets a link to the file, never the file itself</p></div>
+    </div>
+    <div class="row">
+      <p class="para" style="flex:1">No separate screenshot resource and no second full-scene render — the same NUI browser the phone and menus already use captures and encodes the picture.</p>
+      <p class="para" style="flex:1">Long recordings are cut into parts (3 minutes by default). Each part uploads and becomes its own evidence item as soon as it's done.</p>
+    </div>
+    <p class="footer">opslabs-bodycam · the capture pipeline</p>
+  </section>
+
+  <section class="slide" style="background:var(--accent);color:#1a1600">
+    <div>
+      <p class="eyebrow" style="color:#5c4e00">THE CAMERA IS NEVER REALLY OFF</p>
+      <h2 class="title" style="color:#1a1600">A tiny rolling buffer runs the whole shift</h2>
+      <p class="lede" style="color:#3a3000">So when an auto-trigger fires — shots fired, weapon drawn — the clip catches the 3 minutes that led up to it, not just what comes after.</p>
+    </div>
+    <div class="row">
+      <div class="stat"><p style="font-size:clamp(14px,1.5vw,26px);color:var(--accent);font-weight:700;letter-spacing:1px">ALWAYS RUNNING</p><div class="big">320×180</div><p style="font-size:clamp(16px,1.8vw,30px);color:#c7ccd1">8 fps · ~200 kbps</p><p style="font-size:clamp(13px,1.3vw,24px);color:#8a8f96">On duty, every officer issued a camera</p></div>
+      <div class="stat"><p style="font-size:clamp(14px,1.5vw,26px);color:var(--accent);font-weight:700;letter-spacing:1px">WHILE RECORDING</p><div class="big">1280×720</div><p style="font-size:clamp(16px,1.8vw,30px);color:#c7ccd1">30 fps · 3 Mbps</p><p style="font-size:clamp(13px,1.3vw,24px);color:#8a8f96">Full quality — the buffer pauses the moment this starts</p></div>
+    </div>
+  </section>
+
+  <section class="slide" style="background:#15181c">
+    <div>
+      <p class="eyebrow">THE EVIDENCE SYSTEM</p>
+      <h2 class="title">Xon Sight: two pages, one portal</h2>
+    </div>
+    <div class="row">
+      <div class="card"><h3 style="color:var(--green)">/live</h3><p style="color:#c7ccd1">Who's recording right now, with their position and the way they're facing. Updates within about a second of someone starting or stopping — it doesn't wait for the next sync cycle.</p></div>
+      <div class="card"><h3 style="color:var(--accent)">/evidence</h3><p style="color:#c7ccd1">Every finished part, captioned: officer · job · street · part number · time · what triggered it · any note added from the phone.</p></div>
+    </div>
+    <div class="row">
+      <p class="para" style="flex:1"><b style="color:var(--text)">Only a link crosses over.</b> The portal never receives the actual video file — just its https address, so the clip has to be reachable on the web, not sent through the game server.</p>
+      <p class="para" style="flex:1"><b style="color:var(--text)">It doesn't give up.</b> If the portal's down or the key's wrong, the same part is retried every 2 minutes, up to 10 times, before it's given up on.</p>
+    </div>
+    <p class="footer">opslabs-bodycam · Xon Sight evidence portal</p>
+  </section>
+
+  <section class="slide" style="background:#15181c">
+    <div>
+      <p class="eyebrow">VOICE</p>
+      <h2 class="title">Audio comes from OPS Voice, not the video</h2>
+    </div>
+    <div class="row" style="align-items:center">
+      <div class="card"><h3>Recording starts</h3><p>A listening bot joins the officer's voice channel</p></div>
+      <div class="arrow">→</div>
+      <div class="card"><h3>It keeps every frame</h3><p>Mic, nearby voices, radio — one stream per speaker</p></div>
+      <div class="arrow">→</div>
+      <div class="card"><h3>Part finishes</h3><p>ffmpeg mixes and muxes it onto that video part</p></div>
+      <div class="arrow">→</div>
+      <div class="card" style="background:#172217;border-color:#294a2e"><h3 style="color:var(--green)">Evidence link</h3><p style="color:#9ec9a3">Points at the version with sound</p></div>
+    </div>
+    <p class="lede" style="font-size:clamp(16px,2vw,28px)">If the voice bridge is down, or the mix fails, the silent video still goes to Xon Sight — the evidence never just disappears, it's just quieter. One honest limit: FiveM gives neither the camera's NUI nor the server the game's own sound, so gunshots, sirens and engines can never be <i>in</i> the recording — only what people say near the officer.</p>
+    <p class="footer">opslabs-bodycam · voice via OPS Voice bridge</p>
+  </section>
+
+  <section class="slide" style="background:#15181c">
+    <div>
+      <p class="eyebrow">PERFORMANCE</p>
+      <h2 class="title">Built to be light on a weak PC</h2>
+    </div>
+    <div class="row">
+      <div class="card"><h3 style="color:var(--red)">What it doesn't do</h3>
+        <ul class="para"><li>No separate screenshot resource grabbing frames</li><li>No second full-scene render of the world</li><li>No external ffmpeg process running on the client</li></ul>
+      </div>
+      <div class="card"><h3 style="color:var(--green)">What it does instead</h3>
+        <ul class="para"><li>Encodes inside the NUI browser already running the phone</li><li>Defaults to 1280×720 · 30 fps · 3 Mbps — every number is in config.lua</li><li>The always-on buffer is a deliberately tiny 320×180 · 8 fps</li></ul>
+      </div>
+    </div>
+    <p class="para">On genuinely low-end machines, turning the main recording resolution, frame rate or bitrate down costs nothing functionally — the evidence portal, captions and auto-triggers all work exactly the same at any quality setting.</p>
+    <p class="footer">opslabs-bodycam · performance</p>
+  </section>
+
+  <section class="slide" style="background:#15181c">
+    <div>
+      <p class="eyebrow">HOW IT COMPARES</p>
+      <h2 class="title">Four other FiveM bodycam scripts</h2>
+      <p class="lede" style="font-size:clamp(16px,2vw,28px)">What each one actually documents publicly, as of this writing — not every script out there, just four well-known ones spanning free and paid.</p>
+    </div>
+    <div class="row">
+      <div class="card">
+        <h3>SX Development<br><span style="font-size:0.6em;color:var(--muted);font-weight:400">Bodycam &amp; Dashcam</span></h3>
+        <p>Paid. Fivemanage / Cloudflare R2 storage, a tablet UI to browse clips, bodycam + dashcam in one.</p>
+      </div>
+      <div class="card">
+        <h3>Code Studio<br><span style="font-size:0.6em;color:var(--muted);font-weight:400">Bodycam &amp; Dashcam</span></h3>
+        <p>Paid. Discord or Fivemanage uploads, configurable fps, dashcam with a speed readout.</p>
+      </div>
+      <div class="card">
+        <h3>spy-bodycam<br><span style="font-size:0.6em;color:var(--muted);font-weight:400">Your-Spy</span></h3>
+        <p>Free, open source. Clips post to a Discord channel; lets you watch another player's camera live, in-engine.</p>
+      </div>
+      <div class="card">
+        <h3>hype-bodycam<br><span style="font-size:0.6em;color:var(--muted);font-weight:400">hypescripts-fivem</span></h3>
+        <p>Free, MIT licensed. Live feeds only (no archive) at station terminals, dual front/rear dashcams.</p>
+      </div>
+    </div>
+    <p class="footer">opslabs-bodycam · who we're comparing against</p>
+  </section>
+
+  <section class="slide" style="background:#15181c">
+    <div>
+      <p class="eyebrow">HOW IT COMPARES</p>
+      <h2 class="title" style="font-size:clamp(28px,4.5vw,60px)">Feature by feature, against their own docs</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Feature</th><th>OPS<br>Bodycam</th><th>SX Dev</th><th>Code<br>Studio</th><th>spy-<br>bodycam</th><th>hype-<br>bodycam</th></tr>
+        <tr><td>Evidence portal with captions &amp; case management</td><td class="yes">Yes</td><td class="partial">Tablet only</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Pre-event rolling buffer</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Auto-start (shots fired / weapon drawn)</td><td class="yes">Yes</td><td class="partial">Not documented</td><td class="partial">Item only</td><td class="partial">Not documented</td><td class="yes">Yes</td></tr>
+        <tr><td>Voice/radio muxed into the evidence file</td><td class="yes">Yes</td><td class="partial">Not documented</td><td class="partial">Not documented</td><td class="partial">Mic → Discord only</td><td class="partial">Not documented</td></tr>
+        <tr><td>Documented low-end-PC tuning</td><td class="yes">Yes</td><td class="no">No</td><td class="partial">fps only</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Dashcam (vehicle-mounted)</td><td class="partial">Coming soon</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+        <tr><td>Watch another officer's camera live, in-engine</td><td class="partial">Coming soon</td><td class="partial">Not documented</td><td class="partial">Not documented</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+        <tr><td>Free / open source</td><td class="partial">TBD</td><td class="no">Paid</td><td class="no">Paid</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+      </table>
+    </div>
+    <p class="source-row">Based on each project's own public documentation/README as of October 2026 — "not documented" means the feature isn't mentioned, not confirmed absent. Sources: docs.sxdevelopment.com, codestudio5m.gitbook.io, github.com/Your-Spy/spy-bodycam, github.com/hypescripts-fivem/hype-bodycam.</p>
+  </section>
+
+  <section class="slide" style="background:#15181c">
+    <div>
+      <p class="eyebrow">TO BE FAIR</p>
+      <h2 class="title">What OPS Bodycam doesn't do yet</h2>
+      <p class="lede">Two things the scripts above already have, that OPS Bodycam is still building toward:</p>
+    </div>
+    <div class="row">
+      <div class="card">
+        <h3 style="color:var(--accent)">Live in-engine viewing <span style="color:var(--muted);font-weight:400;font-size:0.7em">· coming soon</span></h3>
+        <p>spy-bodycam and hype-bodycam let another officer watch a live feed without leaving the game. OPS Bodycam's <code style="font-size:0.85em">/live</code> page only shows position and facing today, not video — FiveM gives no cheap, documented way to stream live camera frames out of the game, so this needs solving properly before it ships.</p>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--accent)">No dashcam yet <span style="color:var(--muted);font-weight:400;font-size:0.7em">· coming soon</span></h3>
+        <p>SX Development, Code Studio, spy-bodycam and hype-bodycam all record from a vehicle too. OPS Bodycam is bodycam-only today, but the same capture pipeline already does the hard part — a dashcam is planned on top of it.</p>
+      </div>
+    </div>
+    <p class="footer">opslabs-bodycam · an honest comparison</p>
+  </section>
+
+  <section class="slide" style="background:#15181c">
+    <div>
+      <p class="eyebrow">ACCESS</p>
+      <h2 class="title">Who's actually issued a camera</h2>
+    </div>
+    <table>
+      <tr><th>Mode</th><th>Who gets one</th></tr>
+      <tr><td style="color:var(--accent);font-weight:700">job</td><td style="color:#c7ccd1">Anyone on duty in a listed job (police, sheriff, EMS…)</td></tr>
+      <tr><td style="color:var(--accent);font-weight:700">item</td><td style="color:#c7ccd1">Anyone carrying the bodycam item</td></tr>
+      <tr><td style="color:var(--accent);font-weight:700">job_and_item / job_or_item</td><td style="color:#c7ccd1">Both required, or either one</td></tr>
+      <tr><td style="color:var(--accent);font-weight:700">ace</td><td style="color:#c7ccd1">Only an explicit server permission — standalone servers</td></tr>
+      <tr><td style="color:var(--accent);font-weight:700">everyone</td><td style="color:#c7ccd1">Every player on the server</td></tr>
+    </table>
+    <p class="para">Going off duty, or losing the job or item, cuts the camera off within 20 seconds — no manual cleanup needed.</p>
+    <p class="footer">opslabs-bodycam · who gets a camera</p>
+  </section>
+
+  <section class="slide" style="background:#15181c">
+    <div>
+      <p class="eyebrow">IN SHORT</p>
+      <h2 class="title" style="color:var(--accent);font-size:clamp(32px,6vw,88px)">Real footage, a real evidence trail, barely any cost</h2>
+    </div>
+    <div class="row">
+      <div style="flex:1 1 220px"><h3 style="font-size:clamp(18px,2vw,30px)">Real recording</h3><p class="para">The officer's actual view, watermarked, as webm video</p></div>
+      <div style="flex:1 1 220px"><h3 style="font-size:clamp(18px,2vw,30px)">Automatic evidence</h3><p class="para">Every part, captioned, on Xon Sight — with voice muxed in</p></div>
+      <div style="flex:1 1 220px"><h3 style="font-size:clamp(18px,2vw,30px)">Light by design</h3><p class="para">No second render, no extra process, tunable for weak PCs</p></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <p class="para">Find it: <b style="color:var(--accent)">OPS Phone → Bodycam</b>, or press <b style="color:var(--accent)">F10</b></p>
+      <p class="footer">opslabs-bodycam</p>
+    </div>
+  </section>
+
+</div>
+
+<div class="nav">
+  <button id="prevBtn" onclick="go(-1)">← Prev</button>
+  <div class="dots" id="dots"></div>
+  <span class="count" id="count"></span>
+  <button id="nextBtn" onclick="go(1)">Next →</button>
+</div>
+
+<script>
+  var slides = document.querySelectorAll('.slide');
+  var dotsEl = document.getElementById('dots');
+  var i = 0;
+  slides.forEach(function (_, idx) {
+    var d = document.createElement('span');
+    d.onclick = function () { show(idx); };
+    dotsEl.appendChild(d);
+  });
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function (s, idx) { s.classList.toggle('active', idx === i); });
+    dotsEl.querySelectorAll('span').forEach(function (d, idx) { d.classList.toggle('on', idx === i); });
+    document.getElementById('prevBtn').disabled = i === 0;
+    document.getElementById('nextBtn').disabled = i === slides.length - 1;
+    document.getElementById('count').textContent = (i + 1) + ' / ' + slides.length;
+    history.replaceState(null, '', '#' + (i + 1));
+  }
+  function go(d) { show(i + d); }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === ' ') go(1);
+    if (e.key === 'ArrowLeft') go(-1);
+  });
+  var startX = null;
+  document.addEventListener('touchstart', function (e) { startX = e.touches[0].clientX; });
+  document.addEventListener('touchend', function (e) {
+    if (startX === null) return;
+    var dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+    startX = null;
+  });
+  var initial = parseInt((location.hash || '#1').slice(1), 10) - 1;
+  show(isNaN(initial) ? 0 : initial);
+</script>
+</body>
+</html>

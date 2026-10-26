@@ -92,6 +92,7 @@
       {{ brand_mark() }}
     </div>
     <div class="flex items-center gap-2 text-sm">
+      <a href="{{ url_for('site.guide') }}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 font-medium">Docs</a>
       <a href="{{ url_for('community_public.report_general') }}" class="px-3 py-1.5 rounded-lg bg-accent2/10 text-accent2 border border-accent2/30 hover:bg-accent2/20 font-medium">Report evidence</a>
       <a href="{{ url_for('auth.login') }}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 font-medium">Log in</a>
       <a href="{{ url_for('auth.signup') }}" class="px-3 py-1.5 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 font-medium">Sign up</a>
@@ -158,6 +159,9 @@
             Log in
           </a>
         </div>
+        <p class="text-xs text-slate-500 mt-4">
+          Running your own FiveM server? <a href="{{ url_for('community_signup.new_community') }}" class="text-accent hover:underline font-medium">Bring it onto Xon Sight</a> with its own dedicated database.
+        </p>
       </div>
     </section>
 
@@ -252,7 +256,6 @@
 
     <footer class="pb-10 text-center text-xs text-slate-600">
       Internal evidence-review tool for your server. Not affiliated with Axon Enterprise.
-      &middot; <a href="{{ url_for('site.guide') }}" class="hover:text-slate-400 underline">Guide</a>
       &middot; <a href="{{ url_for('site.api_docs') }}" class="hover:text-slate-400 underline">API reference</a>
     </footer>
   </main>

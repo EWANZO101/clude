@@ -1,6 +1,8 @@
-"""Best-effort Discord webhook notifications. One webhook URL for the
-whole deployment (Settings.discord_webhook_url) - not per-community yet,
-see api_docs.html's roadmap note.
+"""Best-effort Discord webhook notifications - one webhook per community
+(Settings.discord_webhook_url, Settings.get(community_id=...)), or the
+control-plane site's own (community_id=None). BOLOs are control-plane
+only today (api.py never resolves a tenant for them), so notify_bolo has
+no community_id param.
 
 Every function here is fire-and-forget: a slow or unreachable Discord
 never blocks or fails the caller (evidence ingestion, alert ingestion,
@@ -39,8 +41,8 @@ def _portal_url(path):
     return f"{base}{path}" if base else None
 
 
-def notify_evidence(evidence):
-    settings = Settings.get()
+def notify_evidence(evidence, community_id=None):
+    settings = Settings.get(community_id=community_id)
     if not settings.discord_webhook_url or not settings.discord_notify_evidence:
         return
     _send(
@@ -55,8 +57,8 @@ def notify_evidence(evidence):
     )
 
 
-def notify_alert(alert):
-    settings = Settings.get()
+def notify_alert(alert, community_id=None):
+    settings = Settings.get(community_id=community_id)
     if not settings.discord_webhook_url or not settings.discord_notify_alerts:
         return
     _send(

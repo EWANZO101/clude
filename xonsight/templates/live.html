@@ -7,7 +7,13 @@
 {% set actions %}
 <span class="text-xs text-slate-500 max-w-xs sm:text-right block">Wire <code class="text-accent">POST /api/xonsight/recorders/sync</code>, <code class="text-accent">/alerts</code> and <code class="text-accent">/external-feeds/sync</code> to populate this.</span>
 {% endset %}
-{{ page_header("Live operations", "Position samples relayed by xonsight-livesync, refreshed every ~3s. Xon Sight has no live video or audio feed to a website - this shows who is recording and their last known in-game position, not a camera stream. The map is a schematic grid of in-game world coordinates, not a real street map.", eyebrow="Live", actions=actions) }}
+{{ page_header("Live operations", "Position samples relayed by xonsight-livesync, refreshed every ~3s, plus any live video broadcasts an officer has started (no game audio - see the dashcam/bodycam live toggle). The map is a schematic grid of in-game world coordinates, not a real street map.", eyebrow="Live", actions=actions) }}
+
+<div id="live-video-panel" class="rounded-2xl border border-border bg-panel p-4 mb-4" hidden>
+  <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Live video</div>
+  <div id="live-video-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+  <div id="live-video-empty" class="text-xs text-slate-500">No active broadcasts right now.</div>
+</div>
 
 <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
   <div class="rounded-2xl border border-border bg-panel overflow-hidden relative shadow-lg shadow-black/20">
@@ -44,4 +50,5 @@
   window.XON_SIGHT_LIVE_PAGE = true;
 </script>
 <script src="{{ url_for('static', filename='live-map.js') }}"></script>
+<script src="{{ url_for('static', filename='live-video.js') }}"></script>
 {% endblock %}

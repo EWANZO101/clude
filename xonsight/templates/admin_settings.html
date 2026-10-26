@@ -2,7 +2,7 @@
 {% from "_macros.html" import icon, csrf_field, page_header %}
 {% block title %}Settings · Xon Sight{% endblock %}
 {% block content %}
-{{ page_header("Server settings", "Controls how new accounts can be created on this server. Each Xon Sight deployment sets this independently - there's no one right answer for every community.", eyebrow="Admin · Settings") }}
+{{ page_header("Settings" ~ (" · " ~ community.name if community else ""), "Controls how new officer accounts can be created" ~ (" for " ~ community.name if community else " on this server") ~ ". Each community sets this independently - there's no one right answer for every server.", eyebrow="Admin · Settings") }}
 
 {% if saved %}
 <p class="max-w-xl text-accent2 bg-accent2/10 border border-accent2/30 rounded-xl px-4 py-2.5 text-sm mb-8 flex items-center gap-1.5">
@@ -53,8 +53,9 @@
 <div class="max-w-xl border border-border bg-panel rounded-2xl p-6 mt-10">
   <h2 class="text-sm font-medium text-white mb-1 flex items-center gap-1.5">{{ icon("discord", "h-4 w-4 text-accent2") }} Discord notifications</h2>
   <p class="text-xs text-slate-500 mb-5 leading-relaxed">
-    One webhook for this whole deployment, for now - not per-community yet. Create one in your Discord server:
-    Channel Settings &rarr; Integrations &rarr; Webhooks &rarr; New Webhook, then paste its URL here.
+    {{ "Your own webhook for " ~ community.name ~ " - separate from any other community on this deployment." if community else "This deployment's own webhook." }}
+    Create one in your Discord server: Channel Settings &rarr; Integrations &rarr; Webhooks &rarr; New Webhook, then
+    paste its URL here.
   </p>
   <form method="post" class="space-y-5">
     {{ csrf_field() }}
@@ -78,8 +79,9 @@
         Emergency alerts (weapon drawn, shots fired, ...)
       </label>
       <label class="flex items-center gap-2 text-slate-300">
-        <input type="checkbox" name="discord_notify_bolos" class="accent-accent" {{ "checked" if settings.discord_notify_bolos }}>
+        <input type="checkbox" name="discord_notify_bolos" class="accent-accent" {{ "checked" if settings.discord_notify_bolos }} {{ "disabled" if community }}>
         BOLOs published
+        {% if community %}<span class="text-slate-600">(BOLOs aren't tenant-aware yet - this won't fire for your community)</span>{% endif %}
       </label>
     </div>
 
@@ -87,5 +89,35 @@
       Save settings
     </button>
   </form>
+</div>
+
+<div class="max-w-xl border border-border bg-panel rounded-2xl p-6 mt-10">
+  <h2 class="text-sm font-medium text-white mb-1 flex items-center gap-1.5">{{ icon("evidence", "h-4 w-4 text-accent2") }} Footage hosting</h2>
+  <p class="text-xs text-slate-500 mb-5 leading-relaxed">
+    Newer <code class="text-accent">opslabs-bodycam</code> builds upload recordings to this portal automatically -
+    nothing to do here, just leave <code class="text-accent">Storage.PublicUrl</code> blank in
+    <code class="text-accent">config_server.lua</code>. The companion script below is only for a less common setup:
+    hosting the files yourself, pushed from a <strong>different machine</strong> than the one running your
+    FXServer (e.g. a separate storage box) - run it there, pointed at wherever the resource's
+    <code class="text-accent">media/</code> folder actually lives.
+  </p>
+  <div class="flex items-center gap-2 mb-3">
+    <a href="{{ url_for('site.upload_companion_download') }}" class="px-3 py-1.5 rounded-lg bg-white/5 text-slate-300 border border-border hover:bg-white/10 flex items-center gap-1.5 text-xs font-medium">
+      {{ icon("external-link", "h-3.5 w-3.5") }} Download upload-companion.py
+    </a>
+  </div>
+  <div class="text-xs text-slate-500 mb-1">Run it like this (already filled in for {{ community.name if community else "this server" }}):</div>
+  <pre class="bg-base border border-border rounded-lg p-3 overflow-x-auto text-[11px] leading-relaxed"><code>pip3 install requests
+python3 upload-companion.py --media-dir /path/to/opslabs-bodycam/media \
+  --portal-url {{ request.url_root.rstrip("/") }} \
+{% if community %}  --token {{ community.api_token }}{% else %}  --key YOUR-XONSIGHT-WEBHOOK-KEY{% endif %}</code></pre>
+  <p class="text-xs text-slate-500 mt-3 leading-relaxed">
+    Then in <code class="text-accent">config_server.lua</code>, set:
+  </p>
+  <div class="font-mono bg-base border border-border rounded-lg px-2.5 py-1.5 text-emerald-400/90 text-xs mt-1.5 break-all">PublicUrl = '{{ request.url_root.rstrip("/") }}/media',</div>
+  <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+    Newer and less battle-tested than self-hosting the folder with your own nginx (README.md, Install step 3) -
+    if in doubt, self-host instead.
+  </p>
 </div>
 {% endblock %}

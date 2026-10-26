@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, current_app, g, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from . import tenancy
@@ -15,13 +15,17 @@ def require_admin():
         return redirect(url_for("auth.login", next=request.path))
     if not current_user.is_admin:
         abort(403)
-    if g.tenant is not None:
+    # A self-signed-up community's admin only ever manages their own community's Settings here -
+    # Users, Communities and the Audit log stay control-plane-operator-only. Scoped by the admin's
+    # own community_id, not g.tenant, so this works the same whether they're on their own subdomain
+    # or the primary URL (tenant_resolve.py's login-based fallback).
+    if current_user.community_id is not None and request.endpoint != "admin.settings":
         return redirect(url_for("views.dashboard"))
 
 
 @admin_bp.route("/settings", methods=["GET", "POST"])
 def settings():
-    row = Settings.get()
+    row = Settings.get(community_id=current_user.community_id)
     saved = False
     if request.method == "POST":
         mode = request.form.get("signup_mode")
@@ -35,13 +39,35 @@ def settings():
         log_audit("settings.update", f"signup_mode={row.signup_mode}")
         db.session.commit()
         saved = True
-    return render_template("admin_settings.html", settings=row, saved=saved)
+    community = Community.query.get(current_user.community_id) if current_user.community_id else None
+    return render_template("admin_settings.html", settings=row, saved=saved, community=community)
 
 
 @admin_bp.route("/users")
 def users():
     all_users = User.query.order_by(User.created_at.asc()).all()
     return render_template("admin_users.html", users=all_users)
+
+
+@admin_bp.route("/users/<int:user_id>/reset-password", methods=["POST"])
+def reset_password(user_id):
+    """Generates a new random password for the user and shows it once -
+    same one-time-reveal pattern as a community's API token. No existing
+    password needed (unlike /account's self-service change) since the
+    admin resetting it may not know it and shouldn't need to."""
+    import secrets
+
+    user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        abort(400)
+    new_password = secrets.token_urlsafe(9)  # 12 chars, URL-safe - easy to read/copy aloud
+    user.set_password(new_password)
+    log_audit("user.reset_password", f"reset password for {user.username}")
+    db.session.commit()
+    all_users = User.query.order_by(User.created_at.asc()).all()
+    return render_template(
+        "admin_users.html", users=all_users, reset_user_id=user.id, reset_password_value=new_password
+    )
 
 
 @admin_bp.route("/users/<int:user_id>/approve", methods=["POST"])

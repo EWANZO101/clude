@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>opslabs-bodycam</title>
+    <link rel="stylesheet" href="hud.css">
+    <link rel="stylesheet" href="tablet.css">
+</head>
+<body>
+    <div id="hud" class="hud top-right" hidden>
+        <span class="dot"></span><b>REC</b><span id="hud-time">00:00</span><span id="hud-up" class="up" hidden></span>
+    </div>
+
+    <!-- tablet module (modules/tablet) -->
+    <div id="tablet" class="tablet hidden">
+        <div class="bezel">
+            <div class="bezel-top">
+                <div class="brand">
+                    <span class="brand-dot"></span>
+                    <span class="brand-text">XON<span class="accent">SIGHT</span> <span class="tag">TABLET</span></span>
+                </div>
+                <button id="closeBtn" class="close-btn" title="Close (Esc)">&times;</button>
+            </div>
+            <div class="screen">
+                <iframe id="screenFrame" src="about:blank" frameborder="0"></iframe>
+            </div>
+            <div class="bezel-bottom">
+                <span class="hint">Esc or click &times; to close</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="recorder.js"></script>
+    <script src="tablet.js"></script>
+</body>
+</html>

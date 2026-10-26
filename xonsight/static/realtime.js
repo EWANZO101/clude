@@ -27,6 +27,12 @@
       text: `Alert: ${d.alert.alertType || d.alert.type || "trigger"} - ${d.alert.recorderName || d.alert.recorderId || ""}`,
       href: "/live",
     }),
+    "live.started": (d) => ({
+      icon: "alert",
+      tone: "text-red-400",
+      text: `Live video started: ${d.stream.name || d.stream.id}`,
+      href: "/live",
+    }),
     "bolo.created": (d) => ({
       icon: "flag",
       tone: "text-amber-400",

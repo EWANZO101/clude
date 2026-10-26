@@ -2,7 +2,7 @@
 {% from "_macros.html" import icon, empty_state, csrf_field, page_header %}
 {% block title %}Communities · Xon Sight{% endblock %}
 {% block content %}
-{{ page_header("Communities", "Multi-tenancy, in progress: each community gets its own dedicated MySQL database and API token for the webhook endpoints (X-XonSight-Token). Subdomain/custom-domain browser routing isn't wired up yet - these communities are reachable today only through their token on /api/xonsight/*. This site's own existing evidence/live data is not one of these yet - it still runs on the original shared-key path below.", eyebrow="Admin · Communities") }}
+{{ page_header("Communities", "Multi-tenancy: each community gets its own dedicated MySQL database and API token for the webhook endpoints (X-XonSight-Token), plus browser access on <slug>." ~ tenant_base_domain ~ " once a FiveM server is pointed at it, or immediately for anyone logged into that community's own account. This site's own existing evidence/live data is not one of these yet - it still runs on the original shared-key path below. Communities can also sign themselves up at <code>/get-started</code> without an admin creating one here.", eyebrow="Admin · Communities") }}
 
 {% if not mysql_enabled %}
 <p class="text-amber-400/90 bg-amber-400/10 border border-amber-400/30 rounded-xl px-4 py-2.5 text-sm mb-6 max-w-2xl flex items-start gap-2">
@@ -23,9 +23,22 @@
   </p>
   <code class="block bg-base rounded-xl px-3 py-2.5 text-sm text-slate-200 break-all">{{ created_token }}</code>
   <p class="text-xs text-slate-500 mt-2.5 leading-relaxed">
-    Put this in that server's <code>config_server.lua</code> as <code>ServerConfig.XonSight.Token</code> (a future
-    opslabs-bodycam update will support sending it as <code>X-XonSight-Token</code> instead of the shared key).
+    Hand this to the community's server owner to paste into their bodycam script's config, instead of the
+    shared webhook key:
   </p>
+  <ul class="text-xs text-slate-500 mt-2 leading-relaxed list-disc list-inside space-y-0.5">
+    <li><code>xonsight-lbphone</code> / <code>xonsight-livesync</code>: <code>config.lua</code> → <code>Config.CommunityToken</code></li>
+    <li><code>opslabs-bodycam</code>: <code>config_server.lua</code> → <code>ServerConfig.XonSight.Token</code> (still shared-key only until that resource adds <code>X-XonSight-Token</code> support)</li>
+  </ul>
+  {% if tenant_base_domain %}
+  <p class="text-xs text-slate-500 mt-2.5 leading-relaxed">
+    Their own staff can browse this community's data by logging into a normal portal account - either at
+    <code class="text-accent">{{ created_community.slug }}.{{ tenant_base_domain }}</code> if that subdomain is
+    pointed here, or right on this same URL once they're signed in. Only Dashboard/Evidence/Live are
+    tenant-scoped today (Cases/Assistant/Admin still show the control-plane site's own data if visited from
+    there).
+  </p>
+  {% endif %}
 </div>
 {% endif %}
 

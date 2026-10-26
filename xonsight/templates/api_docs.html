@@ -80,20 +80,14 @@
       <div class="space-y-10 min-w-0">
         <section id="auth">
           <h2 class="text-lg font-semibold text-white mb-3">Authentication</h2>
-          <p class="text-sm text-slate-400 mb-3">Every endpoint below accepts either header - checked in this order:</p>
+          <p class="text-sm text-slate-400 mb-3">Every endpoint below requires this header:</p>
           <pre><code>X-XonSight-Token: &lt;your community's API token&gt;</code></pre>
           <p class="text-sm text-slate-400 mb-3">
-            Per-community (get one from <code class="text-accent">/admin/communities</code>, admin-only). Routes this
-            request's reads/writes to that community's own database. An unrecognized token is always a hard 401 -
-            it never falls back to the header below.
-          </p>
-          <pre><code>X-XonSight-Key: &lt;shared deployment secret&gt;</code></pre>
-          <p class="text-sm text-slate-400 mt-3">
-            The original single shared secret (<code class="text-accent">XONSIGHT_WEBHOOK_KEY</code> in the portal's
-            <code>.env</code>) - still fully supported for any resource not yet updated to use a community token.
-            If the portal was deployed with no key configured, this header is optional (matches Xon Sight's own
-            documented "optional key" behavior) - not recommended for anything internet-facing. A wrong or missing
-            key when one is configured returns <code class="text-accent">401</code>.
+            Per-community - get yours from <code class="text-accent">/integration</code> after signing up your
+            community at <code class="text-accent">/get-started</code> (admins can also find it at
+            <code class="text-accent">/admin/communities</code>). Routes this request's reads/writes to that
+            community's own database. A missing or unrecognized token is always a hard
+            <code class="text-accent">401</code>.
           </p>
         </section>
 
@@ -223,7 +217,7 @@
               </thead>
               <tbody class="divide-y divide-border">
                 <tr><td class="px-4 py-3 text-slate-200">400</td><td class="px-4 py-3 text-slate-400">Missing a required field - see each endpoint above.</td></tr>
-                <tr><td class="px-4 py-3 text-slate-200">401</td><td class="px-4 py-3 text-slate-400"><code>X-XonSight-Key</code> missing or wrong, and the portal has a key configured.</td></tr>
+                <tr><td class="px-4 py-3 text-slate-200">401</td><td class="px-4 py-3 text-slate-400"><code>X-XonSight-Token</code> missing or not a recognized community token.</td></tr>
                 <tr><td class="px-4 py-3 text-slate-200">200</td><td class="px-4 py-3 text-slate-400">Always <code>{"ok": true, ...}</code> on success - none of these endpoints return partial success.</td></tr>
               </tbody>
             </table>

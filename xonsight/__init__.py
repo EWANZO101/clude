@@ -34,6 +34,8 @@ def create_app():
     from .api import api_bp
     from .auth import auth_bp
     from .community import community_bp
+    from .community_signup import community_signup_bp
+    from .media_storage import signed_media_url
     from .migrations import run_light_migrations
     from .models import User
     from .seed import run_seed
@@ -48,8 +50,9 @@ def create_app():
 
     app.teardown_appcontext(tenancy.remove_all_sessions)
     app.before_request(resolve_tenant)
+    app.jinja_env.globals["signed_media_url"] = signed_media_url
 
-    # Keyed/tokened machine-to-machine auth (X-XonSight-Key / X-XonSight-Token), not session cookies - CSRF
+    # Tokened machine-to-machine auth (X-XonSight-Token), not session cookies - CSRF
     # protection doesn't apply (there's no ambient browser credential being ridden) and would just break every
     # FiveM resource that posts here, since they have no session/CSRF token to send.
     csrf.exempt(webhooks_bp)
@@ -60,6 +63,7 @@ def create_app():
     app.register_blueprint(admin_bp)
     app.register_blueprint(site_bp)
     app.register_blueprint(community_bp)
+    app.register_blueprint(community_signup_bp)
     app.register_blueprint(views_bp)
 
     with app.app_context():

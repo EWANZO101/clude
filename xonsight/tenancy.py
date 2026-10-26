@@ -237,3 +237,14 @@ def create_community(name, requested_slug=None, custom_domain=None):
     db.session.add(community)
     db.session.commit()
     return community
+
+
+def regenerate_token(community):
+    """Rotates a community's webhook token in place - the old one stops
+    working the instant this commits, same as re-registering a live stream
+    rotates its publish token (webhooks.py's live_start)."""
+    from .extensions import db
+
+    community.api_token = _generate_token()
+    db.session.commit()
+    return community.api_token

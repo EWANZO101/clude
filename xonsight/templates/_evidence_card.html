@@ -2,10 +2,10 @@
 <a href="{{ url_for('views.evidence_detail', evidence_id=item.id) }}"
    class="group rounded-2xl border border-border bg-panel overflow-hidden hover:border-accent/50 hover:-translate-y-0.5 transition shadow-sm hover:shadow-lg hover:shadow-black/30">
   <div class="relative aspect-video bg-black/40 overflow-hidden">
-    <video src="{{ item.video_url }}" class="evidence-thumb w-full h-full object-cover" muted preload="metadata"></video>
+    <video src="{{ signed_media_url(item.video_url) }}" class="evidence-thumb w-full h-full object-cover" muted preload="metadata"></video>
     <div class="evidence-thumb-error hidden absolute inset-0 flex-col items-center justify-center gap-1.5 bg-black/60 text-center px-2">
       {{ icon("alert-triangle", "h-5 w-5 text-slate-500") }}
-      <span class="text-[10px] text-slate-500">Video unavailable</span>
+      <span class="text-[10px] text-slate-500">Video unavailable - the source file no longer exists</span>
     </div>
     <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
     <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">

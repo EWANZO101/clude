@@ -18,6 +18,12 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     last_login_at = db.Column(db.DateTime, nullable=True)
 
+    # Set only for a self-serve community's own admin account (see community_signup.py) - null for every
+    # account on this deployment's own control-plane login (the original single-tenant server + superadmin).
+    # A non-null value scopes tenant_resolve.py's login-based resolution and admin.py's before_request guard:
+    # this user only ever sees their own Community's data, never the global /admin/* pages.
+    community_id = db.Column(db.Integer, db.ForeignKey("communities.id"), nullable=True)
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
@@ -53,30 +59,33 @@ class User(UserMixin, db.Model):
 
 
 class Settings(db.Model):
-    """Singleton row (id=1) of server-wide settings an admin can change at
-    runtime from /admin/settings - e.g. signup_mode is deliberately NOT an
-    env var, since different communities deploying Xon Sight want
-    different signup policies without a redeploy."""
+    """One row per community (plus one with community_id=None for the original
+    control-plane site) of settings an admin can change at runtime from
+    /admin/settings - e.g. signup_mode is deliberately NOT an env var, since
+    different communities deploying Xon Sight want different signup policies
+    without a redeploy. admin.py's settings() scopes this by
+    current_user.community_id - a self-signed-up community's admin manages
+    only their own row, never the control-plane one or another community's."""
 
     __tablename__ = "settings"
 
     id = db.Column(db.Integer, primary_key=True)
+    community_id = db.Column(db.Integer, db.ForeignKey("communities.id"), nullable=True, unique=True)
     # "open" | "invite" | "approval"
     signup_mode = db.Column(db.String(16), nullable=False, default="invite")
     invite_code = db.Column(db.String(128), nullable=False, default="")
 
-    # One Discord webhook URL for the whole deployment, for now - see xonsight/discord.py. Becomes per-community
-    # once multi-tenancy ships; deliberately not an env var for the same reason signup_mode isn't.
+    # Discord webhook - per-community (or the control-plane site's own, community_id=None). See xonsight/discord.py.
     discord_webhook_url = db.Column(db.String(512), nullable=False, default="")
     discord_notify_evidence = db.Column(db.Boolean, nullable=False, default=True)
     discord_notify_alerts = db.Column(db.Boolean, nullable=False, default=True)
     discord_notify_bolos = db.Column(db.Boolean, nullable=False, default=True)
 
     @classmethod
-    def get(cls):
-        row = cls.query.get(1)
+    def get(cls, community_id=None):
+        row = cls.query.filter_by(community_id=community_id).first()
         if row is None:
-            row = cls(id=1, signup_mode="invite", invite_code="")
+            row = cls(community_id=community_id, signup_mode="invite", invite_code="")
             db.session.add(row)
             db.session.commit()
         return row
@@ -191,6 +200,51 @@ class ActiveRecorder(db.Model):
             "startedAt": (self.started_at.isoformat() + "Z") if self.started_at else None,
             "lastSeenAt": self.last_seen_at.isoformat() + "Z",
             "lastFrame": last_frame,
+            "isStale": age_seconds > stale_after,
+        }
+
+
+class LiveStream(db.Model):
+    """Not part of Xon Sight's documented webhook contract.
+
+    A real live video broadcast (MediaMTX WHIP publish) - distinct from
+    ActiveRecorder above, which only ever carries a position sample, never
+    video (see that class's docstring and live-view.md). One row per active
+    broadcast: FiveM registers it via POST /api/xonsight/live/start,
+    heartbeats it via /live/heartbeat, and removes it via /live/stop (or it
+    goes stale and is hidden - see is_stale below).
+
+    publish_token is the credential MediaMTX's external auth webhook
+    (POST /api/xonsight/mediamtx/auth) checks before letting the matching
+    WHIP publish through - it is never sent to a browser, only down to the
+    FiveM client doing the publish. Viewers instead get a short-lived HMAC
+    token signed with SECRET_KEY (xonsight/api.py's list_live_streams),
+    verified the same way in the auth webhook - the browser never needs a
+    portal session MediaMTX itself could understand.
+    """
+
+    __tablename__ = "live_streams"
+
+    id = db.Column(db.Integer, primary_key=True)
+    recorder_id = db.Column(db.String(64), nullable=False, unique=True)
+    path = db.Column(db.String(64), nullable=False, unique=True)
+    kind = db.Column(db.String(16), nullable=False, default="dashcam")  # dashcam | bodycam
+    name = db.Column(db.String(128), nullable=False, default="")
+    job = db.Column(db.String(64), nullable=False, default="")
+    publish_token = db.Column(db.String(64), nullable=False)
+    started_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    last_seen_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def to_dict(self):
+        stale_after = current_app.config.get("LIVE_STREAM_STALE_SECONDS", 20)
+        age_seconds = (datetime.utcnow() - self.last_seen_at).total_seconds()
+        return {
+            "id": self.recorder_id,
+            "path": self.path,
+            "kind": self.kind,
+            "name": self.name,
+            "job": self.job,
+            "startedAt": self.started_at.isoformat() + "Z",
             "isStale": age_seconds > stale_after,
         }
 
@@ -486,6 +540,12 @@ class CommunityRequest(db.Model):
     # per-case links officers generate, which stay at /r/<code>.
     is_general = db.Column(db.Boolean, nullable=False, default=False)
 
+    # Null for the original single-tenant site's own general tip line (seeded by seed.py). A signed-up
+    # community gets its own general request the first time anyone visits its /report - see
+    # community.py's report_general(), which looks this up by g.tenant.id and lazily creates one if
+    # missing, so a community created before this existed still gets one on first visit.
+    community_id = db.Column(db.Integer, db.ForeignKey("communities.id"), nullable=True)
+
     @staticmethod
     def generate_reference_code():
         import secrets
@@ -563,11 +623,10 @@ class Community(db.Model):
 
     Each community gets its own dedicated MySQL database (provisioned by
     tenancy.py, never the control-plane DB itself) and its own API token
-    for webhook auth (X-XonSight-Token), replacing the single shared
-    XONSIGHT_WEBHOOK_KEY. Subdomain/custom-domain browser routing isn't
-    wired up yet - slug/custom_domain are stored ready for that, but
-    resolution today is token-only (webhooks). The existing production
-    site/data is not yet migrated into a Community row - see README."""
+    for webhook auth (X-XonSight-Token) - the only auth the webhook API
+    accepts; every FiveM resource must belong to a community. Subdomain/
+    custom-domain browser routing is wired up in tenant_resolve.py - slug
+    matches "<slug>.TENANT_BASE_DOMAIN", custom_domain matches exactly."""
 
     __tablename__ = "communities"
 

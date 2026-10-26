@@ -6,20 +6,48 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    XONSIGHT_WEBHOOK_KEY = os.environ.get("XONSIGHT_WEBHOOK_KEY", "")
     RECORDER_STALE_SECONDS = int(os.environ.get("RECORDER_STALE_SECONDS", "30"))
+
+    # Live video (MediaMTX) - xonsight/webhooks.py's /live/* endpoints and
+    # the mediamtx/auth external-auth webhook, xonsight/api.py's
+    # list_live_streams. A row goes stale (hidden from /live, though not
+    # deleted - FiveM's own heartbeat thread is what normally removes it)
+    # after this many seconds without a heartbeat.
+    LIVE_STREAM_STALE_SECONDS = int(os.environ.get("LIVE_STREAM_STALE_SECONDS", "20"))
+    # Public base URLs MediaMTX is reachable on, no trailing slash. WebRTC
+    # (WHEP) is the low-latency path the live.html player actually uses;
+    # HLS is kept as a fallback for a browser/network WebRTC can't reach.
+    # Blank disables the Live video panel entirely (recorders/positions on
+    # the map still work either way - this only gates actual video).
+    MEDIAMTX_WHEP_URL = os.environ.get("MEDIAMTX_WHEP_URL", "")
+    MEDIAMTX_HLS_URL = os.environ.get("MEDIAMTX_HLS_URL", "")
+    # How long a signed viewer token (query string on the WHEP/HLS URLs
+    # handed to the browser) stays valid for - long enough to cover a
+    # player sitting on /live mid-stream, short enough that a copied link
+    # stops working soon after.
+    LIVE_VIEWER_TOKEN_SECONDS = int(os.environ.get("LIVE_VIEWER_TOKEN_SECONDS", "21600"))
 
     # Session cookie hardening. SECURE requires the app always be served over https - true here (nginx +
     # Let's Encrypt in front) - browsers simply won't send the cookie over a plain http connection once this
     # is on, so don't enable it if you ever access this deployment without TLS in front.
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = "Lax"
+    # "None" (not "Lax") - xonsight-tablet and xonsight-lbphone both load this portal inside a FiveM NUI
+    # <iframe>, which browsers treat as a cross-site/third-party embed. A Lax cookie is never sent in that
+    # context, so the session the login POST lands on doesn't match the one the login page's CSRF token was
+    # issued for - "CSRF error" on first login from the tablet/phone, every time. SameSite=None requires
+    # Secure (already on above); the CSRF token itself (Flask-WTF, not this cookie) is still the actual
+    # protection against cross-site form submission.
+    SESSION_COOKIE_SAMESITE = "None"
     PERMANENT_SESSION_LIFETIME = timedelta(days=14)
 
     # CSRF (Flask-WTF, xonsight/extensions.py). None = tokens stay valid for the life of the session instead of
     # expiring after Flask-WTF's 1-hour default - a stale background tab shouldn't suddenly fail to submit.
     WTF_CSRF_TIME_LIMIT = None
+    # Flask-WTF's default (True, since this deployment is https) also rejects any POST with no Referer header
+    # at all as a CSRF failure - FiveM's NUI <iframe> (xonsight-tablet, xonsight-lbphone) doesn't reliably send
+    # one. The CSRF token itself (the actual protection) still applies regardless of this setting.
+    WTF_CSRF_SSL_STRICT = False
 
     # Shown in metadata overlays burned onto the evidence viewer and passed
     # to AI-generated drafts/briefs. Set this - the default is a visible

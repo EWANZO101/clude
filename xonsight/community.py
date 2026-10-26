@@ -6,7 +6,7 @@ import urllib.parse
 import urllib.request
 import uuid
 
-from flask import Blueprint, abort, current_app, render_template, request, session
+from flask import Blueprint, abort, current_app, g, render_template, request, session
 
 from .extensions import db, limiter
 from . import realtime
@@ -69,10 +69,28 @@ def _verify_captcha():
 @limiter.limit("8 per hour", methods=["POST"])
 def report_general():
     """The permanent, no-account tip line linked from the homepage - unlike
-    /r/<code>, this doesn't need an officer to generate anything first."""
-    req = CommunityRequest.query.filter_by(is_general=True).first()
+    /r/<code>, this doesn't need an officer to generate anything first.
+
+    Tenant-aware: on a community's own subdomain/custom domain (g.tenant
+    set by tenant_resolve.py), this is that community's own tip line, a
+    separate CommunityRequest row (community_id=g.tenant.id) from the
+    control-plane site's own (community_id=None). Lazily created on first
+    visit rather than at community-creation time, so a community created
+    before this existed still gets one automatically."""
+    req = CommunityRequest.query.filter_by(is_general=True, community_id=g.tenant.id if g.tenant else None).first()
     if req is None:
-        abort(404)
+        if g.tenant is None:
+            abort(404)
+        req = CommunityRequest(
+            reference_code=CommunityRequest.generate_reference_code(),
+            title="Report evidence or a tip",
+            category="General",
+            requires_consent=True,
+            is_general=True,
+            community_id=g.tenant.id,
+        )
+        db.session.add(req)
+        db.session.commit()
     return _render_submit(req)
 
 

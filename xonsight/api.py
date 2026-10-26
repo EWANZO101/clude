@@ -8,6 +8,7 @@ from flask_login import current_user
 
 from . import ai, discord, realtime
 from .extensions import db
+from .live_tokens import sign_viewer_token
 from .models import (
     ActiveRecorder,
     Alert,
@@ -21,6 +22,7 @@ from .models import (
     CommunitySubmission,
     Evidence,
     ExternalFeed,
+    LiveStream,
     Marker,
 )
 
@@ -182,6 +184,36 @@ def list_recorders():
     else:
         items = ActiveRecorder.query.order_by(ActiveRecorder.name.asc()).all()
     return jsonify([item.to_dict() for item in items])
+
+
+@api_bp.route("/live-streams")
+def list_live_streams():
+    """Active MediaMTX broadcasts for the /live page's video panel. Each
+    entry carries ready-to-use, time-limited WHEP/HLS URLs - a viewer
+    token signed fresh per request (live_tokens.sign_viewer_token) - so
+    the browser never needs to know MediaMTX's layout or sign anything
+    itself. Stale rows (no heartbeat in LIVE_STREAM_STALE_SECONDS) are
+    left out entirely rather than shown greyed-out: a stream that stopped
+    uncleanly (crash, disconnect) should just disappear, same as
+    ActiveRecorder does for the position map."""
+    if g.tenant is not None:
+        items = g.tenant_session.query(LiveStream).order_by(LiveStream.started_at.asc()).all()
+    else:
+        items = LiveStream.query.order_by(LiveStream.started_at.asc()).all()
+
+    whep_base = (current_app.config.get("MEDIAMTX_WHEP_URL") or "").rstrip("/")
+    hls_base = (current_app.config.get("MEDIAMTX_HLS_URL") or "").rstrip("/")
+
+    out = []
+    for item in items:
+        d = item.to_dict()
+        if d.pop("isStale"):
+            continue
+        token = sign_viewer_token(item.path)
+        d["whepUrl"] = f"{whep_base}/{item.path}/whep?token={token}" if whep_base else None
+        d["hlsUrl"] = f"{hls_base}/{item.path}/index.m3u8?token={token}" if hls_base else None
+        out.append(d)
+    return jsonify(out)
 
 
 @api_bp.route("/external-feeds")
