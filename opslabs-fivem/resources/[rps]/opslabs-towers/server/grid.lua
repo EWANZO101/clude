@@ -36,7 +36,7 @@ local PROCEDURES = {
 ---------------------------------------------------------------------------
 
 local S = { units = {}, brk = {}, subs = {}, txFail = {}, runFault = {}, names = {}, prio = {},
-    events = {}, log = {}, procs = {}, level = 'normal', manualLevel = nil, streets = {} }
+    events = {}, log = {}, procs = {}, level = 'normal', manualLevel = nil, streets = {}, lighting = 'auto' }
 local env = { hour = 12.0, weather = 'CLEAR', storm = false, wind = 0.55 }
 local live = { freq = CG.Hz or 50.0, gen = 0, demand = 0, capacity = 0, reserve = 0, load = 0 }
 local T = nil              -- topology (rebuilt when the cabling changes)
@@ -74,7 +74,7 @@ MySQL.ready(function()
     local row = MySQL.scalar.await("SELECT v FROM opslabs_towers_grid WHERE k = 'built'")
     local saved = row and json.decode(row)
     if type(saved) == 'table' then
-        for _, k in ipairs({ 'units', 'brk', 'subs', 'txFail', 'runFault', 'names', 'prio', 'events', 'log', 'procs', 'level', 'manualLevel', 'streets' }) do
+        for _, k in ipairs({ 'units', 'brk', 'subs', 'txFail', 'runFault', 'names', 'prio', 'events', 'log', 'procs', 'level', 'manualLevel', 'streets', 'lighting' }) do
             if saved[k] ~= nil then S[k] = saved[k] end
         end
     end
@@ -90,7 +90,7 @@ local function save()
     saveDirty = false
     MySQL.update('REPLACE INTO opslabs_towers_grid (k, v) VALUES (?, ?)', { 'built', json.encode({ units = S.units, brk = S.brk, subs = S.subs, txFail = S.txFail,
         runFault = S.runFault, names = S.names, prio = S.prio, events = S.events, log = S.log, procs = S.procs, level = S.level, manualLevel = S.manualLevel,
-        streets = S.streets }) })
+        streets = S.streets, lighting = S.lighting }) })
 end
 
 ---------------------------------------------------------------------------
@@ -774,6 +774,8 @@ local function isCrew(src)
     return false
 end
 lib.callback.register('opslabs-towers:grid:isCrew', function(src) return isCrew(src) end)
+--- client/lighting.lua reads this once on spawn; opslabs-towers:lighting broadcasts it live after that (GridAction 'lighting')
+lib.callback.register('opslabs-towers:grid:lighting', function() return S.lighting or 'auto' end)
 
 lib.callback.register('opslabs-towers:grid:repair', function(src, eid)
     if not isCrew(src) then return { error = 'Only grid crews can repair this' } end
@@ -1182,7 +1184,7 @@ function GridState()
     for _, p in ipairs(PROCEDURES) do procs[#procs + 1] = { id = p.id, title = p.title, steps = p.steps, done = S.procs[p.id] or {} } end
     return {
         hz = CG.Hz or 50.0, freq = live.freq, gen = live.gen, demand = live.demand, capacity = live.capacity, reserve = live.reserve, load = live.load,
-        level = S.level, manualLevel = S.manualLevel, storm = env.storm, weather = env.weather, hour = env.hour, wind = env.wind,
+        level = S.level, manualLevel = S.manualLevel, lighting = S.lighting or 'auto', storm = env.storm, weather = env.weather, hour = env.hour, wind = env.wind,
         stations = stations, winds = winds, subs = subs, lines = lines, feeders = feeders, spans = spans, reclosers = reclosers, transformers = transformers,
         pylons = (function() local o = {} for _, p in ipairs(T.pylons) do o[#o + 1] = { id = p.id, x = p.x, y = p.y } end return o end)(),
         ratings = CG.Ratings, events = S.events, log = S.log, procedures = procs, crews = crews(), now = now(), poles = GridPoles(),
@@ -1288,6 +1290,12 @@ function GridAction(d, by)
         if not RANK[lv] then return nil, 'bad level' end
         S.manualLevel = lv ~= 'normal' and lv or nil
         return done(('System level set to %s'):format(lv:upper()))
+    elseif a == 'lighting' then
+        local mode = d.mode
+        if mode ~= 'auto' and mode ~= 'on' and mode ~= 'off' then return nil, 'bad lighting mode' end
+        S.lighting = mode
+        TriggerClientEvent('opslabs-towers:lighting', -1, mode)
+        return done(('Street lighting set to %s'):format(mode:upper()))
     elseif a == 'notice' then
         local n, err = notice(d.audience == 'crews' and 'crews' or d.audience == 'feeder' and 'feeder' or 'all', d.text, key, by)
         if not n then return nil, err end

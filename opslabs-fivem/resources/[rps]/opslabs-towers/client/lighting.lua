@@ -6,7 +6,19 @@ local LT = Config.Lighting or { Models = {}, Kinds = {} }
 local glows = {}   -- fixture id -> glow entity
 local lamps = {}   -- { x, y, z, dx, dy, dz, kind } for the lights currently on
 
+-- remote override from OPS Hub / Grid control's Emergency tab (GridAction 'lighting'): 'auto' (default, time of
+-- day), 'on' (force on — still needs a live pole transformer, same as ever, a remote command can't make power
+-- appear from nothing) or 'off' (force off, e.g. to shed load in an emergency).
+local mode = 'auto'
+CreateThread(function()
+    while not NetworkIsPlayerActive(PlayerId()) do Wait(500) end
+    mode = lib.callback.await('opslabs-towers:grid:lighting', false) or 'auto'
+end)
+RegisterNetEvent('opslabs-towers:lighting', function(m) mode = m end)
+
 local function isNight()
+    if mode == 'on' then return true end
+    if mode == 'off' then return false end
     local h = GetClockHours()
     if LT.On > LT.Off then return h >= LT.On or h < LT.Off end
     return h >= LT.On and h < LT.Off

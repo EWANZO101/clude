@@ -2236,13 +2236,17 @@ end
 local function categoryMenu(net, cat)
     local options = {}
     for _, e in ipairs(CC.Equipment) do
-        if (e.net or 'openline') == net.id and e.cat == cat and IsModelInCdimage(joaat((e.sizes and e.sizes[1].model) or e.model)) then
+        if (e.net or 'openline') == net.id and e.cat == cat then
+            -- a prop that isn't streamed yet (opslabs-props added it but hasn't been restarted since) used to just
+            -- silently vanish from this list with no explanation — same "Restart opslabs-props" message the
+            -- Buildings & sites menu already shows for this exact situation, not a second different failure mode
+            local ok = IsModelInCdimage(joaat((e.sizes and e.sizes[1].model) or e.model))
             local bits = {}
-            if e.about then bits[#bits + 1] = e.about end
-            if e.sizes then bits[#bits + 1] = #e.sizes .. ' ' .. ((e.sizeLabel or 'size'):lower() .. 's') end
-            if e.pole then bits[#bits + 1] = 'also fitted from the pole menu (G)' end
-            options[#options + 1] = { title = e.label, description = #bits > 0 and table.concat(bits, ' · ') or nil,
-                icon = 'plus', onSelect = function() placeEquipment(e, function() categoryMenu(net, cat) end) end }
+            if ok and e.about then bits[#bits + 1] = e.about end
+            if ok and e.sizes then bits[#bits + 1] = #e.sizes .. ' ' .. ((e.sizeLabel or 'size'):lower() .. 's') end
+            if ok and e.pole then bits[#bits + 1] = 'also fitted from the pole menu (G)' end
+            options[#options + 1] = { title = e.label, description = ok and (#bits > 0 and table.concat(bits, ' · ') or nil) or 'Restart opslabs-props to place this',
+                icon = 'plus', disabled = not ok, onSelect = ok and function() placeEquipment(e, function() categoryMenu(net, cat) end) end or nil }
         end
     end
     if cat == 'Security & fencing' and FenceLine then
