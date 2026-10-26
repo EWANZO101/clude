@@ -238,6 +238,33 @@ CreateThread(function()
     end
 end)
 
+--- every door on a fixture (building or gate frame), for OPS Access's "link a door" picker — { {idx, label}, ... }
+function DoorsOf(fid)
+    local L = layout(fid)
+    if not L or not L.doors then return {} end
+    local out = {}
+    for i, d in ipairs(L.doors) do out[#out + 1] = { idx = i, label = d.label or (d.gate and 'Gate' or ('Door ' .. i)) } end
+    return out
+end
+
+--- world position of a door (see doorPos above) and its label, for OPS Access's "nearby doors" search
+function DoorPos(fid, idx)
+    local p, d = doorPos(fid, idx)
+    return p, d and (d.label or 'Door')
+end
+
+--- OPS Access (or anything else with a granted reason, not a player at the keypad): open a door/gate for a
+--- while, skipping the lock/PIN check entirely — that's the point of already having a valid credential. The
+--- existing auto-close loop above closes it again; this never needs to touch State persistence itself.
+function RemoteOpenDoor(fid, idx)
+    fid, idx = tonumber(fid), tonumber(idx)
+    if not layout(fid) then return false end
+    local s = st(fid, idx)
+    s.open, s.closeAt = true, now() + (Config.Access and Config.Access.OpenSeconds or 8)
+    broadcast(fid, idx)
+    return true
+end
+
 AddEventHandler('playerDropped', function() Fails[source] = nil end)
 
 -- a building / gate taken away takes its doors, locks and PINs with it

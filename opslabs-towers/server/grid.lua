@@ -144,6 +144,20 @@ local function nameOf(kind, f)
     return (kind == 'station' and 'Power station #' or kind == 'sub' and 'Substation #' or kind == 'wind' and 'Wind turbine #' or 'Recloser #') .. f.id
 end
 
+--- a run's `touches` entry (solve()'s topology build: {kind, id, open?}) as a human name, for labelling an
+--- LV span by the two poles/kit it actually runs between (GridState() below) - same naming sources as
+--- GridPoles()/nameOf() above, just addressed by kind+id instead of a fixture object.
+local function touchName(t, subName)
+    if not t or not t.id then return nil end
+    if t.kind == 'pole' then return S.names['N' .. t.id] or ('Pole #' .. t.id)
+    elseif t.kind == 'sub' then return (subName or {})[t.id] or ('Substation #' .. t.id)
+    elseif t.kind == 'station' then return nameOf('station', Cabling.fixtures[t.id])
+    elseif t.kind == 'wind' then return nameOf('wind', Cabling.fixtures[t.id])
+    elseif t.kind == 'pylon' then return 'Pylon #' .. t.id
+    end
+    return nil
+end
+
 local function units(f)
     S.units[f.id] = S.units[f.id] or {}
     local u = S.units[f.id]
@@ -1140,6 +1154,16 @@ function GridState()
             item.liveTx = txOn[key] and txOn[key].live or 0
             feeders[#feeders + 1] = item
         else
+            -- which pole(s) / kit this length actually runs between - was anonymous (just "#<id>") before;
+            -- a mid-span joint end (nothing in touches for it) is simply omitted, not a crash
+            local ends = {}
+            for _, tt in ipairs(run.touches or {}) do
+                local nm = touchName(tt, subName)
+                if nm then ends[#ends + 1] = nm end
+            end
+            item.ends = ends
+            -- no custom-naming UI for a span (unlike poles/lines/feeders) - nothing to look up in S.names
+            item.name = #ends > 0 and table.concat(ends, ' – ') or ('Span #' .. rid)
             spans[#spans + 1] = item
         end
     end

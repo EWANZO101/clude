@@ -244,7 +244,8 @@ end)
 local previewPlots = { { key = 'sub', w = 16, d = 14, need = true, label = 'substation' }, { key = 'ex', w = 28, d = 13, label = 'telephone exchange' },
     { key = 'house', w = 14, d = 11, label = 'customer house' }, { key = 'fuel', w = 24, d = 20, label = 'fuel station' },
     { key = 'mast', w = 7, d = 7, label = 'cell mast', slope = 3.5 } }
-RegisterCommand('opscitypreview', function()
+--- /towers → Danger zone section → City preview: same survey as the /opscitypreview command, reachable from the menu
+function CityPreview()
     if not lib.callback.await('opslabs-towers:isAdmin', false) then return lib.notify({ type = 'error', description = 'Admins only' }) end
     local me = GetEntityCoords(PlayerPedId())
     lib.notify({ type = 'inform', title = 'OPS City preview', description = 'Surveying here — your screen goes dark for a moment' })
@@ -277,7 +278,8 @@ RegisterCommand('opscitypreview', function()
             Wait(0)
         end
     end)
-end, false)
+end
+RegisterCommand('opscitypreview', CityPreview, false)
 
 --- ground for a list of spots (pylons, the power station): each moved up to `search` m to a clear, level spot
 local surveySpots

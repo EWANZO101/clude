@@ -127,6 +127,28 @@ SetHttpHandler(function(req, res)
             if not ok then return reply(res, 400, { error = err or 'Failed' }) end
             return reply(res, 200, { data = { ok = true } })
         end
+        -- OPS Access (server/access.lua): door hubs & readers
+        if path == '/api/access' and req.method == 'GET' then
+            if not AccessState then return reply(res, 404, { error = 'OPS Access is off' }) end
+            return reply(res, 200, { data = AccessState() })
+        end
+        if path == '/api/access/action' and req.method == 'POST' then
+            if not AccessAction then return reply(res, 404, { error = 'OPS Access is off' }) end
+            local ok, err = AccessAction(data, data.actor or 'website')
+            if not ok then return reply(res, 400, { error = err or 'Failed' }) end
+            return reply(res, 200, { data = { ok = true } })
+        end
+        -- OPS Access security sensors (server/sensors.lua): the alarm history
+        if path == '/api/sensors' and req.method == 'GET' then
+            if not SensorsState then return reply(res, 404, { error = 'OPS Access is off' }) end
+            return reply(res, 200, { data = SensorsState() })
+        end
+        if path == '/api/sensors/action' and req.method == 'POST' then
+            if not SensorsAction then return reply(res, 404, { error = 'OPS Access is off' }) end
+            local ok, err = SensorsAction(data, data.actor or 'website')
+            if not ok then return reply(res, 400, { error = err or 'Failed' }) end
+            return reply(res, 200, { data = { ok = true } })
+        end
         -- pole route planner (server/routes.lua): plan a sequence of pole spots, save it, send it out
         if path == '/api/routes' and req.method == 'GET' then
             if not RoutesList then return reply(res, 404, { error = 'Route planner is off' }) end

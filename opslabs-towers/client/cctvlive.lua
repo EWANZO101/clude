@@ -194,10 +194,14 @@ local function relay(auto)
     lib.notify({ type = 'inform', title = 'CCTV relay', description = 'Off' })
 end
 
-RegisterCommand('cctvrelay', function()
+--- /towers → Secure → CCTV relay: same toggle as the /cctvrelay command, reachable from the menu
+function ToggleCctvRelay()
     if relaying then relaying = false SetResourceKvpInt('cctv_relay', 0) return end
     CreateThread(function() relay(false) end)
-end, false)
+end
+function CctvRelaying() return relaying end
+
+RegisterCommand('cctvrelay', ToggleCctvRelay, false)
 
 -- this game was relaying when the server / resource restarted or it disconnected: carry on by itself. Its job and
 -- admin rights may not be loaded yet, so keep trying (every 20 s) until the server says yes.

@@ -155,6 +155,7 @@ Config.Cabling = {
         { id = 'sapl', label = 'San Andreas Power & Light', sub = 'Power poles, transformers, cut-outs, power cable', icon = 'plug-circle-bolt', color = '#ffd60a' },
         { id = 'solar', label = 'San Andreas Solar', sub = 'Solar PV installs · panels, inverters, home batteries', icon = 'solar-panel', color = '#ff9f0a' },
         { id = 'secure', label = 'OPS Secure', sub = 'CCTV & security · cameras, recorders, monitors, doorbells, ANPR', icon = 'video', color = '#ff375f' },
+        { id = 'access', label = 'OPS Access', sub = 'Door hubs & readers · company access, arm/disarm, 911 alert', icon = 'key', color = '#bf5af2' },
         { id = 'data', label = 'OPS Data', sub = 'Data centres · racks, servers, storage, UPS, cooling — runs OPS Cloud', icon = 'server', color = '#5e5ce6' },
         { id = 'track', label = 'OPS Track', sub = 'Vehicle GPS trackers · install, test, live tracking, theft alerts', icon = 'location-crosshairs', color = '#30d158' },
         { id = 'fuel', label = 'OPS Fuel', sub = 'Fuel stations · tanks, pipework, dispensers, tanker deliveries', icon = 'gas-pump', color = '#e2202a' },
@@ -349,22 +350,22 @@ Config.Cabling = {
         { net = 'pos', cat = 'Point of sale', label = 'Receipt printer', model = 'opslabs_pos_printer', about = 'Beside the terminal: customers get a printed receipt.' },
         { net = 'pos', cat = 'Point of sale', label = 'Barcode scanner + cradle', model = 'opslabs_pos_scanner', about = 'Beside the terminal: scan to add products.' },
         { net = 'pos', cat = 'Point of sale', label = 'Customer display', model = 'opslabs_pos_display', about = 'Screen towards the customer: shows the basket and total.' },
-        { net = 'secure', cat = 'IP cameras (PoE)', label = 'Bullet camera 4K (IP, PoE, IR 40 m)', model = 'opslabs_cctv_bullet', about = 'CAT6 to the NVR or a PoE switch. Looks out from the wall.' },
-        { net = 'secure', cat = 'IP cameras (PoE)', label = 'Dome camera (IP, PoE)', model = 'opslabs_cctv_dome' },
-        { net = 'secure', cat = 'IP cameras (PoE)', label = 'Turret camera (IP, PoE)', model = 'opslabs_cctv_turret' },
-        { net = 'secure', cat = 'IP cameras (PoE)', label = 'Fisheye 360° camera', model = 'opslabs_cctv_fisheye' },
-        { net = 'secure', cat = 'Specialist cameras', label = 'PTZ speed dome (PoE+)', model = 'opslabs_cctv_ptz', about = 'Pan, tilt and 30× zoom from the viewer.' },
-        { net = 'secure', cat = 'Specialist cameras', label = 'ANPR / LPR camera', model = 'opslabs_cctv_anpr', about = 'Reads number plates of vehicles passing in view.' },
-        { net = 'secure', cat = 'Specialist cameras', label = 'Thermal bi-spectrum camera', model = 'opslabs_cctv_thermal', about = 'Sees heat — people at night, through smoke.' },
-        { net = 'secure', cat = 'Specialist cameras', label = 'Analogue HD-TVI bullet (DVR)', model = 'opslabs_cctv_analog', about = 'Cable straight to a DVR.' },
-        { net = 'secure', cat = 'Wireless & doorbells', label = 'Wireless indoor camera', model = 'opslabs_cctv_wifi', about = 'Needs a socket, Wi-Fi in range and an NVR on site.' },
+        { net = 'secure', cat = 'IP cameras (PoE)', label = 'Bullet camera 4K (IP, PoE, IR 40 m)', model = 'opslabs_cctv_bullet', about = 'CAT6 to the NVR or a PoE switch. Looks out from the wall.', tilt = true },
+        { net = 'secure', cat = 'IP cameras (PoE)', label = 'Dome camera (IP, PoE)', model = 'opslabs_cctv_dome', tilt = true },
+        { net = 'secure', cat = 'IP cameras (PoE)', label = 'Turret camera (IP, PoE)', model = 'opslabs_cctv_turret', tilt = true },
+        { net = 'secure', cat = 'IP cameras (PoE)', label = 'Fisheye 360° camera', model = 'opslabs_cctv_fisheye', tilt = true },
+        { net = 'secure', cat = 'Specialist cameras', label = 'PTZ speed dome (PoE+)', model = 'opslabs_cctv_ptz', about = 'Pan, tilt and 30× zoom from the viewer.', tilt = true },
+        { net = 'secure', cat = 'Specialist cameras', label = 'ANPR / LPR camera', model = 'opslabs_cctv_anpr', about = 'Reads number plates of vehicles passing in view.', tilt = true },
+        { net = 'secure', cat = 'Specialist cameras', label = 'Thermal bi-spectrum camera', model = 'opslabs_cctv_thermal', about = 'Sees heat — people at night, through smoke.', tilt = true },
+        { net = 'secure', cat = 'Specialist cameras', label = 'Analogue HD-TVI bullet (DVR)', model = 'opslabs_cctv_analog', about = 'Cable straight to a DVR.', tilt = true },
+        { net = 'secure', cat = 'Wireless & doorbells', label = 'Wireless indoor camera', model = 'opslabs_cctv_wifi', about = 'Needs a socket, Wi-Fi in range and an NVR on site.', tilt = true },
         { net = 'secure', cat = 'Wireless & doorbells', label = 'Video doorbell', model = 'opslabs_cctv_doorbell', about = 'Visitors press [E] — the owner gets a phone alert.' },
         { net = 'secure', cat = 'Recorders & viewing', label = 'NVR 16 channel · 8 × PoE', model = 'opslabs_cctv_nvr', about = 'Needs a socket within 3 m. [E] to set up, watch and review.' },
         { net = 'secure', cat = 'Recorders & viewing', label = 'DVR 8 channel (analogue)', model = 'opslabs_cctv_dvr' },
         { net = 'secure', cat = 'Recorders & viewing', label = 'CCTV monitor 24"', model = 'opslabs_cctv_monitor', about = '[E] watch the nearest system.' },
         { net = 'secure', cat = 'Recorders & viewing', label = 'Control-room video wall 2 × 2', model = 'opslabs_cctv_videowall' },
         { net = 'secure', cat = 'Recorders & viewing', label = 'PTZ joystick keyboard', model = 'opslabs_cctv_keyboard' },
-        { net = 'secure', cat = 'Access & signage', label = 'Access-control reader with camera', model = 'opslabs_cctv_reader' },
+        { net = 'access', cat = 'Hubs & readers', label = 'OPS Access hub & reader', model = 'opslabs_cctv_reader', about = 'Placing one makes it an OPS Access hub. [E] it to link doors, set companies, issue cards, and arm / disarm.', tilt = true },
         { net = 'secure', cat = 'Access & signage', label = '"CCTV in operation" sign', model = 'opslabs_cctv_sign' },
         -- OPS Data: the data hall. Servers go INTO a rack ([E] on the rack → Install), not placed on their own.
         { net = 'data', cat = 'Racks & power', label = '42U server rack (OPS Data)', model = 'opslabs_dc_rack', about = 'Plug into a socket or stand within 25 m of a UPS. CAT6 from its switch to a router with internet. [E] to install servers.' },
@@ -881,6 +882,28 @@ Config.Gunshot = {
     Exempt = { { 13.0, -1097.0, 29.8, 30.0 }, { 821.6, -2163.6, 29.6, 30.0 } },
 }
 
+-- OPS Access (server/access.lua, server/sensors.lua, OPS Hub → Grid/Internet "OPS Access gates & security"). Place
+-- an OPS Access hub & reader (OPS Secure → OPS Access · hubs) and it starts working straight away: [E] it in game to
+-- link nearby doors (any Config.Buildings door/gate), set which companies' staff tap straight in (job name = company
+-- code), and issue/revoke individually-held cards for anyone else. [E] again to tap it: access granted opens every
+-- linked door for a few seconds; denied is logged, and while the hub is armed it also raises an alarm. Arming only
+-- lets staff (a company on the hub) or an admin do it, same as who can tap in; OPS Hub can also open it, change its
+-- companies, arm/disarm it and send a manual 911 alert, from the live web page — none of that needs anyone in game.
+Config.Access = {
+    Enabled = true,
+    ReaderModel = 'opslabs_cctv_reader',
+    UseDistance = 2.0,          -- [E] to tap the reader (grant/deny, open its doors)
+    ManageDistance = 3.0,       -- [E] to open its menu (link doors, companies, cards, arm/disarm)
+    LinkRadius = 20.0,          -- metres: doors offered when linking one to this hub
+    OpenSeconds = 8,            -- how long a granted tap holds its doors open
+    AlertJobs = { 'police', 'sheriff', 'state' },   -- same convention as Config.Gunshot.AlertJobs
+    -- while armed: a non-credentialed player lingering this close to a linked door raises a 'motion' alarm; a
+    -- denied tap always raises an 'impact' alarm regardless of distance. Both are throttled per hub.
+    MotionRadius = 8.0,
+    MotionCheckSeconds = 5,
+    AlarmCooldownSeconds = 60,
+}
+
 -- Power grid (San Andreas Power & Light · OPS Hub → Grid control). The grid is what engineers BUILD in game:
 --   power station / wind turbine → 400 kV transmission conductor on pylons → primary substation (400 / 11 kV) →
 --   11 kV feeders (HV conductor on power poles, through reclosers) → pole transformers (cut-out fuses) → LV / service
@@ -899,8 +922,12 @@ Config.Grid = {
     Hz = 50.0,
     CrewJobs = { 'electrician', 'sapl' },   -- besides cabling engineers / admins: who get crew jobs, repair and operate kit in game
     RepairSeconds = 25,
-    FaultRate = 0.6,                -- random faults per real hour across the network (× StormFactor in a thunderstorm)
-    StormFactor = 8,
+    -- TEMP: random grid faults off (0 = none, storms included - see server/grid.lua's roll: rate is × 0 either
+    -- way) from 2026-10-26, requested for about 30 days or until told otherwise. To restore: FaultRate = 0.05,
+    -- StormFactor = 3 (the already-tuned-down values from before this - the original default was 0.6 / 8, which
+    -- was ~14 faults/day and cascaded the whole grid dark daily, so don't put that back).
+    FaultRate = 0,
+    StormFactor = 3,
     Station = { model = 'opslabs_grid_station', units = 4, unitMW = 120, start = 90, reach = 34.0 },
     Wind = { model = 'opslabs_grid_wind', mw = 3.0, reach = 10.0 },
     Substation = { model = 'opslabs_grid_substation', mva = 60, tx = 2, reach = 19.0 },

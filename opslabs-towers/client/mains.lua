@@ -143,6 +143,7 @@ local function spawnGlow(f)
     FreezeEntityPosition(e, true)
     SetEntityCollision(e, false, false)
     SetModelAsNoLongerNeeded(h)
+    FixInteriorRoom(e, f.x, f.y, f.z)
     return e
 end
 

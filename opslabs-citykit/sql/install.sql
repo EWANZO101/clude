@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS `opslabs_citykit_props` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `model` VARCHAR(64) NOT NULL,
+  `category` VARCHAR(32) NOT NULL,
+  `x` FLOAT NOT NULL,
+  `y` FLOAT NOT NULL,
+  `z` FLOAT NOT NULL,
+  `heading` FLOAT NOT NULL DEFAULT 0,
+  `created_by` VARCHAR(100) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

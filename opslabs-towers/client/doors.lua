@@ -2,6 +2,8 @@
 -- plus the live brand boards on fences, signs and gates (12 shared DUI faces).
 --   Doors:  [E] open / close · locked → [E] enter the PIN · [H] keypad (lock, set / change PIN)
 --   Gates:  open by themselves when you walk or drive up (unless locked); locked → [E] PIN lets you through
+--   Third eye (client/target.lua): when a target resource is running, look at the door/gate instead - Open /
+--   Close, Enter PIN, Keypad are target options on its primary leaf, and the [E]/[H] prompt above steps aside.
 
 local B = Config.Buildings or {}
 local CC = Config.Cabling
@@ -145,6 +147,11 @@ end)
 ---------------------------------------------------------------------------
 local SPEED = { swing = 1.5, slide = 0.22, lift = 0.7, sink = 0.8, shutter = 0.25 }
 
+-- forward-declared: makeLeaf (below) registers this on a door/gate's primary leaf, but its body needs
+-- enterPin/keypadMenu, which aren't defined until further down the file - assigned (not `local function`) once
+-- they exist, so this upvalue is in scope for makeLeaf from the start either way.
+local doorTargetOptions
+
 local function leafKind(lf)
     return lf.slide and 'slide' or lf.sink and 'sink' or lf.lift and 'lift' or lf.shutter and 'shutter' or 'swing'
 end
@@ -179,6 +186,7 @@ end
 local function removeLeaf(key)
     local L = leaves[key]
     if not L then return end
+    if L.targeted then TargetRemoveLocalEntity(L.ent) end
     if L.sign and DoesEntityExist(L.sign) then DeleteEntity(L.sign) end
     if DoesEntityExist(L.ent) then DeleteEntity(L.ent) end
     signRelease('leaf:' .. key)
@@ -192,6 +200,10 @@ local function makeLeaf(key, f, idx, d, li, lf)
     local open = stateOf(f.id, idx).open and 1.0 or 0.0
     local L = { ent = e, fid = f.id, idx = idx, d = d, lf = lf, x = x, y = y, z = z, bh = bh, kind = leafKind(lf), t = open, target = open,
                 sig = ('%.2f|%.2f|%.2f|%.1f|%s'):format(f.x, f.y, f.z, f.heading or 0, f.data and json.encode(f.data.brand or {}) or '') }
+    -- third eye: only the primary leaf gets options, same one the old [E]/[H] prompt already singles out below
+    if li == 1 and TargetOn and TargetOn() then
+        L.targeted = TargetAddLocalEntity(e, doorTargetOptions(f.id, idx, d))
+    end
     if lf.sign then
         local n = signTake('leaf:' .. key, brandOf(f))
         if n then
@@ -318,10 +330,35 @@ local function keypadMenu(fid, idx, d)
     lib.showContext('door_keypad')
 end
 
--- nearest door / gate prompt
+--- third eye options for a door/gate's primary leaf (makeLeaf, above) - Open/Close, Enter PIN, Keypad, the
+--- same four things the [E]/[H] prompt below offers, just as separate options gated by canInteract instead of
+--- one label that changes with state (tgiann-target / ox_target options don't re-label themselves live).
+doorTargetOptions = function(fid, idx, d)
+    return {
+        { name = 'ops_door_open', label = 'Open the door', icon = 'fa-solid fa-door-open', distance = 2.0,
+          canInteract = function() local s = stateOf(fid, idx) return not d.auto and not s.locked and not s.open end,
+          onSelect = function() lib.callback.await('opslabs-towers:door:use', false, fid, idx) end },
+        { name = 'ops_door_close', label = 'Close the door', icon = 'fa-solid fa-door-closed', distance = 2.0,
+          canInteract = function() local s = stateOf(fid, idx) return not d.auto and not s.locked and s.open end,
+          onSelect = function() lib.callback.await('opslabs-towers:door:use', false, fid, idx) end },
+        { name = 'ops_door_pin', label = d.auto and 'Enter PIN · let me through' or 'Enter PIN · unlock', icon = 'fa-solid fa-key', distance = 2.0,
+          canInteract = function() return stateOf(fid, idx).locked == true end,
+          onSelect = function() enterPin(fid, idx, d, false) end },
+        { name = 'ops_door_keypad', label = 'Keypad', icon = 'fa-solid fa-hashtag', distance = 2.0,
+          onSelect = function() keypadMenu(fid, idx, d) end },
+    }
+end
+
+-- nearest door / gate prompt - the third eye (client/target.lua) takes over per-door when it's running, so
+-- this fallback loop does nothing at all then (not even computing `best`, to match poles.lua's own pattern)
 CreateThread(function()
     local shown, lastText = false, nil
     while true do
+        if TargetOn and TargetOn() then
+            if shown then lib.hideTextUI() shown, lastText = false, nil end
+            Wait(500)
+            goto continue
+        end
         local ped = PlayerPedId()
         local pos = GetEntityCoords(ped)
         local inVeh = IsPedInAnyVehicle(ped, false)
@@ -361,6 +398,7 @@ CreateThread(function()
             if shown then lib.hideTextUI() shown, lastText = false, nil end
             Wait(best and 100 or 300)
         end
+        ::continue::
     end
 end)
 
