@@ -18,19 +18,29 @@ local RES = GetCurrentResourceName()
 math.randomseed(os.time() + GetGameTimer())
 local VERSION = GetResourceMetadata(RES, 'version', 0) or '1.0.0'
 
-local State = { status = 'starting', message = 'Checking the OPSHUB license…', modules = {}, allowAll = false }
+local State = { status = 'starting', message = 'Checking the OPSHUB license…', modules = {}, enabled = {}, allowAll = false }
 local Cert = nil                 -- the verified certificate (table)
 local stoppedByUs = {}           -- resource name -> true (we stopped it; we may start it again)
 local Usage = {}                 -- 'resource:kind:name' -> count since the last check-in (guard.lua reports them)
 
+--- a resource-kind module is licensed (State.modules) but starts switched OFF until the customer turns it
+--- on at /license/<id>/scripts (OPSHUB sends that as the certificate's separate `enabled` list, State.enabled
+--- below - deliberately not folded into `modules`, so a module being off never looks like it was never
+--- licensed) - or a server admin turns it on locally regardless of the portal, in config.lua's
+--- Config.ForceEnabled. Either one only ever switches ON a module `allows()`/`enforce()` already finds
+--- licensed above - it can never grant a module on its own.
+local function moduleOn(code)
+    return State.enabled[code] == true or (Config.ForceEnabled and Config.ForceEnabled[code] == true)
+end
+
 --- may resource `res` act right now? Every guarded action in every OPS / rps resource asks this (guard.lua):
---- the license must be active, its session not run out (no OPSHUB check-in → nothing runs) and, for a licensed
---- resource, its module granted.
+--- the license must be active, its session not run out (no OPSHUB check-in → nothing runs), for a licensed
+--- resource its module granted, and (same resources) switched on.
 local function allows(res)
     if State.status ~= 'active' or not Cert then return false end
     if (State.validUntil or 0) < os.time() then return false end
     for code, r in pairs(Cert.resources or {}) do
-        if r == res then return State.modules[code] == true end
+        if r == res then return State.modules[code] == true and moduleOn(code) end
     end
     return true                  -- not a licensable resource of its own: a valid license is enough
 end
@@ -104,7 +114,7 @@ local function publicState()
     -- resources the license doesn't allow (clients' guards use it; everything else is allowed while the license is active)
     local denied = {}
     for code, r in pairs(Cert and Cert.resources or {}) do
-        if type(r) == 'string' and not State.modules[code] then denied[r] = true end
+        if type(r) == 'string' and not (State.modules[code] == true and moduleOn(code)) then denied[r] = true end
     end
     return { status = State.status, message = State.message, allowAll = State.allowAll, modules = mods, customer = State.customer,
         keyTail = State.keyTail, expiresAt = State.expiresAt, validUntil = State.validUntil, instance = State.instance, checkedAt = State.checkedAt,
@@ -117,20 +127,42 @@ local function enforce()
     local licensed = State.status == 'active'
     for code, res in pairs(Cert.resources) do
         if type(res) == 'string' and not Config.Protected[res] and GetResourceState(res) ~= 'missing' then
-            local allowed = licensed and State.modules[code] == true
+            local allowed = licensed and State.modules[code] == true and moduleOn(code)
             local st = GetResourceState(res)
             if allowed and (st == 'stopped') and stoppedByUs[res] then
                 log(('starting %s (module %s)'):format(res, code), 2)
                 stoppedByUs[res] = nil
                 StartResource(res)
             elseif not allowed and (st == 'started' or st == 'starting') then
-                log(('stopping %s — module "%s" is not in this license'):format(res, code), 3)
+                log(('stopping %s — module "%s" is %s'):format(res, code,
+                    licensed and State.modules[code] and 'not switched on (/license on OPSHUB)' or 'not in this license'), 3)
                 stoppedByUs[res] = true
                 StopResource(res)
             end
         end
     end
     setKv('stopped_by_us', json.encode(stoppedByUs))
+end
+
+--- ops-update-companion.py (runs outside FXServer - no unzip native and no proven-safe way to pull a
+--- multi-MB binary HTTP response in-process, see opslabs-bodycam/server/storage.js's comment on exactly
+--- that) downloads, verifies and swaps a resource's files on disk, then drops this marker in its folder.
+--- LoadResourceFile/SaveResourceFile operate on any named resource's folder regardless of which script
+--- calls them, so noticing and clearing the marker needs no new capability on this side.
+local function checkPendingUpdates()
+    if not Cert or type(Cert.resources) ~= 'table' then return end
+    for code, res in pairs(Cert.resources) do
+        if type(res) == 'string' and GetResourceState(res) ~= 'missing' then
+            local pending = LoadResourceFile(res, '.opshub-update-pending')
+            if pending and pending ~= '' then
+                log(('restarting %s — ops-update-companion.py installed %s'):format(res, pending), 2)
+                StopResource(res)
+                Wait(500)
+                StartResource(res)
+                SaveResourceFile(res, '.opshub-update-pending', '', 0)
+            end
+        end
+    end
 end
 
 local function broadcast()
@@ -141,14 +173,16 @@ end
 
 local function apply(c, sourceNote)
     Cert = c
-    local mods = {}
+    local mods, on = {}, {}
     for _, m in ipairs(c.modules or {}) do mods[m] = true end
+    for _, m in ipairs(c.enabled or {}) do on[m] = true end   -- OPSHUB's own enabled/disabled toggle (/license/<id>/scripts), separate from being licensed at all
     local now = os.time()
     local status = c.status or 'invalid'
     if status == 'active' and (c.valid_until or 0) < now then status = 'expired' end
     local before = State.status
     State = {
-        status = status, modules = status == 'active' and mods or {}, allowAll = c.allow_all == true and status == 'active',
+        status = status, modules = status == 'active' and mods or {}, enabled = status == 'active' and on or {},
+        allowAll = c.allow_all == true and status == 'active',
         customer = c.customer, keyTail = c.key_tail, expiresAt = c.expires_at, validUntil = c.valid_until, instance = c.inst, checkedAt = now,
         message = status == 'active' and ('Licensed to %s'):format(c.customer or 'this server')
             or ({ suspended = 'This OPSHUB license is suspended', revoked = 'This OPSHUB license has been revoked',
@@ -163,9 +197,9 @@ local function apply(c, sourceNote)
 end
 
 local function unlicensed(message, status)
-    State = { status = status or 'unlicensed', message = message, modules = {}, allowAll = false, checkedAt = os.time() }
+    State = { status = status or 'unlicensed', message = message, modules = {}, enabled = {}, allowAll = false, checkedAt = os.time() }
     log(message, 3)
-    if Cert then Cert.modules = {} end
+    if Cert then Cert.modules, Cert.enabled = {}, {} end
     enforce()
     broadcast()
 end
@@ -271,7 +305,7 @@ CreateThread(function()
     end
     Wait(2000)
     while true do
-        if not busy then busy = true pcall(checkIn) busy = false end
+        if not busy then busy = true pcall(checkIn) pcall(checkPendingUpdates) busy = false end
         Wait(math.max(20, math.min(Config.CheckEvery or 120, (Cert and Cert.check_every) or 120)) * 1000)
     end
 end)
