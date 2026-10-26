@@ -1,9 +1,13 @@
--- Laptops (opslabs_laptop): placed like any equipment, online only over Ethernet.
--- A CAT6 run terminated at both ends from the laptop's port to
+-- Laptops (opslabs_laptop): placed like any equipment, online over Ethernet OR Wi-Fi.
+-- Ethernet: a CAT6 run terminated at both ends from the laptop's port to
 --   · a router / switch / AP that has an uplink (cabled through to a gateway) → internet, or
 --   · straight into an ONT's LAN port with an active service (PPPoE) → internet.
+-- Wi-Fi (no cable needed): the nearest Wi-Fi access point in range (same range/floor-tolerance rule as a
+-- phone's signal, server/main.lua ComputeCoverage) that's powered, not faulted, has an uplink, and isn't
+-- password-protected — a shared desk laptop can't "know" a password the way a player's phone can, so it only
+-- ever joins an open network, same as it never needed a password to use a wired connection either.
 -- opslabs-phone asks GetLaptopNet(fixtureId) when someone uses a laptop and on every
--- online action, so unplugging or cutting the cable takes it offline straight away.
+-- online action, so unplugging/cutting the cable or losing Wi-Fi range takes it offline straight away.
 
 local CL = Config.Laptop or {}
 local LAPTOP = {}
@@ -16,6 +20,26 @@ local function isGateway(t)
     if not t or t.type ~= 'wifi' or not t.prop then return false end
     for _, m in ipairs(Config.Cabling.Gateways or {}) do if t.model == m then return true end end
     return false
+end
+
+--- the best open, in-range, uplinked Wi-Fi access point for a laptop sitting at (x, y, z) — same range and
+--- floor-tolerance rule server/main.lua's ComputeCoverage uses for a player's phone signal, minus the
+--- job-lock/password checks (those are about a specific player's phone, not a shared desk laptop)
+local function wifiFor(f)
+    local WF = Config.Wifi or {}
+    local best, bestS
+    for _, t in pairs(Towers) do
+        if t.type == 'wifi' and t.active and not t.password and not (FaultEffects and FaultEffects.towers[t.id])
+            and not (TowerPowered and not TowerPowered(t.id)) and not (t.fibre_only and not WifiOnFibre(t.id)) then
+            local dx, dy = f.x - t.x, f.y - t.y
+            local d2 = math.sqrt(dx * dx + dy * dy)
+            if d2 <= (t.range or WF.DefaultRange or 40) and math.abs(f.z - t.z) <= (WF.FloorTolerance or 14) and WifiHasUplink(t.id) then
+                local s = 1 - d2 / (t.range or WF.DefaultRange or 40)
+                if not best or s > bestS then best, bestS = t, s end
+            end
+        end
+    end
+    return best
 end
 
 --- terminated CAT6 links: tower <-> tower adjacency, plus which tower each ONT's LAN feeds
@@ -41,6 +65,35 @@ local function ontService(ontId)
     local s = ontId and IspPayload and IspPayload()[ontId]
     if not s then return nil end
     return { provider = s.provider, providerColor = s.providerColor, plan = s.plan, down = s.down, up = s.up, live = s.internet == 'on' }
+end
+
+--- fill `out` from a router/AP tower the laptop reaches — wired to it, or (via.kind == 'wifi') just in its range.
+--- Shared by both paths in LaptopNet below since "is this tower itself usable" is identical either way.
+local function fromTower(out, id, t, via)
+    if not t then out.reason = 'no_device' return out end
+    out.link = t.active and not (FaultEffects and FaultEffects.towers[t.id]) or false
+    out.via = via
+    if not out.link then out.reason = 'router_off' return out end
+    out.speed = 1000
+    out.ip = ('192.168.%d.%d'):format(t.id % 250, 100 + id % 150)
+    out.router_ip = ('192.168.%d.1'):format(t.id % 250)
+    if Uplinked[t.id] ~= true then out.reason = 'no_uplink' return out end
+    out.internet = true
+    local adj, ontOf = lanGraph()
+    local seen, queue = { [t.id] = true }, { t.id }
+    while #queue > 0 do
+        local cur = table.remove(queue, 1)
+        local ct = Towers[cur]
+        if isGateway(ct) then
+            out.gateway = ct.name or ('Gateway #' .. cur)
+            out.isp = ontService(ontOf[cur])
+            break
+        end
+        for _, nb in ipairs(adj[cur] or {}) do
+            if not seen[nb] then seen[nb] = true; queue[#queue + 1] = nb end
+        end
+    end
+    return out
 end
 
 local function mac(id)
@@ -70,8 +123,13 @@ function LaptopNet(id)
             if other and (other.tower or other.fixture) then break end
         end
     end
-    if not run then out.reason = 'unplugged' return out end
-    if not other or not (other.tower or other.fixture) then out.reason = 'not_terminated' return out end
+    if not run or not other or not (other.tower or other.fixture) then
+        -- no usable wired connection: an open, in-range, uplinked Wi-Fi access point does just as well
+        local wt = wifiFor(f)
+        if wt then return fromTower(out, id, wt, { kind = 'wifi', name = wt.ssid or wt.name or ('Wi-Fi #' .. wt.id) }) end
+        out.reason = not run and 'unplugged' or 'not_terminated'
+        return out
+    end
 
     if other.fixture then
         local of = Cabling.fixtures[other.fixture]
@@ -91,31 +149,7 @@ function LaptopNet(id)
     end
 
     local t = Towers[other.tower]
-    if not t then out.reason = 'no_device' return out end
-    out.link = t.active and not (FaultEffects and FaultEffects.towers[t.id]) or false
-    out.via = { kind = 'router', name = t.name or ('Router #' .. t.id) }
-    if not out.link then out.reason = 'router_off' return out end
-    out.speed = 1000
-    out.ip = ('192.168.%d.%d'):format(t.id % 250, 100 + id % 150)
-    out.router_ip = ('192.168.%d.1'):format(t.id % 250)
-    if Uplinked[t.id] ~= true then out.reason = 'no_uplink' return out end
-    out.internet = true
-    -- find the gateway this router reaches and the broadband line behind it (for the details screen)
-    local adj, ontOf = lanGraph()
-    local seen, queue = { [t.id] = true }, { t.id }
-    while #queue > 0 do
-        local cur = table.remove(queue, 1)
-        local ct = Towers[cur]
-        if isGateway(ct) then
-            out.gateway = ct.name or ('Gateway #' .. cur)
-            out.isp = ontService(ontOf[cur])
-            break
-        end
-        for _, nb in ipairs(adj[cur] or {}) do
-            if not seen[nb] then seen[nb] = true; queue[#queue + 1] = nb end
-        end
-    end
-    return out
+    return fromTower(out, id, t, t and { kind = 'router', name = t.name or ('Router #' .. t.id) } or nil)
 end
 
 exports('GetLaptopNet', LaptopNet)
