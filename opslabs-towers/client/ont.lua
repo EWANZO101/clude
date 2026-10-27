@@ -103,7 +103,9 @@ function IspMenu(f, back)
         end }
     elseif s.service == 'suspended' then
         options[#options + 1] = { title = 'Resume service', icon = 'play', iconColor = '#30d158', onSelect = function()
-            lib.callback.await('opslabs-towers:isp:setStatus', false, f.id, 'active') Wait(300) IspMenu(f, back)
+            local r = lib.callback.await('opslabs-towers:isp:setStatus', false, f.id, 'active')
+            if r and r.warning then lib.notify({ type = 'inform', description = r.warning, duration = 8000 }) end
+            Wait(300) IspMenu(f, back)
         end }
     end
     if s.service ~= 'none' then

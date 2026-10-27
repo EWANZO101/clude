@@ -171,9 +171,9 @@ lib.callback.register('opslabs-towers:ont:repair', function(src, id, action, arg
         text = 'ONT rebooting — PON flashes while it ranges, then INTERNET while it logs in'
     elseif action == 'resume' then
         if not IspSetStatus then return { error = 'Provisioning is offline' } end
-        local ok, err = IspSetStatus(f.id, 'active')
-        if not ok then return { error = err or 'Could not resume' } end
-        text = 'Service resumed'
+        local ok, warning = IspSetStatus(f.id, 'active')
+        if not ok then return { error = warning or 'Could not resume' } end
+        text = 'Service resumed' .. (warning and (' - ' .. warning) or '')
     else
         return { error = 'Unknown repair' }
     end
