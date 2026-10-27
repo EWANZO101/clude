@@ -107,6 +107,24 @@ local function verify(certB64, sigB64)
     return c
 end
 
+-- server/installer.lua: for hosts where no companion process can run at all (txAdmin panel + FTP/SFTP
+-- only - no `ops-update-companion.py`), downloads/verifies/installs entitled-and-enabled resource
+-- updates from inside FXServer itself. Loaded with load()+LoadResourceFile (not a plain server_script)
+-- so it returns its function instead of that return being discarded; failing to load it just means
+-- this feature is unavailable this run, not a startup error (ops-update-companion.py still works).
+local Installer
+do
+    local src = LoadResourceFile(RES, 'server/installer.lua')
+    if src then
+        local chunk, err = load(src, 'installer.lua')
+        if chunk then
+            local ok, result = pcall(chunk)
+            if ok and type(result) == 'function' then Installer = result
+            else print(('^1[OPSHUB] installer.lua did not return correctly: %s^7'):format(tostring(result))) end
+        else print(('^1[OPSHUB] installer.lua failed to load: %s^7'):format(tostring(err))) end
+    end
+end
+
 local function publicState()
     local mods = {}
     for k in pairs(State.modules) do mods[#mods + 1] = k end
@@ -305,7 +323,16 @@ CreateThread(function()
     end
     Wait(2000)
     while true do
-        if not busy then busy = true pcall(checkIn) pcall(checkPendingUpdates) busy = false end
+        if not busy then
+            busy = true
+            pcall(checkIn)
+            pcall(checkPendingUpdates)
+            if Installer and State.status == 'active' then
+                local key = licenseKey()
+                if key then pcall(Installer, call, key, Cert, moduleOn, State) end
+            end
+            busy = false
+        end
         Wait(math.max(20, math.min(Config.CheckEvery or 120, (Cert and Cert.check_every) or 120)) * 1000)
     end
 end)
