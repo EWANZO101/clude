@@ -180,9 +180,15 @@ function OpsIspActivate(svcId, why)
     local cust = svcCustomer(svc)
     local ont = svc.ont_id or nearestOnlineOnt(svc)
     local t = now()
-    MySQL.update.await([[UPDATE ops_isp_services SET status = 'active', ont_id = ?, router_tower = ?, contract_start = COALESCE(contract_start, ?),
-        contract_end = COALESCE(contract_end, ?), next_bill_at = ? WHERE id = ?]],
+    -- Atomic activation guard: this can be called twice for the same line (a double-click on
+    -- the Hub's Activate button, a retried Hub action, and the 30s reconcile sweep can all land
+    -- on the same pending line within the same window) - WHERE status != 'active' means only
+    -- the call that actually performs the pending->active transition gets a nonzero affected-row
+    -- count; every later/concurrent call bails out before billing the customer again.
+    local n = MySQL.update.await([[UPDATE ops_isp_services SET status = 'active', ont_id = ?, router_tower = ?, contract_start = COALESCE(contract_start, ?),
+        contract_end = COALESCE(contract_end, ?), next_bill_at = ? WHERE id = ? AND status != 'active']],
         { ont, ont and routerOf(ont) or nil, t, t + (pkg.contract_months or 12) * 30 * 86400, t + (CO.BillingDays or 7) * 86400, svc.id })
+    if n == 0 then return true end
     if #ipsOf(svc.id) == 0 then
         local kind = pkg.ip_mode == 'dedicated' and 'dedicated' or pkg.ip_mode == 'static' and 'static' or 'dynamic'
         allocate(svc, kind, math.max(1, pkg.static_ips or 1))

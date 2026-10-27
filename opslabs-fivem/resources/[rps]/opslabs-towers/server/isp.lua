@@ -234,7 +234,11 @@ function IspProvision(fixtureId, providerId, planId, customer, actor)
     return true
 end
 
---- 'active' | 'suspended' | 'cease'
+--- 'active' | 'suspended' | 'cease'. Second return: an error message on failure, or - only on a
+--- successful 'active' - an advisory warning when this ONT is really an OPS Network ('opsfibre')
+--- line whose own billing status (ops_isp_services, owned by opsisp.lua) isn't 'active' - that
+--- engine's reconcile sweep re-suspends the physical service within ~30s regardless of this call,
+--- so a caller can and should tell the engineer rather than let it silently revert unexplained.
 function IspSetStatus(fixtureId, status)
     local id = tonumber(fixtureId)
     local svc = id and Services[id]
@@ -249,6 +253,12 @@ function IspSetStatus(fixtureId, status)
         return nil, 'bad status'
     end
     CablingChanged()
+    if status == 'active' and svc.provider == 'opsfibre' then
+        local row = MySQL.single.await('SELECT status FROM ops_isp_services WHERE ont_id = ?', { id })
+        if row and row.status ~= 'active' then
+            return true, ('OPS Network billing still shows this line as %s - it will be re-suspended automatically in under a minute unless that\'s resolved'):format(row.status)
+        end
+    end
     return true
 end
 
@@ -369,7 +379,7 @@ end)
 lib.callback.register('opslabs-towers:isp:setStatus', function(src, fixtureId, status)
     if not canProvision(src) then return { error = 'Only network engineers can change lines' } end
     local ok, err = IspSetStatus(fixtureId, status)
-    return ok and { ok = true } or { error = err }
+    return ok and { ok = true, warning = err } or { error = err }
 end)
 
 lib.callback.register('opslabs-towers:pole:status', function(src, poleId, status)

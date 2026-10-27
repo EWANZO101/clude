@@ -37,6 +37,7 @@ local function compute(dt)
             tp[id] = near(outlets, t, reach)
         end
     end
+    for id in pairs(Battery) do if not (Towers or {})[id] then Battery[id] = nil end end
     -- 2. PoE: access points cabled to a socket-powered PoE switch, until its budget runs out
     local links = {}
     for _, r in pairs(Cabling.runs) do

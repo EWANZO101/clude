@@ -119,7 +119,11 @@ local function uplinked(adj, id)
         local n = table.remove(q)
         local tid = tonumber(n:match('^t(%d+)$'))
         if tid and Uplinked and Uplinked[tid] then return true end
-        for m in pairs(adj[n] or {}) do if not seen[m] and m:sub(1, 1) == 't' then seen[m] = true q[#q + 1] = m end end
+        -- Walk through both fixture and tower nodes - graph() links any two cabled endpoints
+        -- regardless of type, so a rack cabled through an intermediate patch panel/switch
+        -- cabinet (fixture-to-fixture) before reaching a tower must still be reachable here.
+        -- Only reaching an actual *tower* node ever counts as a win (checked above).
+        for m in pairs(adj[n] or {}) do if not seen[m] then seen[m] = true q[#q + 1] = m end end
     end
     return false
 end

@@ -333,6 +333,7 @@ local function tick(dt)
             Laptops[id] = { level = math.floor(level + 0.5), plugged = plugged, charging = plugged and level < 100, dead = level <= 0 and not plugged }
         end
     end
+    for id in pairs(Laptops) do if not fx[id] then Laptops[id] = nil end end
     -- solar: panels → (DC isolator) → inverter, surplus into the home battery, battery keeps the house on after dark
     local h = GameHour
     local rise, set = CS.Sunrise or 6, CS.Sunset or 20
