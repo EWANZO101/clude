@@ -50,5 +50,18 @@ resource's own folder; this resource's own check-in loop (above) notices it and 
 `StopResource`/`StartResource`. `--rollback <code>` swaps the previous local copy back. See the script's own
 `--help`/docstring for the systemd unit to keep it running.
 
+## No companion process possible? (`server/installer.lua`)
+Some hosts only give you the txAdmin panel + SFTP - no shell, no way to run
+`ops-update-companion.py` at all. For those, this resource installs updates **itself**: every
+check-in it also asks `/updates/check` for each entitled-and-enabled resource module, and if one's
+available, downloads a small derived artifact (`/updates/<code>/pack` - not the .zip; FXServer's Lua
+has no .zip parser), verifies its sha256 against the same signed manifest, decompresses it with the
+vendored `libs/LibDeflate.lua` (zlib-licensed), and writes the files with `SaveResourceFile` - rejecting
+any entry whose path tries to escape the resource's own folder before writing anything. It then drops
+the same `.opshub-update-pending` marker as the companion script, so the restart happens through that
+one shared path either way. A plain server restart is then enough to pick it up - nothing else to run.
+This can only add/overwrite files, not delete ones removed in a newer version, and keeps no rollback
+copy - `ops-update-companion.py` is still the fuller-featured path for anyone with real OS access.
+
 Note: Lua resources can always be edited by whoever runs the server. The signed certificate stops a copied or tampered
 installation from *granting itself* modules through the license; protecting the code itself needs Cfx asset escrow.
