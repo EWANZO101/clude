@@ -5,6 +5,15 @@
 local RANGE = 100.0
 local MAX_LABELS = 30   -- nearest-first cap, so a dense area doesn't turn into a wall of text
 
+-- each player picks their own (/towers → Settings → Equipment labels), kept on their PC - same per-player
+-- KVP toggle idiom as the menu style setting (client/console.lua MenuStyle/SetMenuStyle)
+local LABELS_KEY = 'opslabs-towers:equipLabels'
+function EquipLabelsEnabled()
+    local ok, v = pcall(GetResourceKvpInt, LABELS_KEY)
+    return not (ok and v == 0)   -- on by default - only an explicit 0 turns it off
+end
+function SetEquipLabelsEnabled(v) SetResourceKvp(LABELS_KEY, v and 1 or 0) end
+
 local function text3d(x, y, z, txt)
     SetDrawOrigin(x, y, z, 0)
     SetTextScale(0.3, 0.3)
@@ -23,6 +32,7 @@ end
 CreateThread(function()
     while true do
         local ok, err = pcall(function()
+            if not EquipLabelsEnabled() then Wait(1000) return end
             local pos = GetEntityCoords(PlayerPedId())
             local near = {}
             for _, f in pairs(CablingFixtures and CablingFixtures() or {}) do

@@ -1188,6 +1188,7 @@ function GridState()
         stations = stations, winds = winds, subs = subs, lines = lines, feeders = feeders, spans = spans, reclosers = reclosers, transformers = transformers,
         pylons = (function() local o = {} for _, p in ipairs(T.pylons) do o[#o + 1] = { id = p.id, x = p.x, y = p.y } end return o end)(),
         ratings = CG.Ratings, events = S.events, log = S.log, procedures = procs, crews = crews(), now = now(), poles = GridPoles(),
+        fencing = FenceState and FenceState() or {},
         built = { stations = #T.stations, winds = #T.winds, subs = #T.subs, pylons = #T.pylons, poles = #T.poles, transformers = #T.transformers, reclosers = #T.reclosers },
     }
 end

@@ -458,6 +458,30 @@ local TRACKS = {
               done = powerTo('^opslabs_mains_ev_') },
         },
     },
+    {
+        id = 'sapl_station', company = 'sapl', title = 'Power station: build & connect', icon = 'industry', color = '#ffd60a',
+        sub = 'Gas power station → pylons → 400 kV run → substation → start a unit',
+        steps = {
+            { title = 'Build the power station',
+              how = { '/towers → San Andreas Power & Light → Generation → Gas power station (4 × 120 MW)' },
+              done = placed('^opslabs_grid_station$') },
+            { title = 'Have a substation for it to feed',
+              how = { 'Use one that\'s already there, or place one that needs no fitting out', 'Substations → Primary substation 400 / 11 kV (yard)', 'or Substations → Substation building · fully fitted (walk-in)' },
+              done = placedAny({ 'opslabs_grid_substation', 'opslabs_grid_subbuilding' }) },
+            { title = 'Walk a line of pylons from the station towards the substation',
+              how = { 'Transmission → 400 kV lattice pylon, one after another' },
+              done = placed('^opslabs_grid_pylon$') },
+            { title = 'Run the 400 kV conductor',
+              how = { 'Run power cable → 400 kV transmission conductor (pylons)', 'Start on the station\'s gantry, follow the pylons in, finish on the substation' },
+              done = powerTo('^opslabs_grid_station$') },
+            { title = 'Start a generating unit',
+              how = { 'Walk into the station yard and press [E] — "Power station control"', 'Pick an offline unit to start it — 90 seconds to synchronise' },
+              done = manual() },
+            { title = 'Check it\'s actually live',
+              how = { '[E] in the yard again: it should read RUNNING with output above 0 MW', 'At the substation, [E] → the 400 kV line in and the feeders should show closed, not faulted' },
+              done = manual() },
+        },
+    },
 
     -- =====================================================================
     -- San Andreas Solar
