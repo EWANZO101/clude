@@ -5,9 +5,13 @@
 // opslabs-license/guard.lua.
 const fs = require('fs');
 const path = require('path');
-const { parseLine, LogStore, tailFile, tailJournal } = require('../lib/parser.js');
-
 const RESOURCE_DIR = GetResourcePath(GetCurrentResourceName());
+// a plain relative require (e.g. '../lib/parser.js') resolves against this resource's synthetic entry
+// script at the resource root, not against server/logtail.js's own folder - one '..' too many, and
+// "Cannot find module" either way once any resource's folder structure doesn't happen to line up by luck.
+// An absolute path built from GetResourcePath sidesteps that entirely.
+const { parseLine, LogStore, tailFile, tailJournal, normalize } = require(path.join(RESOURCE_DIR, 'lib', 'parser.js'));
+
 const DATA_DIR = path.join(RESOURCE_DIR, 'data');
 try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) { /* already exists */ }
 
@@ -48,7 +52,7 @@ function seedKnownSignatures() {
       if (!line) continue;
       try {
         const rec = JSON.parse(line);
-        knownSignatures.add(`${rec.tag || ''}|${require('../lib/parser.js').normalize(rec.text || '')}`);
+        knownSignatures.add(`${rec.tag || ''}|${normalize(rec.text || '')}`);
       } catch (e) { /* skip a corrupt line */ }
     }
   } catch (e) { /* no history yet today */ }

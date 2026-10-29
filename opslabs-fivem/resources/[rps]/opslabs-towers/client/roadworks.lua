@@ -210,10 +210,14 @@ local function text3d(x, y, z, txt, r, g, b)
     ClearDrawOrigin()
 end
 
-local function groundZ(x, y, z)
-    local ray = StartExpensiveSynchronousShapeTestLosProbe(x, y, z + 1.5, x, y, z - 4.0, 1, PlayerPedId(), 4)
+--- ground height at (x, y), probing between zLo and zHi rather than around a single guessed height - a
+--- row's middle points are never actually aimed at, only interpolated between the two ends, so on a real
+--- hill (or in a dip) that guess can be well off; bracketing by the row's own known end heights (plus a
+--- margin) finds the real ground under a slope instead of missing it and leaving posts floating/buried.
+local function groundZ(x, y, zLo, zHi)
+    local ray = StartExpensiveSynchronousShapeTestLosProbe(x, y, zHi, x, y, zLo, 1, PlayerPedId(), 4)
     local _, hit, at = GetShapeTestResult(ray)
-    return hit == 1 and at.z or z
+    return hit == 1 and at.z or nil
 end
 
 --- ruler from the nearest road kit to where you're placing: ticks every metre, the distance,
@@ -291,10 +295,12 @@ local function lineMode(modelName, spacing)
                     local heading = wide and math.deg(math.atan(dir.y, dir.x)) or math.deg(math.atan(-dir.x, dir.y))
                     local gap = wide and LINE_GAP[modelName] or spacing
                     local n = math.min(60, math.floor(L / gap + (wide and 0 or 1)))
+                    local zLo, zHi = math.min(start.z, at.z) - 10.0, math.max(start.z, at.z) + 10.0
                     for i = 0, n - 1 do
                         local t = wide and (i + 0.5) * gap or i * gap
                         local px, py = start.x + dir.x * t, start.y + dir.y * t
-                        spots[#spots + 1] = { x = px, y = py, z = groundZ(px, py, start.z + (at.z - start.z) * (t / L)), heading = heading % 360 }
+                        local guess = start.z + (at.z - start.z) * (t / L)
+                        spots[#spots + 1] = { x = px, y = py, z = groundZ(px, py, zLo, zHi) or guess, heading = heading % 360 }
                     end
                     DrawLine(start.x, start.y, start.z + 0.05, at.x, at.y, at.z + 0.05, 255, 159, 10, 255)
                     note = ('%d × %s · %.1f m long · %.1f m apart'):format(#spots, labelOf(modelName):lower(), L, gap)

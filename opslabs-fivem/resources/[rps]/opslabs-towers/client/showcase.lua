@@ -18,35 +18,42 @@ lib.callback.register('opslabs-towers:showcase:survey', function(points)
     DoScreenFadeOut(400) Wait(450)
     FreezeEntityPosition(ped, true)
     SetEntityVisible(ped, false, false)
-    for _, k in ipairs(order) do
-        local c = cells[k]
-        local cx, cy = c.x / c.n, c.y / c.n
-        SetEntityCoordsNoOffset(ped, cx, cy, start.z + 40.0, false, false, false)
-        local t0 = GetGameTimer()
-        repeat RequestCollisionAtCoord(cx, cy, start.z) Wait(50) until HasCollisionLoadedAroundEntity(ped) or GetGameTimer() - t0 > 4000
-        Wait(300)
-        for _, i in ipairs(c.list) do
-            local p = points[i]
-            -- GetGroundZFor_3dCoord can hand back the PREVIOUS point's result if queried again for a new
-            -- (x, y) within the same game tick - this yield is what makes every point actually get its own
-            -- answer instead of silently inheriting the last point's height (which is how a route built across
-            -- a slope or over a tunnel/bunker's collision ends up with poles planted underground).
-            Wait(0)
-            local z
-            for _ = 1, 25 do
-                RequestCollisionAtCoord(p.x, p.y, start.z)
-                local ok, gz = GetGroundZFor_3dCoord(p.x + 0.0, p.y + 0.0, 1000.0, false)
-                if ok then z = gz break end
-                Wait(20)
+    -- whatever happens in here (a bad point, a timeout, anything unexpected) the player must always get their
+    -- own body back - this had no safety net before, and a survey across many separate scattered areas (the
+    -- fence re-ground tool can span the whole map, unlike every caller this was first written for, which only
+    -- ever surveyed one small local site) is a lot more likely to hit something unexpected mid-way
+    local ok, err = pcall(function()
+        for _, k in ipairs(order) do
+            local c = cells[k]
+            local cx, cy = c.x / c.n, c.y / c.n
+            SetEntityCoordsNoOffset(ped, cx, cy, start.z + 40.0, false, false, false)
+            local t0 = GetGameTimer()
+            repeat RequestCollisionAtCoord(cx, cy, start.z) Wait(50) until HasCollisionLoadedAroundEntity(ped) or GetGameTimer() - t0 > 4000
+            Wait(300)
+            for _, i in ipairs(c.list) do
+                local p = points[i]
+                -- GetGroundZFor_3dCoord can hand back the PREVIOUS point's result if queried again for a new
+                -- (x, y) within the same game tick - this yield is what makes every point actually get its own
+                -- answer instead of silently inheriting the last point's height (which is how a route built
+                -- across a slope or over a tunnel/bunker's collision ends up with poles planted underground).
+                Wait(0)
+                local z
+                for _ = 1, 25 do
+                    RequestCollisionAtCoord(p.x, p.y, start.z)
+                    local okz, gz = GetGroundZFor_3dCoord(p.x + 0.0, p.y + 0.0, 1000.0, false)
+                    if okz then z = gz break end
+                    Wait(20)
+                end
+                out[i] = z
             end
-            out[i] = z
         end
-    end
+    end)
     SetEntityCoordsNoOffset(ped, start.x, start.y, start.z, false, false, false)
     SetEntityHeading(ped, startH)
     SetEntityVisible(ped, true, false)
     FreezeEntityPosition(ped, false)
     DoScreenFadeIn(500)
+    if not ok then print(('^1[opslabs-towers] ground survey failed mid-way, your position has been restored: %s^7'):format(err)) end
     return out
 end)
 

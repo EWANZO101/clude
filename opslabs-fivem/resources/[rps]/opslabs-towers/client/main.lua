@@ -978,6 +978,16 @@ MainMenu = function(field)
             if lib.hideContext then lib.hideContext(false) end
             SetTimeout(150, function() MainMenu() end)
         end })
+    if EquipLabelsEnabled then
+        local labelsOn = EquipLabelsEnabled()
+        add({ title = 'Equipment labels: ' .. (labelsOn and 'On' or 'Off'),
+            description = 'The white name tag that floats over nearby placed equipment · just for you',
+            icon = labelsOn and 'tag' or 'eye-slash', iconColor = GREY, onSelect = function()
+                SetEquipLabelsEnabled(not labelsOn)
+                if lib.hideContext then lib.hideContext(false) end
+                SetTimeout(150, function() MainMenu() end)
+            end })
+    end
     if adminCache == nil then adminCache = lib.callback.await('opslabs-towers:isAdmin', false) == true end
     if adminCache and CityPreview then
         add({ title = 'City preview', description = 'Survey right where you stand for a new district (substation, exchange, house, fuel station, mast + pole lines) - nothing is built, just shown for 90 s (/opscitypreview)',
@@ -986,6 +996,14 @@ MainMenu = function(field)
     if adminCache and OpenDangerZone then
         add({ title = 'Danger zone', description = 'Mass delete parts of the power network or anything else · needs the danger zone username & password', icon = 'radiation', iconColor = '#ff453a',
             onSelect = function() OpenDangerZone() end })
+    end
+    if adminCache and RegradeFences then
+        add({ title = 'Re-ground fencing', description = 'Surveys every placed fence panel/post and fixes any left floating or buried on a slope', icon = 'ruler-vertical', iconColor = GREY,
+            onSelect = function() RegradeFences() end })
+    end
+    if adminCache and RemoveFencing then
+        add({ title = 'Remove fencing', description = 'Walk up to a fence panel - [E] removes it, [G] removes its whole line', icon = 'trash', iconColor = GREY,
+            onSelect = function() RemoveFencing() end })
     end
     lib.registerContext({ id = 'towers_main', title = fieldMode and 'Field engineering' or 'OPS Network · control', options = options, root = true })
     lib.showContext('towers_main')

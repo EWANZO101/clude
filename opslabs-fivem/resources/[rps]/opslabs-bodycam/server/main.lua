@@ -427,13 +427,24 @@ end
 CreateThread(function()
     Wait(1000)      -- let the framework start first
     Bridge.Init()
-    local dir = exports[RES]:ConfigureStorage(storageCfg.Dir or '', storageCfg.MaxSegmentMB or 64)
+    -- storage.js runs in this resource's JS (Node) runtime, which can take longer to come up than the Lua
+    -- side does - calling its export too early throws "nil" instead of returning a value, so retry briefly
+    -- rather than crash this thread on a slow boot.
+    local dir
+    for attempt = 1, 20 do
+        local ok, result = pcall(function() return exports[RES]:ConfigureStorage(storageCfg.Dir or '', storageCfg.MaxSegmentMB or 64) end)
+        if ok and result then dir = result break end
+        Wait(250)
+    end
+    if not dir then
+        print('^1[opslabs-bodycam] ConfigureStorage export never became available (server/storage.js) - using its default media folder^7')
+    end
     publicBase = (storageCfg.PublicUrl or ''):gsub('/+$', '')
     if publicBase == '' then
         print('^3[opslabs-bodycam] No public address for the videos: set ServerConfig.Storage.PublicUrl — the portal cannot play them otherwise^7')
     end
     useDb = initDb()
-    print(('[opslabs-bodycam] Videos: %s → %s · database: %s · Xon Sight: %s · voice: %s'):format(dir, publicBase ~= '' and publicBase or '(none)',
+    print(('[opslabs-bodycam] Videos: %s → %s · database: %s · Xon Sight: %s · voice: %s'):format(dir or '(unknown)', publicBase ~= '' and publicBase or '(none)',
         useDb and 'yes' or 'no', XonSight.Configured() and xsCfg.Url or 'not set', Audio.Enabled() and 'OPS Voice bridge' or 'off'))
 end)
 

@@ -284,6 +284,7 @@ function IspList()
     for _, p in ipairs(poles) do p.faults = FaultsOnPole and FaultsOnPole(p.id) or {} end
     return { onts = out, poles = poles, links = links, kit = kit, providers = CI.Providers,
         faults = GetFaults and GetFaults().faults or {},
+        fencing = FenceState and FenceState() or {},
         stats = { total = #out, live = live, no_service = none, los = down } }
 end
 
